@@ -335,14 +335,10 @@ export function Sidebar({ mobile = false, onNavigate }: SidebarProps = {}) {
           {/* Brand Footer */}
           <div className="border-t border-surface-300 p-3">
             <div className="flex items-center gap-2">
-              <div className="flex h-6 w-6 items-center justify-center rounded bg-brand-500">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
-                  <path d="M12 2L2 7l10 5 10-5-10-5z" fill="white"/>
-                </svg>
-              </div>
+              <EyeOnMark size={24} color="#0F6B5C" />
               <div className="flex flex-col">
                 <span className="text-[13px] font-semibold text-ink-800">EyeOn</span>
-                <span className="text-[12px] text-ink-400">GPS Tracking</span>
+                <span className="text-[12px] text-ink-500">Family Safety</span>
               </div>
             </div>
           </div>

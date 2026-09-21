@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { logout } from "@/lib/auth";
 import { LanguageToggle } from "./LanguageToggle";
 import type { UserView } from "@/types/domain";
+import { EyeOnLogo } from "@/components/brand/EyeOnLogo";
 
 /**
  * ADL-style top bar: brand + live status on the left, notifications /
@@ -39,17 +40,8 @@ export function Topbar({ user, onMenu }: { user: UserView; orgId: string; onMenu
 
       {/* Left: brand + live status */}
       <div className="flex min-w-0 flex-1 items-center gap-3">
-        <Link href="/dashboard" className="flex shrink-0 items-center gap-2">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand-500">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-              <path d="M12 2L2 7l10 5 10-5-10-5z" fill="white" opacity="0.9" />
-              <path d="M2 17l10 5 10-5" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-              <path d="M2 12l10 5 10-5" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-          </div>
-          <span className="text-lg font-bold text-ink-900">
-            <span className="text-brand-500">Moto</span>Link
-          </span>
+        <Link href="/dashboard" className="flex shrink-0 items-center" aria-label="EyeOn">
+          <EyeOnLogo height={32} />
         </Link>
         <div className="hidden items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-1 text-[14px] text-emerald-700 sm:flex">
           <span className="relative flex h-2 w-2">
