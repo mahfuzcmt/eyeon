@@ -87,6 +87,29 @@ public class NotificationComposer {
         };
     }
 
+    /**
+     * One text message for a critical alarm. Kept short on purpose: Bengali is sent as Unicode,
+     * where a segment is 70 characters, and every segment is billed. The map link is last so
+     * that a truncated message still says who needs help.
+     */
+    public String composeSms(Alarm alarm, String personName, Lang lang) {
+        boolean bn = lang == Lang.BN;
+        String time = formatTime(alarm.ts(), lang);
+        String what = switch (alarm.type()) {
+            case "SOS" -> bn ? "SOS! " + personName + "-এর জরুরি সাহায্য দরকার।"
+                             : "SOS! " + personName + " needs help.";
+            case "REMOVE" -> bn ? personName + "-এর ট্র্যাকার খুলে ফেলা হয়েছে।"
+                                : personName + "'s tracker was taken off.";
+            default -> (bn ? "জরুরি সতর্কতা: " : "Urgent alert: ")
+                    + alarm.type().replace('_', ' ') + " - " + personName + ".";
+        };
+        String where = alarm.latitude() != null && alarm.longitude() != null
+                ? (bn ? " ম্যাপ: " : " Map: ") + String.format(java.util.Locale.ROOT,
+                        "https://maps.google.com/?q=%.5f,%.5f", alarm.latitude(), alarm.longitude())
+                : (bn ? " অ্যাপে লোকেশন দেখুন।" : " Open the app for the location.");
+        return "EyeOn " + what + " " + (bn ? "সময় " + time + "।" : time + ".") + where;
+    }
+
     /** "School-এ" — the hyphenated locative attaches cleanly to any name the user typed. */
     private static String at(String place, boolean bn) {
         return orPlace(place, bn) + "-এ";

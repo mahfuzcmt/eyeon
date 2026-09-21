@@ -63,6 +63,33 @@ public class UserRepository {
         }
     }
 
+    /** A phone to text about an alarm, and the language to write it in. */
+    public record SmsRecipient(String phone, String locale) {}
+
+    /**
+     * Who should be texted about an alarm from this tracker: active users of the organization
+     * who have a phone number and can see the person - the parents assigned to the tracker
+     * ({@code user_devices}) plus admins and anyone with "see everyone". Same visibility rule
+     * as {@link PushTokenRepository#listTokensForOrgAndType}. Users have no language of their
+     * own, so the organization's locale is used.
+     */
+    public List<SmsRecipient> listAlarmSmsRecipients(UUID orgId, String deviceImei) {
+        return jdbc.query("""
+                SELECT u.phone, o.locale
+                  FROM users u
+                  JOIN organizations o ON o.id = u.org_id
+                 WHERE u.org_id = :orgId
+                   AND u.is_active = true
+                   AND u.phone IS NOT NULL AND btrim(u.phone) <> ''
+                   AND (u.role IN ('SUPER_ADMIN', 'ORG_ADMIN')
+                        OR u.see_all_devices = true
+                        OR EXISTS (SELECT 1 FROM user_devices ud
+                                    WHERE ud.user_id = u.id AND ud.device_imei = :imei))
+                 ORDER BY (u.role = 'ORG_USER') DESC, u.created_at
+                """, new MapSqlParameterSource("orgId", orgId).addValue("imei", deviceImei),
+                (rs, rn) -> new SmsRecipient(rs.getString("phone"), rs.getString("locale")));
+    }
+
     public long count() {
         Long c = jdbc.getJdbcTemplate().queryForObject("SELECT COUNT(*) FROM users", Long.class);
         return c == null ? 0 : c;

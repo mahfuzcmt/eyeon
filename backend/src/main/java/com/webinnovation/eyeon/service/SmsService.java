@@ -1,6 +1,5 @@
 package com.webinnovation.eyeon.service;
 
-import com.webinnovation.eyeon.domain.Alarm;
 import com.webinnovation.eyeon.util.PasswordResetSupport;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -40,14 +39,6 @@ public class SmsService {
     /** True when a provider is configured, i.e. sendRaw() really delivers. */
     public boolean isConfigured() {
         return !apiToken.isBlank();
-    }
-
-    public void sendAlarmSms(Alarm alarm, String recipientMsisdn, String message) {
-        if (recipientMsisdn == null || recipientMsisdn.isBlank()) {
-            log.debug("SMS skipped: no recipient for alarm {}", alarm.id());
-            return;
-        }
-        sendRaw(recipientMsisdn, message);
     }
 
     /** Returns true if the message was handed to the provider (or logged in stub mode). */

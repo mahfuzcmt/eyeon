@@ -60,7 +60,7 @@ def build_heartbeat(serial: int) -> bytes:
     return build_frame(0x13, content, serial)
 
 
-def build_location_v3(lat: float, lng: float, speed: int, course: int, serial: int) -> bytes:
+def build_location_v3(lat: float, lng: float, speed: int, course: int, serial: int, alarm_code: int | None = None) -> bytes:
     """V3 (0x22): lat/lng = decimal_degrees * 1_800_000."""
     now = datetime.now(timezone.utc)
     dt = bytes([
@@ -82,7 +82,7 @@ def build_location_v3(lat: float, lng: float, speed: int, course: int, serial: i
     if west:
         course_status |= 0x0800
 
-    content = (
+    gps_lbs = (
         dt
         + bytes([gps_byte])
         + struct.pack(">I", lat_raw)
@@ -94,6 +94,15 @@ def build_location_v3(lat: float, lng: float, speed: int, course: int, serial: i
         + bytes([0x01])                  # MNC
         + struct.pack(">H", 0x1234)     # LAC
         + bytes([0x00, 0x12, 0x34])     # 24-bit cell id
+    )
+    if alarm_code is not None:
+        # 0x16 alarm packet = GPS + LBS + 5-byte status block
+        # (terminal info, voltage level 0-6, GSM signal 0-4, alarm code, language).
+        status = bytes([0x00, 0x04, 0x03, alarm_code & 0xFF, 0x02])
+        return build_frame(0x16, gps_lbs + status, serial)
+
+    content = (
+        gps_lbs
         # V3-specific
         + bytes([0x01])  # ACC on
         + bytes([0x00])  # upload mode
@@ -127,6 +136,8 @@ def main() -> int:
     parser.add_argument("--course", type=int, default=90)
     parser.add_argument("--count", type=int, default=3, help="location packets to send")
     parser.add_argument("--interval", type=float, default=2.0, help="seconds between packets")
+    parser.add_argument("--sos", action="store_true",
+                        help="after the location packets, send one 0x16 alarm packet with code 0x01 (SOS button)")
     args = parser.parse_args()
 
     print(f"connecting to {args.host}:{args.port} as IMEI={args.imei}")
@@ -148,6 +159,15 @@ def main() -> int:
             expect_ack(sock, f"location[{i + 1}]")
             serial += 1
             time.sleep(args.interval)
+
+        if args.sos:
+            # A real tracker sends SOS some time after login; give the server's asynchronous
+            # login lookup a moment so the alarm is not dropped (CLAUDE.md section 18 item 0).
+            sos = build_location_v3(args.lat, args.lng, 0, args.course, serial, alarm_code=0x01)
+            print(f"-> SOS alarm ({len(sos)} bytes): {sos.hex()}")
+            sock.sendall(sos)
+            expect_ack(sock, "SOS alarm")
+            serial += 1
 
         hb = build_heartbeat(serial)
         print(f"-> heartbeat ({len(hb)} bytes): {hb.hex()}")

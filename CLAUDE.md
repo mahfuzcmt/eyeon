@@ -1058,6 +1058,15 @@ public interface SmsService {
 
 Implementation hits SSL Wireless API (`https://smsplus.sslwireless.com/api/v3/send-sms`).
 
+**Critical-alarm SMS (implemented 2026-09-21; before that `AlarmService.raise` passed a `null` recipient, so no SOS text ever reached anyone).** Every CRITICAL alarm (SOS, REMOVE, POWER_CUT, COLLISION) calls `AlarmSmsService.sendCriticalAlarmSms` (`@Async`), which:
+- texts every active user of the org **who has a phone number** and can see that tracker: users assigned to it in `user_devices` (the parents), plus ORG_ADMIN / SUPER_ADMIN / `see_all_devices` - the same visibility rule as push (`UserRepository.listAlarmSmsRecipients`);
+- sends one message per distinct number, max `eyeon.sms.alarm-max-recipients` (10);
+- texts at most once per tracker per alarm type per `eyeon.sms.alarm-cooldown-seconds` (120, Redis key `sms:alarm:{imei}:{type}`), because a held-down button repeats the packet; the alarm itself is still recorded every time. If Redis is down it sends anyway;
+- writes the text with `NotificationComposer.composeSms` in the org's locale: `EyeOn SOS! রাফি-এর জরুরি সাহায্য দরকার। সময় সকাল ৮:০২। ম্যাপ: https://maps.google.com/?q=…`. Bengali is Unicode SMS (70 chars/segment), so this is 2 billed segments per parent;
+- logs a WARN when **nobody** with a phone can see the tracker - the case that used to fail silently.
+
+It only delivers when `SSL_SMS_API_TOKEN` is set; without it every message is logged as `[SMS-STUB]` and the dispatch line says `STUB MODE`. Parents must have a phone number on their user (Settings → Users) and be assigned to the child. Verified end to end on production with `scripts/smoke_trusted_places.py` (simulator `--sos` sends a real `0x16` packet with code `0x01`); that test skips its SMS checks when a real token is configured so it never texts a made-up number.
+
 ---
 
 ## 8. REST API Specification
@@ -1131,7 +1140,7 @@ DELETE /geofences/:id/devices/:imei     → 204  (unassign)
 
 **Drift guards (`service/GeofenceTransition`, pure + unit-tested).** A crossing is first stored as a candidate in `geofence_states.pending_inside/pending_since` and commits only when a later sample agrees at least `min_dwell_s` (default 60) after it was first seen; leaving also requires being more than `exit_buffer_m` (default 30) beyond the edge (`ST_DWithin`). The alarm is stamped with the crossing time, not the confirmation time. Cost: alerts arrive `min_dwell_s` + one reporting interval late.
 
-**Notification wording (`service/NotificationComposer`, pure + unit-tested).** Push title/body are composed per language - Bengali or English - from `push_tokens.locale` (V19; the language that phone's app is set to, sent by the mobile app on `POST /users/me/push-tokens { token, platform, locale }` and re-sent when the language changes), falling back to `organizations.locale`. There is **no `users.locale` column**, contrary to §12.3. Bengali templates are deliberately verb-free ("রাফি এখন School-এ") because verb endings change with respect and the backend does not know whether the wearer is a child or a grandparent. Place events use Android channel `arrivals` (normal importance); everything else uses `alarms`. SMS bodies are still English and the SOS SMS recipient is still a null stub (plan step F1).
+**Notification wording (`service/NotificationComposer`, pure + unit-tested).** Push title/body are composed per language - Bengali or English - from `push_tokens.locale` (V19; the language that phone's app is set to, sent by the mobile app on `POST /users/me/push-tokens { token, platform, locale }` and re-sent when the language changes), falling back to `organizations.locale`. There is **no `users.locale` column**, contrary to §12.3. Bengali templates are deliberately verb-free ("রাফি এখন School-এ") because verb endings change with respect and the backend does not know whether the wearer is a child or a grandparent. Place events use Android channel `arrivals` (normal importance); everything else uses `alarms`. Critical-alarm SMS is described in §7.7.
 
 ### 8.6 Activity (replaces Trips)
 
@@ -1673,7 +1682,7 @@ A feature is considered **DONE** when:
 
 ### Family-safety track (current priority)
 
-Steps F0-F7 in [`docs/FAMILY_SAFETY_PLAN.md`](docs/FAMILY_SAFETY_PLAN.md): F0 visual restyle (done 2026-09-21) · F1 SOS SMS recipients (**not done** - still a null-recipient stub in `AlarmService.raise`) · F2 trusted places: `V19`, `PATCH /geofences/:id`, drift guards (done 2026-09-21) · F3 bilingual push composer + `arrivals` channel (done for push; SMS wording not done) · F4 Places UI: mobile `app/places.tsx` + `app/place-new.tsx`, web Places/Boundaries tabs with edit mode (done) · F5 person avatars + vocabulary sweep · F6 day timeline / who-is-where-now · F7 marketing rewrite. F2-F4 are covered by unit tests and typecheck/build only: **the V19 migration and the new SQL have not been run against PostgreSQL, and nothing has been tried on a device or a real tracker.** See §8.5.
+Steps F0-F7 in [`docs/FAMILY_SAFETY_PLAN.md`](docs/FAMILY_SAFETY_PLAN.md): F0 visual restyle (done 2026-09-21) · F1 SOS SMS recipients (done 2026-09-21, see §7.7) · F2 trusted places: `V19`, `PATCH /geofences/:id`, drift guards (done 2026-09-21) · F3 bilingual push composer + `arrivals` channel (done for push; SMS wording not done) · F4 Places UI: mobile `app/places.tsx` + `app/place-new.tsx`, web Places/Boundaries tabs with edit mode (done) · F5 person avatars + vocabulary sweep · F6 day timeline / who-is-where-now · F7 marketing rewrite. F2-F4 are covered by unit tests and typecheck/build only: **the V19 migration and the new SQL have not been run against PostgreSQL, and nothing has been tried on a device or a real tracker.** See §8.5.
 
 ### Launch Phases (12-Week Plan)
 

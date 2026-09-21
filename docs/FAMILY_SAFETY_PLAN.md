@@ -192,7 +192,7 @@ picker and an edit mode (needs the new `PATCH`).
 | Step | Scope | Depends on |
 |---|---|---|
 | **F0** | Visual restyle: teal/yellow palette, rounded type, larger controls, EyeOn logo | — (done 2026-09-21) |
-| **F1** | SOS SMS recipients (§5.4). Smallest change, highest safety value | — |
+| **F1** | SOS SMS recipients (§5.4). Smallest change, highest safety value | — (done 2026-09-21; delivers once `SSL_SMS_API_TOKEN` is set - see CLAUDE.md §7.7) |
 | **F2** | V19 + `kind`/`placeType` + `PATCH /geofences/:id` + hysteresis + tests | — (built 2026-09-21; SQL not yet run against Postgres) |
 | **F3** | `NotificationComposer`, bilingual push/SMS, Android channels, delivery rules | F2 (push built 2026-09-21; SMS wording, the `sos` channel and LOW_BATTERY throttling not built) |
 | **F4** | Mobile Places screen + add-place flow; web Places tab and edit mode | F2 (built 2026-09-21; address search not built - pin drop and "use where they are now" only) |

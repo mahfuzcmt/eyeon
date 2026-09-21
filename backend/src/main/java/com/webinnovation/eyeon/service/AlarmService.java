@@ -41,7 +41,7 @@ public class AlarmService {
     private final AlarmRepository repo;
     private final StringRedisTemplate redis;
     private final ObjectMapper objectMapper;
-    private final SmsService smsService;
+    private final AlarmSmsService alarmSmsService;
     private final PushService pushService;
     private final DeviceRepository deviceRepo;
 
@@ -58,8 +58,8 @@ public class AlarmService {
                 .orElseThrow(() -> new IllegalStateException("Alarm vanished after insert: " + id));
         publish(a);
         if (severity == AlarmSeverity.CRITICAL) {
-            // Phase 3: stub log-only — Phase 4 will resolve owner contacts.
-            smsService.sendAlarmSms(a, null, severity + " " + type + " on " + imei);
+            // SOS and the like also go out by SMS: a push needs mobile data, a text does not.
+            alarmSmsService.sendCriticalAlarmSms(a);
         }
         if (severity != AlarmSeverity.INFO || isPlaceEvent(type)) {
             // WARNING/CRITICAL only — pushing every ACC_ON/OFF would spam owners. Reaching or

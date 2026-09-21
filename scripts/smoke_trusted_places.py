@@ -50,10 +50,12 @@ def check(label, ok, detail=""):
         failures.append(label)
 
 
-def sim(lat, lng, count=3):
-    out = subprocess.run(["python3", "/opt/eyeon/scripts/simulate_device.py", "--host", "127.0.0.1", "--port", "5024",
-                          "--imei", IMEI, "--lat", str(lat), "--lng", str(lng), "--count", str(count), "--interval", "1"],
-                         capture_output=True, text=True, timeout=60)
+def sim(lat, lng, count=3, sos=False):
+    cmd = ["python3", "/opt/eyeon/scripts/simulate_device.py", "--host", "127.0.0.1", "--port", "5024",
+           "--imei", IMEI, "--lat", str(lat), "--lng", str(lng), "--count", str(count), "--interval", "1"]
+    if sos:
+        cmd.append("--sos")
+    out = subprocess.run(cmd, capture_output=True, text=True, timeout=60)
     time.sleep(3)  # ingestion side effects run off the Netty thread
     return out.returncode
 
@@ -155,6 +157,41 @@ try:
     ntrips = psql(f"select count(*) from trips where device_imei='{IMEI}'")
     check("no trips are created (eyeon.trips.enabled=false)", ntrips == "0", f"trips={ntrips}")
 
+    # --- SOS must reach the parent by SMS (it used to be sent to a null recipient)
+    env = dict(l.split("=", 1) for l in open("/opt/eyeon/.env").read().splitlines() if "=" in l and not l.startswith("#"))
+    if env.get("SSL_SMS_API_TOKEN", "").strip():
+        print("  SKIP  SOS SMS checks: a real SMS provider is configured and this test must never text a made-up number")
+    else:
+        parent_phone = "01500000123"
+        psql(f"insert into users (org_id, email, phone, password_hash, full_name, role) values "
+             f"('{DEMO_ORG}', 'smoke-parent-{secrets.token_hex(3)}@eyeon.invalid', '{parent_phone}', 'x', 'Smoke parent', 'ORG_USER')")
+        psql(f"insert into user_devices (user_id, device_imei) select id, '{IMEI}' from users where email like 'smoke-parent-%@eyeon.invalid'")
+        sh(f"docker exec eyeon-redis redis-cli del sms:alarm:{IMEI}:SOS")
+        t0 = time.strftime("%Y-%m-%dT%H:%M:%S", time.gmtime())
+        sim(LAT, LNG, count=2, sos=True)
+        time.sleep(3)
+        sev = psql(f"select severity from alarms where device_imei='{IMEI}' and type='SOS' order by ts desc limit 1")
+        check("SOS packet raises a CRITICAL alarm", sev == "CRITICAL", f"severity={sev!r}")
+        logs = sh(f"docker logs --since {t0}Z eyeon-backend 2>&1")
+        stub = [l for l in logs.splitlines() if "[SMS-STUB]" in l and "to=8801500000123" in l]
+        check("SOS SMS composed for the assigned parent's number", len(stub) == 1, f"stub lines={len(stub)}")
+        body = stub[0] if stub else ""
+        child = psql(f"select name from devices where imei='{IMEI}'")
+        check("SMS says SOS, names the child and carries a map link",
+              "EyeOn SOS!" in body and bool(child) and child in body
+              and "https://maps.google.com/?q=23.81" in body, body[-220:])
+        handed = [l for l in logs.splitlines() if "SMS handed to provider" in l]
+        check("dispatch is logged, and stub mode is called out",
+              any("for 1/1" in l and "STUB MODE" in l for l in handed), (handed[-1][-180:] if handed else "no dispatch line"))
+
+        sim(LAT, LNG, count=2, sos=True)   # child keeps pressing
+        time.sleep(3)
+        logs2 = sh(f"docker logs --since {t0}Z eyeon-backend 2>&1")
+        n_sms = len([l for l in logs2.splitlines() if "[SMS-STUB]" in l and "to=8801500000123" in l])
+        n_sos = psql(f"select count(*) from alarms where device_imei='{IMEI}' and type='SOS'")
+        check("second SOS is recorded but not texted again (cooldown)", n_sms == 1 and n_sos == "2" and "suppressed" in logs2,
+              f"sms={n_sms} sos_alarms={n_sos}")
+
     code, d = call("PATCH", f"/geofences/{gid}", {"radiusM": 300})
     left = psql(f"select count(*) from geofence_states where geofence_id='{gid}'")
     check("reshaping resets state", code == 200 and left == "0", f"{code} rows={left}")
@@ -166,6 +203,7 @@ finally:
     tables = psql("select table_name || ':' || column_name from information_schema.columns "
                   "where table_schema='public' and column_name in ('device_imei','imei') and table_name <> 'devices' order by 1").split()
     stmts = [f"delete from {t.split(':')[0]} where {t.split(':')[1]}='{IMEI}'" for t in tables]
+    sh(f"docker exec eyeon-redis redis-cli del sms:alarm:{IMEI}:SOS")
     stmts += ["delete from refresh_tokens where user_id in (select id from users where email like 'smoke-%@eyeon.invalid')",
               "delete from audit_log where user_id in (select id from users where email like 'smoke-%@eyeon.invalid')",
               "delete from users where email like 'smoke-%@eyeon.invalid'",
