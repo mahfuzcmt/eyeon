@@ -144,7 +144,6 @@ function VehicleCard({
             color={accOn ? colors.ok : colors.textFaint}
           />
         ) : null}
-        {device.engineLocked ? <Pill label={`🔒 ${t("track.locked")}`} color={colors.danger} /> : null}
         {expired ? <Pill label={t("sub.expired")} color={colors.danger} /> : null}
         {expiringSoon ? <Pill label={t("sub.expiringSoon")} color={colors.warn} /> : null}
       </View>

@@ -61,6 +61,7 @@ export default function MapScreen() {
         vehicleType: d?.vehicleType,
         iconColor: d?.iconColor,
         overspeed,
+        moving: motion === "MOVING",
       });
     }
     return out;

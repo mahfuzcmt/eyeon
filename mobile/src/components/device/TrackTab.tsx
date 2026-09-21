@@ -1,8 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { ScrollView, StyleSheet, Text, View } from "react-native";
 import { useDeviceLive } from "@/hooks/useDeviceLive";
-import { cutFuel, restoreFuel } from "@/api/endpoints";
-import { extractError } from "@/api/client";
 import WebMap, { MapVehicle } from "@/components/WebMap";
 import { Loading, Metric, Section } from "@/ui";
 import {
@@ -20,10 +18,9 @@ import { colors, radius, space } from "@/theme";
 
 export default function TrackTab({ imei, orgId }: { imei: string; orgId: string | null }) {
   const { t } = useI18n();
-  const { device, loc, loading, reloadDevice } = useDeviceLive(imei, orgId);
+  const { device, loc, loading } = useDeviceLive(imei, orgId);
   const speedLimits = useSpeedLimits();
   const [center, setCenter] = useState<{ lat: number; lng: number; zoom: number; nonce: number } | null>(null);
-  const [busy, setBusy] = useState(false);
   const centered = useRef(false);
 
   useEffect(() => {
@@ -47,38 +44,10 @@ export default function TrackTab({ imei, orgId }: { imei: string; orgId: string 
         vehicleType: device.vehicleType,
         iconColor: device.iconColor,
         overspeed,
+        moving: motionOf(device, loc) === "MOVING",
       },
     ];
   }, [loc, device, imei, speedLimits]);
-
-  async function runCommand(kind: "cut" | "restore") {
-    setBusy(true);
-    try {
-      const res = kind === "cut" ? await cutFuel(imei) : await restoreFuel(imei);
-      Alert.alert(res.ok ? t("track.cmdSent") : t("track.cmdFailed"), res.reply ?? res.error ?? "");
-      if (res.ok) await reloadDevice(); // pick up the new engine_locked state
-    } catch (e) {
-      Alert.alert(t("common.error"), extractError(e).message);
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  function confirm(kind: "cut" | "restore") {
-    const cut = kind === "cut";
-    Alert.alert(
-      cut ? t("track.confirmCutTitle") : t("track.confirmRestoreTitle"),
-      cut ? t("track.confirmCutMsg") : t("track.confirmRestoreMsg"),
-      [
-        { text: t("common.cancel"), style: "cancel" },
-        {
-          text: cut ? t("track.cutEngine") : t("track.restore"),
-          style: cut ? "destructive" : "default",
-          onPress: () => runCommand(kind),
-        },
-      ],
-    );
-  }
 
   if (loading && !device) return <Loading label={t("track.loadingDevice")} />;
 
@@ -126,20 +95,6 @@ export default function TrackTab({ imei, orgId }: { imei: string; orgId: string 
         <Metric label={t("track.fix")} value={loc ? (loc.valid ? t("track.fixValid") : t("track.fixInvalid")) : "—"} />
       </Section>
 
-      <Section title={t("track.engineControl")}>
-        <View style={styles.lockRow}>
-          <Text style={styles.lockLabel}>{t("track.currentState")}</Text>
-          <Text style={[styles.lockValue, { color: device?.engineLocked ? colors.danger : colors.ok }]}>
-            {device?.engineLocked ? `🔒 ${t("track.locked")}` : t("track.unlocked")}
-          </Text>
-        </View>
-        <View style={styles.actions}>
-          <ActionBtn label={t("track.cutEngine")} tone="danger" disabled={busy} onPress={() => confirm("cut")} />
-          <ActionBtn label={t("track.restoreEngine")} tone="ok" disabled={busy} onPress={() => confirm("restore")} />
-        </View>
-      </Section>
-      <Text style={styles.note}>{t("track.gt06Note")}</Text>
-
       {(device?.subscriptionStatus || device?.subscriptionExpiresAt) && (
         <Section title={t("sub.title")}>
           <Metric label={t("sub.status")} value={device?.subscriptionStatus ?? "—"} />
@@ -150,28 +105,6 @@ export default function TrackTab({ imei, orgId }: { imei: string; orgId: string 
   );
 }
 
-function ActionBtn({
-  label,
-  tone,
-  disabled,
-  onPress,
-}: {
-  label: string;
-  tone: "danger" | "ok";
-  disabled?: boolean;
-  onPress: () => void;
-}) {
-  const color = tone === "danger" ? colors.danger : colors.ok;
-  return (
-    <Pressable
-      onPress={onPress}
-      disabled={disabled}
-      style={({ pressed }) => [styles.action, { borderColor: color }, disabled && { opacity: 0.5 }, pressed && { opacity: 0.7 }]}
-    >
-      <Text style={[styles.actionText, { color }]}>{label}</Text>
-    </Pressable>
-  );
-}
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.bg },

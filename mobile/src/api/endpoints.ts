@@ -53,16 +53,6 @@ export async function deviceLastLocation(imei: string): Promise<LocationView | n
 }
 
 // ----- Engine lock commands (GT06 DYD / HFYD, CLAUDE.md §7.5) -----
-export async function cutFuel(imei: string, devicePassword?: string): Promise<CommandResponse> {
-  const r = await api.post<CommandResponse>(`/devices/${imei}/commands/cut-fuel`, { devicePassword });
-  return r.data;
-}
-
-export async function restoreFuel(imei: string, devicePassword?: string): Promise<CommandResponse> {
-  const r = await api.post<CommandResponse>(`/devices/${imei}/commands/restore-fuel`, { devicePassword });
-  return r.data;
-}
-
 /** Query device address/location (GT06 DWXX command). */
 export async function queryAddress(imei: string, devicePassword?: string): Promise<CommandResponse> {
   const r = await api.post<CommandResponse>(`/devices/${imei}/commands/query-address`, { devicePassword });

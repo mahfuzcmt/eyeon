@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Alert, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useDeviceLive } from "@/hooks/useDeviceLive";
-import { cutFuel, restoreFuel, queryAddress, rebootDevice } from "@/api/endpoints";
+import { queryAddress, rebootDevice } from "@/api/endpoints";
 import { extractError } from "@/api/client";
 import { Loading, Metric, Section } from "@/ui";
 import { fmtAgo, fmtVoltage, motionColor, motionOf, subscriptionDaysLeft, subscriptionExpired } from "@/format";
@@ -21,18 +21,13 @@ export default function ControlsTab({ imei, orgId }: { imei: string; orgId: stri
     setRefreshing(false);
   }
 
-  async function runCommand(kind: "cut" | "restore" | "query" | "reboot") {
+  // No engine cut/restore: EyeOn trackers are worn by people, not wired into a vehicle.
+  async function runCommand(kind: "query" | "reboot") {
     setBusy(kind);
     setLastReply(null);
     try {
       let res;
       switch (kind) {
-        case "cut":
-          res = await cutFuel(imei);
-          break;
-        case "restore":
-          res = await restoreFuel(imei);
-          break;
         case "query":
           res = await queryAddress(imei);
           break;
@@ -53,20 +48,11 @@ export default function ControlsTab({ imei, orgId }: { imei: string; orgId: stri
     }
   }
 
-  function confirmDangerous(kind: "cut" | "reboot") {
-    const isCut = kind === "cut";
-    Alert.alert(
-      isCut ? t("ctrl.confirmCutTitle") : t("ctrl.confirmRebootTitle"),
-      isCut ? t("ctrl.confirmCutMsg") : t("ctrl.confirmRebootMsg"),
-      [
-        { text: t("common.cancel"), style: "cancel" },
-        {
-          text: isCut ? t("ctrl.cutEngine") : t("ctrl.reboot"),
-          style: "destructive",
-          onPress: () => runCommand(kind),
-        },
-      ],
-    );
+  function confirmReboot() {
+    Alert.alert(t("ctrl.confirmRebootTitle"), t("ctrl.confirmRebootMsg"), [
+      { text: t("common.cancel"), style: "cancel" },
+      { text: t("ctrl.reboot"), style: "destructive", onPress: () => runCommand("reboot") },
+    ]);
   }
 
   if (loading && !device) return <Loading label={t("ctrl.loadingDevice")} />;
@@ -105,37 +91,6 @@ export default function ControlsTab({ imei, orgId }: { imei: string; orgId: stri
         <Metric label={t("track.voltage")} value={fmtVoltage(loc?.voltageMv ?? device?.lastVoltageMv)} width="50%" />
       </Section>
 
-      {/* Engine Control */}
-      <Section title={t("ctrl.engineControl")}>
-        <View style={styles.lockRow}>
-          <Text style={styles.lockLabel}>{t("ctrl.engineState")}</Text>
-          <View style={styles.lockBadge}>
-            <Text style={[styles.lockValue, { color: device?.engineLocked ? colors.danger : colors.ok }]}>
-              {device?.engineLocked ? `🔒 ${t("track.locked")}` : `✓ ${t("track.unlocked")}`}
-            </Text>
-          </View>
-        </View>
-        <View style={styles.actions}>
-          <CommandBtn
-            label={t("ctrl.cutEngine")}
-            tone="danger"
-            icon="⛔"
-            disabled={busy !== null}
-            loading={busy === "cut"}
-            onPress={() => confirmDangerous("cut")}
-          />
-          <CommandBtn
-            label={t("ctrl.restoreEngine")}
-            tone="ok"
-            icon="✓"
-            disabled={busy !== null}
-            loading={busy === "restore"}
-            onPress={() => runCommand("restore")}
-          />
-        </View>
-        <Text style={styles.note}>{t("ctrl.engineNote")}</Text>
-      </Section>
-
       {/* Device Commands */}
       <Section title={t("ctrl.commands")}>
         <View style={styles.cmdGrid}>
@@ -154,7 +109,7 @@ export default function ControlsTab({ imei, orgId }: { imei: string; orgId: stri
             icon="🔄"
             disabled={busy !== null}
             loading={busy === "reboot"}
-            onPress={() => confirmDangerous("reboot")}
+            onPress={confirmReboot}
             fullWidth
           />
         </View>
