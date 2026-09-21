@@ -8,6 +8,8 @@ ARG NEXT_PUBLIC_API_BASE=/api/proxy
 ARG NEXT_PUBLIC_WS_BASE
 ARG NEXT_PUBLIC_MAPBOX_TOKEN
 ARG NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
+# Optional heap cap for small/shared build hosts, e.g. --max-old-space-size=1024
+ARG BUILD_NODE_OPTIONS=""
 
 ENV NEXT_PUBLIC_API_BASE=$NEXT_PUBLIC_API_BASE \
     NEXT_PUBLIC_WS_BASE=$NEXT_PUBLIC_WS_BASE \
@@ -19,7 +21,7 @@ COPY package.json package-lock.json ./
 RUN npm ci --no-audit --no-fund
 
 COPY . .
-RUN npm run build
+RUN NODE_OPTIONS="$BUILD_NODE_OPTIONS" npm run build
 
 # --- Runtime stage --------------------------------------------------------
 FROM node:22-alpine AS runtime

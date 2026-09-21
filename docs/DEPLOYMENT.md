@@ -152,6 +152,76 @@ PubkeyAuthentication yes
 systemctl restart sshd
 ```
 
+## Shared server (current production, since 2026-09-21)
+
+EyeOn runs on `ns.tracker.com` (`103.187.22.131`), a **shared** VPS that also hosts PingPath/MotoLink
+production and several unrelated apps. **Do not run `scripts/deploy_vps.sh` there**: it resets `ufw`
+(dropping WireGuard and PingPath's tracker port), expects free host ports `8081`/`3001` (both taken)
+and assumes it owns ports 80/443 (owned by the `kosaibari-nginx` container).
+
+| What | Where |
+|---|---|
+| Code + `.env` (mode 600, secrets generated on the box) | `/opt/eyeon` |
+| Compose file | `docker-compose.shared.yml` (project `eyeon`, network `eyeon_default`) |
+| Published host ports | **`5024` only** (GT06). REST/WS/dashboard are reached by container name |
+| Front door | `kosaibari-nginx`, site file `/root/kosaibari/nginx/conf.d/eyeon.conf` (source: `infra/nginx/eyeon.shared.conf`) |
+| Certificates | `kosaibari-certbot` (webroot, renews every 12 h) |
+| Memory ceilings | backend 768 MB (`-Xmx400m`), postgres 384 MB, frontend 384 MB, redis 128 MB |
+| Bootstrap admin | `grep EYEON_SEED_ADMIN /opt/eyeon/.env` — change the password after first login |
+
+### Deploying a new version
+
+The box is too small to run Maven next to its neighbours, so the jar is built on a dev machine.
+
+```bash
+# on your machine
+cd backend && ./mvnw -DskipTests package && cd ..          # -> backend/target/eyeon.jar (Java 21 bytecode)
+rsync -az --delete --exclude '.git/' --exclude 'node_modules/' --exclude '.next/' --exclude '.env*' \
+      --exclude 'mobile/' --exclude 'backend/target/' --filter 'P .env' ./ root@103.187.22.131:/opt/eyeon/
+rsync -az backend/target/eyeon.jar root@103.187.22.131:/opt/eyeon/backend/target/eyeon.jar
+
+# on the server
+cd /opt/eyeon
+docker compose -f docker-compose.shared.yml --env-file .env up -d --build eyeon-backend
+nice -n 15 ionice -c3 docker compose -f docker-compose.shared.yml --env-file .env build eyeon-frontend   # ~3 min, heap capped at 1 GB
+docker compose -f docker-compose.shared.yml --env-file .env up -d eyeon-frontend
+python3 scripts/smoke_trusted_places.py      # end-to-end check against the live stack; removes its own data
+```
+
+Never use `down -v` (it deletes the database volume `eyeon_postgres_data`).
+
+### HTTPS
+
+Needs a DNS `A` record for the hostname pointing at the server. Then, on the server:
+
+```bash
+bash /opt/eyeon/scripts/shared_vps_enable_tls.sh
+```
+
+It refuses to run without DNS, checks that other sites' upstream names still resolve correctly inside
+the shared nginx, does a Let's Encrypt dry run before the real request, runs `nginx -t` before any reload
+and restores the previous site file if the test fails.
+
+### Rules for the shared nginx (learned the hard way)
+
+1. **EyeOn's compose services must be named `eyeon-*`.** Compose registers the service name as a DNS
+   alias, and Docker answers a name from the first attached network *alphabetically* that knows it.
+   `kosailagbe.conf` proxies to the generic names `frontend:3000` / `backend:8082`; when nginx joined
+   `eyeon_default` while EyeOn's services were still called `frontend`/`backend`, `eyeon_…` sorted before
+   `kosaibari_…` and kosailagbe.com served 502 for about 25 seconds (2026-09-21). PingPath has the same
+   generic aliases but `pingpath_…` sorts after `kosaibari_…`, so it never showed.
+2. **Check resolution before reloading.** nginx only re-resolves upstream names on reload/restart, so
+   after `docker network connect`, run `docker exec kosaibari-nginx getent hosts frontend backend` and
+   compare with kosaibari's IPs *before* `nginx -s reload`. A wrong answer can then be undone with
+   `docker network disconnect` at zero cost.
+3. **Upstreams in `eyeon.conf` are variables + `resolver 127.0.0.11`**, never static names. With a
+   static `proxy_pass http://eyeon-backend:8081` nginx refuses to *start* when EyeOn is down, taking
+   every site on that nginx with it.
+4. `docker network connect` does not survive `kosaibari-nginx` being **recreated** (neither does
+   PingPath's attachment — it is not declared in kosaibari's compose file either). After a recreate:
+   `docker network connect eyeon_default kosaibari-nginx` and the same for `pingpath_default`.
+   Until then EyeOn answers 502 (rule 3), while motolinkgps.com's static upstreams stop nginx from starting.
+
 ## Operations
 
 ### Updating to a new version

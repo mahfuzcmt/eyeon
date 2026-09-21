@@ -16,6 +16,8 @@
 
 No inherited `motolink`/`pingpath` identifiers remain in the tree. (Correction 2026-09-21: `frontend/public/eyeon-logo.png` and `.jpg` were still the MOTOLINK wordmark and were shown in the marketing header/footer; both were deleted and replaced by the inline `components/brand/EyeOnLogo.tsx`.) The one deliberate exception is `wordpress-theme/brands-data.json`, which lists an unrelated third-party electronics brand also called "Motolink".
 
+**Production (since 2026-09-21):** `https://eyeon.motolinkgps.com` on the shared VPS `ns.tracker.com` (`103.187.22.131`), which also runs PingPath/MotoLink production and other apps. Use `docker-compose.shared.yml`, never `scripts/deploy_vps.sh`, on that box - see `docs/DEPLOYMENT.md` "Shared server", including the rule that compose services must be named `eyeon-*` (a generic `frontend`/`backend` service name took kosailagbe.com down for ~25 s). Trackers connect to `103.187.22.131:5024`.
+
 **Domain placeholders:** `eyeongps.com`, `app.eyeongps.com`, `api.eyeongps.com`, `mobile.eyeongps.app`, `admin@eyeon.local`, SMS sender id `EYEON`. Replace these with the real EyeOn domain/sender before any deploy.
 
 **Primary audience (changed 2026-09-21): family safety.** EyeOn is sold mainly as a tracker for **children and elderly relatives** - a small device in a bag, on a lanyard or on the wrist, and a phone app for the carer (poster tagline: `চোখে চোখে রাখুন, ও যেখানেই থাকুক।`). Headline features: live location, safe-zone (trusted place) alerts, geofence, SOS button, route history, long battery, fully Bengali app. The app user is the carer, never the wearer. The roadmap for this audience is [`docs/FAMILY_SAFETY_PLAN.md`](docs/FAMILY_SAFETY_PLAN.md); it audits each poster feature against the code and takes precedence over §16 Phases 7-14 for prioritisation. The vehicle/fleet capability below is inherited, still works, and remains a secondary market - but no fleet vocabulary (vehicle, driver, fuel, ignition) should appear on a screen a family user can reach.
@@ -1158,6 +1160,8 @@ GET  /billing/invoices                    → Invoice[]
 ```
 
 ### 8.10 Standard Response Format
+
+`IllegalArgumentException` → 400 `VALIDATION`, unreadable body → 400 `MALFORMED_REQUEST`, wrong HTTP method → 405 (added 2026-09-21; before that all three surfaced as a 500 "An unexpected error occurred"). The prod JSON log line carries the root-cause stack trace in an `ex` field (`ProdLogPatternTest`).
 
 **Success:**
 ```json
@@ -2819,6 +2823,8 @@ export async function getFleetHealthSummary(): Promise<{
 ---
 
 ## 18. Common Pitfalls — Read Before Coding
+
+0. **Packets that arrive before the login lookup finishes are dropped (open issue, found 2026-09-21).** `Gt06Handler.handleLogin` ACKs at once and resolves the device on the ingest executor; until that sets `REGISTERED_KEY`, `handleLocation` / `handleAlarm` ACK the packet and then discard it at DEBUG level. On localhost the first location after every login is lost (the simulator shows it every time); over a cellular round trip the lookup usually wins, but a slow database makes it lose. For a wearable that wakes up specifically to send SOS this can drop the SOS. Fix: queue per-channel packets until the login future completes. Not yet done.
 
 1. **CRC-ITU is not standard CRC-16.** Use the polynomial 0x1021, init 0xFFFF, no reflection, XOR-out 0xFFFF. Verify against the doc examples in section 6.6.
 

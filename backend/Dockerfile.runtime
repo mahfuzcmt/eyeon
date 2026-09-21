@@ -1,0 +1,14 @@
+# EyeOn backend — runtime-only image for hosts too small to run Maven.
+# Build the jar first on a dev machine:  ./mvnw -DskipTests package   (-> target/eyeon.jar)
+# Used by docker-compose.shared.yml. The full build lives in ./Dockerfile.
+
+FROM eclipse-temurin:21-jre-jammy
+WORKDIR /app
+
+RUN groupadd --system eyeon && useradd --system --gid eyeon eyeon
+COPY target/eyeon.jar app.jar
+USER eyeon
+
+EXPOSE 8081 5024
+ENV JAVA_OPTS="-XX:+UseSerialGC -Xmx400m"
+ENTRYPOINT ["sh", "-c", "java $JAVA_OPTS -jar /app/app.jar"]

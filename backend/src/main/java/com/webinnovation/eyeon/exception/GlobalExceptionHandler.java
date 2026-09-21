@@ -4,6 +4,8 @@ import io.jsonwebtoken.JwtException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -58,6 +60,29 @@ public class GlobalExceptionHandler {
                         (a, b) -> a));
         return ResponseEntity.badRequest()
                 .body(new ErrorEnvelope(new ErrorBody("VALIDATION_FAILED", "Request validation failed", fields)));
+    }
+
+    /**
+     * Services and controllers signal bad input with IllegalArgumentException ("Trusted place
+     * radius must be 80..5000 meters", "name required"). Without this they fell through to the
+     * generic handler and the user saw "An unexpected error occurred" with a 500.
+     */
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<ErrorEnvelope> handleBadInput(IllegalArgumentException e) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(new ErrorEnvelope(new ErrorBody("VALIDATION", e.getMessage(), null)));
+    }
+
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ResponseEntity<ErrorEnvelope> handleUnreadable(HttpMessageNotReadableException e) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(new ErrorEnvelope(new ErrorBody("MALFORMED_REQUEST", "Request body could not be read", null)));
+    }
+
+    @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
+    public ResponseEntity<ErrorEnvelope> handleMethod(HttpRequestMethodNotSupportedException e) {
+        return ResponseEntity.status(HttpStatus.METHOD_NOT_ALLOWED)
+                .body(new ErrorEnvelope(new ErrorBody("METHOD_NOT_ALLOWED", e.getMessage(), null)));
     }
 
     @ExceptionHandler(JwtException.class)

@@ -1,0 +1,117 @@
+# EyeOn on a SHARED VPS (other apps already own 80/443, 8081, 3001 ...).
+# See docs/DEPLOYMENT.md "Shared server". Differences from docker-compose.prod.yml:
+#   - Only the GT06 port (5024) is published. REST, WebSocket and the dashboard are
+#     reached by container name from the host's front-door nginx container, which
+#     must be attached to the `eyeon_default` network.
+#   - The backend image is built from a jar compiled elsewhere (backend/Dockerfile.runtime).
+#   - Every service has a memory ceiling so EyeOn cannot starve its neighbours.
+#   - Services are named eyeon-*, NOT backend/frontend/postgres/redis. Compose registers the
+#     service name as a DNS alias on the project network, and Docker's DNS answers a name from
+#     the first attached network (alphabetical) that knows it. A front-door nginx that proxies
+#     another site to a generic `frontend:3000` was hijacked by EyeOn's `frontend` the moment it
+#     joined `eyeon_default` (2026-09-21: kosailagbe.com served 502 for ~25 s). Never
+#     reintroduce generic service names in this file.
+#
+# Run: docker compose -f docker-compose.shared.yml --env-file .env up -d --build
+
+name: eyeon
+
+services:
+  eyeon-postgres:
+    image: postgis/postgis:16-3.4
+    container_name: eyeon-postgres
+    restart: unless-stopped
+    mem_limit: 384m
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  eyeon-redis:
+    image: redis:7-alpine
+    container_name: eyeon-redis
+    restart: unless-stopped
+    mem_limit: 128m
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  eyeon-backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.runtime
+    image: eyeon-backend
+    container_name: eyeon-backend
+    restart: unless-stopped
+    mem_limit: 768m
+    depends_on:
+      eyeon-postgres:
+        condition: service_healthy
+      eyeon-redis:
+        condition: service_healthy
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      SPRING_DATASOURCE_URL: jdbc:postgresql://eyeon-postgres:5432/${POSTGRES_DB}
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
+      SPRING_REDIS_HOST: eyeon-redis
+      SPRING_REDIS_PORT: 6379
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_ACCESS_TTL_MINUTES: ${JWT_ACCESS_TTL_MINUTES:-60}
+      JWT_REFRESH_TTL_DAYS: ${JWT_REFRESH_TTL_DAYS:-30}
+      NETTY_TCP_PORT: ${NETTY_TCP_PORT:-5024}
+      EYEON_CORS_ALLOWED_ORIGINS: ${EYEON_CORS_ALLOWED_ORIGINS}
+      EYEON_SHARE_BASE_URL: ${EYEON_SHARE_BASE_URL}
+      SSL_SMS_API_TOKEN: ${SSL_SMS_API_TOKEN:-}
+      SSL_SMS_SENDER_ID: ${SSL_SMS_SENDER_ID:-EYEON}
+      EYEON_UNWIREDLABS_API_KEY: ${EYEON_UNWIREDLABS_API_KEY:-}
+      EYEON_OPENCELLID_API_KEY: ${EYEON_OPENCELLID_API_KEY:-}
+      EYEON_SEED_ENABLED: ${EYEON_SEED_ENABLED:-true}
+      EYEON_SEED_ADMIN_EMAIL: ${EYEON_SEED_ADMIN_EMAIL}
+      EYEON_SEED_ADMIN_PASSWORD: ${EYEON_SEED_ADMIN_PASSWORD}
+    ports:
+      - "5024:5024"           # Netty GT06 TCP ingest — the only published port
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8081/api/v1/actuator/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 90s
+
+  eyeon-frontend:
+    build:
+      context: ./frontend
+      args:
+        NEXT_PUBLIC_API_BASE: ${NEXT_PUBLIC_API_BASE:-/api/proxy}
+        NEXT_PUBLIC_WS_BASE: ${NEXT_PUBLIC_WS_BASE}
+        NEXT_PUBLIC_MAPBOX_TOKEN: ${NEXT_PUBLIC_MAPBOX_TOKEN:-}
+        NEXT_PUBLIC_GOOGLE_MAPS_API_KEY: ${NEXT_PUBLIC_GOOGLE_MAPS_API_KEY:-}
+        # Cap the Next.js compiler's heap so the build cannot push neighbours into OOM.
+        BUILD_NODE_OPTIONS: --max-old-space-size=1024
+    image: eyeon-frontend
+    container_name: eyeon-frontend
+    restart: unless-stopped
+    mem_limit: 384m
+    depends_on:
+      eyeon-backend:
+        condition: service_healthy
+    environment:
+      BACKEND_BASE: http://eyeon-backend:8081
+      SESSION_COOKIE_NAME: ${SESSION_COOKIE_NAME:-eyeon_session}
+      SESSION_COOKIE_MAX_AGE: ${SESSION_COOKIE_MAX_AGE:-86400}
+      COOKIE_SECURE: "true"
+
+volumes:
+  postgres_data:
+  redis_data:

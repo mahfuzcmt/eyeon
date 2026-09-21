@@ -14,7 +14,7 @@
     <springProfile name="prod">
         <appender name="JSON_CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
             <encoder>
-                <pattern>{"ts":"%d{yyyy-MM-dd'T'HH:mm:ss.SSSXXX}","level":"%level","logger":"%logger","thread":"%thread","app":"${appName}","profile":"${profile}","msg":"%message"}%n</pattern>
+                <pattern>{"ts":"%d{yyyy-MM-dd'T'HH:mm:ss.SSSXXX}","level":"%level","logger":"%logger","thread":"%thread","app":"${appName}","profile":"${profile}","msg":"%replace(%message){'["\\\\\r\n\t]+',' '}","ex":"%replace(%rEx{12}){'["\\\\\r\n\t]+',' '}"}%n%nopex</pattern>
             </encoder>
         </appender>
         <root level="INFO">
