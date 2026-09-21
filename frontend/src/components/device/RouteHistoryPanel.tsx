@@ -223,11 +223,11 @@ export function RouteHistoryPanel({ device, onClose }: Props) {
           <div className="truncate font-semibold text-base text-ink-900">
             {t("fleet.routeHistory")} - {device.name || device.imei}
           </div>
-          <div className="font-mono text-[13px] text-ink-400">{device.imei}</div>
+          <div className="font-mono text-[14px] text-ink-400">{device.imei}</div>
         </div>
         <button
           type="button"
-          className="shrink-0 px-4 py-2 text-[14px] font-semibold rounded border border-surface-300 bg-white hover:bg-surface-100 text-ink-700 transition-colors"
+          className="shrink-0 px-4 py-2 text-[15px] font-semibold rounded border border-surface-300 bg-white hover:bg-surface-100 text-ink-700 transition-colors"
           onClick={onClose}
         >
           {t("common.close")}
@@ -236,13 +236,13 @@ export function RouteHistoryPanel({ device, onClose }: Props) {
 
       {/* Period selector */}
       <div className="flex flex-wrap items-center gap-2 border-b border-surface-300 px-4 py-2">
-        <span className="text-[14px] text-ink-400">{t("fleet.period")}:</span>
+        <span className="text-[15px] text-ink-400">{t("fleet.period")}:</span>
         {(["1h", "6h", "24h", "7d"] as Period[]).map((p) => (
           <button
             key={p}
             type="button"
             onClick={() => setPeriod(p)}
-            className={`px-3 py-1 text-[14px] rounded ${
+            className={`px-3 py-1 text-[15px] rounded ${
               period === p
                 ? "bg-brand-500 text-white"
                 : "bg-white text-ink-800 hover:bg-surface-200"
@@ -251,7 +251,7 @@ export function RouteHistoryPanel({ device, onClose }: Props) {
             {p === "1h" ? "1 Hour" : p === "6h" ? "6 Hours" : p === "24h" ? "24 Hours" : "7 Days"}
           </button>
         ))}
-        {loading && <span className="text-[13px] text-ink-400 ml-2">Loading...</span>}
+        {loading && <span className="text-[14px] text-ink-400 ml-2">Loading...</span>}
       </div>
 
       {/* Map */}
@@ -259,7 +259,7 @@ export function RouteHistoryPanel({ device, onClose }: Props) {
         <div ref={containerRef} className="absolute inset-0" />
 
         {error && (
-          <div className="absolute left-3 top-3 rounded bg-alarm-red/20 px-3 py-1 text-[13px] text-alarm-red">
+          <div className="absolute left-3 top-3 rounded bg-alarm-red/20 px-3 py-1 text-[14px] text-alarm-red">
             {error}
           </div>
         )}
@@ -272,7 +272,7 @@ export function RouteHistoryPanel({ device, onClose }: Props) {
 
         {/* Stats panel */}
         {stats && (
-          <div className="absolute left-3 top-3 rounded-lg bg-white/95 backdrop-blur p-3 text-[14px]">
+          <div className="absolute left-3 top-3 rounded-lg bg-white/95 backdrop-blur p-3 text-[15px]">
             <div className="grid grid-cols-2 gap-x-6 gap-y-1">
               <div className="text-ink-400">Points:</div>
               <div className="text-ink-900 font-mono">{stats.totalPoints}</div>
@@ -286,15 +286,15 @@ export function RouteHistoryPanel({ device, onClose }: Props) {
 
         {/* Selected point info */}
         {selectedPoint && (
-          <div className="absolute left-3 right-3 top-auto bottom-16 rounded-lg bg-white/95 backdrop-blur p-3 text-[14px] sm:bottom-auto sm:left-auto sm:right-3 sm:top-3 sm:min-w-[200px]">
+          <div className="absolute left-3 right-3 top-auto bottom-16 rounded-lg bg-white/95 backdrop-blur p-3 text-[15px] sm:bottom-auto sm:left-auto sm:right-3 sm:top-3 sm:min-w-[200px]">
             <div className="font-semibold mb-2">{t("fleet.pointDetails")}</div>
-            <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-[13px]">
+            <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-[14px]">
               <div className="text-ink-400">Time:</div>
               <div className="text-ink-900 font-mono">{formatDateTime(selectedPoint.ts, locale)}</div>
               <div className="text-ink-400">Speed:</div>
               <div className="text-ink-900 font-mono">{selectedPoint.speed} km/h</div>
               <div className="text-ink-400">Position:</div>
-              <div className="text-ink-900 font-mono text-[11px]">
+              <div className="text-ink-900 font-mono text-[12px]">
                 {selectedPoint.latitude.toFixed(5)}, {selectedPoint.longitude.toFixed(5)}
               </div>
               {selectedPoint.voltageMv && (
@@ -312,7 +312,7 @@ export function RouteHistoryPanel({ device, onClose }: Props) {
         )}
 
         {/* Legend */}
-        <div className={`absolute left-3 rounded-lg bg-white/95 backdrop-blur p-2 text-[13px] ${selectedPoint ? "bottom-3 sm:bottom-16" : "bottom-16"}`}>
+        <div className={`absolute left-3 rounded-lg bg-white/95 backdrop-blur p-2 text-[14px] ${selectedPoint ? "bottom-3 sm:bottom-16" : "bottom-16"}`}>
           <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
             <div className="flex items-center gap-1">
               <div className="w-3 h-3 rounded-full bg-[#16A34A]"></div>
@@ -334,7 +334,7 @@ export function RouteHistoryPanel({ device, onClose }: Props) {
       <div className="flex items-center gap-3 border-t border-surface-300 px-4 py-3">
         <button
           type="button"
-          className="btn-primary px-3 py-1 text-[14px]"
+          className="btn-primary px-3 py-1 text-[15px]"
           onClick={() => {
             if (progress >= 1) setProgress(0);
             setPlaying((p) => !p);
@@ -345,7 +345,7 @@ export function RouteHistoryPanel({ device, onClose }: Props) {
         </button>
         <button
           type="button"
-          className="btn-ghost px-2 py-1 text-[14px]"
+          className="btn-ghost px-2 py-1 text-[15px]"
           onClick={() => setProgress(0)}
           disabled={history.length === 0}
         >
@@ -363,7 +363,7 @@ export function RouteHistoryPanel({ device, onClose }: Props) {
           className="flex-1 accent-brand-500"
           disabled={history.length === 0}
         />
-        <span className="w-14 text-right font-mono text-[13px] text-ink-800">
+        <span className="w-14 text-right font-mono text-[14px] text-ink-800">
           {Math.round(progress * 100)}%
         </span>
       </div>

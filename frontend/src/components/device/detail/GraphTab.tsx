@@ -40,7 +40,7 @@ export default function GraphTab({ imei }: { imei: string }) {
     <div className="h-full overflow-y-auto bg-surface-50 p-3">
       <div className="mx-auto flex max-w-3xl flex-col gap-4">
         <div className="panel flex items-center gap-3 p-3">
-          <label className="text-[13px] text-ink-500">{t("reports.date")}</label>
+          <label className="text-[14px] text-ink-500">{t("reports.date")}</label>
           <input
             type="date"
             className="input"
@@ -48,7 +48,7 @@ export default function GraphTab({ imei }: { imei: string }) {
             max={dhakaTodayIso()}
             onChange={(e) => setDay(e.target.value)}
           />
-          {loading && <span className="text-[11px] text-ink-400">{t("common.loading")}</span>}
+          {loading && <span className="text-[12px] text-ink-400">{t("common.loading")}</span>}
         </div>
 
         <div className="panel p-3">

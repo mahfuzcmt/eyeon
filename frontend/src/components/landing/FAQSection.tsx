@@ -45,7 +45,7 @@ function FAQItem({ question, answer, isOpen, onClick }: { question: string; answ
         onClick={onClick}
         className="flex w-full items-center justify-between gap-4 p-5 text-left"
       >
-        <span className={`text-[15px] font-semibold ${isOpen ? "text-brand-700" : "text-gray-900"}`}>
+        <span className={`text-[16px] font-semibold ${isOpen ? "text-brand-700" : "text-gray-900"}`}>
           {question}
         </span>
         <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full transition-all ${
@@ -66,7 +66,7 @@ function FAQItem({ question, answer, isOpen, onClick }: { question: string; answ
             transition={{ duration: 0.3 }}
           >
             <div className="border-t border-brand-100 px-5 pb-5 pt-4">
-              <p className="text-[14px] leading-relaxed text-gray-600">{answer}</p>
+              <p className="text-[15px] leading-relaxed text-gray-600">{answer}</p>
             </div>
           </motion.div>
         )}

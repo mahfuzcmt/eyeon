@@ -52,7 +52,7 @@ function Logo({ dark = false }: { dark?: boolean }) {
         <div className={`font-display text-xl font-extrabold leading-tight tracking-tight ${dark ? "text-white" : "text-[#0A2540]"}`}>
           EyeOn
         </div>
-        <div className="text-[10px] font-semibold uppercase tracking-widest text-brand-400">GPS Tracking</div>
+        <div className="text-[12px] font-semibold uppercase tracking-widest text-brand-400">GPS Tracking</div>
       </div>
     </div>
   );
@@ -63,7 +63,7 @@ function SectionHeading({ eyebrow, title, subtitle }: { eyebrow: string; title: 
     <div className="mx-auto mb-12 max-w-2xl text-center">
       <div className="mb-2 text-xs font-bold uppercase tracking-[0.2em] text-brand-500">{eyebrow}</div>
       <h2 className="text-3xl font-bold tracking-tight text-ink-950 sm:text-4xl">{title}</h2>
-      {subtitle && <p className="mt-4 text-[15px] leading-relaxed text-ink-600">{subtitle}</p>}
+      {subtitle && <p className="mt-4 text-[16px] leading-relaxed text-ink-600">{subtitle}</p>}
     </div>
   );
 }
@@ -101,7 +101,7 @@ const ICONS = {
 
 function TopBar() {
   return (
-    <div className="bg-brand-900 text-[12px] text-brand-100">
+    <div className="bg-brand-900 text-[13px] text-brand-100">
       <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-2 sm:px-6">
         <div className="flex items-center gap-5">
           <a href={`tel:${CONTACT.hotline.replace(/[^+\d]/g, "")}`} className="flex items-center gap-1.5 hover:text-white">
@@ -133,7 +133,7 @@ function Nav() {
 
         <nav className="hidden items-center gap-7 lg:flex" aria-label="Main">
           {NAV_LINKS.map((l) => (
-            <a key={l.href} href={l.href} className="text-[13px] font-semibold text-ink-700 transition hover:text-brand-500">
+            <a key={l.href} href={l.href} className="text-[14px] font-semibold text-ink-700 transition hover:text-brand-500">
               {l.label}
             </a>
           ))}
@@ -142,13 +142,13 @@ function Nav() {
         <div className="hidden items-center gap-3 lg:flex">
           <Link
             href="/login"
-            className="inline-flex h-10 items-center rounded-md border border-surface-300 px-5 text-[13px] font-semibold text-ink-900 transition hover:border-brand-500 hover:text-brand-500"
+            className="inline-flex h-10 items-center rounded-md border border-surface-300 px-5 text-[14px] font-semibold text-ink-900 transition hover:border-brand-500 hover:text-brand-500"
           >
             Sign In
           </Link>
           <a
             href="#contact"
-            className="inline-flex h-10 items-center rounded-md bg-brand-500 px-5 text-[13px] font-semibold text-white transition hover:bg-brand-600"
+            className="inline-flex h-10 items-center rounded-md bg-brand-500 px-5 text-[14px] font-semibold text-white transition hover:bg-brand-600"
           >
             Contact Sales
           </a>
@@ -177,7 +177,7 @@ function Nav() {
                 key={l.href}
                 href={l.href}
                 onClick={() => setOpen(false)}
-                className="rounded-md px-3 py-2.5 text-[14px] font-semibold text-ink-800 hover:bg-surface-100"
+                className="rounded-md px-3 py-2.5 text-[15px] font-semibold text-ink-800 hover:bg-surface-100"
               >
                 {l.label}
               </a>
@@ -185,14 +185,14 @@ function Nav() {
             <div className="mt-3 flex gap-3">
               <Link
                 href="/login"
-                className="inline-flex h-10 flex-1 items-center justify-center rounded-md border border-surface-300 text-[13px] font-semibold text-ink-900"
+                className="inline-flex h-10 flex-1 items-center justify-center rounded-md border border-surface-300 text-[14px] font-semibold text-ink-900"
               >
                 Sign In
               </Link>
               <a
                 href="#contact"
                 onClick={() => setOpen(false)}
-                className="inline-flex h-10 flex-1 items-center justify-center rounded-md bg-brand-500 text-[13px] font-semibold text-white"
+                className="inline-flex h-10 flex-1 items-center justify-center rounded-md bg-brand-500 text-[14px] font-semibold text-white"
               >
                 Contact Sales
               </a>
@@ -229,7 +229,7 @@ function Hero() {
             <span className="block text-[#9CD2FF]">Every second.</span>
           </h1>
 
-          <p className="mt-6 max-w-xl text-[16px] leading-relaxed text-brand-100">
+          <p className="mt-6 max-w-xl text-[17px] leading-relaxed text-brand-100">
             EyeOn GPS is a complete vehicle tracking platform for bikes, cars, and fleets —
             real-time location, route replay, geofence alerts, remote engine lock, and reports,
             with a Bengali-first dashboard and mobile app.
@@ -238,13 +238,13 @@ function Hero() {
           <div className="mt-10 flex flex-wrap items-center gap-4">
             <a
               href="#contact"
-              className="inline-flex h-12 items-center rounded-md bg-brand-500 px-8 text-[15px] font-semibold text-white shadow-lg shadow-brand-500/30 transition hover:bg-brand-600"
+              className="inline-flex h-12 items-center rounded-md bg-brand-500 px-8 text-[16px] font-semibold text-white shadow-lg shadow-brand-500/30 transition hover:bg-brand-600"
             >
               Get Started
             </a>
             <Link
               href="/login"
-              className="inline-flex h-12 items-center rounded-md border border-white/25 px-8 text-[15px] font-semibold text-white transition hover:border-white/60 hover:bg-white/5"
+              className="inline-flex h-12 items-center rounded-md border border-white/25 px-8 text-[16px] font-semibold text-white transition hover:border-white/60 hover:bg-white/5"
             >
               Sign In to Dashboard
             </Link>
@@ -330,8 +330,8 @@ function Features() {
               <div className="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-lg bg-brand-50 text-brand-500 transition group-hover:bg-brand-500 group-hover:text-white">
                 <Icon path={f.icon} />
               </div>
-              <h3 className="text-[15px] font-bold text-ink-950">{f.title}</h3>
-              <p className="mt-2 text-[13px] leading-relaxed text-ink-600">{f.desc}</p>
+              <h3 className="text-[16px] font-bold text-ink-950">{f.title}</h3>
+              <p className="mt-2 text-[14px] leading-relaxed text-ink-600">{f.desc}</p>
             </div>
           ))}
         </div>
@@ -362,8 +362,8 @@ function Solutions() {
           {SOLUTIONS.map((s) => (
             <div key={s.title} className="rounded-lg border border-surface-300 bg-white p-6 transition hover:border-brand-400 hover:shadow-md">
               <div className="mb-3 text-3xl" aria-hidden>{s.emoji}</div>
-              <h3 className="text-[15px] font-bold text-ink-950">{s.title}</h3>
-              <p className="mt-2 text-[13px] leading-relaxed text-ink-600">{s.desc}</p>
+              <h3 className="text-[16px] font-bold text-ink-950">{s.title}</h3>
+              <p className="mt-2 text-[14px] leading-relaxed text-ink-600">{s.desc}</p>
             </div>
           ))}
         </div>
@@ -414,19 +414,19 @@ function Pricing() {
               }`}
             >
               {p.highlight && (
-                <div className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-brand-500 px-4 py-1 text-[11px] font-bold uppercase tracking-wide text-white">
+                <div className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-brand-500 px-4 py-1 text-[12px] font-bold uppercase tracking-wide text-white">
                   Most Popular
                 </div>
               )}
               <h3 className="text-lg font-bold text-ink-950">{p.name}</h3>
-              <p className="mt-1 text-[12px] text-ink-500">{p.tagline}</p>
+              <p className="mt-1 text-[13px] text-ink-500">{p.tagline}</p>
               <div className="mt-5 flex items-baseline gap-1">
                 <span className="text-4xl font-bold text-ink-950">{p.price}</span>
-                <span className="text-[13px] text-ink-500">/ vehicle / month</span>
+                <span className="text-[14px] text-ink-500">/ vehicle / month</span>
               </div>
               <ul className="mt-6 flex-1 space-y-3">
                 {p.features.map((f) => (
-                  <li key={f} className="flex items-start gap-2.5 text-[13px] text-ink-700">
+                  <li key={f} className="flex items-start gap-2.5 text-[14px] text-ink-700">
                     <Icon path="M20 6L9 17l-5-5" className="mt-0.5 h-4 w-4 shrink-0 text-brand-500" />
                     {f}
                   </li>
@@ -434,7 +434,7 @@ function Pricing() {
               </ul>
               <a
                 href="#contact"
-                className={`mt-8 inline-flex h-11 items-center justify-center rounded-md text-[14px] font-semibold transition ${
+                className={`mt-8 inline-flex h-11 items-center justify-center rounded-md text-[15px] font-semibold transition ${
                   p.highlight
                     ? "bg-brand-500 text-white hover:bg-brand-600"
                     : "border border-surface-300 text-ink-900 hover:border-brand-500 hover:text-brand-500"
@@ -462,7 +462,7 @@ function StatsBand() {
         ].map((s) => (
           <div key={s.label}>
             <div className="text-3xl font-bold text-white">{s.value}</div>
-            <div className="mt-2 text-[13px] text-brand-100/80">{s.label}</div>
+            <div className="mt-2 text-[14px] text-brand-100/80">{s.label}</div>
           </div>
         ))}
       </div>
@@ -480,7 +480,7 @@ function AppPromo() {
             <h2 className="text-3xl font-bold tracking-tight text-ink-950 sm:text-4xl">
               Your fleet, in your pocket
             </h2>
-            <p className="mt-4 text-[15px] leading-relaxed text-ink-600">
+            <p className="mt-4 text-[16px] leading-relaxed text-ink-600">
               The EyeOn app for Android and iOS gives you live tracking, trip history with a calendar
               view, vehicle statistics, geofences, and instant push notifications for SOS and power-cut
               alarms — in Bengali or English.
@@ -492,18 +492,18 @@ function AppPromo() {
                 "Push alerts for SOS, theft & power cut",
                 "One-tap engine lock & unlock",
               ].map((f) => (
-                <li key={f} className="flex items-start gap-2.5 text-[14px] text-ink-700">
+                <li key={f} className="flex items-start gap-2.5 text-[15px] text-ink-700">
                   <Icon path="M20 6L9 17l-5-5" className="mt-0.5 h-4 w-4 shrink-0 text-brand-500" />
                   {f}
                 </li>
               ))}
             </ul>
             <div className="mt-8 flex flex-wrap gap-3">
-              <a href="#contact" className="inline-flex h-11 items-center gap-2 rounded-md bg-brand-900 px-5 text-[13px] font-semibold text-white transition hover:bg-brand-700">
+              <a href="#contact" className="inline-flex h-11 items-center gap-2 rounded-md bg-brand-900 px-5 text-[14px] font-semibold text-white transition hover:bg-brand-700">
                 <Icon path="M5 3l14 9-14 9V3z" className="h-4 w-4" />
                 Get it for Android
               </a>
-              <a href="#contact" className="inline-flex h-11 items-center gap-2 rounded-md bg-brand-900 px-5 text-[13px] font-semibold text-white transition hover:bg-brand-700">
+              <a href="#contact" className="inline-flex h-11 items-center gap-2 rounded-md bg-brand-900 px-5 text-[14px] font-semibold text-white transition hover:bg-brand-700">
                 <Icon path="M12 2a4 4 0 014 4M8 22c-3 0-5-6-5-10a6 6 0 0111-3.3A6 6 0 0121 12c0 4-2 10-5 10-1.5 0-2-.8-4-.8s-2.5.8-4 .8z" className="h-4 w-4" />
                 Get it for iOS
               </a>
@@ -533,12 +533,12 @@ function AppPromo() {
                       <circle cx="14" cy="37" r="2" fill="white" />
                       <circle cx="21" cy="34" r="1.5" fill="white" />
                     </svg>
-                    <span className="text-[11px] font-extrabold text-[#0A2540]">EyeOn</span>
+                    <span className="text-[12px] font-extrabold text-[#0A2540]">EyeOn</span>
                   </div>
                 </div>
                 <div className="absolute bottom-3 left-3 right-3 rounded-lg bg-white/95 p-3 shadow-lg">
                   <div className="flex items-center justify-between">
-                    <span className="text-[10px] font-bold text-ink-950">Dhaka Metro-LA 25-1234</span>
+                    <span className="text-[12px] font-bold text-ink-950">Dhaka Metro-LA 25-1234</span>
                     <span className="rounded-full bg-status-moving/15 px-2 py-0.5 text-[9px] font-bold text-status-moving">Moving</span>
                   </div>
                   <div className="mt-1.5 text-[9px] text-ink-500">42 km/h · Ignition on · 12.4 V</div>
@@ -577,8 +577,8 @@ function WhyUs() {
             },
           ].map((c) => (
             <div key={c.title} className="rounded-lg border border-surface-300 p-6">
-              <h3 className="text-[15px] font-bold text-ink-950">{c.title}</h3>
-              <p className="mt-2 text-[13px] leading-relaxed text-ink-600">{c.desc}</p>
+              <h3 className="text-[16px] font-bold text-ink-950">{c.title}</h3>
+              <p className="mt-2 text-[14px] leading-relaxed text-ink-600">{c.desc}</p>
             </div>
           ))}
         </div>
@@ -597,7 +597,7 @@ function Contact() {
             <h2 className="text-3xl font-bold tracking-tight text-white sm:text-4xl">
               Start tracking this week
             </h2>
-            <p className="mt-4 max-w-md text-[15px] leading-relaxed text-brand-100">
+            <p className="mt-4 max-w-md text-[16px] leading-relaxed text-brand-100">
               Call us or drop an email — we&apos;ll help you pick the right tracker, install it,
               and get your vehicles on the map.
             </p>
@@ -609,13 +609,13 @@ function Contact() {
               { label: "Office", value: CONTACT.address, href: undefined },
             ].map((c) => (
               <div key={c.label} className="rounded-lg border border-white/10 bg-white/5 p-5">
-                <div className="text-[11px] font-semibold uppercase tracking-wide text-brand-100/70">{c.label}</div>
+                <div className="text-[12px] font-semibold uppercase tracking-wide text-brand-100/70">{c.label}</div>
                 {c.href ? (
-                  <a href={c.href} className="mt-1 block text-[15px] font-semibold text-white hover:text-brand-100">
+                  <a href={c.href} className="mt-1 block text-[16px] font-semibold text-white hover:text-brand-100">
                     {c.value}
                   </a>
                 ) : (
-                  <div className="mt-1 text-[15px] font-semibold text-white">{c.value}</div>
+                  <div className="mt-1 text-[16px] font-semibold text-white">{c.value}</div>
                 )}
               </div>
             ))}
@@ -633,14 +633,14 @@ function Footer() {
         <div className="grid gap-10 md:grid-cols-4">
           <div className="md:col-span-2">
             <Logo dark />
-            <p className="mt-4 max-w-sm text-[13px] leading-relaxed text-brand-100/70">
+            <p className="mt-4 max-w-sm text-[14px] leading-relaxed text-brand-100/70">
               EyeOn GPS — vehicle tracking platform by Web Innovation. Real-time tracking,
               geofencing, engine lock, and fleet reports for Bangladesh.
             </p>
           </div>
           <div>
-            <h4 className="text-[12px] font-bold uppercase tracking-wide text-brand-100">Platform</h4>
-            <ul className="mt-4 space-y-2.5 text-[13px] text-brand-100/70">
+            <h4 className="text-[13px] font-bold uppercase tracking-wide text-brand-100">Platform</h4>
+            <ul className="mt-4 space-y-2.5 text-[14px] text-brand-100/70">
               {NAV_LINKS.map((l) => (
                 <li key={l.href}>
                   <a href={l.href} className="hover:text-white">{l.label}</a>
@@ -652,8 +652,8 @@ function Footer() {
             </ul>
           </div>
           <div>
-            <h4 className="text-[12px] font-bold uppercase tracking-wide text-brand-100">Contact</h4>
-            <ul className="mt-4 space-y-2.5 text-[13px] text-brand-100/70">
+            <h4 className="text-[13px] font-bold uppercase tracking-wide text-brand-100">Contact</h4>
+            <ul className="mt-4 space-y-2.5 text-[14px] text-brand-100/70">
               <li>{CONTACT.hotline}</li>
               <li>
                 <a href={`mailto:${CONTACT.email}`} className="hover:text-white">{CONTACT.email}</a>
@@ -662,7 +662,7 @@ function Footer() {
             </ul>
           </div>
         </div>
-        <div className="mt-10 flex flex-col items-center justify-between gap-3 border-t border-white/10 pt-6 text-[12px] text-brand-100/60 sm:flex-row">
+        <div className="mt-10 flex flex-col items-center justify-between gap-3 border-t border-white/10 pt-6 text-[13px] text-brand-100/60 sm:flex-row">
           <span>© {new Date().getFullYear()} EyeOn GPS · Web Innovation. All rights reserved.</span>
           <span>Dhaka, Bangladesh 🇧🇩</span>
         </div>

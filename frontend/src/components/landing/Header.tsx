@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import Image from "next/image";
+import { EyeOnLogo } from "@/components/brand/EyeOnLogo";
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { useLanguage } from "./LanguageContext";
@@ -38,17 +38,10 @@ function LanguageToggle({ dark }: { dark: boolean }) {
   );
 }
 
-function Logo() {
+function Logo({ tone }: { tone: "light" | "dark" }) {
   return (
     <motion.div whileHover={{ scale: 1.02 }} transition={{ type: "spring", stiffness: 400 }}>
-      <Image
-        src="/eyeon-logo.png"
-        alt="EyeOn"
-        width={180}
-        height={45}
-        className="h-11 w-auto rounded-md shadow-sm"
-        priority
-      />
+      <EyeOnLogo height={44} tone={tone} />
     </motion.div>
   );
 }
@@ -94,13 +87,13 @@ export function Header({ transparent = false }: { transparent?: boolean }) {
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:h-20">
         {/* Logo */}
         <Link href="/" aria-label="EyeOn GPS home">
-          <Logo />
+          <Logo tone={showDark ? "light" : "dark"} />
         </Link>
 
         {/* Navigation */}
         <nav className="hidden items-center gap-1 lg:flex">
           {NAV_LINKS.map((l) => (
-            <Link key={l.href} href={l.href} className={`rounded-lg px-4 py-2 text-[14px] font-medium transition-colors ${showDark ? "text-gray-700 hover:text-brand-600" : "text-white/90 hover:text-white"}`}>
+            <Link key={l.href} href={l.href} className={`rounded-lg px-4 py-2 text-[15px] font-medium transition-colors ${showDark ? "text-gray-700 hover:text-brand-600" : "text-white/90 hover:text-white"}`}>
               {t(l.key)}
             </Link>
           ))}
@@ -109,10 +102,10 @@ export function Header({ transparent = false }: { transparent?: boolean }) {
         {/* CTA Buttons + Language Toggle */}
         <div className="hidden items-center gap-3 lg:flex">
           <LanguageToggle dark={showDark} />
-          <Link href="/login" className={`rounded-lg px-5 py-2.5 text-[14px] font-semibold transition-all ${showDark ? "text-gray-700 hover:text-brand-600" : "text-white hover:text-white/80"}`}>
+          <Link href="/login" className={`rounded-lg px-5 py-2.5 text-[15px] font-semibold transition-all ${showDark ? "text-gray-700 hover:text-brand-600" : "text-white hover:text-white/80"}`}>
             {t("nav.signIn")}
           </Link>
-          <Link href="/contact" className="rounded-lg bg-brand-600 px-6 py-2.5 text-[14px] font-semibold text-white shadow-lg shadow-brand-600/30 transition-all hover:bg-brand-700 hover:shadow-xl">
+          <Link href="/contact" className="rounded-lg bg-brand-600 px-6 py-2.5 text-[15px] font-semibold text-white shadow-lg shadow-brand-600/30 transition-all hover:bg-brand-700 hover:shadow-xl">
             {t("nav.getDemo")}
           </Link>
         </div>
@@ -139,13 +132,13 @@ export function Header({ transparent = false }: { transparent?: boolean }) {
         <motion.nav initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="border-t border-gray-100 bg-white px-4 py-4 shadow-lg lg:hidden">
           <div className="flex flex-col gap-1">
             {NAV_LINKS.map((l) => (
-              <Link key={l.href} href={l.href} onClick={() => setOpen(false)} className="rounded-lg px-4 py-3 text-[14px] font-medium text-gray-700 hover:bg-gray-50 hover:text-brand-600">
+              <Link key={l.href} href={l.href} onClick={() => setOpen(false)} className="rounded-lg px-4 py-3 text-[15px] font-medium text-gray-700 hover:bg-gray-50 hover:text-brand-600">
                 {t(l.key)}
               </Link>
             ))}
             <div className="mt-4 flex gap-3">
-              <Link href="/login" className="flex-1 rounded-lg border border-gray-200 py-3 text-center text-[14px] font-semibold text-gray-700 hover:bg-gray-50">{t("nav.signIn")}</Link>
-              <Link href="/contact" className="flex-1 rounded-lg bg-brand-600 py-3 text-center text-[14px] font-semibold text-white">{t("nav.getDemo")}</Link>
+              <Link href="/login" className="flex-1 rounded-lg border border-gray-200 py-3 text-center text-[15px] font-semibold text-gray-700 hover:bg-gray-50">{t("nav.signIn")}</Link>
+              <Link href="/contact" className="flex-1 rounded-lg bg-brand-600 py-3 text-center text-[15px] font-semibold text-white">{t("nav.getDemo")}</Link>
             </div>
           </div>
         </motion.nav>

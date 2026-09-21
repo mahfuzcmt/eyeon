@@ -51,7 +51,7 @@ export function Topbar({ user, onMenu }: { user: UserView; orgId: string; onMenu
             <span className="text-brand-500">Moto</span>Link
           </span>
         </Link>
-        <div className="hidden items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-1 text-[13px] text-emerald-700 sm:flex">
+        <div className="hidden items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-1 text-[14px] text-emerald-700 sm:flex">
           <span className="relative flex h-2 w-2">
             <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
             <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
@@ -67,10 +67,10 @@ export function Topbar({ user, onMenu }: { user: UserView; orgId: string; onMenu
         <div className="mx-1 hidden h-5 w-px bg-surface-300 sm:block" />
 
         <div className="hidden items-center gap-2 sm:flex">
-          <div className="flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-br from-brand-500 to-brand-700 text-[13px] font-semibold text-white">
+          <div className="flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-br from-brand-500 to-brand-700 text-[14px] font-semibold text-white">
             {(user.fullName ?? user.email).charAt(0).toUpperCase()}
           </div>
-          <span className="hidden text-[14px] font-medium text-ink-700 lg:block">
+          <span className="hidden text-[15px] font-medium text-ink-700 lg:block">
             {user.fullName ?? user.email.split("@")[0]}
           </span>
         </div>
@@ -95,7 +95,7 @@ export function Topbar({ user, onMenu }: { user: UserView; orgId: string; onMenu
               <div className="absolute right-0 top-full z-50 mt-1 w-52 rounded-lg border border-surface-300 bg-white py-1 shadow-lg">
                 <Link
                   href="/dashboard/settings"
-                  className="flex items-center gap-2.5 px-4 py-2 text-[14px] text-ink-700 hover:bg-surface-50"
+                  className="flex items-center gap-2.5 px-4 py-2 text-[15px] text-ink-700 hover:bg-surface-50"
                   onClick={() => setShowSettingsMenu(false)}
                 >
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -106,7 +106,7 @@ export function Topbar({ user, onMenu }: { user: UserView; orgId: string; onMenu
                 </Link>
                 <Link
                   href="/dashboard/settings?tab=account"
-                  className="flex items-center gap-2.5 px-4 py-2 text-[14px] text-ink-700 hover:bg-surface-50"
+                  className="flex items-center gap-2.5 px-4 py-2 text-[15px] text-ink-700 hover:bg-surface-50"
                   onClick={() => setShowSettingsMenu(false)}
                 >
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -118,7 +118,7 @@ export function Topbar({ user, onMenu }: { user: UserView; orgId: string; onMenu
                 <div className="my-1 border-t border-surface-200" />
                 <button
                   onClick={onSignOut}
-                  className="flex w-full items-center gap-2.5 px-4 py-2 text-[14px] text-red-600 hover:bg-red-50"
+                  className="flex w-full items-center gap-2.5 px-4 py-2 text-[15px] text-red-600 hover:bg-red-50"
                 >
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                     <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />

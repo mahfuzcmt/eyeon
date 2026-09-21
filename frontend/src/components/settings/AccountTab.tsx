@@ -40,7 +40,7 @@ export function AccountTab() {
 
   return (
     <div className="max-w-xl space-y-6">
-      <div className="grid grid-cols-2 gap-3 rounded-lg border border-surface-200 bg-surface-50 p-3 text-[13px] text-ink-500">
+      <div className="grid grid-cols-2 gap-3 rounded-lg border border-surface-200 bg-surface-50 p-3 text-[14px] text-ink-500">
         <div>
           <div className="uppercase">{t("auth.email")}</div>
           <div className="mt-0.5 font-semibold text-ink-900">{email}</div>
@@ -65,12 +65,12 @@ export function AccountTab() {
         <Field label={t("auth.reset.confirmPassword")}>
           <input type="password" autoComplete="new-password" required minLength={8} className="input" value={confirm} onChange={(e) => setConfirm(e.target.value)} disabled={busy} />
         </Field>
-        {error && <div className="text-[13px] text-alarm-red">{error}</div>}
+        {error && <div className="text-[14px] text-alarm-red">{error}</div>}
         <div className="flex flex-wrap items-center gap-3">
           <button type="submit" className="btn-primary" disabled={busy}>
             {busy ? t("common.loading") : t("account.updatePassword")}
           </button>
-          {saved && <span className="text-[13px] text-brand-500">{t("account.passwordUpdated")}</span>}
+          {saved && <span className="text-[14px] text-brand-500">{t("account.passwordUpdated")}</span>}
         </div>
       </form>
     </div>
@@ -79,8 +79,8 @@ export function AccountTab() {
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <label className="block text-[14px]">
-      <span className="mb-1 block text-[13px] uppercase tracking-wide text-ink-500">{label}</span>
+    <label className="block text-[15px]">
+      <span className="mb-1 block text-[14px] uppercase tracking-wide text-ink-500">{label}</span>
       {children}
     </label>
   );

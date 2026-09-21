@@ -60,7 +60,7 @@ export function AlarmList({ alarms, loading, devices, filter, onFilterChange, on
       </div>
 
       {/* Filters */}
-      <div className="flex flex-wrap items-end gap-2 border-b border-surface-300 px-4 py-2 text-[13px]">
+      <div className="flex flex-wrap items-end gap-2 border-b border-surface-300 px-4 py-2 text-[14px]">
         <label className="flex flex-col gap-0.5">
           <span className="t-label">{t("alarms.type")}</span>
           <select className="select w-40" value={filter.type} onChange={(e) => set("type", e.target.value)}>
@@ -103,9 +103,9 @@ export function AlarmList({ alarms, loading, devices, filter, onFilterChange, on
       </div>
 
       <div className="flex-1 overflow-auto">
-        {loading && <div className="px-3 py-4 text-[13px] text-ink-500">{t("common.loading")}</div>}
+        {loading && <div className="px-3 py-4 text-[14px] text-ink-500">{t("common.loading")}</div>}
         {!loading && alarms.length === 0 && (
-          <div className="px-3 py-12 text-center text-[13px] text-ink-500">{t("common.empty")}</div>
+          <div className="px-3 py-12 text-center text-[14px] text-ink-500">{t("common.empty")}</div>
         )}
         {!loading && alarms.length > 0 && (
           <table className="data-table min-w-[720px]">
@@ -129,7 +129,7 @@ export function AlarmList({ alarms, loading, devices, filter, onFilterChange, on
                   <td className="font-semibold">{alarmTypeLabel(a.type, t)}</td>
                   <td>
                     <div className="text-ink-900">{deviceName(a.deviceImei)}</div>
-                    <div className="font-mono text-[11px] text-ink-500">{a.deviceImei}</div>
+                    <div className="font-mono text-[12px] text-ink-500">{a.deviceImei}</div>
                   </td>
                   <td className="text-ink-700">{formatDateTime(a.ts, locale)}</td>
                   <td>
@@ -145,7 +145,7 @@ export function AlarmList({ alarms, loading, devices, filter, onFilterChange, on
                     {a.processResult ? (
                       <div>
                         <div className="text-ink-900">{processResultLabel(a.processResult, t)}</div>
-                        {a.processNotes && <div className="max-w-[220px] truncate text-[12px] text-ink-500" title={a.processNotes}>{a.processNotes}</div>}
+                        {a.processNotes && <div className="max-w-[220px] truncate text-[13px] text-ink-500" title={a.processNotes}>{a.processNotes}</div>}
                       </div>
                     ) : (
                       <span className="text-ink-400">—</span>
@@ -153,7 +153,7 @@ export function AlarmList({ alarms, loading, devices, filter, onFilterChange, on
                   </td>
                   <td className="text-right">
                     {a.acknowledged ? (
-                      <span className="text-[12px] text-ink-500">{t("common.acknowledged")}</span>
+                      <span className="text-[13px] text-ink-500">{t("common.acknowledged")}</span>
                     ) : (
                       <button type="button" onClick={() => setAckAlarm(a)} className="btn-secondary">
                         {t("alarms.process")}

@@ -47,7 +47,7 @@ export default function TrackTab({ device, orgId }: { device: DeviceView; orgId:
         <FleetMap devices={[device]} locations={oneLoc} selectedImei={device.imei} onSelect={() => {}} onRefresh={refresh} />
         <div className="pointer-events-none absolute left-3 top-3 z-[1000] rounded-md border border-surface-300 bg-white/95 px-3 py-1.5 shadow-menu">
           <span className="text-2xl font-bold leading-none text-ink-900">{speed}</span>
-          <span className="ml-1 text-[11px] text-ink-500">{t("fleet.kmh")}</span>
+          <span className="ml-1 text-[12px] text-ink-500">{t("fleet.kmh")}</span>
         </div>
       </div>
 
@@ -63,7 +63,7 @@ export default function TrackTab({ device, orgId }: { device: DeviceView; orgId:
 
       {/* Engine control */}
       <div className="flex shrink-0 items-center gap-2 border-t border-surface-300 bg-white px-3 py-2">
-        <span className="text-[13px] text-ink-500">Engine:</span>
+        <span className="text-[14px] text-ink-500">Engine:</span>
         <span className={`status-pill ${locked ? "status-pill-stopped" : "status-pill-moving"}`}>
           {locked ? "🔒 Locked" : "Unlocked"}
         </span>
@@ -76,7 +76,7 @@ export default function TrackTab({ device, orgId }: { device: DeviceView; orgId:
           </button>
         </div>
       </div>
-      {msg && <div className="shrink-0 bg-surface-100 px-3 py-1 text-[12px] text-ink-600">{msg}</div>}
+      {msg && <div className="shrink-0 bg-surface-100 px-3 py-1 text-[13px] text-ink-600">{msg}</div>}
     </div>
   );
 }
@@ -84,8 +84,8 @@ export default function TrackTab({ device, orgId }: { device: DeviceView; orgId:
 function Cell({ label, value }: { label: string; value: string }) {
   return (
     <div className="bg-white px-2 py-1.5 text-center">
-      <div className="text-[11px] uppercase tracking-wide text-ink-400">{label}</div>
-      <div className="text-[13px] font-semibold text-ink-900">{value}</div>
+      <div className="text-[12px] uppercase tracking-wide text-ink-400">{label}</div>
+      <div className="text-[14px] font-semibold text-ink-900">{value}</div>
     </div>
   );
 }

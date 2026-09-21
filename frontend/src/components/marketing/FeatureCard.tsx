@@ -27,7 +27,7 @@ export function FeatureCard({ icon, titleKey, descKey }: FeatureCardProps) {
       </h3>
 
       {/* Description */}
-      <p className="mt-3 text-[15px] leading-relaxed text-ink-500">
+      <p className="mt-3 text-[16px] leading-relaxed text-ink-500">
         {t(descKey)}
       </p>
 

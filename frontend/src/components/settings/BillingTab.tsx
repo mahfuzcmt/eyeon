@@ -9,12 +9,12 @@ export function BillingTab() {
   const { subscriptions, loading, error, refresh } = useSubscriptions();
 
   if (loading) {
-    return <div className="text-[14px] text-ink-400">{t("common.loading")}</div>;
+    return <div className="text-[15px] text-ink-400">{t("common.loading")}</div>;
   }
 
   if (error) {
     return (
-      <div className="text-[14px] text-alarm-red">
+      <div className="text-[15px] text-alarm-red">
         {error}
         <button
           onClick={() => void refresh()}
@@ -28,7 +28,7 @@ export function BillingTab() {
 
   if (!subscriptions.length) {
     return (
-      <div className="text-[14px] text-ink-400">{t("billing.noSubscriptions")}</div>
+      <div className="text-[15px] text-ink-400">{t("billing.noSubscriptions")}</div>
     );
   }
 
@@ -66,20 +66,20 @@ function SubscriptionCard({ subscription }: { subscription: SubscriptionView }) 
       {/* Header */}
       <div className="mb-3 flex items-start justify-between">
         <div>
-          <p className="font-mono text-[14px] text-ink-900">{sub.deviceImei}</p>
-          <p className="text-[13px] text-ink-500">
+          <p className="font-mono text-[15px] text-ink-900">{sub.deviceImei}</p>
+          <p className="text-[14px] text-ink-500">
             {sub.planTier === "TRIAL" ? t("billing.trialPlan") : sub.planTier}
           </p>
         </div>
         <span
-          className={`rounded-full px-2 py-0.5 text-[13px] font-medium ${statusColorClass}`}
+          className={`rounded-full px-2 py-0.5 text-[14px] font-medium ${statusColorClass}`}
         >
           {getStatusLabel(sub.effectiveStatus, t)}
         </span>
       </div>
 
       {/* Details */}
-      <div className="space-y-2 text-[14px]">
+      <div className="space-y-2 text-[15px]">
         <div className="flex justify-between">
           <span className="text-ink-500">{t("billing.expiresOn")}</span>
           <span className="text-ink-900 font-medium">
@@ -119,13 +119,13 @@ function SubscriptionCard({ subscription }: { subscription: SubscriptionView }) 
 
       {/* Warning messages */}
       {showWarning && !showError && (
-        <div className="mt-3 rounded bg-alarm-amber/10 px-2 py-1.5 text-[13px] text-alarm-amber">
+        <div className="mt-3 rounded bg-alarm-amber/10 px-2 py-1.5 text-[14px] text-alarm-amber">
           {t("billing.expiringSoon")}
         </div>
       )}
 
       {showError && (
-        <div className="mt-3 rounded bg-alarm-red/10 px-2 py-1.5 text-[13px] text-alarm-red">
+        <div className="mt-3 rounded bg-alarm-red/10 px-2 py-1.5 text-[14px] text-alarm-red">
           {t("billing.expired")} - {t("billing.contactAdmin")}
         </div>
       )}

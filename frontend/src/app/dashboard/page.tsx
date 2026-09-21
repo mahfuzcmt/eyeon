@@ -240,8 +240,8 @@ export default function DashboardPage() {
           aria-expanded={sheetOpen}
         >
           <span className="absolute left-1/2 top-1.5 h-1 w-10 -translate-x-1/2 rounded-full bg-surface-300" aria-hidden />
-          <span className="mt-1 text-[15px] font-semibold text-ink-900">{t("nav.vehicles")}</span>
-          <span className="mt-1 text-[13px] text-ink-500">
+          <span className="mt-1 text-[16px] font-semibold text-ink-900">{t("nav.vehicles")}</span>
+          <span className="mt-1 text-[14px] text-ink-500">
             <span className="text-emerald-600">{liveOnlineCount}</span> {t("list.online").toLowerCase()} ·{" "}
             {liveOfflineCount} {t("list.offline").toLowerCase()}
           </span>
@@ -308,7 +308,7 @@ export default function DashboardPage() {
       {/* Transient status pills sit at the bottom centre, clear of the KPI strip and map controls. */}
       {loading && (
         <div
-          className="pointer-events-none absolute z-[1000] -translate-x-1/2 whitespace-nowrap rounded-full bg-white/90 px-3 py-1 text-[13px] text-ink-600 shadow"
+          className="pointer-events-none absolute z-[1000] -translate-x-1/2 whitespace-nowrap rounded-full bg-white/90 px-3 py-1 text-[14px] text-ink-600 shadow"
           style={{ left: `calc(${listInset}px + (100% - ${listInset}px) / 2)`, bottom: statusBottom }}
         >
           {t("common.loading")}
@@ -316,7 +316,7 @@ export default function DashboardPage() {
       )}
       {error && (
         <div
-          className="absolute z-[1000] max-w-[90vw] -translate-x-1/2 rounded-md border border-red-200 bg-red-50 px-3 py-1 text-[13px] text-red-700 shadow"
+          className="absolute z-[1000] max-w-[90vw] -translate-x-1/2 rounded-md border border-red-200 bg-red-50 px-3 py-1 text-[14px] text-red-700 shadow"
           style={{ left: `calc(${listInset}px + (100% - ${listInset}px) / 2)`, bottom: statusBottom }}
         >
           {error}

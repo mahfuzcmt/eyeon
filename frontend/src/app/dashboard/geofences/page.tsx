@@ -1,22 +1,50 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useLocale } from "@/lib/i18n";
+import { useEffect, useMemo, useState } from "react";
+import { useLocale, type StringKey } from "@/lib/i18n";
 import { useGeofences } from "@/hooks/useGeofences";
 import { useDevices } from "@/hooks/useDevices";
 import { GeofenceEditor } from "@/components/geofence/GeofenceEditor";
 import { formatDateTime } from "@/lib/format";
+import type { GeofenceCreate, GeofenceKind, GeofenceUpdate, GeofenceView, LatLng } from "@/types/domain";
 
-interface GeofenceWithDevices {
-  id: string;
-  assignedCount: number;
+function sameShape(a: LatLng[], b: LatLng[]): boolean {
+  return a.length === b.length && a.every((p, i) => p.lat === b[i].lat && p.lng === b[i].lng);
+}
+
+/**
+ * Editor output -> PATCH body. Geometry is sent only when it changed, because reshaping
+ * a zone resets its arrived/left state on the server.
+ */
+function toPatch(before: GeofenceView, req: GeofenceCreate): GeofenceUpdate {
+  const patch: GeofenceUpdate = { name: req.name, notifyOn: req.notifyOn, color: req.color };
+  if (req.placeType) patch.placeType = req.placeType;
+  if (req.type === "CIRCLE" && req.center && req.radiusM != null) {
+    const moved =
+      before.type !== "CIRCLE" ||
+      before.radiusM !== req.radiusM ||
+      before.center?.lat !== req.center.lat ||
+      before.center?.lng !== req.center.lng;
+    if (moved) {
+      patch.center = req.center;
+      patch.radiusM = req.radiusM;
+    }
+  } else if (req.type === "POLYGON" && req.polygon) {
+    if (before.type !== "POLYGON" || !sameShape(before.polygon, req.polygon)) patch.polygon = req.polygon;
+  }
+  return patch;
 }
 
 export default function Page() {
   const { t, locale } = useLocale();
-  const { geofences, loading, error, create, remove, getAssignedDevices, assignDevices } = useGeofences();
+  const { geofences: allGeofences, loading, error, create, update, remove, getAssignedDevices, assignDevices, unassignDevice } =
+    useGeofences();
   const { devices } = useDevices();
-  const [editing, setEditing] = useState(false);
+  const [tab, setTab] = useState<GeofenceKind>("TRUSTED_PLACE");
+  const geofences = useMemo(() => allGeofences.filter((g) => g.kind === tab), [allGeofences, tab]);
+  const isPlaces = tab === "TRUSTED_PLACE";
+  // null = closed, "new" = create for the current tab, otherwise the zone being edited.
+  const [editor, setEditor] = useState<"new" | GeofenceView | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [assigningGeofence, setAssigningGeofence] = useState<{ id: string; name: string } | null>(null);
   const [assignedImeis, setAssignedImeis] = useState<string[]>([]);
@@ -29,7 +57,7 @@ export default function Page() {
   useEffect(() => {
     async function loadCounts() {
       const counts: Record<string, number> = {};
-      for (const g of geofences) {
+      for (const g of allGeofences) {
         try {
           const imeis = await getAssignedDevices(g.id);
           counts[g.id] = imeis.length;
@@ -39,10 +67,10 @@ export default function Page() {
       }
       setDeviceCounts(counts);
     }
-    if (geofences.length > 0) {
+    if (allGeofences.length > 0) {
       loadCounts();
     }
-  }, [geofences, getAssignedDevices]);
+  }, [allGeofences, getAssignedDevices]);
 
   const handleDelete = async (id: string, name: string) => {
     if (!confirm(`${t("common.delete")} "${name}"?`)) return;
@@ -107,7 +135,11 @@ export default function Page() {
     if (!assigningGeofence) return;
     setAssignLoading(true);
     try {
-      await assignDevices(assigningGeofence.id, Array.from(selectedImeis));
+      // assignDevices only adds, so people who were unticked have to be removed one by one.
+      const added = Array.from(selectedImeis).filter((imei) => !assignedImeis.includes(imei));
+      const removed = assignedImeis.filter((imei) => !selectedImeis.has(imei));
+      if (added.length > 0) await assignDevices(assigningGeofence.id, added);
+      for (const imei of removed) await unassignDevice(assigningGeofence.id, imei);
       setDeviceCounts((prev) => ({ ...prev, [assigningGeofence.id]: selectedImeis.size }));
       setAssigningGeofence(null);
     } finally {
@@ -117,30 +149,51 @@ export default function Page() {
 
   return (
     <div className="flex h-full flex-col">
-      <div className="flex items-center justify-between border-b border-surface-300 px-4 py-3">
-        <h1 className="font-display text-lg font-semibold">{t("geo.title")}</h1>
-        <button type="button" className="btn-primary text-[14px]" onClick={() => setEditing(true)}>
-          {t("geo.new")}
+      <div className="flex items-center justify-between gap-3 border-b border-surface-300 px-4 py-3">
+        <h1 className="font-display text-lg font-semibold">{isPlaces ? t("place.tab") : t("geo.title")}</h1>
+        <button type="button" className="btn-primary" onClick={() => setEditor("new")}>
+          {isPlaces ? t("place.add") : t("geo.new")}
         </button>
       </div>
 
+      <div className="tab-bar" role="tablist">
+        {(["TRUSTED_PLACE", "BOUNDARY"] as const).map((k) => (
+          <button
+            key={k}
+            type="button"
+            role="tab"
+            aria-selected={tab === k}
+            className={tab === k ? "tab-item-active" : "tab-item"}
+            onClick={() => setTab(k)}
+          >
+            {k === "TRUSTED_PLACE" ? t("place.tab") : t("geo.tabBoundaries")}
+            <span className="text-ink-400">{allGeofences.filter((g) => g.kind === k).length}</span>
+          </button>
+        ))}
+      </div>
+      <p className="border-b border-surface-200 bg-surface-50 px-4 py-2.5 text-[14px] text-ink-500">
+        {isPlaces ? t("place.hint") : t("geo.boundariesHint")}
+      </p>
+
       <div className="flex-1 overflow-auto">
-        {loading && <div className="px-4 py-6 text-[14px] text-ink-400">{t("common.loading")}</div>}
-        {error && <div className="px-4 py-6 text-[14px] text-alarm-red">{error}</div>}
+        {loading && <div className="px-4 py-6 text-[15px] text-ink-400">{t("common.loading")}</div>}
+        {error && <div className="px-4 py-6 text-[15px] text-alarm-red">{error}</div>}
         {!loading && geofences.length === 0 && (
-          <div className="px-4 py-12 text-center text-[14px] text-ink-400">{t("common.empty")}</div>
+          <div className="px-4 py-12 text-center text-[15px] text-ink-500">
+            {isPlaces ? t("place.none") : t("common.empty")}
+          </div>
         )}
 
         {geofences.length > 0 && (
-          <table className="w-full min-w-[640px] text-[14px]">
-            <thead className="sticky top-0 z-10 bg-white text-left text-[13px] uppercase text-ink-400">
+          <table className="w-full min-w-[640px] text-[15px]">
+            <thead className="sticky top-0 z-10 bg-white text-left text-[14px] uppercase text-ink-400">
               <tr>
                 <th className="px-4 py-2">{t("geo.name")}</th>
-                <th className="px-4 py-2">{t("geo.shape")}</th>
+                <th className="px-4 py-2">{isPlaces ? t("place.type") : t("geo.shape")}</th>
                 <th className="px-4 py-2">{t("geo.notifyOn")}</th>
                 <th className="px-4 py-2">{t("geo.radius")}</th>
-                <th className="px-4 py-2">{t("geo.vehicles") || "Vehicles"}</th>
-                <th className="px-4 py-2">Created</th>
+                <th className="px-4 py-2">{t("geo.people")}</th>
+                <th className="px-4 py-2">{t("geo.created")}</th>
                 <th className="px-4 py-2 text-right" />
               </tr>
             </thead>
@@ -157,29 +210,38 @@ export default function Page() {
                     </span>
                   </td>
                   <td className="px-4 py-2 text-ink-800">
-                    {g.type === "CIRCLE" ? t("geo.circle") : t("geo.polygon")}
+                    {isPlaces
+                      ? t(`place.type.${g.placeType ?? "OTHER"}` as StringKey)
+                      : g.type === "CIRCLE" ? t("geo.circle") : t("geo.polygon")}
                   </td>
-                  <td className="px-4 py-2 text-ink-800">{g.notifyOn}</td>
+                  <td className="px-4 py-2 text-ink-800">
+                    {isPlaces
+                      ? t(`place.alerts.${g.notifyOn}` as StringKey)
+                      : t(({ ENTER: "geo.notifyEnter", EXIT: "geo.notifyExit", BOTH: "geo.notifyBoth", NONE: "geo.notifyNone" } as const)[g.notifyOn])}
+                  </td>
                   <td className="px-4 py-2 text-ink-800">
                     {g.radiusM ? `${g.radiusM} m` : `${g.polygon.length} pts`}
                   </td>
                   <td className="px-4 py-2">
                     <button
                       type="button"
-                      className="inline-flex items-center gap-1.5 rounded bg-white px-2 py-1 text-[13px] text-ink-800 hover:bg-surface-200"
+                      className="inline-flex items-center gap-1.5 rounded bg-white px-2 py-1 text-[14px] text-ink-800 hover:bg-surface-200"
                       onClick={() => openAssignDialog({ id: g.id, name: g.name })}
                     >
-                      <span>{deviceCounts[g.id] ?? 0} vehicles</span>
+                      <span>{deviceCounts[g.id] ?? 0}</span>
                       <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
                       </svg>
                     </button>
                   </td>
                   <td className="px-4 py-2 text-ink-800">{formatDateTime(g.createdAt, locale)}</td>
-                  <td className="px-4 py-2 text-right">
+                  <td className="whitespace-nowrap px-4 py-2 text-right">
+                    <button type="button" className="btn-ghost" onClick={() => setEditor(g)}>
+                      {t("common.edit")}
+                    </button>
                     <button
                       type="button"
-                      className="btn-ghost px-3 py-1 text-[13px]"
+                      className="btn-ghost"
                       disabled={busyId === g.id}
                       onClick={() => handleDelete(g.id, g.name)}
                     >
@@ -193,12 +255,16 @@ export default function Page() {
         )}
       </div>
 
-      {editing && (
+      {editor && (
         <GeofenceEditor
-          onCancel={() => setEditing(false)}
+          key={editor === "new" ? `new-${tab}` : editor.id}
+          kind={editor === "new" ? tab : editor.kind}
+          initial={editor === "new" ? undefined : editor}
+          onCancel={() => setEditor(null)}
           onSubmit={async (req) => {
-            await create(req);
-            setEditing(false);
+            if (editor === "new") await create(req);
+            else await update(editor.id, toPatch(editor, req));
+            setEditor(null);
           }}
         />
       )}
@@ -208,14 +274,14 @@ export default function Page() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink-950/40">
           <div className="w-full max-w-md rounded-lg bg-white p-6 shadow-xl">
             <h2 className="mb-1 text-lg font-semibold text-ink-900">
-              {t("geo.assignVehicles") || "Assign Vehicles"}
+              {t("geo.assignPeople")}
             </h2>
-            <p className="mb-4 text-[14px] text-ink-400">
+            <p className="mb-4 text-[15px] text-ink-400">
               {assigningGeofence.name}
             </p>
 
             {assignLoading ? (
-              <div className="py-8 text-center text-[14px] text-ink-400">{t("common.loading")}</div>
+              <div className="py-8 text-center text-[15px] text-ink-400">{t("common.loading")}</div>
             ) : (
               <>
                 {/* Search and Select All */}
@@ -224,14 +290,14 @@ export default function Page() {
                     <div className="flex items-center justify-between">
                       <input
                         type="text"
-                        className="input flex-1 text-[14px]"
+                        className="input flex-1 text-[15px]"
                         placeholder="Search by name, plate, or IMEI..."
                         value={deviceSearch}
                         onChange={(e) => setDeviceSearch(e.target.value)}
                       />
                       <button
                         type="button"
-                        className="ml-2 text-[13px] text-brand-500 hover:text-brand-400 whitespace-nowrap"
+                        className="ml-2 text-[14px] text-brand-500 hover:text-brand-400 whitespace-nowrap"
                         onClick={allDevicesSelected ? deselectAllDevices : selectAllDevices}
                       >
                         {allDevicesSelected ? "Deselect All" : "Select All"}
@@ -242,11 +308,11 @@ export default function Page() {
 
                 <div className="max-h-80 overflow-y-auto rounded border border-surface-300 bg-surface-50">
                   {devices.length === 0 ? (
-                    <div className="py-6 text-center text-[14px] text-ink-400">
+                    <div className="py-6 text-center text-[15px] text-ink-400">
                       {t("common.empty")}
                     </div>
                   ) : filteredDevices.length === 0 ? (
-                    <div className="py-6 text-center text-[14px] text-ink-400">
+                    <div className="py-6 text-center text-[15px] text-ink-400">
                       No devices match your search
                     </div>
                   ) : (
@@ -267,7 +333,7 @@ export default function Page() {
                             <div className="truncate font-medium text-ink-900">
                               {d.name || d.vehiclePlate || d.imei}
                             </div>
-                            <div className="truncate text-[13px] text-ink-400">
+                            <div className="truncate text-[14px] text-ink-400">
                               {d.vehiclePlate && d.name ? d.vehiclePlate : d.imei}
                             </div>
                           </div>
@@ -285,13 +351,13 @@ export default function Page() {
             )}
 
             <div className="mt-4 flex items-center justify-between">
-              <span className="text-[14px] text-ink-400">
+              <span className="text-[15px] text-ink-400">
                 {selectedImeis.size} / {devices.length} {t("geo.selected") || "selected"}
               </span>
               <div className="flex gap-2">
                 <button
                   type="button"
-                  className="btn-ghost px-4 py-2 text-[14px]"
+                  className="btn-ghost px-4 py-2 text-[15px]"
                   onClick={() => setAssigningGeofence(null)}
                   disabled={assignLoading}
                 >
@@ -299,7 +365,7 @@ export default function Page() {
                 </button>
                 <button
                   type="button"
-                  className="btn-primary px-4 py-2 text-[14px]"
+                  className="btn-primary px-4 py-2 text-[15px]"
                   onClick={handleSaveAssignment}
                   disabled={assignLoading}
                 >

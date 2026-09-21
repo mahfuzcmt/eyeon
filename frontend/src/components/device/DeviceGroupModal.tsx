@@ -5,7 +5,7 @@ import { useLocale } from "@/lib/i18n";
 import { extractError } from "@/lib/api";
 import type { DeviceGroupView, DeviceGroupCreate, DeviceGroupUpdate } from "@/types/domain";
 
-const GROUP_COLORS = ["#0421bc", "#16A34A", "#DC2626", "#F59E0B", "#8B5CF6", "#EC4899", "#0891B2", "#78716C"];
+const GROUP_COLORS = ["#0F6B5C", "#2563EB", "#DC2626", "#F59E0B", "#8B5CF6", "#EC4899", "#0891B2", "#78716C"];
 
 export const GROUP_ICONS = [
   { id: "folder", svg: "M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" },
@@ -60,17 +60,17 @@ export function DeviceGroupModal({ group, onSave, onClose }: DeviceGroupModalPro
         </div>
 
         <div className="flex flex-col gap-3 p-4">
-          <label className="text-[13px]">
+          <label className="text-[14px]">
             <span className="mb-1 block text-ink-500">{t("group.name")} *</span>
             <input type="text" className="input" value={name} onChange={(e) => setName(e.target.value)} placeholder={t("group.namePlaceholder")} disabled={saving} autoFocus />
           </label>
 
-          <label className="text-[13px]">
+          <label className="text-[14px]">
             <span className="mb-1 block text-ink-500">{t("group.description")}</span>
             <input type="text" className="input" value={description} onChange={(e) => setDescription(e.target.value)} disabled={saving} />
           </label>
 
-          <div className="text-[13px]">
+          <div className="text-[14px]">
             <span className="mb-1 block text-ink-500">{t("group.color")}</span>
             <div className="flex flex-wrap gap-1.5">
               {GROUP_COLORS.map((c) => (
@@ -87,7 +87,7 @@ export function DeviceGroupModal({ group, onSave, onClose }: DeviceGroupModalPro
             </div>
           </div>
 
-          <div className="text-[13px]">
+          <div className="text-[14px]">
             <span className="mb-1 block text-ink-500">{t("group.icon")}</span>
             <div className="flex flex-wrap gap-1.5">
               {GROUP_ICONS.map((i) => (
@@ -109,7 +109,7 @@ export function DeviceGroupModal({ group, onSave, onClose }: DeviceGroupModalPro
             </div>
           </div>
 
-          {error && <p className="text-[13px] text-alarm-red">{error}</p>}
+          {error && <p className="text-[14px] text-alarm-red">{error}</p>}
         </div>
 
         <div className="modal-footer">

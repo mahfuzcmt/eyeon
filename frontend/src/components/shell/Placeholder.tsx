@@ -7,8 +7,8 @@ export function Placeholder({ titleKey }: { titleKey: StringKey }) {
   return (
     <div className="flex h-full items-center justify-center bg-surface-50">
       <div className="panel px-6 py-8 text-center">
-        <div className="text-[14px] font-semibold text-ink-900">{t(titleKey)}</div>
-        <div className="mt-1 text-[13px] text-ink-500">Coming in a later phase.</div>
+        <div className="text-[15px] font-semibold text-ink-900">{t(titleKey)}</div>
+        <div className="mt-1 text-[14px] text-ink-500">Coming in a later phase.</div>
       </div>
     </div>
   );

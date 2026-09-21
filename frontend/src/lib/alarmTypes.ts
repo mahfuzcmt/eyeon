@@ -9,6 +9,8 @@ export const ALARM_TYPES: AlarmType[] = [
   "OVERSPEED",
   "GEOFENCE_ENTER",
   "GEOFENCE_EXIT",
+  "PLACE_ARRIVED",
+  "PLACE_LEFT",
   "COLLISION",
   "ACC_ON",
   "ACC_OFF",

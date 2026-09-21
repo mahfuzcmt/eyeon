@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useLocale, type StringKey } from "@/lib/i18n";
 import { useSession } from "@/lib/session-context";
+import { EyeOnMark } from "@/components/brand/EyeOnLogo";
 
 /**
  * ADL-style two-panel sidebar navigation
@@ -38,15 +39,15 @@ const NAV_SECTIONS: NavSection[] = [
     label: "nav.monitor",
     icon: <MonitorIcon />,
     href: "/dashboard",
-    color: "#0421bc",      // ADL teal - consistent across all
-    activeColor: "#031a96",
+    color: "#0F6B5C",      // primary teal - consistent across all
+    activeColor: "#0C5A4D",
   },
   {
     id: "statistics",
     label: "nav.statistics",
     icon: <StatisticsIcon />,
-    color: "#0421bc",      // ADL teal - consistent across all
-    activeColor: "#031a96",
+    color: "#0F6B5C",      // primary teal - consistent across all
+    activeColor: "#0C5A4D",
     children: [
       { href: "/dashboard/home", label: "nav.home", icon: <HomeIcon /> },
       { href: "/dashboard/reports", label: "nav.reports", icon: <ReportIcon /> },
@@ -57,8 +58,8 @@ const NAV_SECTIONS: NavSection[] = [
     id: "manage",
     label: "nav.manage",
     icon: <ManageIcon />,
-    color: "#0421bc",      // ADL teal - consistent across all
-    activeColor: "#031a96",
+    color: "#0F6B5C",      // primary teal - consistent across all
+    activeColor: "#0C5A4D",
     children: [
       { href: "/dashboard/devices", label: "nav.vehicles", icon: <DeviceIcon /> },
       { href: "/dashboard/drivers", label: "nav.drivers", icon: <DriverIcon /> },
@@ -75,8 +76,8 @@ const NAV_SECTIONS: NavSection[] = [
     label: "nav.customer",
     icon: <CustomerIcon />,
     href: "/dashboard/admin",
-    color: "#0421bc",      // ADL teal - consistent across all
-    activeColor: "#031a96",
+    color: "#0F6B5C",      // primary teal - consistent across all
+    activeColor: "#0C5A4D",
     superAdminOnly: true,
   },
 ];
@@ -160,11 +161,7 @@ export function Sidebar({ mobile = false, onNavigate }: SidebarProps = {}) {
         {/* Brand header */}
         <div className="flex h-[52px] shrink-0 items-center gap-2 border-b border-surface-300 bg-brand-500 px-4">
           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-white">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-              <path d="M12 2L2 7l10 5 10-5-10-5z" fill="#0421bc" />
-              <path d="M2 17l10 5 10-5" stroke="#0421bc" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-              <path d="M2 12l10 5 10-5" stroke="#0421bc" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
+            <EyeOnMark size={22} color="#0F6B5C" />
           </div>
           <span className="text-base font-bold text-white">EyeOn</span>
           <button
@@ -187,7 +184,7 @@ export function Sidebar({ mobile = false, onNavigate }: SidebarProps = {}) {
               : filterItems(section.children);
             return (
               <div key={section.id} className="px-2 pb-2">
-                <div className="px-3 pb-1 pt-2 text-[12px] font-semibold uppercase tracking-wide text-ink-400">
+                <div className="px-3 pb-1 pt-2 text-[13px] font-semibold uppercase tracking-wide text-ink-400">
                   {t(section.label)}
                 </div>
                 {items.map((item) => {
@@ -197,7 +194,7 @@ export function Sidebar({ mobile = false, onNavigate }: SidebarProps = {}) {
                       key={item.href}
                       href={item.href}
                       onClick={onNavigate}
-                      className={`flex min-h-[44px] items-center gap-3 rounded-md px-3 text-[15px] transition-colors ${
+                      className={`flex min-h-[44px] items-center gap-3 rounded-md px-3 text-[16px] transition-colors ${
                         active ? "bg-brand-500/10 font-medium text-ink-900" : "text-ink-700 active:bg-surface-100"
                       }`}
                     >
@@ -211,8 +208,8 @@ export function Sidebar({ mobile = false, onNavigate }: SidebarProps = {}) {
           })}
         </nav>
 
-        <div className="shrink-0 border-t border-surface-300 px-4 py-3 text-[12px] text-ink-400">
-          EyeOn GPS Tracking
+        <div className="shrink-0 border-t border-surface-300 px-4 py-3 text-[13px] text-ink-400">
+          EyeOn Family Safety
         </div>
       </div>
     );
@@ -220,17 +217,13 @@ export function Sidebar({ mobile = false, onNavigate }: SidebarProps = {}) {
 
   return (
     <div className="relative z-[2000] flex h-full">
-      {/* Left icon rail — ADL: solid primary blue with white glyphs */}
+      {/* Left icon rail: solid primary teal with white glyphs */}
       <div className="flex w-[52px] flex-col bg-brand-500">
         {/* Logo */}
         <div className="flex h-[56px] items-center justify-center border-b border-white/15">
           <Link href="/dashboard" aria-label="EyeOn">
             <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-white">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-                <path d="M12 2L2 7l10 5 10-5-10-5z" fill="#0421bc" />
-                <path d="M2 17l10 5 10-5" stroke="#0421bc" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                <path d="M2 12l10 5 10-5" stroke="#0421bc" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
+              <EyeOnMark size={26} color="#0F6B5C" />
             </div>
           </Link>
         </div>
@@ -260,7 +253,7 @@ export function Sidebar({ mobile = false, onNavigate }: SidebarProps = {}) {
               >
                 {section.icon}
                 {/* Tooltip */}
-                <span className="pointer-events-none absolute left-full z-10 ml-2 hidden whitespace-nowrap rounded bg-ink-900 px-2 py-1 text-[13px] text-white group-hover:block">
+                <span className="pointer-events-none absolute left-full z-10 ml-2 hidden whitespace-nowrap rounded bg-ink-900 px-2 py-1 text-[14px] text-white group-hover:block">
                   {t(section.label)}
                 </span>
               </button>
@@ -299,7 +292,7 @@ export function Sidebar({ mobile = false, onNavigate }: SidebarProps = {}) {
         <div className="flex w-[180px] flex-col border-r border-surface-300 bg-white">
           {/* Section header — ADL: section name in primary blue */}
           <div className="flex h-[56px] items-center border-b border-surface-300 px-4">
-            <span className="text-[15px] font-semibold text-brand-500">
+            <span className="text-[16px] font-semibold text-brand-500">
               {currentSection ? t(currentSection.label) : ""}
             </span>
           </div>
@@ -310,7 +303,7 @@ export function Sidebar({ mobile = false, onNavigate }: SidebarProps = {}) {
               // Direct link section
               <Link
                 href={currentSection.href}
-                className={`flex items-center gap-2.5 rounded px-3 py-2.5 text-[14px] font-medium transition-colors ${
+                className={`flex items-center gap-2.5 rounded px-3 py-2.5 text-[15px] font-medium transition-colors ${
                   isActive(currentSection.href)
                     ? "bg-brand-500/10 text-ink-900"
                     : "text-ink-700 hover:bg-surface-100"
@@ -326,7 +319,7 @@ export function Sidebar({ mobile = false, onNavigate }: SidebarProps = {}) {
                   <Link
                     key={item.href}
                     href={item.href}
-                    className={`flex items-center gap-2.5 rounded px-3 py-2 text-[14px] transition-colors ${
+                    className={`flex items-center gap-2.5 rounded px-3 py-2 text-[15px] transition-colors ${
                       isActive(item.href)
                         ? "bg-brand-500/10 font-medium text-ink-900"
                         : "text-ink-700 hover:bg-surface-100"
@@ -351,8 +344,8 @@ export function Sidebar({ mobile = false, onNavigate }: SidebarProps = {}) {
                 </svg>
               </div>
               <div className="flex flex-col">
-                <span className="text-[12px] font-semibold text-ink-800">EyeOn</span>
-                <span className="text-[11px] text-ink-400">GPS Tracking</span>
+                <span className="text-[13px] font-semibold text-ink-800">EyeOn</span>
+                <span className="text-[12px] text-ink-400">GPS Tracking</span>
               </div>
             </div>
           </div>

@@ -44,7 +44,7 @@ export default function DeviceDetailPage() {
 
   if (!device) {
     return (
-      <div className="flex h-full items-center justify-center text-[13px] text-ink-500">
+      <div className="flex h-full items-center justify-center text-[14px] text-ink-500">
         {loading ? t("common.loading") : t("veh.none")}
       </div>
     );
@@ -59,10 +59,10 @@ export default function DeviceDetailPage() {
         <Link href="/dashboard/devices" className="btn-icon" title={t("veh.title")}>‹</Link>
         <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: VEHICLE_STATE_COLOR[state] }} />
         <div className="min-w-0">
-          <div className="truncate text-[14px] font-semibold text-ink-900">
+          <div className="truncate text-[15px] font-semibold text-ink-900">
             {device.name || device.vehiclePlate || device.imei.slice(-8)}
           </div>
-          <div className="font-mono text-[11px] text-ink-500">{device.imei}</div>
+          <div className="font-mono text-[12px] text-ink-500">{device.imei}</div>
         </div>
         <button
           type="button"

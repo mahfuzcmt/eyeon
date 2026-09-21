@@ -87,7 +87,7 @@ export default function Page() {
       <div className="min-h-0 flex-1">
         {tab === "overview" ? (
           <div className="flex h-full flex-col">
-            <div className="flex flex-wrap items-end gap-2 border-b border-surface-300 px-4 py-2 text-[13px]">
+            <div className="flex flex-wrap items-end gap-2 border-b border-surface-300 px-4 py-2 text-[14px]">
               <label className="flex flex-col gap-0.5">
                 <span className="t-label">{t("common.from")}</span>
                 <input type="date" className="input w-auto" value={filter.from} max={filter.to} onChange={(e) => setFilter({ ...filter, from: e.target.value })} />

@@ -9,7 +9,7 @@ import { alarmTypeLabel } from "@/lib/alarmTypes";
 import { formatDateTime } from "@/lib/format";
 import type { AlarmView } from "@/types/domain";
 
-const SEV_COLOR: Record<string, string> = { CRITICAL: "#DC2626", WARNING: "#F59E0B", INFO: "#0421bc" };
+const SEV_COLOR: Record<string, string> = { CRITICAL: "#D92D20", WARNING: "#D97706", INFO: "#0F6B5C" };
 
 /** Where an alarm happened: a small map centred on the alarm with a pulsing marker. */
 export function AlarmMapModal({ alarm, deviceName, onClose }: { alarm: AlarmView; deviceName: string; onClose: () => void }) {

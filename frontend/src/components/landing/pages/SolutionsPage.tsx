@@ -165,7 +165,7 @@ function SolutionCard({ solution, t }: { solution: typeof SOLUTIONS[0]; t: (key:
         </div>
         <h3 className="text-xl font-bold text-gray-900">{t(solution.titleKey)}</h3>
         <p className="mt-1 text-sm text-brand-600">{t(solution.subtitleKey)}</p>
-        <p className="mt-3 text-[15px] leading-relaxed text-gray-600">{t(solution.descKey)}</p>
+        <p className="mt-3 text-[16px] leading-relaxed text-gray-600">{t(solution.descKey)}</p>
 
         <div className="mt-6 grid grid-cols-2 gap-2">
           {solution.featureKeys.map((featureKey) => (

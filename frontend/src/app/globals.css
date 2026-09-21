@@ -8,6 +8,8 @@
   :root {
     color-scheme: light;
     --font-inter: "Inter Variable";
+    --font-nunito: "Nunito Variable";
+    --font-baloo: "Baloo Da 2 Variable";
     --font-open-sans: "Open Sans Variable";
     --font-jetbrains: "JetBrains Mono Variable";
     --font-hind-siliguri: "Hind Siliguri";
@@ -20,14 +22,13 @@
 
   body {
     @apply bg-surface-0 text-ink-800 antialiased;
-    /* ADL (Ant Design) stack: crisp system UI fonts — Segoe UI on Windows, SF on Apple, Roboto on Android. */
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif;
-    font-size: 14px;
-    line-height: 20px;
-    /* Fleet data is mostly numbers: keep digits the same width so columns
-       and live speed/duration values don't jitter as they update. */
+    /* Nunito: rounded, friendly, legible at a distance. 16px base so nothing in the
+       app needs reading glasses; Hind Siliguri is the fallback for Bengali glyphs. */
+    font-family: var(--font-nunito), "Nunito", var(--font-hind-siliguri), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    font-size: 16px;
+    line-height: 24px;
+    /* Live values (speed, battery, durations) update in place: keep digits one width. */
     font-variant-numeric: tabular-nums;
-    font-feature-settings: "tnum" 1, "cv11" 1;
     text-rendering: optimizeLegibility;
   }
 
@@ -36,8 +37,8 @@
      nudge the base size up a notch to keep the two locales equally readable. */
   html[lang="bn"] body {
     font-family: var(--font-hind-siliguri), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-    font-size: 15px;
-    line-height: 22px;
+    font-size: 17px;
+    line-height: 26px;
     font-feature-settings: normal;
   }
 
@@ -47,14 +48,26 @@
     font-feature-settings: "tnum" 1;
   }
 
-  /* Headline text gets slightly tighter tracking; Inter is set loose by default. */
   .font-display {
-    letter-spacing: -0.012em;
+    font-family: var(--font-baloo), "Baloo Da 2", var(--font-nunito), var(--font-hind-siliguri), sans-serif;
   }
 
   h1, h2, h3, h4 {
     @apply text-ink-900;
-    letter-spacing: -0.012em;
+    font-family: var(--font-baloo), "Baloo Da 2", var(--font-nunito), var(--font-hind-siliguri), sans-serif;
+  }
+
+  /* Visible keyboard focus everywhere: a 3px teal ring, never removed. */
+  :focus-visible {
+    outline: 3px solid rgba(15, 107, 92, 0.55);
+    outline-offset: 2px;
+  }
+
+  /* Touch screens: every control reaches the 44px minimum target. */
+  @media (pointer: coarse) {
+    .btn-primary, .btn-secondary, .btn-danger { min-height: 44px; }
+    .btn-ghost, .btn-icon { min-height: 44px; min-width: 44px; }
+    .input, .select, .input-search { height: 44px; }
   }
 
   ::selection {
@@ -69,20 +82,20 @@
     font-family: inherit;
   }
 
-  /* Scrollbars (ADL Moto Viewer Style) */
+  /* Scrollbars  */
   *::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
+    width: 10px;
+    height: 10px;
   }
   *::-webkit-scrollbar-track {
-    background: #f5f5f5;
+    background: #F7FAF9;
   }
   *::-webkit-scrollbar-thumb {
-    background: #cccccc;
-    border-radius: 2px;
+    background: #BCCBC6;
+    border-radius: 999px;
   }
   *::-webkit-scrollbar-thumb:hover {
-    background: #b3b3b3;
+    background: #A3B5B0;
   }
 }
 
@@ -98,21 +111,21 @@
        t-label    10/14 medium   ink-500   uppercase field labels
        t-link     13/18 medium   link      in-app links (vehicle names)
      10px is the floor — nothing in the app renders smaller. */
-  .t-title   { @apply text-[17px] leading-[22px] font-semibold text-ink-900; }
-  .t-heading { @apply text-[15px] leading-5 font-semibold text-ink-900; }
-  .t-body    { @apply text-[14px] leading-5 text-ink-700; }
-  .t-value   { @apply text-[14px] leading-5 font-semibold text-ink-900 tabular-nums; }
-  .t-caption { @apply text-[13px] leading-[18px] text-ink-500; }
-  .t-label   { @apply text-[11px] leading-4 font-medium uppercase tracking-[0.06em] text-ink-500; }
-  .t-link    { @apply text-[14px] leading-5 font-medium text-link hover:text-link-hover; }
+  .t-title   { @apply font-display text-[20px] leading-[26px] font-semibold text-ink-900; }
+  .t-heading { @apply text-[16px] leading-[22px] font-semibold text-ink-900; }
+  .t-body    { @apply text-[15px] leading-[22px] text-ink-700; }
+  .t-value   { @apply text-[15px] leading-[22px] font-semibold text-ink-900 tabular-nums; }
+  .t-caption { @apply text-[14px] leading-5 text-ink-500; }
+  .t-label   { @apply text-[12px] leading-4 font-medium uppercase tracking-[0.06em] text-ink-500; }
+  .t-link    { @apply text-[15px] leading-[22px] font-medium text-link hover:text-link-hover; }
 
-  /* ── Surfaces (ADL palette: white cards on #EAEEF2, #dddddd borders) ── */
+  /* ── Surfaces: white cards on #EEF4F2, #D2DEDA borders ── */
   .modal-overlay {
     @apply fixed inset-0 z-[1300] flex items-center justify-center bg-ink-950/40 p-4;
   }
   .modal {
     @apply w-full overflow-hidden border border-surface-300 bg-white shadow-xl;
-    border-radius: 4px;
+    border-radius: 16px;
   }
   .modal-header {
     @apply flex items-center justify-between border-b border-surface-300 px-4 py-3;
@@ -121,295 +134,314 @@
     @apply flex items-center justify-end gap-2 border-t border-surface-300 bg-surface-50 px-4 py-3;
   }
 
-  /* Data tables: white header row with muted 13px labels, #262626 cells (ADL grid). */
+  /* Data tables: white header row with muted 13px labels, #1C2B28 cells (ADL grid). */
   .table {
-    @apply w-full text-[14px] text-ink-800;
+    @apply w-full text-[15px] text-ink-800;
   }
   .table thead th {
-    @apply sticky top-0 z-10 border-b border-surface-300 bg-white px-4 py-2.5 text-left text-[13px] font-semibold text-ink-500;
+    @apply sticky top-0 z-10 border-b border-surface-300 bg-white px-4 py-2.5 text-left text-[14px] font-semibold text-ink-500;
   }
   .table tbody td {
-    @apply border-b border-surface-200 px-4 py-2 align-top;
+    @apply border-b border-surface-200 px-4 py-3 align-top;
   }
   .table tbody tr:hover {
     @apply bg-surface-50;
   }
 
-  /* ── Buttons (ADL Moto Viewer Style) ─────────────────────────────── */
+  /* ── Buttons  ─────────────────────────────── */
   .btn-danger {
-    @apply inline-flex items-center justify-center gap-1 px-3 text-[14px] font-semibold text-white transition focus:outline-none disabled:cursor-not-allowed disabled:opacity-50;
-    background-color: #dc2626;
-    border-radius: 2px;
-    height: 28px;
+    @apply inline-flex items-center justify-center gap-1 px-4 text-[15px] font-semibold text-white transition focus:outline-none disabled:cursor-not-allowed disabled:opacity-50;
+    background-color: #D92D20;
+    border-radius: 10px;
+    min-height: 40px;
   }
   .btn-danger:hover {
-    background-color: #b91c1c;
+    background-color: #B42318;
   }
 
   .btn-primary {
-    @apply inline-flex items-center justify-center gap-1 px-3 py-[5px] text-[14px] font-semibold text-white transition focus:outline-none disabled:cursor-not-allowed disabled:opacity-50;
-    background-color: #0421bc;
-    border-radius: 2px;
-    height: 28px;
+    @apply inline-flex items-center justify-center gap-1 px-4 text-[15px] font-semibold text-white transition focus:outline-none disabled:cursor-not-allowed disabled:opacity-50;
+    background-color: #0F6B5C;
+    border-radius: 10px;
+    min-height: 40px;
   }
   .btn-primary:hover {
-    background-color: #031a96;
+    background-color: #0C5A4D;
   }
 
   .btn-secondary {
-    @apply inline-flex items-center justify-center gap-1 px-3 text-[14px] font-semibold transition focus:outline-none disabled:cursor-not-allowed disabled:opacity-50;
+    @apply inline-flex items-center justify-center gap-1 px-4 text-[15px] font-semibold transition focus:outline-none disabled:cursor-not-allowed disabled:opacity-50;
     background-color: #ffffff;
-    border: 1px solid #dddddd;
-    border-radius: 2px;
-    color: #3D4353;
-    height: 28px;
+    border: 1px solid #D2DEDA;
+    border-radius: 10px;
+    color: #2B3B38;
+    min-height: 40px;
   }
   .btn-secondary:hover {
-    background-color: #f5f5f5;
-    border-color: #cccccc;
+    background-color: #F7FAF9;
+    border-color: #BCCBC6;
   }
 
   .btn-ghost {
-    @apply inline-flex items-center justify-center gap-1 px-2 text-[14px] transition focus:outline-none;
+    @apply inline-flex items-center justify-center gap-1 px-3 text-[15px] transition focus:outline-none;
     background-color: transparent;
-    border-radius: 2px;
-    color: #7E8792;
-    height: 26px;
+    border-radius: 10px;
+    color: #52625F;
+    min-height: 36px;
   }
   .btn-ghost:hover {
     background-color: rgba(0, 0, 0, 0.05);
-    color: #3D4353;
+    color: #2B3B38;
   }
 
   .btn-icon {
     @apply inline-flex items-center justify-center transition focus:outline-none;
-    border-radius: 2px;
-    color: #7E8792;
-    width: 28px;
-    height: 28px;
+    border-radius: 10px;
+    color: #52625F;
+    width: 36px;
+    height: 36px;
   }
   .btn-icon:hover {
     background-color: rgba(0, 0, 0, 0.05);
-    color: #3D4353;
+    color: #2B3B38;
   }
 
-  /* ── Inputs (ADL Moto Viewer Style) ──────────────────────────────── */
+  /* The buttons above drop the default outline; give keyboard users a clear ring back. */
+  .btn-primary:focus-visible,
+  .btn-secondary:focus-visible,
+  .btn-danger:focus-visible,
+  .btn-ghost:focus-visible,
+  .btn-icon:focus-visible {
+    outline: 3px solid rgba(15, 107, 92, 0.55);
+    outline-offset: 2px;
+  }
+  .btn-primary:active,
+  .btn-secondary:active,
+  .btn-danger:active {
+    transform: translateY(1px);
+  }
+
+  /* ── Inputs  ──────────────────────────────── */
   .input {
-    @apply w-full px-2 text-[14px] transition focus:outline-none disabled:opacity-50;
+    @apply w-full px-3 text-[15px] transition focus:outline-none disabled:opacity-50;
     background-color: #ffffff;
-    border: 1px solid #dddddd;
-    border-radius: 2px;
-    color: #262626;
-    height: 28px;
+    border: 1px solid #D2DEDA;
+    border-radius: 10px;
+    color: #1C2B28;
+    height: 40px;
   }
   .input::placeholder {
-    color: #888888;
+    color: #637370;
   }
   .input:focus {
-    border-color: #0421bc;
-    box-shadow: 0 0 0 1px rgba(4, 33, 188, 0.2);
+    border-color: #0F6B5C;
+    box-shadow: 0 0 0 3px rgba(15, 107, 92, 0.22);
   }
 
   .input-search {
     @apply input;
-    padding-left: 26px;
-    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23888888' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'><circle cx='11' cy='11' r='7'/><path d='m21 21-4-4'/></svg>");
+    padding-left: 34px;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='15' height='15' viewBox='0 0 24 24' fill='none' stroke='%23637370' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'><circle cx='11' cy='11' r='7'/><path d='m21 21-4-4'/></svg>");
     background-repeat: no-repeat;
-    background-position: 8px center;
+    background-position: 11px center;
     background-color: #ffffff;
   }
 
   .select {
     @apply input;
     appearance: none;
-    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%23888888' stroke-width='2.5'><path d='m6 9 6 6 6-6'/></svg>");
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23637370' stroke-width='2.5'><path d='m6 9 6 6 6-6'/></svg>");
     background-repeat: no-repeat;
-    background-position: right 8px center;
-    padding-right: 24px;
+    background-position: right 12px center;
+    padding-right: 32px;
     background-color: #ffffff;
   }
 
-  /* ── Surfaces (ADL Moto Viewer Style) ────────────────────────────── */
+  /* ── Surfaces  ────────────────────────────── */
   .panel {
     background-color: #ffffff;
-    border: 1px solid #dddddd;
-    border-radius: 2px;
+    border: 1px solid #D2DEDA;
+    border-radius: 12px;
   }
 
   .panel-header {
-    @apply flex items-center justify-between px-3;
-    background-color: #f5f5f5;
-    border-bottom: 1px solid #dddddd;
-    height: 32px;
-    font-size: 14px;
+    @apply flex items-center justify-between px-4;
+    background-color: #F7FAF9;
+    border-bottom: 1px solid #D2DEDA;
+    min-height: 44px;
+    font-size: 15px;
     font-weight: 600;
-    color: #3D4353;
+    color: #2B3B38;
   }
 
   .panel-body {
-    @apply p-3;
+    @apply p-4;
     background-color: #ffffff;
   }
 
-  /* ── Tables (ADL Moto Viewer Style) ──────────────────────────────── */
+  /* ── Tables  ──────────────────────────────── */
   .data-table {
     @apply w-full border-collapse;
-    font-size: 14px;
+    font-size: 15px;
   }
   .data-table thead th {
-    @apply sticky top-0 z-10 px-2 py-[6px] text-left font-semibold;
-    background-color: #f5f5f5;
-    border-bottom: 1px solid #dddddd;
-    color: #3D4353;
+    @apply sticky top-0 z-10 px-3 py-2.5 text-left font-semibold;
+    background-color: #F7FAF9;
+    border-bottom: 1px solid #D2DEDA;
+    color: #2B3B38;
   }
   .data-table tbody td {
-    @apply px-2 py-[6px];
-    border-bottom: 1px solid #eeeeee;
-    color: #3D4353;
+    @apply px-3 py-2.5;
+    border-bottom: 1px solid #E1EAE7;
+    color: #2B3B38;
   }
   .data-table tbody tr:hover td {
-    background-color: rgba(4, 33, 188, 0.05);
+    background-color: rgba(15, 107, 92, 0.05);
   }
   .data-table tbody tr.is-selected td {
-    background-color: rgba(4, 33, 188, 0.1);
+    background-color: rgba(15, 107, 92, 0.1);
   }
 
-  /* ── Status pills (ADL Moto Viewer Style) ────────────────────────── */
+  /* ── Status pills  ────────────────────────── */
   .status-pill {
-    @apply inline-flex h-[18px] items-center px-2 text-[11px] font-semibold uppercase tracking-wide text-white;
-    border-radius: 2px;
+    @apply inline-flex h-[22px] items-center px-2.5 text-[12px] font-semibold uppercase tracking-wide text-white;
+    border-radius: 999px;
   }
-  .status-pill-moving { background-color: #52c41a; }
-  .status-pill-idle { background-color: #faad14; }
-  .status-pill-stopped { background-color: #1890ff; }
-  .status-pill-offline { background-color: #8c8c8c; }
-  .status-pill-expired { background-color: #ff4d4f; }
-  .status-pill-nodata { background-color: #d9d9d9; color: #3D4353; }
+  .status-pill-moving { background-color: #16A34A; }
+  .status-pill-idle { background-color: #D97706; }
+  .status-pill-stopped { background-color: #2563EB; }
+  .status-pill-offline { background-color: #6B7A77; }
+  .status-pill-expired { background-color: #D92D20; }
+  .status-pill-nodata { background-color: #d9d9d9; color: #2B3B38; }
 
   .status-dot {
-    @apply inline-block h-[8px] w-[8px] rounded-full;
+    @apply inline-block h-[10px] w-[10px] rounded-full;
   }
-  .status-dot-online { background-color: #52c41a; }
-  .status-dot-offline { background-color: #8c8c8c; }
-  .status-dot-idle { background-color: #faad14; }
-  .status-dot-stopped { background-color: #1890ff; }
+  .status-dot-online { background-color: #16A34A; }
+  .status-dot-offline { background-color: #6B7A77; }
+  .status-dot-idle { background-color: #D97706; }
+  .status-dot-stopped { background-color: #2563EB; }
 
-  /* ── Tabs (ADL Moto Viewer Style) ────────────────────────────────── */
+  /* ── Tabs  ────────────────────────────────── */
   .tab-bar {
     @apply flex items-stretch overflow-x-auto;
-    background-color: #f5f5f5;
-    border-bottom: 1px solid #dddddd;
+    background-color: #F7FAF9;
+    border-bottom: 1px solid #D2DEDA;
     scrollbar-width: none;
   }
   .tab-bar::-webkit-scrollbar {
     display: none;
   }
   .tab-item {
-    @apply flex h-[32px] cursor-pointer items-center gap-1.5 px-3 font-semibold transition;
-    font-size: 14px;
-    color: #7E8792;
-    border-bottom: 2px solid transparent;
+    @apply flex h-[42px] cursor-pointer items-center gap-1.5 px-4 font-semibold transition;
+    font-size: 15px;
+    color: #52625F;
+    border-bottom: 3px solid transparent;
   }
   .tab-item:hover {
-    color: #3D4353;
+    color: #2B3B38;
     background-color: rgba(0, 0, 0, 0.03);
   }
   .tab-item-active {
     @apply tab-item;
-    color: #0421bc;
-    border-bottom-color: #0421bc;
+    color: #0F6B5C;
+    border-bottom-color: #0F6B5C;
     background-color: #ffffff;
   }
 
-  /* ── Top panel nav (ADL Moto Viewer Style) ───────────────────────── */
+  /* ── Top panel nav  ───────────────────────── */
   .topnav-item {
-    @apply inline-flex h-10 items-center gap-1.5 px-3 font-semibold transition;
-    font-size: 14px;
-    color: #7E8792;
+    @apply inline-flex h-11 items-center gap-1.5 px-3 font-semibold transition;
+    font-size: 15px;
+    color: #52625F;
   }
   .topnav-item:hover {
     background-color: rgba(0, 0, 0, 0.03);
-    color: #3D4353;
+    color: #2B3B38;
   }
   .topnav-item-active {
     @apply topnav-item;
-    border-bottom: 2px solid #0421bc;
-    color: #0421bc;
+    border-bottom: 3px solid #0F6B5C;
+    color: #0F6B5C;
     background-color: #ffffff;
   }
 
-  /* ── Filter chips (ADL Moto Viewer Style) ────────────────────────── */
+  /* ── Filter chips  ────────────────────────── */
   .filter-chip {
-    @apply inline-flex h-[22px] cursor-pointer items-center gap-1.5 px-2 text-[12px] font-semibold transition;
-    background-color: #f5f5f5;
-    border: 1px solid #dddddd;
-    border-radius: 2px;
-    color: #7E8792;
+    @apply inline-flex h-[32px] cursor-pointer items-center gap-1.5 px-3.5 text-[13px] font-semibold transition;
+    background-color: #F7FAF9;
+    border: 1px solid #D2DEDA;
+    border-radius: 999px;
+    color: #52625F;
   }
   .filter-chip:hover {
-    background-color: #eeeeee;
-    color: #3D4353;
+    background-color: #E1EAE7;
+    color: #2B3B38;
   }
   .filter-chip-active {
     @apply filter-chip;
-    background-color: #0421bc;
-    border-color: #0421bc;
+    background-color: #0F6B5C;
+    border-color: #0F6B5C;
     color: #ffffff;
   }
 
-  /* ── Resize handles (ADL Moto Viewer Style) ──────────────────────── */
+  /* ── Resize handles  ──────────────────────── */
   .resize-handle-x {
     @apply w-[5px] shrink-0 cursor-col-resize;
-    background-color: #EAEEF2;
+    background-color: #EEF4F2;
   }
   .resize-handle-x:hover {
-    background-color: #dddddd;
+    background-color: #D2DEDA;
   }
   .resize-handle-y {
     @apply h-[5px] shrink-0 cursor-row-resize;
-    background-color: #EAEEF2;
+    background-color: #EEF4F2;
   }
   .resize-handle-y:hover {
-    background-color: #dddddd;
+    background-color: #D2DEDA;
   }
 
-  /* ── Datalist row (ADL Moto Viewer Style) ───────────────────────── */
+  /* ── Datalist row  ───────────────────────── */
   .data-row {
-    @apply flex min-h-[24px] items-center px-3;
-    font-size: 14px;
-    border-bottom: 1px solid #eeeeee;
+    @apply flex min-h-[34px] items-center px-3;
+    font-size: 15px;
+    border-bottom: 1px solid #E1EAE7;
   }
   .data-row dt {
     @apply w-44 shrink-0;
-    color: #7E8792;
+    color: #52625F;
   }
   .data-row dd {
     @apply min-w-0 flex-1 truncate;
-    color: #3D4353;
+    color: #2B3B38;
   }
 }
 
-/* Leaflet attribution and control restyle (ADL Moto Viewer Style) */
+/* Leaflet attribution and control restyle  */
 .leaflet-control-attribution {
   background-color: rgba(255, 255, 255, 0.9) !important;
-  color: #7E8792 !important;
+  color: #52625F !important;
   font-size: 11px !important;
   border: none !important;
-  border-radius: 2px 0 0 0 !important;
+  border-radius: 8px 0 0 0 !important;
 }
 .leaflet-control-zoom {
-  border: 1px solid #dddddd !important;
-  border-radius: 2px !important;
+  border: 1px solid #D2DEDA !important;
+  border-radius: 12px !important;
   overflow: hidden !important;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1) !important;
 }
 .leaflet-control-zoom a {
+  width: 38px !important;
+  height: 38px !important;
+  line-height: 38px !important;
+  font-size: 20px !important;
   background-color: #ffffff !important;
-  color: #3D4353 !important;
-  border-bottom: 1px solid #dddddd !important;
+  color: #2B3B38 !important;
+  border-bottom: 1px solid #D2DEDA !important;
 }
 .leaflet-control-zoom a:hover {
-  background-color: #f5f5f5 !important;
+  background-color: #F7FAF9 !important;
 }
 .leaflet-control-zoom a:last-child {
   border-bottom: none !important;
@@ -417,12 +449,12 @@
 
 /* Measure tool styles */
 .pp-measure-line {
-  stroke: #2B82D4;
+  stroke: #0F6B5C;
   stroke-width: 2;
   stroke-dasharray: 6, 4;
 }
 .pp-measure-label {
-  background: rgba(15, 39, 66, 0.9);
+  background: rgba(11, 46, 40, 0.9);
   color: #fff;
   font-size: 12px;
   padding: 2px 6px;
@@ -440,7 +472,7 @@
   align-items: center;
   justify-content: center;
   border-radius: 50%;
-  font-family: 'Inter', sans-serif;
+  font-family: inherit;
   font-weight: 600;
   color: #fff;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
@@ -453,9 +485,9 @@
 }
 /* ADL clusters: translucent primary-blue disc with a solid core and blue count. */
 .pp-cluster {
-  background: rgba(4, 33, 188, 0.18);
-  border: 3px solid rgba(4, 33, 188, 0.28);
-  color: #0421bc;
+  background: rgba(15, 107, 92, 0.18);
+  border: 3px solid rgba(15, 107, 92, 0.28);
+  color: #0F6B5C;
   box-shadow: none;
 }
 .pp-cluster-small {
@@ -471,7 +503,7 @@
 .pp-cluster-large {
   width: 50px;
   height: 50px;
-  background: rgba(4, 33, 188, 0.28);
+  background: rgba(15, 107, 92, 0.28);
   font-size: 15px;
 }
 /* Override default leaflet.markercluster styles */
@@ -497,7 +529,7 @@
   }
   .mkt-btn-primary:hover {
     @apply shadow-mkt-lg -translate-y-0.5;
-    background: linear-gradient(to right, #1F6AB1, #2B82D4);
+    background: linear-gradient(to right, #0C5A4D, #0F6B5C);
   }
   .mkt-btn-primary:focus {
     @apply outline-none ring-2 ring-brand-500/50 ring-offset-2;
@@ -592,7 +624,7 @@
 
   .mkt-section-dark {
     @apply mkt-section relative overflow-hidden;
-    background: linear-gradient(135deg, #0A1928 0%, #0E3257 40%, #0A1928 100%);
+    background: linear-gradient(135deg, #061C18 0%, #0E3257 40%, #061C18 100%);
   }
 
   .mkt-section-dark .mkt-heading-xl,
@@ -631,7 +663,7 @@
 
   .mkt-card-pricing-popular {
     @apply mkt-card-pricing border-2 border-brand-500;
-    box-shadow: 0 8px 32px -8px rgba(43,130,212,0.25), 0 4px 16px -4px rgba(0,0,0,0.08);
+    box-shadow: 0 8px 32px -8px rgba(15,107,92,0.25), 0 4px 16px -4px rgba(0,0,0,0.08);
   }
 
   .mkt-card-industry {
@@ -813,7 +845,7 @@
 
   /* Dark glass - for dark theme or dark overlays */
   .glass-dark {
-    background: rgba(15, 39, 66, 0.85);
+    background: rgba(11, 46, 40, 0.85);
     backdrop-filter: blur(16px);
     -webkit-backdrop-filter: blur(16px);
     border: 1px solid rgba(100, 116, 139, 0.25);
@@ -821,7 +853,7 @@
   }
 
   .glass-dark:hover {
-    background: rgba(15, 39, 66, 0.92);
+    background: rgba(11, 46, 40, 0.92);
     border-color: rgba(100, 116, 139, 0.35);
   }
 
@@ -887,7 +919,7 @@
 
   /* Glass tooltip/popup */
   .glass-tooltip {
-    background: rgba(15, 39, 66, 0.92);
+    background: rgba(11, 46, 40, 0.92);
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
     border: 1px solid rgba(100, 116, 139, 0.2);
@@ -926,7 +958,7 @@
 
   /* Glass overlay - for modals and overlays */
   .glass-overlay {
-    background: rgba(15, 39, 66, 0.4);
+    background: rgba(11, 46, 40, 0.4);
     backdrop-filter: blur(4px);
     -webkit-backdrop-filter: blur(4px);
   }

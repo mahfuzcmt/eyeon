@@ -33,7 +33,7 @@ export default function Page() {
     <div className="flex h-full flex-col bg-white">
       <div className="flex flex-wrap items-center gap-x-4 gap-y-2 border-b border-surface-200 px-4 py-3 bg-surface-50">
         <h1 className="font-display text-lg font-semibold text-ink-900">{t("settings.title")}</h1>
-        <div className="ml-auto flex max-w-full gap-1 overflow-x-auto rounded-lg border border-surface-200 bg-white p-0.5 text-[14px] shadow-sm">
+        <div className="ml-auto flex max-w-full gap-1 overflow-x-auto rounded-lg border border-surface-200 bg-white p-0.5 text-[15px] shadow-sm">
           {isAdmin && (
             <>
               <TabButton active={tab === "org"} onClick={() => setTab("org")}>

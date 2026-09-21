@@ -54,7 +54,7 @@ export default function Page() {
 
   if (!isAdmin) {
     return (
-      <div className="p-6 text-[14px] text-ink-400">
+      <div className="p-6 text-[15px] text-ink-400">
         Admin role required to view the audit log.
       </div>
     );
@@ -64,7 +64,7 @@ export default function Page() {
     <div className="flex h-full flex-col">
       <div className="flex flex-wrap items-center gap-3 border-b border-surface-300 px-4 py-3">
         <h1 className="font-display text-lg font-semibold">{t("audit.title")}</h1>
-        <div className="ml-auto flex flex-wrap items-center gap-2 text-[13px]">
+        <div className="ml-auto flex flex-wrap items-center gap-2 text-[14px]">
           <label className="flex items-center gap-1">
             <span className="text-ink-400">{t("common.from")}</span>
             <input
@@ -101,15 +101,15 @@ export default function Page() {
       </div>
 
       <div className="flex-1 overflow-auto">
-        {loading && <div className="px-4 py-6 text-[14px] text-ink-400">{t("common.loading")}</div>}
-        {error && <div className="px-4 py-6 text-[14px] text-alarm-red">{error}</div>}
+        {loading && <div className="px-4 py-6 text-[15px] text-ink-400">{t("common.loading")}</div>}
+        {error && <div className="px-4 py-6 text-[15px] text-alarm-red">{error}</div>}
         {!loading && entries.length === 0 && (
-          <div className="px-4 py-12 text-center text-[14px] text-ink-400">{t("common.empty")}</div>
+          <div className="px-4 py-12 text-center text-[15px] text-ink-400">{t("common.empty")}</div>
         )}
 
         {entries.length > 0 && (
-          <table className="w-full min-w-[760px] text-[14px]">
-            <thead className="sticky top-0 z-10 bg-white text-left text-[13px] uppercase text-ink-400">
+          <table className="w-full min-w-[760px] text-[15px]">
+            <thead className="sticky top-0 z-10 bg-white text-left text-[14px] uppercase text-ink-400">
               <tr>
                 <th className="px-4 py-2">{t("audit.when")}</th>
                 <th className="px-4 py-2">{t("audit.action")}</th>
@@ -126,27 +126,27 @@ export default function Page() {
                     {formatDateTime(e.ts, locale)}
                   </td>
                   <td className="px-4 py-2">
-                    <span className="rounded bg-surface-100 px-2 py-0.5 font-mono text-[13px]">
+                    <span className="rounded bg-surface-100 px-2 py-0.5 font-mono text-[14px]">
                       {e.action}
                     </span>
                   </td>
                   <td className="px-4 py-2 text-ink-800">
                     {e.resourceType && (
                       <>
-                        <div className="text-[13px] text-ink-400">{e.resourceType}</div>
-                        <div className="font-mono text-[13px]">{e.resourceId ?? "—"}</div>
+                        <div className="text-[14px] text-ink-400">{e.resourceType}</div>
+                        <div className="font-mono text-[14px]">{e.resourceId ?? "—"}</div>
                       </>
                     )}
                   </td>
-                  <td className="px-4 py-2 font-mono text-[13px] text-ink-800">
+                  <td className="px-4 py-2 font-mono text-[14px] text-ink-800">
                     {e.userId ? e.userId.slice(0, 8) : "—"}
                   </td>
-                  <td className="px-4 py-2 font-mono text-[13px] text-ink-800">
+                  <td className="px-4 py-2 font-mono text-[14px] text-ink-800">
                     {e.ipAddress ?? "—"}
                   </td>
                   <td className="px-4 py-2 max-w-md">
                     {e.metadata && (
-                      <pre className="overflow-x-auto rounded bg-surface-100 p-2 font-mono text-[12px] text-ink-800">
+                      <pre className="overflow-x-auto rounded bg-surface-100 p-2 font-mono text-[13px] text-ink-800">
                         {prettyJson(e.metadata)}
                       </pre>
                     )}

@@ -3,6 +3,8 @@ import { cookies } from "next/headers";
 import "./globals.css";
 
 // Self-hosted fonts via fontsource (no build-time fetches to fonts.gstatic.com).
+import "@fontsource-variable/nunito/wght.css";
+import "@fontsource-variable/baloo-da-2/wght.css";
 import "@fontsource-variable/inter/wght.css";
 import "@fontsource-variable/open-sans/wght.css";
 import "@fontsource-variable/jetbrains-mono/wght.css";
@@ -18,13 +20,13 @@ import "@fontsource/hind-siliguri/bengali-700.css";
 import { LocaleProvider } from "@/lib/i18n";
 
 export const metadata: Metadata = {
-  title: "EyeOn — Fleet Tracking",
-  description: "Multi-tenant GPS tracking for Bangladesh fleets.",
+  title: "EyeOn — Keep an eye on the ones you love",
+  description: "Live location, safe-zone alerts and SOS for children and elderly family members.",
   icons: { icon: "/favicon.svg" },
 };
 
 export const viewport: Viewport = {
-  themeColor: "#FFFFFF",
+  themeColor: "#0F6B5C",
 };
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {

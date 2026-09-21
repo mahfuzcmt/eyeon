@@ -71,7 +71,7 @@ export default function HistoryTab({ imei, range }: { imei: string; range: Detai
           <>
             <div className="pointer-events-none absolute left-3 top-3 z-[1000] rounded-md border border-surface-300 bg-white/95 px-3 py-1.5 shadow-menu">
               <span className="text-xl font-bold leading-none text-ink-900">{curKph}</span>
-              <span className="ml-1 text-[11px] text-ink-500">{t("fleet.kmh")}</span>
+              <span className="ml-1 text-[12px] text-ink-500">{t("fleet.kmh")}</span>
             </div>
             <div className="absolute inset-x-3 bottom-3 z-[1000] flex items-center gap-2 rounded-md border border-surface-300 bg-white/95 px-3 py-2 shadow-menu">
               <button type="button" className="btn-icon" onClick={() => setIdx(0)}>⏮</button>
@@ -94,16 +94,16 @@ export default function HistoryTab({ imei, range }: { imei: string; range: Detai
 
       {/* Segment list */}
       <div className="flex min-h-0 w-full flex-col border-t border-surface-300 md:w-80 md:border-l md:border-t-0">
-        <div className="flex shrink-0 items-center gap-3 border-b border-surface-300 bg-surface-100 px-3 py-2 text-[13px]">
+        <div className="flex shrink-0 items-center gap-3 border-b border-surface-300 bg-surface-100 px-3 py-2 text-[14px]">
           <span className="font-semibold text-ink-900">{range.label}</span>
           <span className="text-ink-500">{formatNumber(totalKm, locale, { maximumFractionDigits: 1 })} {t("kpi.km")}</span>
           <span className="text-ink-500">max {maxKph} {t("fleet.kmh")}</span>
         </div>
         <div className="min-h-0 flex-1 overflow-y-auto">
           {loading ? (
-            <p className="py-8 text-center text-[13px] text-ink-500">{t("common.loading")}</p>
+            <p className="py-8 text-center text-[14px] text-ink-500">{t("common.loading")}</p>
           ) : trips.length === 0 ? (
-            <p className="py-8 text-center text-[13px] text-ink-500">{t("common.empty")}</p>
+            <p className="py-8 text-center text-[14px] text-ink-500">{t("common.empty")}</p>
           ) : (
             trips.map((tr) => (
               <button
@@ -115,15 +115,15 @@ export default function HistoryTab({ imei, range }: { imei: string; range: Detai
                 }`}
               >
                 <div className="min-w-0 flex-1">
-                  <div className="text-[13px] font-semibold text-ink-900">
+                  <div className="text-[14px] font-semibold text-ink-900">
                     {fmtTime(tr.startedAt)} → {fmtTime(tr.endedAt)}
                   </div>
-                  <div className="text-[12px] text-ink-500">
+                  <div className="text-[13px] text-ink-500">
                     {formatNumber(tr.distanceM / 1000, locale, { maximumFractionDigits: 1 })} {t("kpi.km")} ·{" "}
                     {formatDurationS(tr.durationS ?? 0, locale)} · max {tr.maxSpeed}
                   </div>
                 </div>
-                <span className={`text-[11px] ${tr.status === "IN_PROGRESS" ? "text-status-moving" : "text-ink-400"}`}>
+                <span className={`text-[12px] ${tr.status === "IN_PROGRESS" ? "text-status-moving" : "text-ink-400"}`}>
                   {tr.status === "IN_PROGRESS" ? t("trips.inProgress") : formatRelative(tr.startedAt, locale)}
                 </span>
               </button>

@@ -21,10 +21,10 @@ export function DeviceDetailPanel({ device, location, onClose }: Props) {
     <section className="absolute right-0 top-0 z-10 h-full w-[360px] border-l border-surface-300 bg-white shadow-menu">
       <header className="panel-header">
         <div className="min-w-0">
-          <div className="truncate text-[13px] font-semibold text-ink-900">
+          <div className="truncate text-[14px] font-semibold text-ink-900">
             {device.name || device.vehiclePlate || device.imei}
           </div>
-          <div className="font-mono text-[11px] text-ink-500">{device.imei}</div>
+          <div className="font-mono text-[12px] text-ink-500">{device.imei}</div>
         </div>
         <div className="flex items-center gap-1">
           <button
@@ -79,7 +79,7 @@ export function DeviceDetailPanel({ device, location, onClose }: Props) {
           <>
             <div className="data-row">
               <dt>Position</dt>
-              <dd className="font-mono text-[12px]">
+              <dd className="font-mono text-[13px]">
                 {formatNumber(location.latitude, "en", { maximumFractionDigits: 5 })},{" "}
                 {formatNumber(location.longitude, "en", { maximumFractionDigits: 5 })}
               </dd>
@@ -134,7 +134,7 @@ export function DeviceDetailPanel({ device, location, onClose }: Props) {
         {device.simMsisdn && (
           <div className="data-row">
             <dt>{t("fleet.sim")}</dt>
-            <dd className="font-mono text-[12px]">{device.simMsisdn}</dd>
+            <dd className="font-mono text-[13px]">{device.simMsisdn}</dd>
           </div>
         )}
         {device.vehiclePlate && (
@@ -146,7 +146,7 @@ export function DeviceDetailPanel({ device, location, onClose }: Props) {
         {device.protocol && (
           <div className="data-row">
             <dt>Protocol</dt>
-            <dd className="font-mono text-[12px]">
+            <dd className="font-mono text-[13px]">
               {device.protocol}
               {device.protocolVariant ? ` ${device.protocolVariant}` : ""}
             </dd>

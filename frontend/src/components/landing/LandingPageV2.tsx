@@ -82,7 +82,7 @@ function Logo({ dark = false }: { dark?: boolean }) {
       </svg>
       <div>
         <div className={`text-xl font-extrabold leading-tight tracking-tight ${dark ? "text-gray-900" : "text-white"}`}>EyeOn</div>
-        <div className="text-[10px] font-semibold uppercase tracking-widest text-teal-600">GPS Tracking</div>
+        <div className="text-[12px] font-semibold uppercase tracking-widest text-teal-600">GPS Tracking</div>
       </div>
     </motion.div>
   );
@@ -165,21 +165,21 @@ function Nav() {
 
         <nav className="hidden items-center gap-1 lg:flex" aria-label="Main">
           {NAV_LINKS.map((l) => (
-            <motion.a key={l.href} href={l.href} whileHover={{ y: -2 }} className={`rounded-lg px-4 py-2 text-[14px] font-medium transition-colors ${scrolled ? "text-gray-700 hover:text-teal-600" : "text-white/90 hover:text-white"}`}>
+            <motion.a key={l.href} href={l.href} whileHover={{ y: -2 }} className={`rounded-lg px-4 py-2 text-[15px] font-medium transition-colors ${scrolled ? "text-gray-700 hover:text-teal-600" : "text-white/90 hover:text-white"}`}>
               {l.label}
             </motion.a>
           ))}
         </nav>
 
         <div className="hidden items-center gap-3 lg:flex">
-          <Link href="/login" className={`rounded-lg px-5 py-2.5 text-[14px] font-semibold transition-all ${scrolled ? "text-gray-700 hover:text-teal-600" : "text-white hover:text-white/80"}`}>
+          <Link href="/login" className={`rounded-lg px-5 py-2.5 text-[15px] font-semibold transition-all ${scrolled ? "text-gray-700 hover:text-teal-600" : "text-white hover:text-white/80"}`}>
             Sign In
           </Link>
           <motion.a
             href="#contact"
             whileHover={{ scale: 1.02, y: -1 }}
             whileTap={{ scale: 0.98 }}
-            className="rounded-lg bg-teal-600 px-6 py-2.5 text-[14px] font-semibold text-white shadow-lg shadow-teal-600/30 transition-all hover:bg-teal-700 hover:shadow-xl"
+            className="rounded-lg bg-teal-600 px-6 py-2.5 text-[15px] font-semibold text-white shadow-lg shadow-teal-600/30 transition-all hover:bg-teal-700 hover:shadow-xl"
           >
             Get Started
           </motion.a>
@@ -194,13 +194,13 @@ function Nav() {
         <motion.nav initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="border-t border-gray-100 bg-white px-4 py-4 shadow-lg lg:hidden">
           <div className="flex flex-col gap-1">
             {NAV_LINKS.map((l) => (
-              <a key={l.href} href={l.href} onClick={() => setOpen(false)} className="rounded-lg px-4 py-3 text-[14px] font-medium text-gray-700 hover:bg-gray-50 hover:text-teal-600">
+              <a key={l.href} href={l.href} onClick={() => setOpen(false)} className="rounded-lg px-4 py-3 text-[15px] font-medium text-gray-700 hover:bg-gray-50 hover:text-teal-600">
                 {l.label}
               </a>
             ))}
             <div className="mt-4 flex gap-3">
-              <Link href="/login" className="flex-1 rounded-lg border border-gray-200 py-3 text-center text-[14px] font-semibold text-gray-700 hover:bg-gray-50">Sign In</Link>
-              <a href="#contact" onClick={() => setOpen(false)} className="flex-1 rounded-lg bg-teal-600 py-3 text-center text-[14px] font-semibold text-white">Get Started</a>
+              <Link href="/login" className="flex-1 rounded-lg border border-gray-200 py-3 text-center text-[15px] font-semibold text-gray-700 hover:bg-gray-50">Sign In</Link>
+              <a href="#contact" onClick={() => setOpen(false)} className="flex-1 rounded-lg bg-teal-600 py-3 text-center text-[15px] font-semibold text-white">Get Started</a>
             </div>
           </div>
         </motion.nav>
@@ -222,7 +222,7 @@ function Hero() {
       <div className="relative mx-auto max-w-7xl px-4 pb-20 pt-28 sm:px-6 lg:pb-32 lg:pt-36">
         <div className="grid items-center gap-12 lg:grid-cols-2 lg:gap-16">
           <motion.div initial="hidden" animate="visible" variants={staggerContainer}>
-            <motion.div variants={fadeInUp} className="mb-6 inline-flex items-center gap-2 rounded-full bg-teal-500/20 px-4 py-2 text-[13px] font-semibold text-teal-300">
+            <motion.div variants={fadeInUp} className="mb-6 inline-flex items-center gap-2 rounded-full bg-teal-500/20 px-4 py-2 text-[14px] font-semibold text-teal-300">
               <span className="relative flex h-2 w-2">
                 <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-teal-400 opacity-75" />
                 <span className="relative inline-flex h-2 w-2 rounded-full bg-teal-400" />
@@ -240,11 +240,11 @@ function Hero() {
             </motion.p>
 
             <motion.div variants={fadeInUp} className="mt-10 flex flex-wrap items-center gap-4">
-              <motion.a href="#contact" whileHover={{ scale: 1.02, y: -2 }} whileTap={{ scale: 0.98 }} className="group inline-flex h-14 items-center gap-2 rounded-xl bg-teal-500 px-8 text-[15px] font-bold text-white shadow-xl shadow-teal-500/30 transition-all hover:bg-teal-600 hover:shadow-2xl">
+              <motion.a href="#contact" whileHover={{ scale: 1.02, y: -2 }} whileTap={{ scale: 0.98 }} className="group inline-flex h-14 items-center gap-2 rounded-xl bg-teal-500 px-8 text-[16px] font-bold text-white shadow-xl shadow-teal-500/30 transition-all hover:bg-teal-600 hover:shadow-2xl">
                 Get Free Demo
                 <Icon path={ICONS.arrow} className="h-5 w-5 transition-transform group-hover:translate-x-1" />
               </motion.a>
-              <motion.a href={`tel:${CONTACT.hotline.replace(/[^+\d]/g, "")}`} whileHover={{ scale: 1.02 }} className="inline-flex h-14 items-center gap-2 rounded-xl border-2 border-white/20 bg-white/5 px-8 text-[15px] font-semibold text-white backdrop-blur transition-all hover:border-white/40 hover:bg-white/10">
+              <motion.a href={`tel:${CONTACT.hotline.replace(/[^+\d]/g, "")}`} whileHover={{ scale: 1.02 }} className="inline-flex h-14 items-center gap-2 rounded-xl border-2 border-white/20 bg-white/5 px-8 text-[16px] font-semibold text-white backdrop-blur transition-all hover:border-white/40 hover:bg-white/10">
                 <Icon path={ICONS.phone} className="h-5 w-5" />
                 {CONTACT.hotline}
               </motion.a>
@@ -305,7 +305,7 @@ function Hero() {
                     ].map((stat) => (
                       <div key={stat.label} className="flex-1 rounded-lg bg-gray-800/80 p-2.5 backdrop-blur">
                         <div className={`text-lg font-bold ${stat.color === "teal" ? "text-teal-400" : stat.color === "blue" ? "text-blue-400" : "text-amber-400"}`}>{stat.value}</div>
-                        <div className="text-[10px] text-gray-500">{stat.label}</div>
+                        <div className="text-[12px] text-gray-500">{stat.label}</div>
                       </div>
                     ))}
                   </motion.div>
@@ -421,7 +421,7 @@ function FeaturesSection() {
                   <Icon path={f.icon} className="h-6 w-6" />
                 </div>
                 <h3 className="text-lg font-semibold text-gray-900">{f.title}</h3>
-                <p className="mt-2 text-[14px] leading-relaxed text-gray-600">{f.desc}</p>
+                <p className="mt-2 text-[15px] leading-relaxed text-gray-600">{f.desc}</p>
               </motion.div>
             ))}
           </div>
@@ -564,7 +564,7 @@ function SolutionsSection() {
                   <Icon path={s.icon} className="h-7 w-7" />
                 </div>
                 <h3 className="text-xl font-bold text-gray-900">{s.title}</h3>
-                <p className="mt-3 text-[15px] leading-relaxed text-gray-600">{s.desc}</p>
+                <p className="mt-3 text-[16px] leading-relaxed text-gray-600">{s.desc}</p>
                 <motion.a href="#contact" className="mt-5 inline-flex items-center gap-1 text-sm font-semibold text-teal-600 transition-colors hover:text-teal-700">
                   Learn More <Icon path={ICONS.arrow} className="h-4 w-4" />
                 </motion.a>
@@ -608,7 +608,7 @@ function PricingSection() {
                 </div>
                 <ul className="mt-8 flex-1 space-y-4">
                   {p.features.map((f) => (
-                    <li key={f} className={`flex items-center gap-3 text-[15px] ${p.highlight ? "text-white" : "text-gray-600"}`}>
+                    <li key={f} className={`flex items-center gap-3 text-[16px] ${p.highlight ? "text-white" : "text-gray-600"}`}>
                       <div className={`flex h-5 w-5 items-center justify-center rounded-full ${p.highlight ? "bg-white/20" : "bg-teal-50"}`}>
                         <Icon path={ICONS.check} className={`h-3 w-3 ${p.highlight ? "text-white" : "text-teal-600"}`} />
                       </div>
@@ -620,7 +620,7 @@ function PricingSection() {
                   href="#contact"
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
-                  className={`mt-8 block rounded-xl py-4 text-center text-[15px] font-semibold transition-all ${p.highlight ? "bg-white text-teal-600 hover:bg-gray-50" : "bg-teal-600 text-white hover:bg-teal-700"}`}
+                  className={`mt-8 block rounded-xl py-4 text-center text-[16px] font-semibold transition-all ${p.highlight ? "bg-white text-teal-600 hover:bg-gray-50" : "bg-teal-600 text-white hover:bg-teal-700"}`}
                 >
                   Get Started
                 </motion.a>
@@ -650,11 +650,11 @@ function CTASection() {
             Get a free demo and see how EyeOn can help you track, monitor, and optimize your fleet.
           </motion.p>
           <motion.div variants={fadeInUp} className="mt-10 flex flex-wrap justify-center gap-4">
-            <motion.a href="#contact" whileHover={{ scale: 1.03, y: -2 }} whileTap={{ scale: 0.98 }} className="inline-flex h-14 items-center gap-2 rounded-xl bg-white px-8 text-[16px] font-bold text-teal-600 shadow-xl transition-all hover:bg-gray-50 hover:shadow-2xl">
+            <motion.a href="#contact" whileHover={{ scale: 1.03, y: -2 }} whileTap={{ scale: 0.98 }} className="inline-flex h-14 items-center gap-2 rounded-xl bg-white px-8 text-[17px] font-bold text-teal-600 shadow-xl transition-all hover:bg-gray-50 hover:shadow-2xl">
               Get Free Demo
               <Icon path={ICONS.arrow} className="h-5 w-5" />
             </motion.a>
-            <motion.a href={`tel:${CONTACT.hotline.replace(/[^+\d]/g, "")}`} whileHover={{ scale: 1.03 }} className="inline-flex h-14 items-center gap-2 rounded-xl border-2 border-white/30 bg-white/10 px-8 text-[16px] font-semibold text-white backdrop-blur transition-all hover:bg-white/20">
+            <motion.a href={`tel:${CONTACT.hotline.replace(/[^+\d]/g, "")}`} whileHover={{ scale: 1.03 }} className="inline-flex h-14 items-center gap-2 rounded-xl border-2 border-white/30 bg-white/10 px-8 text-[17px] font-semibold text-white backdrop-blur transition-all hover:bg-white/20">
               <Icon path={ICONS.phone} className="h-5 w-5" />
               {CONTACT.hotline}
             </motion.a>
@@ -692,7 +692,7 @@ function ContactSection() {
                       <Icon path={c.icon} className="h-5 w-5" />
                     </div>
                     <div className="text-xs font-semibold uppercase tracking-wider text-gray-500">{c.label}</div>
-                    {c.href ? <a href={c.href} className="mt-1 block text-[15px] font-semibold text-gray-900 hover:text-teal-600">{c.value}</a> : <div className="mt-1 text-[15px] font-semibold text-gray-900">{c.value}</div>}
+                    {c.href ? <a href={c.href} className="mt-1 block text-[16px] font-semibold text-gray-900 hover:text-teal-600">{c.value}</a> : <div className="mt-1 text-[16px] font-semibold text-gray-900">{c.value}</div>}
                   </motion.div>
                 ))}
               </div>
@@ -716,7 +716,7 @@ function ContactSection() {
                     <option>50+ vehicles</option>
                   </select>
                   <textarea rows={3} placeholder="Tell us about your tracking needs..." className="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-gray-900 placeholder-gray-400 outline-none transition focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20" />
-                  <motion.button type="submit" whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.99 }} className="flex h-14 w-full items-center justify-center gap-2 rounded-xl bg-teal-600 text-[15px] font-bold text-white shadow-lg shadow-teal-600/30 transition-all hover:bg-teal-700 hover:shadow-xl">
+                  <motion.button type="submit" whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.99 }} className="flex h-14 w-full items-center justify-center gap-2 rounded-xl bg-teal-600 text-[16px] font-bold text-white shadow-lg shadow-teal-600/30 transition-all hover:bg-teal-700 hover:shadow-xl">
                     Request Free Demo
                     <Icon path={ICONS.arrow} className="h-5 w-5" />
                   </motion.button>
@@ -739,7 +739,7 @@ function Footer() {
         <div className="grid gap-12 lg:grid-cols-4">
           <div className="lg:col-span-2">
             <Logo />
-            <p className="mt-6 max-w-md text-[14px] leading-relaxed text-gray-400">EyeOn GPS — Bangladesh&apos;s leading vehicle tracking platform. Real-time GPS tracking, fleet management, and analytics for businesses of all sizes.</p>
+            <p className="mt-6 max-w-md text-[15px] leading-relaxed text-gray-400">EyeOn GPS — Bangladesh&apos;s leading vehicle tracking platform. Real-time GPS tracking, fleet management, and analytics for businesses of all sizes.</p>
             <div className="mt-6 flex gap-3">
               {[
                 { label: "Facebook", href: "#" },
@@ -754,14 +754,14 @@ function Footer() {
           </div>
           <div>
             <h4 className="mb-5 text-sm font-semibold uppercase tracking-wider text-gray-400">Quick Links</h4>
-            <ul className="space-y-3 text-[14px]">
+            <ul className="space-y-3 text-[15px]">
               {NAV_LINKS.map((l) => <li key={l.href}><a href={l.href} className="text-gray-400 transition-colors hover:text-teal-400">{l.label}</a></li>)}
               <li><Link href="/login" className="text-gray-400 transition-colors hover:text-teal-400">Customer Login</Link></li>
             </ul>
           </div>
           <div>
             <h4 className="mb-5 text-sm font-semibold uppercase tracking-wider text-gray-400">Contact Info</h4>
-            <ul className="space-y-3 text-[14px] text-gray-400">
+            <ul className="space-y-3 text-[15px] text-gray-400">
               <li className="flex items-center gap-2"><Icon path={ICONS.phone} className="h-4 w-4 text-teal-500" /><a href={`tel:${CONTACT.hotline.replace(/[^+\d]/g, "")}`} className="hover:text-teal-400">{CONTACT.hotline}</a></li>
               <li className="flex items-center gap-2"><Icon path={ICONS.mail} className="h-4 w-4 text-teal-500" /><a href={`mailto:${CONTACT.email}`} className="hover:text-teal-400">{CONTACT.email}</a></li>
               <li className="flex items-start gap-2"><Icon path={ICONS.map} className="mt-0.5 h-4 w-4 text-teal-500" /><span>{CONTACT.address}</span></li>

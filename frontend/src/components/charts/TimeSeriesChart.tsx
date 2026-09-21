@@ -153,17 +153,17 @@ export function TimeSeriesChart({
   return (
     <div ref={containerRef} className="w-full">
       <div className="mb-1 flex items-baseline gap-2">
-        <span className="text-[13px] font-semibold text-ink-900">{title}</span>
-        <span className="text-[11px] text-ink-400">{unit}</span>
+        <span className="text-[14px] font-semibold text-ink-900">{title}</span>
+        <span className="text-[12px] text-ink-400">{unit}</span>
         {hover && (
-          <span className="ml-auto text-[12px] font-medium text-ink-700">
+          <span className="ml-auto text-[13px] font-medium text-ink-700">
             {timeFmt.format(new Date(hover.t))} · <span style={{ color }}>{formatValue(hover.v)} {unit}</span>
           </span>
         )}
       </div>
       {!plot ? (
         <div
-          className="flex items-center justify-center rounded-sm border border-surface-200 bg-surface-50 text-[13px] text-ink-400"
+          className="flex items-center justify-center rounded-sm border border-surface-200 bg-surface-50 text-[14px] text-ink-400"
           style={{ height }}
         >
           {emptyText}

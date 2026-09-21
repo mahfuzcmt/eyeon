@@ -105,7 +105,7 @@ export function MapLayerDropdown({ currentLayer, onChange, googleAvailable }: Ma
       <button
         type="button"
         onClick={() => setOpen(!open)}
-        className="flex items-center gap-2 rounded-mkt border border-white/30 bg-white/80 px-2.5 py-1.5 text-[13px] font-semibold text-ink-900 shadow-glass backdrop-blur-md transition hover:bg-white/90 hover:border-white/50"
+        className="flex items-center gap-2 rounded-mkt border border-white/30 bg-white/80 px-2.5 py-1.5 text-[14px] font-semibold text-ink-900 shadow-glass backdrop-blur-md transition hover:bg-white/90 hover:border-white/50"
         title="Map layer"
       >
         <span className="text-ink-600">{currentOption.icon}</span>
@@ -136,7 +136,7 @@ export function MapLayerDropdown({ currentLayer, onChange, googleAvailable }: Ma
                 type="button"
                 onClick={() => !disabled && handleSelect(option.kind)}
                 disabled={disabled}
-                className={`flex w-full items-center gap-2.5 px-3 py-2.5 text-left text-[13px] transition ${
+                className={`flex w-full items-center gap-2.5 px-3 py-2.5 text-left text-[14px] transition ${
                   isSelected
                     ? "bg-brand-50/80 font-semibold text-brand-600"
                     : disabled
@@ -164,7 +164,7 @@ export function MapLayerDropdown({ currentLayer, onChange, googleAvailable }: Ma
                   </svg>
                 )}
                 {disabled && (
-                  <span className="text-[11px] text-ink-300">(No API key)</span>
+                  <span className="text-[12px] text-ink-300">(No API key)</span>
                 )}
               </button>
             );

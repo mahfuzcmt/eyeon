@@ -60,7 +60,7 @@ export default function ForgotPasswordPage() {
   }
 
   return (
-    <main className="relative min-h-screen overflow-hidden bg-gradient-to-br from-brand-900 via-[#134472] to-brand-700">
+    <main className="relative min-h-screen overflow-hidden bg-gradient-to-br from-brand-900 via-brand-800 to-brand-700">
       <div aria-hidden className="pointer-events-none absolute inset-0 bg-cover bg-center bg-no-repeat" style={{ backgroundImage: "url('/login-bg.svg')" }} />
       <div aria-hidden className="pointer-events-none absolute inset-0 bg-gradient-to-br from-brand-900/60 via-transparent to-brand-700/40" />
 
@@ -73,7 +73,7 @@ export default function ForgotPasswordPage() {
         <div className="w-full max-w-md">
           <div className="mb-8 text-center">
             <h2 className="text-3xl font-bold tracking-tight text-white">{t("auth.reset.title")}</h2>
-            <p className="mt-2 text-[14px] text-brand-100/80">
+            <p className="mt-2 text-[15px] text-brand-100/80">
               {step === "email" ? t("auth.reset.introEmail") : step === "code" ? t("auth.reset.introCode") : t("auth.reset.done")}
             </p>
           </div>
@@ -82,7 +82,7 @@ export default function ForgotPasswordPage() {
             {step === "email" && (
               <form onSubmit={onRequest} className="space-y-5">
                 <div>
-                  <label htmlFor="email" className="mb-1.5 block text-[13px] font-semibold uppercase tracking-wide text-ink-600">
+                  <label htmlFor="email" className="mb-1.5 block text-[14px] font-semibold uppercase tracking-wide text-ink-600">
                     {t("auth.email")}
                   </label>
                   <input
@@ -90,15 +90,15 @@ export default function ForgotPasswordPage() {
                     type="email"
                     autoComplete="email"
                     required
-                    className="input h-10 text-[14px]"
-                    placeholder="you@company.com"
+                    className="input h-10 text-[15px]"
+                    placeholder="you@example.com"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     disabled={submitting}
                   />
                 </div>
-                {error && <div className="rounded-md border border-alarm-red/40 bg-alarm-red/10 px-3 py-2.5 text-[14px] text-alarm-red">{error}</div>}
-                <button type="submit" className="btn-primary h-10 w-full text-[14px]" disabled={submitting}>
+                {error && <div className="rounded-md border border-alarm-red/40 bg-alarm-red/10 px-3 py-2.5 text-[15px] text-alarm-red">{error}</div>}
+                <button type="submit" className="btn-primary h-10 w-full text-[15px]" disabled={submitting}>
                   {submitting ? t("common.loading") : t("auth.reset.sendCode")}
                 </button>
               </form>
@@ -106,11 +106,11 @@ export default function ForgotPasswordPage() {
 
             {step === "code" && (
               <form onSubmit={onReset} className="space-y-5">
-                <div className="rounded-md border border-brand-100 bg-brand-50 px-3 py-2.5 text-[13px] text-ink-700">
+                <div className="rounded-md border border-brand-100 bg-brand-50 px-3 py-2.5 text-[14px] text-ink-700">
                   {t("auth.reset.sentNotice")}
                 </div>
                 <div>
-                  <label htmlFor="code" className="mb-1.5 block text-[13px] font-semibold uppercase tracking-wide text-ink-600">
+                  <label htmlFor="code" className="mb-1.5 block text-[14px] font-semibold uppercase tracking-wide text-ink-600">
                     {t("auth.reset.code")}
                   </label>
                   <input
@@ -128,33 +128,33 @@ export default function ForgotPasswordPage() {
                   />
                 </div>
                 <div>
-                  <label htmlFor="new" className="mb-1.5 block text-[13px] font-semibold uppercase tracking-wide text-ink-600">
+                  <label htmlFor="new" className="mb-1.5 block text-[14px] font-semibold uppercase tracking-wide text-ink-600">
                     {t("auth.reset.newPassword")}
                   </label>
-                  <input id="new" type="password" autoComplete="new-password" required minLength={8} className="input h-10 text-[14px]" value={password} onChange={(e) => setPassword(e.target.value)} disabled={submitting} />
+                  <input id="new" type="password" autoComplete="new-password" required minLength={8} className="input h-10 text-[15px]" value={password} onChange={(e) => setPassword(e.target.value)} disabled={submitting} />
                 </div>
                 <div>
-                  <label htmlFor="confirm" className="mb-1.5 block text-[13px] font-semibold uppercase tracking-wide text-ink-600">
+                  <label htmlFor="confirm" className="mb-1.5 block text-[14px] font-semibold uppercase tracking-wide text-ink-600">
                     {t("auth.reset.confirmPassword")}
                   </label>
-                  <input id="confirm" type="password" autoComplete="new-password" required minLength={8} className="input h-10 text-[14px]" value={confirm} onChange={(e) => setConfirm(e.target.value)} disabled={submitting} />
+                  <input id="confirm" type="password" autoComplete="new-password" required minLength={8} className="input h-10 text-[15px]" value={confirm} onChange={(e) => setConfirm(e.target.value)} disabled={submitting} />
                 </div>
-                {error && <div className="rounded-md border border-alarm-red/40 bg-alarm-red/10 px-3 py-2.5 text-[14px] text-alarm-red">{error}</div>}
-                <button type="submit" className="btn-primary h-10 w-full text-[14px]" disabled={submitting}>
+                {error && <div className="rounded-md border border-alarm-red/40 bg-alarm-red/10 px-3 py-2.5 text-[15px] text-alarm-red">{error}</div>}
+                <button type="submit" className="btn-primary h-10 w-full text-[15px]" disabled={submitting}>
                   {submitting ? t("common.loading") : t("auth.reset.submit")}
                 </button>
-                <button type="button" className="w-full text-center text-[13px] text-ink-500 hover:text-ink-800" onClick={() => { setStep("email"); setError(null); }}>
+                <button type="button" className="w-full text-center text-[14px] text-ink-500 hover:text-ink-800" onClick={() => { setStep("email"); setError(null); }}>
                   {t("auth.reset.resend")}
                 </button>
               </form>
             )}
 
             {step === "done" && (
-              <div className="py-2 text-center text-[14px] text-ink-700">{t("auth.reset.done")}</div>
+              <div className="py-2 text-center text-[15px] text-ink-700">{t("auth.reset.done")}</div>
             )}
 
             <div className="mt-6 border-t border-surface-200 pt-5 text-center">
-              <Link href="/login" className="text-[13px] font-medium text-brand-500 hover:text-brand-600">
+              <Link href="/login" className="text-[14px] font-medium text-brand-500 hover:text-brand-600">
                 ← {t("auth.reset.backToLogin")}
               </Link>
             </div>

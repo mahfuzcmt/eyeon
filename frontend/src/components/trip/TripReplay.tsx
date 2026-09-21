@@ -211,10 +211,10 @@ export function TripReplay({ trip, onClose }: Props) {
     <div className="fixed inset-0 z-40 flex flex-col bg-white">
       <div className="flex items-center justify-between border-b border-surface-300 px-4 py-3">
         <div>
-          <div className="font-display text-[14px] font-semibold">{t("trips.replay")}</div>
-          <div className="font-mono text-[13px] text-ink-400">{trip.deviceImei}</div>
+          <div className="font-display text-[15px] font-semibold">{t("trips.replay")}</div>
+          <div className="font-mono text-[14px] text-ink-400">{trip.deviceImei}</div>
         </div>
-        <button type="button" className="btn-ghost px-3 py-1 text-[14px]" onClick={onClose}>
+        <button type="button" className="btn-ghost px-3 py-1 text-[15px]" onClick={onClose}>
           {t("common.close")}
         </button>
       </div>
@@ -222,7 +222,7 @@ export function TripReplay({ trip, onClose }: Props) {
       <div className="relative flex-1">
         <div ref={containerRef} className="absolute inset-0" />
         {error && (
-          <div className="absolute left-3 top-3 rounded bg-alarm-red/20 px-3 py-1 text-[13px] text-alarm-red">
+          <div className="absolute left-3 top-3 rounded bg-alarm-red/20 px-3 py-1 text-[14px] text-alarm-red">
             {error}
           </div>
         )}
@@ -231,7 +231,7 @@ export function TripReplay({ trip, onClose }: Props) {
       <div className="flex items-center gap-3 border-t border-surface-300 px-4 py-3">
         <button
           type="button"
-          className="btn-primary px-3 py-1 text-[14px]"
+          className="btn-primary px-3 py-1 text-[15px]"
           onClick={() => {
             if (progress >= 1) setProgress(0);
             setPlaying((p) => !p);
@@ -242,7 +242,7 @@ export function TripReplay({ trip, onClose }: Props) {
         </button>
         <button
           type="button"
-          className="btn-ghost px-2 py-1 text-[14px]"
+          className="btn-ghost px-2 py-1 text-[15px]"
           onClick={() => setProgress(0)}
           disabled={path.length === 0}
         >
@@ -259,7 +259,7 @@ export function TripReplay({ trip, onClose }: Props) {
           }}
           className="flex-1 accent-brand-500"
         />
-        <span className="w-12 text-right font-mono text-[13px] text-ink-800">
+        <span className="w-12 text-right font-mono text-[14px] text-ink-800">
           {Math.round(progress * 100)}%
         </span>
       </div>

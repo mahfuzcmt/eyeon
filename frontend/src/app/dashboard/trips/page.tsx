@@ -41,7 +41,7 @@ export default function Page() {
     <div className="flex h-full flex-col">
       <div className="flex flex-wrap items-center gap-3 border-b border-surface-300 px-4 py-3">
         <h1 className="font-display text-lg font-semibold">{t("trips.title")}</h1>
-        <div className="ml-auto flex flex-wrap items-center gap-2 text-[13px]">
+        <div className="ml-auto flex flex-wrap items-center gap-2 text-[14px]">
           <label className="flex items-center gap-1">
             <span className="text-ink-400">{t("common.from")}</span>
             <input
@@ -66,15 +66,15 @@ export default function Page() {
       </div>
 
       <div className="flex-1 overflow-auto">
-        {loading && <div className="px-4 py-6 text-[14px] text-ink-400">{t("common.loading")}</div>}
-        {error && <div className="px-4 py-6 text-[14px] text-alarm-red">{error}</div>}
+        {loading && <div className="px-4 py-6 text-[15px] text-ink-400">{t("common.loading")}</div>}
+        {error && <div className="px-4 py-6 text-[15px] text-alarm-red">{error}</div>}
         {!loading && trips.length === 0 && (
-          <div className="px-4 py-12 text-center text-[14px] text-ink-400">{t("common.empty")}</div>
+          <div className="px-4 py-12 text-center text-[15px] text-ink-400">{t("common.empty")}</div>
         )}
 
         {trips.length > 0 && (
-          <table className="w-full min-w-[760px] text-[14px]">
-            <thead className="sticky top-0 z-10 bg-white text-left text-[13px] uppercase text-ink-400">
+          <table className="w-full min-w-[760px] text-[15px]">
+            <thead className="sticky top-0 z-10 bg-white text-left text-[14px] uppercase text-ink-400">
               <tr>
                 <th className="px-4 py-2">IMEI</th>
                 <th className="px-4 py-2">{t("trips.startedAt")}</th>
@@ -89,7 +89,7 @@ export default function Page() {
             <tbody>
               {trips.map((tr) => (
                 <tr key={tr.id} className="border-b border-surface-200 hover:bg-surface-50">
-                  <td className="px-4 py-2 font-mono text-[13px]">{tr.deviceImei}</td>
+                  <td className="px-4 py-2 font-mono text-[14px]">{tr.deviceImei}</td>
                   <td className="px-4 py-2 text-ink-800">{formatDateTime(tr.startedAt, locale)}</td>
                   <td className="px-4 py-2 text-ink-800">
                     {tr.endedAt ? (
@@ -109,7 +109,7 @@ export default function Page() {
                   <td className="px-4 py-2 text-right">
                     <button
                       type="button"
-                      className="btn-ghost px-3 py-1 text-[13px]"
+                      className="btn-ghost px-3 py-1 text-[14px]"
                       onClick={() => setActive(tr)}
                     >
                       {t("trips.replay")}

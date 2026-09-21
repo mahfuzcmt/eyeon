@@ -51,22 +51,22 @@ export default function ScheduledPage() {
     <div className="flex h-full flex-col">
       <div className="flex items-center gap-3 border-b border-surface-300 px-4 py-3">
         <h1 className="font-display text-lg font-semibold">{t("sched.title")}</h1>
-        <button type="button" className="btn-primary ml-auto px-3 py-1.5 text-[13px]"
+        <button type="button" className="btn-primary ml-auto px-3 py-1.5 text-[14px]"
                 onClick={() => setFormOpen(true)}>
           {t("sched.new")}
         </button>
       </div>
 
       <div className="flex-1 overflow-auto">
-        {loading && <div className="px-4 py-6 text-[14px] text-ink-400">{t("common.loading")}</div>}
-        {error && <div className="px-4 py-6 text-[14px] text-alarm-red">{error}</div>}
+        {loading && <div className="px-4 py-6 text-[15px] text-ink-400">{t("common.loading")}</div>}
+        {error && <div className="px-4 py-6 text-[15px] text-alarm-red">{error}</div>}
         {!loading && items.length === 0 && (
-          <div className="px-4 py-12 text-center text-[14px] text-ink-400">{t("sched.empty")}</div>
+          <div className="px-4 py-12 text-center text-[15px] text-ink-400">{t("sched.empty")}</div>
         )}
 
         {items.length > 0 && (
-          <table className="w-full min-w-[760px] text-[14px]">
-            <thead className="sticky top-0 z-10 bg-white text-left text-[13px] uppercase text-ink-9000">
+          <table className="w-full min-w-[760px] text-[15px]">
+            <thead className="sticky top-0 z-10 bg-white text-left text-[14px] uppercase text-ink-9000">
               <tr>
                 <th className="px-4 py-2">{t("sched.device")}</th>
                 <th className="px-4 py-2">{t("sched.command")}</th>
@@ -80,24 +80,24 @@ export default function ScheduledPage() {
             <tbody>
               {items.map((item) => (
                 <tr key={item.id} className="border-b border-surface-300 hover:bg-surface-50">
-                  <td className="px-4 py-2 font-mono text-[13px]">{item.deviceImei}</td>
+                  <td className="px-4 py-2 font-mono text-[14px]">{item.deviceImei}</td>
                   <td className="px-4 py-2">
                     <div>{t(`sched.type.${item.commandType}` as StringKey)}</div>
-                    <div className="font-mono text-[11px] text-ink-9000">{item.commandText}</div>
+                    <div className="font-mono text-[12px] text-ink-9000">{item.commandText}</div>
                   </td>
                   <td className="px-4 py-2">{summarizeSchedule(item, locale, t)}</td>
                   <td className="px-4 py-2">{formatDateTime(item.nextRunAt, locale)}</td>
                   <td className="px-4 py-2">
                     <span className={statusClass(item.status)}>{item.status}</span>
                   </td>
-                  <td className="px-4 py-2 text-[13px] text-ink-9000">
+                  <td className="px-4 py-2 text-[14px] text-ink-9000">
                     {item.lastAttemptAt ? formatDateTime(item.lastAttemptAt, locale) : "—"}
-                    {item.lastError && <div className="text-alarm-red text-[11px]">{item.lastError}</div>}
-                    {item.lastReply && <div className="text-ink-400 text-[11px]">{item.lastReply}</div>}
+                    {item.lastError && <div className="text-alarm-red text-[12px]">{item.lastError}</div>}
+                    {item.lastReply && <div className="text-ink-400 text-[12px]">{item.lastReply}</div>}
                   </td>
                   <td className="px-4 py-2 text-right">
                     {item.status === "PENDING" && (
-                      <button type="button" className="btn-ghost px-2 py-1 text-[13px]"
+                      <button type="button" className="btn-ghost px-2 py-1 text-[14px]"
                               onClick={() => cancel(item.id)}>
                         {t("sched.cancel")}
                       </button>
@@ -188,7 +188,7 @@ function ScheduleForm({ onClose, onSubmit }: FormProps) {
         </div>
 
         <label className="block">
-          <span className="mb-0.5 block text-[13px] text-ink-9000">{t("sched.device")}</span>
+          <span className="mb-0.5 block text-[14px] text-ink-9000">{t("sched.device")}</span>
           <select className="input w-full py-1.5" value={imei} onChange={(e) => setImei(e.target.value)} required>
             <option value="">—</option>
             {devices.map((d) => (
@@ -200,7 +200,7 @@ function ScheduleForm({ onClose, onSubmit }: FormProps) {
         </label>
 
         <label className="block">
-          <span className="mb-0.5 block text-[13px] text-ink-9000">{t("sched.command")}</span>
+          <span className="mb-0.5 block text-[14px] text-ink-9000">{t("sched.command")}</span>
           <select className="input w-full py-1.5" value={commandType} onChange={(e) => setCommandType(e.target.value as ScheduledCommandType)}>
             {COMMAND_TYPES.map((c) => (
               <option key={c} value={c}>{t(`sched.type.${c}` as StringKey)}</option>
@@ -210,20 +210,20 @@ function ScheduleForm({ onClose, onSubmit }: FormProps) {
 
         {commandType === "RAW" ? (
           <label className="block">
-            <span className="mb-0.5 block text-[13px] text-ink-9000">{t("sched.rawCommand")}</span>
+            <span className="mb-0.5 block text-[14px] text-ink-9000">{t("sched.rawCommand")}</span>
             <input className="input w-full py-1.5 font-mono" value={rawCommand}
                    onChange={(e) => setRawCommand(e.target.value)}
                    placeholder="e.g. WHERE,123456#" required />
           </label>
         ) : (
           <label className="block">
-            <span className="mb-0.5 block text-[13px] text-ink-9000">{t("sched.devicePassword")}</span>
+            <span className="mb-0.5 block text-[14px] text-ink-9000">{t("sched.devicePassword")}</span>
             <input className="input w-full py-1.5 font-mono" value={devicePassword}
                    onChange={(e) => setDevicePassword(e.target.value)} required />
           </label>
         )}
 
-        <div className="flex gap-2 text-[13px]">
+        <div className="flex gap-2 text-[14px]">
           {SCHEDULE_KINDS.map((k) => (
             <button type="button" key={k}
                     className={scheduleKind === k ? "btn-primary px-3 py-1" : "btn-ghost px-3 py-1"}
@@ -235,44 +235,44 @@ function ScheduleForm({ onClose, onSubmit }: FormProps) {
 
         {scheduleKind === "ONE_TIME" ? (
           <label className="block">
-            <span className="mb-0.5 block text-[13px] text-ink-9000">{t("sched.runAt")}</span>
+            <span className="mb-0.5 block text-[14px] text-ink-9000">{t("sched.runAt")}</span>
             <input type="datetime-local" className="input w-full py-1.5"
                    value={runAt} onChange={(e) => setRunAt(e.target.value)} required />
           </label>
         ) : (
           <>
             <label className="block">
-              <span className="mb-0.5 block text-[13px] text-ink-9000">{t("sched.timeOfDay")}</span>
+              <span className="mb-0.5 block text-[14px] text-ink-9000">{t("sched.timeOfDay")}</span>
               <input type="time" className="input w-full py-1.5"
                      value={timeOfDay} onChange={(e) => setTimeOfDay(e.target.value)} required />
             </label>
             <div>
-              <span className="mb-0.5 block text-[13px] text-ink-9000">{t("sched.daysOfWeek")}</span>
+              <span className="mb-0.5 block text-[14px] text-ink-9000">{t("sched.daysOfWeek")}</span>
               <div className="flex flex-wrap gap-1">
                 {[0, 1, 2, 3, 4, 5, 6].map((d) => {
                   const on = days.has(d);
                   return (
                     <button key={d} type="button" onClick={() => toggleDay(d)}
-                            className={on ? "btn-primary px-2 py-1 text-[12px]" : "btn-ghost px-2 py-1 text-[12px]"}>
+                            className={on ? "btn-primary px-2 py-1 text-[13px]" : "btn-ghost px-2 py-1 text-[13px]"}>
                       {t(`sched.day.${d}` as StringKey)}
                     </button>
                   );
                 })}
               </div>
-              <div className="mt-1 text-[11px] text-ink-9000">
+              <div className="mt-1 text-[12px] text-ink-9000">
                 {days.size === 0 ? t("sched.everyDay") : ""}
               </div>
             </div>
           </>
         )}
 
-        {err && <div className="text-[13px] text-alarm-red">{err}</div>}
+        {err && <div className="text-[14px] text-alarm-red">{err}</div>}
 
         <div className="flex justify-end gap-2 pt-2">
-          <button type="button" onClick={onClose} className="btn-ghost px-3 py-1.5 text-[13px]">
+          <button type="button" onClick={onClose} className="btn-ghost px-3 py-1.5 text-[14px]">
             {t("common.cancel")}
           </button>
-          <button type="submit" disabled={submitting} className="btn-primary px-3 py-1.5 text-[13px]">
+          <button type="submit" disabled={submitting} className="btn-primary px-3 py-1.5 text-[14px]">
             {submitting ? t("common.loading") : t("common.save")}
           </button>
         </div>

@@ -70,7 +70,7 @@ export default function StatisticsTab({ device, orgId }: { device: DeviceView; o
           <M label={t("veh.expiresOn")} value={formatDate(device.subscriptionExpiresAt, locale)} />
         </Section>
 
-        <p className="text-[11px] text-ink-400">Server time · {serverTime}</p>
+        <p className="text-[12px] text-ink-400">Server time · {serverTime}</p>
       </div>
     </div>
   );
@@ -79,7 +79,7 @@ export default function StatisticsTab({ device, orgId }: { device: DeviceView; o
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div className="panel">
-      <div className="panel-header"><span className="text-[13px] font-semibold text-ink-900">{title}</span></div>
+      <div className="panel-header"><span className="text-[14px] font-semibold text-ink-900">{title}</span></div>
       <div className="grid grid-cols-2 gap-2 p-3 sm:grid-cols-4">{children}</div>
     </div>
   );
@@ -88,8 +88,8 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 function M({ label, value }: { label: string; value: string }) {
   return (
     <div className="rounded-sm border border-surface-200 bg-surface-50 px-2.5 py-1.5">
-      <div className="text-[11px] uppercase tracking-wide text-ink-500">{label}</div>
-      <div className="mt-0.5 text-[13px] font-semibold text-ink-900">{value}</div>
+      <div className="text-[12px] uppercase tracking-wide text-ink-500">{label}</div>
+      <div className="mt-0.5 text-[14px] font-semibold text-ink-900">{value}</div>
     </div>
   );
 }

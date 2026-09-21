@@ -76,19 +76,19 @@ export function DeviceEditModal({ device, onClose, onSaved }: Props) {
         onClick={(e) => e.stopPropagation()}
       >
         <div className="panel-header">
-          <span className="text-[13px] font-semibold text-ink-900">{t("veh.edit")}</span>
+          <span className="text-[14px] font-semibold text-ink-900">{t("veh.edit")}</span>
           <button type="button" className="btn-icon" onClick={onClose} aria-label={t("common.close")}>
             ×
           </button>
         </div>
 
         <div className="panel-body flex flex-col gap-3">
-          <label className="text-[13px]">
+          <label className="text-[14px]">
             <span className="mb-1 block text-ink-9000">{t("veh.name")}</span>
             <input type="text" className="input" value={name} onChange={(e) => setName(e.target.value)} />
           </label>
 
-          <label className="text-[13px]">
+          <label className="text-[14px]">
             <span className="mb-1 block text-ink-9000">{t("fleet.sim")}</span>
             <input
               type="tel"
@@ -99,7 +99,7 @@ export function DeviceEditModal({ device, onClose, onSaved }: Props) {
             />
           </label>
 
-          <label className="text-[13px]">
+          <label className="text-[14px]">
             <span className="mb-1 block text-ink-9000">{t("veh.plate")}</span>
             <input
               type="text"
@@ -110,7 +110,7 @@ export function DeviceEditModal({ device, onClose, onSaved }: Props) {
             />
           </label>
 
-          <label className="text-[13px]">
+          <label className="text-[14px]">
             <span className="mb-1 block text-ink-9000">{t("veh.group")}</span>
             <select className="select" value={groupId} onChange={(e) => setGroupId(e.target.value)}>
               <option value="">{t("list.ungrouped")}</option>
@@ -120,7 +120,7 @@ export function DeviceEditModal({ device, onClose, onSaved }: Props) {
             </select>
           </label>
 
-          <div className="text-[13px]">
+          <div className="text-[14px]">
             <span className="mb-1 block text-ink-9000">{t("veh.icon")}</span>
             <div className="grid grid-cols-5 gap-1.5">
               {VEHICLE_TYPES.map((ty) => (
@@ -138,13 +138,13 @@ export function DeviceEditModal({ device, onClose, onSaved }: Props) {
                     // Trusted static SVG built from our own constants.
                     dangerouslySetInnerHTML={{ __html: buildVehicleSvg(ty, iconColor, 0, 34) }}
                   />
-                  <span className="text-[11px] text-ink-700">{t(`veh.type.${ty}` as StringKey)}</span>
+                  <span className="text-[12px] text-ink-700">{t(`veh.type.${ty}` as StringKey)}</span>
                 </button>
               ))}
             </div>
           </div>
 
-          <div className="text-[13px]">
+          <div className="text-[14px]">
             <span className="mb-1 block text-ink-9000">{t("veh.iconColor")}</span>
             <div className="flex flex-wrap items-center gap-1.5">
               {COLOR_SWATCHES.map((c) => (
@@ -171,7 +171,7 @@ export function DeviceEditModal({ device, onClose, onSaved }: Props) {
             </div>
           </div>
 
-          {error && <div className="text-[13px] text-alarm-red">{error}</div>}
+          {error && <div className="text-[14px] text-alarm-red">{error}</div>}
 
           <div className="mt-1 flex gap-2">
             <button type="button" className="btn-secondary flex-1" onClick={onClose} disabled={busy}>

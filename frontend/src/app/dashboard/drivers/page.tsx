@@ -67,7 +67,7 @@ export default function DriversPage() {
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <h1 className="text-xl font-semibold text-ink-900 sm:text-2xl">Drivers</h1>
-            <p className="text-[14px] text-ink-500">
+            <p className="text-[15px] text-ink-500">
               Manage your fleet drivers and assignments
             </p>
           </div>
@@ -116,7 +116,7 @@ export default function DriversPage() {
               <button
                 key={tab.value}
                 onClick={() => setStatusFilter(tab.value)}
-                className={`rounded-md px-3 py-1.5 text-[14px] font-medium transition-colors ${
+                className={`rounded-md px-3 py-1.5 text-[15px] font-medium transition-colors ${
                   statusFilter === tab.value
                     ? "bg-brand-600 text-white"
                     : "text-ink-600 hover:bg-ink-100"
@@ -158,7 +158,7 @@ export default function DriversPage() {
               <path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75" />
             </svg>
             <p className="text-lg font-medium">No drivers found</p>
-            <p className="text-[14px]">
+            <p className="text-[15px]">
               {searchQuery
                 ? "Try a different search term"
                 : "Add your first driver to get started"}

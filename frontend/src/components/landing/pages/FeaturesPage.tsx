@@ -111,7 +111,7 @@ export function FeaturesPage() {
                   </div>
                   <div>
                     <h3 className="text-lg font-semibold text-gray-900">{t(feature.titleKey)}</h3>
-                    <p className="mt-2 text-[15px] leading-relaxed text-gray-600">{t(feature.descKey)}</p>
+                    <p className="mt-2 text-[16px] leading-relaxed text-gray-600">{t(feature.descKey)}</p>
                   </div>
                 </motion.div>
               ))}
@@ -138,7 +138,7 @@ export function FeaturesPage() {
                     <Icon path={feature.icon} className="h-6 w-6" />
                   </div>
                   <h3 className="text-lg font-semibold text-gray-900">{t(feature.titleKey)}</h3>
-                  <p className="mt-2 text-[14px] leading-relaxed text-gray-600">{t(feature.descKey)}</p>
+                  <p className="mt-2 text-[15px] leading-relaxed text-gray-600">{t(feature.descKey)}</p>
                 </motion.div>
               ))}
             </div>

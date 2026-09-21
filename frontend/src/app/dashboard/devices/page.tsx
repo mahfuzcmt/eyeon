@@ -106,8 +106,8 @@ export default function VehiclesPage() {
     <div className="flex h-full min-h-0 flex-col bg-surface-50">
       {/* Header: title + search */}
       <div className="flex shrink-0 flex-wrap items-center gap-3 border-b border-surface-300 bg-white px-4 py-2">
-        <h1 className="text-[14px] font-semibold text-ink-900">{t("veh.title")}</h1>
-        <span className="text-[13px] text-ink-500">
+        <h1 className="text-[15px] font-semibold text-ink-900">{t("veh.title")}</h1>
+        <span className="text-[14px] text-ink-500">
           {counts.all} {t("veh.count")}
         </span>
         <div className="ml-auto w-full max-w-xs">
@@ -140,9 +140,9 @@ export default function VehiclesPage() {
       {/* Cards */}
       <div className="min-h-0 flex-1 overflow-y-auto p-3">
         {loading && devices.length === 0 ? (
-          <p className="py-10 text-center text-[13px] text-ink-500">{t("common.loading")}</p>
+          <p className="py-10 text-center text-[14px] text-ink-500">{t("common.loading")}</p>
         ) : visible.length === 0 ? (
-          <p className="py-10 text-center text-[13px] text-ink-500">{t("veh.none")}</p>
+          <p className="py-10 text-center text-[14px] text-ink-500">{t("veh.none")}</p>
         ) : (
           <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-3">
             {visible.map(({ d, live, state }) => (
@@ -202,14 +202,14 @@ function VehicleCard({
         </span>
         <div className="min-w-0 flex-1">
           <div
-            className={`truncate text-[13px] font-semibold ${overspeed ? "animate-pulse" : "text-ink-900"}`}
+            className={`truncate text-[14px] font-semibold ${overspeed ? "animate-pulse" : "text-ink-900"}`}
             style={{ color: overspeed ? OVERSPEED_COLOR : undefined }}
           >
             {d.name || d.vehiclePlate || d.imei.slice(-8)}
           </div>
           {d.vehiclePlate && d.name && (
             <div
-              className={`truncate font-mono text-[11px] ${overspeed ? "" : "text-ink-500"}`}
+              className={`truncate font-mono text-[12px] ${overspeed ? "" : "text-ink-500"}`}
               style={{ color: overspeed ? OVERSPEED_COLOR : undefined }}
             >
               {d.vehiclePlate}
@@ -222,21 +222,21 @@ function VehicleCard({
       </div>
 
       <div className="mt-2 flex items-center justify-between">
-        <span className="text-[12px] text-ink-600">
+        <span className="text-[13px] text-ink-600">
           {t(STATE_LABEL[state])} {t("veh.since")} {formatSince(sinceTs)}
         </span>
         <span
-          className={`text-[13px] font-semibold ${overspeed ? "animate-pulse" : "text-ink-900"}`}
+          className={`text-[14px] font-semibold ${overspeed ? "animate-pulse" : "text-ink-900"}`}
           style={{ color: overspeed ? OVERSPEED_COLOR : undefined }}
         >
-          {speed} <span className="text-[11px] font-normal text-ink-500">{t("fleet.kmh")}</span>
+          {speed} <span className="text-[12px] font-normal text-ink-500">{t("fleet.kmh")}</span>
         </span>
       </div>
 
       <div className="mt-2 flex flex-wrap items-center gap-1.5">
         {accOn != null && (
           <span
-            className={`inline-flex h-[18px] items-center rounded-sm px-1.5 text-[11px] font-semibold ${
+            className={`inline-flex h-[18px] items-center rounded-sm px-1.5 text-[12px] font-semibold ${
               accOn ? "bg-status-moving/15 text-status-moving" : "bg-surface-200 text-ink-600"
             }`}
           >
@@ -244,14 +244,14 @@ function VehicleCard({
           </span>
         )}
         {d.engineLocked && (
-          <span className="inline-flex h-[18px] items-center gap-1 rounded-sm bg-status-stopped/15 px-1.5 text-[11px] font-semibold text-status-stopped">
+          <span className="inline-flex h-[18px] items-center gap-1 rounded-sm bg-status-stopped/15 px-1.5 text-[12px] font-semibold text-status-stopped">
             <LockIcon />
             {t("veh.locked")}
           </span>
         )}
       </div>
 
-      <div className="mt-2 flex items-center justify-between border-t border-surface-100 pt-1.5 text-[11px] text-ink-500">
+      <div className="mt-2 flex items-center justify-between border-t border-surface-100 pt-1.5 text-[12px] text-ink-500">
         <span>
           {t("veh.updated")} {formatRelative(ts, locale)}
         </span>

@@ -17,24 +17,24 @@ export function UsersTab({ canManage }: { canManage: boolean }) {
   const [editing, setEditing] = useState<UserDetail | "new" | null>(null);
   const [managingDevices, setManagingDevices] = useState<UserDetail | null>(null);
 
-  if (loading) return <div className="text-[14px] text-ink-400">{t("common.loading")}</div>;
-  if (error) return <div className="text-[14px] text-alarm-red">{error}</div>;
+  if (loading) return <div className="text-[15px] text-ink-400">{t("common.loading")}</div>;
+  if (error) return <div className="text-[15px] text-alarm-red">{error}</div>;
 
   return (
     <div>
       <div className="mb-3 flex items-center justify-between">
-        <div className="text-[14px] text-ink-400">
+        <div className="text-[15px] text-ink-400">
           {users.length} {users.length === 1 ? "user" : "users"}
         </div>
         {canManage && (
-          <button type="button" className="btn-primary text-[14px]" onClick={() => setEditing("new")}>
+          <button type="button" className="btn-primary text-[15px]" onClick={() => setEditing("new")}>
             {t("users.add")}
           </button>
         )}
       </div>
 
-      <table className="w-full text-[14px]">
-        <thead className="text-left text-[13px] uppercase text-ink-500 bg-surface-50">
+      <table className="w-full text-[15px]">
+        <thead className="text-left text-[14px] uppercase text-ink-500 bg-surface-50">
           <tr>
             <th className="px-3 py-2">{t("users.email")}</th>
             <th className="px-3 py-2">{t("users.fullName")}</th>
@@ -53,13 +53,13 @@ export function UsersTab({ canManage }: { canManage: boolean }) {
               <tr key={u.id} className="border-b border-surface-200 hover:bg-surface-50 transition">
                 <td className="px-3 py-2">
                   <div className="font-medium text-ink-900">{u.email}</div>
-                  {u.phone && <div className="text-[13px] text-ink-500">{u.phone}</div>}
+                  {u.phone && <div className="text-[14px] text-ink-500">{u.phone}</div>}
                 </td>
                 <td className="px-3 py-2 text-ink-900">{u.fullName ?? "—"}</td>
                 <td className="px-3 py-2 text-ink-900">{t(roleKey)}</td>
                 <td className="px-3 py-2">
                   {isAdminRole || u.seeAllDevices ? (
-                    <span className="text-[13px] text-ink-500">All</span>
+                    <span className="text-[14px] text-ink-500">All</span>
                   ) : (
                     <span className="text-ink-900">{u.assignedDeviceCount}</span>
                   )}
@@ -69,7 +69,7 @@ export function UsersTab({ canManage }: { canManage: boolean }) {
                 </td>
                 <td className="px-3 py-2">
                   <span
-                    className={`inline-block rounded-full px-2 py-0.5 text-[12px] ${
+                    className={`inline-block rounded-full px-2 py-0.5 text-[13px] ${
                       u.isActive
                         ? "bg-brand-500/15 text-brand-500"
                         : "bg-ink-400/15 text-ink-400"
@@ -84,7 +84,7 @@ export function UsersTab({ canManage }: { canManage: boolean }) {
                       {u.role === "ORG_USER" && (
                         <button
                           type="button"
-                          className="btn-ghost px-2 py-1 text-[13px]"
+                          className="btn-ghost px-2 py-1 text-[14px]"
                           onClick={() => setManagingDevices(u)}
                         >
                           {t("users.manageDevices")}
@@ -92,7 +92,7 @@ export function UsersTab({ canManage }: { canManage: boolean }) {
                       )}
                       <button
                         type="button"
-                        className="btn-ghost px-2 py-1 text-[13px]"
+                        className="btn-ghost px-2 py-1 text-[14px]"
                         onClick={() => setEditing(u)}
                       >
                         {t("users.edit")}
@@ -100,7 +100,7 @@ export function UsersTab({ canManage }: { canManage: boolean }) {
                       {u.isActive && u.id !== selfId && (
                         <button
                           type="button"
-                          className="btn-ghost px-2 py-1 text-[13px] text-alarm-red"
+                          className="btn-ghost px-2 py-1 text-[14px] text-alarm-red"
                           onClick={async () => {
                             if (!confirm(`${t("users.disable")} ${u.email}?`)) return;
                             try {
@@ -282,7 +282,7 @@ function UserDialog({
         </Field>
 
         {!isNew && (
-          <label className="flex items-center gap-2 text-[14px] text-ink-900">
+          <label className="flex items-center gap-2 text-[15px] text-ink-900">
             <input
               type="checkbox"
               checked={isActive}
@@ -293,7 +293,7 @@ function UserDialog({
           </label>
         )}
 
-        {error && <div className="text-[13px] text-alarm-red">{error}</div>}
+        {error && <div className="text-[14px] text-alarm-red">{error}</div>}
 
         <div className="flex gap-2 pt-1">
           <button type="button" className="btn-ghost flex-1" onClick={onCancel}>
@@ -310,8 +310,8 @@ function UserDialog({
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <label className="block text-[14px]">
-      <span className="mb-1 block text-[13px] uppercase tracking-wide text-ink-500">{label}</span>
+    <label className="block text-[15px]">
+      <span className="mb-1 block text-[14px] uppercase tracking-wide text-ink-500">{label}</span>
       {children}
     </label>
   );
@@ -405,7 +405,7 @@ function DeviceAssignmentDialog({
             <div className="font-display text-base font-semibold text-ink-900">
               {t("users.manageDevices")}
             </div>
-            <div className="text-[13px] text-ink-500">{user.email}</div>
+            <div className="text-[14px] text-ink-500">{user.email}</div>
           </div>
           <button
             type="button"
@@ -417,7 +417,7 @@ function DeviceAssignmentDialog({
         </div>
 
         {/* See All Devices Toggle */}
-        <label className="flex items-center gap-2 text-[14px] mb-4 p-3 rounded-lg bg-surface-50 border border-surface-200">
+        <label className="flex items-center gap-2 text-[15px] mb-4 p-3 rounded-lg bg-surface-50 border border-surface-200">
           <input
             type="checkbox"
             checked={seeAll}
@@ -426,7 +426,7 @@ function DeviceAssignmentDialog({
           />
           <div>
             <div className="text-ink-900">{t("users.seeAllDevices")}</div>
-            <div className="text-[13px] text-ink-500">{t("users.seeAllDevicesHint")}</div>
+            <div className="text-[14px] text-ink-500">{t("users.seeAllDevicesHint")}</div>
           </div>
         </label>
 
@@ -434,13 +434,13 @@ function DeviceAssignmentDialog({
         {!seeAll && (
           <div className="mb-4">
             <div className="flex items-center justify-between mb-2">
-              <div className="text-[13px] uppercase tracking-wide text-ink-400">
+              <div className="text-[14px] uppercase tracking-wide text-ink-400">
                 {t("users.selectDevices")}
               </div>
               {!loading && !devicesLoading && devices.length > 0 && (
                 <button
                   type="button"
-                  className="text-[13px] text-brand-500 hover:text-brand-400"
+                  className="text-[14px] text-brand-500 hover:text-brand-400"
                   onClick={allSelected ? deselectAll : selectAll}
                 >
                   {allSelected ? "Deselect All" : "Select All"}
@@ -452,7 +452,7 @@ function DeviceAssignmentDialog({
             {!loading && !devicesLoading && devices.length > 0 && (
               <input
                 type="text"
-                className="input mb-2 text-[14px]"
+                className="input mb-2 text-[15px]"
                 placeholder="Search by name, plate, or IMEI..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
@@ -460,11 +460,11 @@ function DeviceAssignmentDialog({
             )}
 
             {loading || devicesLoading ? (
-              <div className="text-[14px] text-ink-400 py-4 text-center">{t("common.loading")}</div>
+              <div className="text-[15px] text-ink-400 py-4 text-center">{t("common.loading")}</div>
             ) : devices.length === 0 ? (
-              <div className="text-[14px] text-ink-400 py-4 text-center">{t("fleet.noDevices")}</div>
+              <div className="text-[15px] text-ink-400 py-4 text-center">{t("fleet.noDevices")}</div>
             ) : filteredDevices.length === 0 ? (
-              <div className="text-[14px] text-ink-500 py-4 text-center">No devices match your search</div>
+              <div className="text-[15px] text-ink-500 py-4 text-center">No devices match your search</div>
             ) : (
               <div className="max-h-60 overflow-y-auto space-y-1 border border-surface-200 rounded-lg p-2 bg-surface-50">
                 {filteredDevices.map((d) => (
@@ -482,13 +482,13 @@ function DeviceAssignmentDialog({
                       <div className="font-medium text-ink-900 truncate">
                         {d.name || d.vehiclePlate || d.imei}
                       </div>
-                      <div className="text-[13px] text-ink-500 truncate">
+                      <div className="text-[14px] text-ink-500 truncate">
                         {d.vehiclePlate && <span className="mr-2">{d.vehiclePlate}</span>}
                         <span className="font-mono">{d.imei}</span>
                       </div>
                     </div>
                     <span
-                      className={`text-[11px] px-1.5 py-0.5 rounded ${
+                      className={`text-[12px] px-1.5 py-0.5 rounded ${
                         d.status === "ONLINE"
                           ? "bg-alarm-green/20 text-alarm-green"
                           : "bg-surface-200 text-ink-500"
@@ -500,13 +500,13 @@ function DeviceAssignmentDialog({
                 ))}
               </div>
             )}
-            <div className="text-[13px] text-ink-500 mt-2">
+            <div className="text-[14px] text-ink-500 mt-2">
               {assignedImeis.size} / {devices.length} {t("users.deviceCount")}
             </div>
           </div>
         )}
 
-        {error && <div className="text-[13px] text-alarm-red mb-3">{error}</div>}
+        {error && <div className="text-[14px] text-alarm-red mb-3">{error}</div>}
 
         <div className="flex gap-2">
           <button type="button" className="btn-ghost flex-1" onClick={onClose}>

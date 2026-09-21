@@ -104,7 +104,7 @@ export function ShareLinkModal({ deviceImei, deviceName, onClose }: ShareLinkMod
             <h2 className="text-lg font-semibold text-ink-900">
               {lang === "bn" ? "লোকেশন শেয়ার করুন" : "Share Location"}
             </h2>
-            <p className="text-[14px] text-ink-400">{deviceName || deviceImei}</p>
+            <p className="text-[15px] text-ink-400">{deviceName || deviceImei}</p>
           </div>
           <button
             onClick={onClose}
@@ -125,7 +125,7 @@ export function ShareLinkModal({ deviceImei, deviceName, onClose }: ShareLinkMod
             </div>
           ) : links.length > 0 ? (
             <div className="space-y-3">
-              <h3 className="text-[14px] font-medium text-ink-600">
+              <h3 className="text-[15px] font-medium text-ink-600">
                 {lang === "bn" ? "সক্রিয় লিংক" : "Active Links"} ({links.length})
               </h3>
               {links.map(link => (
@@ -135,21 +135,21 @@ export function ShareLinkModal({ deviceImei, deviceName, onClose }: ShareLinkMod
                 >
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-[14px] font-medium text-ink-900">
+                      <p className="text-[15px] font-medium text-ink-900">
                         {link.label || (lang === "bn" ? "শেয়ার লিংক" : "Share Link")}
                       </p>
-                      <p className="text-[13px] text-ink-400">
+                      <p className="text-[14px] text-ink-400">
                         {formatExpiry(link.expiresAt)} &middot; {link.accessCount} {lang === "bn" ? "বার দেখা হয়েছে" : "views"}
                       </p>
                     </div>
                     <div className="flex items-center gap-2">
                       {link.showHistory && (
-                        <span className="text-[13px] bg-brand-50 text-brand-600 px-2 py-0.5 rounded">
+                        <span className="text-[14px] bg-brand-50 text-brand-600 px-2 py-0.5 rounded">
                           {lang === "bn" ? "ইতিহাস" : "History"}
                         </span>
                       )}
                       {link.allowRealtime && (
-                        <span className="text-[13px] bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded">
+                        <span className="text-[14px] bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded">
                           {lang === "bn" ? "রিয়েলটাইম" : "Realtime"}
                         </span>
                       )}
@@ -160,11 +160,11 @@ export function ShareLinkModal({ deviceImei, deviceName, onClose }: ShareLinkMod
                       type="text"
                       readOnly
                       value={link.shareUrl}
-                      className="flex-1 bg-white text-[13px] text-ink-600 px-2 py-1.5 rounded border border-surface-300"
+                      className="flex-1 bg-white text-[14px] text-ink-600 px-2 py-1.5 rounded border border-surface-300"
                     />
                     <button
                       onClick={() => handleCopy(link)}
-                      className="px-3 py-1.5 text-[13px] bg-brand-500 text-white rounded hover:bg-brand-600 transition-colors"
+                      className="px-3 py-1.5 text-[14px] bg-brand-500 text-white rounded hover:bg-brand-600 transition-colors"
                     >
                       {copiedId === link.id
                         ? (lang === "bn" ? "কপি হয়েছে!" : "Copied!")
@@ -172,7 +172,7 @@ export function ShareLinkModal({ deviceImei, deviceName, onClose }: ShareLinkMod
                     </button>
                     <button
                       onClick={() => handleRevoke(link.id)}
-                      className="px-3 py-1.5 text-[13px] bg-red-50 text-red-700 border border-red-200 rounded hover:bg-red-100 transition-colors"
+                      className="px-3 py-1.5 text-[14px] bg-red-50 text-red-700 border border-red-200 rounded hover:bg-red-100 transition-colors"
                     >
                       {lang === "bn" ? "বাতিল" : "Revoke"}
                     </button>
@@ -189,12 +189,12 @@ export function ShareLinkModal({ deviceImei, deviceName, onClose }: ShareLinkMod
           {/* Create form */}
           {showCreateForm ? (
             <div className="bg-surface-100 rounded-lg p-4 space-y-4">
-              <h3 className="text-[14px] font-medium text-ink-900">
+              <h3 className="text-[15px] font-medium text-ink-900">
                 {lang === "bn" ? "নতুন লিংক তৈরি করুন" : "Create New Link"}
               </h3>
 
               <div>
-                <label className="block text-[13px] text-ink-400 mb-1">
+                <label className="block text-[14px] text-ink-400 mb-1">
                   {lang === "bn" ? "লেবেল (ঐচ্ছিক)" : "Label (optional)"}
                 </label>
                 <input
@@ -202,18 +202,18 @@ export function ShareLinkModal({ deviceImei, deviceName, onClose }: ShareLinkMod
                   value={label}
                   onChange={e => setLabel(e.target.value)}
                   placeholder={lang === "bn" ? "যেমন: পরিবারের জন্য" : "e.g., For family"}
-                  className="w-full bg-white text-ink-900 text-[14px] px-3 py-2 rounded border border-surface-300 focus:border-brand-500 focus:outline-none"
+                  className="w-full bg-white text-ink-900 text-[15px] px-3 py-2 rounded border border-surface-300 focus:border-brand-500 focus:outline-none"
                 />
               </div>
 
               <div>
-                <label className="block text-[13px] text-ink-400 mb-1">
+                <label className="block text-[14px] text-ink-400 mb-1">
                   {lang === "bn" ? "মেয়াদ" : "Expires in"}
                 </label>
                 <select
                   value={expiresInHours}
                   onChange={e => setExpiresInHours(Number(e.target.value))}
-                  className="w-full bg-white text-ink-900 text-[14px] px-3 py-2 rounded border border-surface-300 focus:border-brand-500 focus:outline-none"
+                  className="w-full bg-white text-ink-900 text-[15px] px-3 py-2 rounded border border-surface-300 focus:border-brand-500 focus:outline-none"
                 >
                   {EXPIRY_OPTIONS.map(opt => (
                     <option key={opt.value} value={opt.value}>
@@ -231,7 +231,7 @@ export function ShareLinkModal({ deviceImei, deviceName, onClose }: ShareLinkMod
                     onChange={e => setAllowRealtime(e.target.checked)}
                     className="w-4 h-4 rounded border-surface-300 bg-white text-brand-500 focus:ring-brand-500"
                   />
-                  <span className="text-[14px] text-ink-700">
+                  <span className="text-[15px] text-ink-700">
                     {lang === "bn" ? "রিয়েলটাইম আপডেট দেখান" : "Show realtime updates"}
                   </span>
                 </label>
@@ -243,7 +243,7 @@ export function ShareLinkModal({ deviceImei, deviceName, onClose }: ShareLinkMod
                     onChange={e => setShowHistory(e.target.checked)}
                     className="w-4 h-4 rounded border-surface-300 bg-white text-brand-500 focus:ring-brand-500"
                   />
-                  <span className="text-[14px] text-ink-700">
+                  <span className="text-[15px] text-ink-700">
                     {lang === "bn" ? "২৪ ঘন্টার ইতিহাস দেখান" : "Show 24h route history"}
                   </span>
                 </label>
@@ -252,14 +252,14 @@ export function ShareLinkModal({ deviceImei, deviceName, onClose }: ShareLinkMod
               <div className="flex gap-2 pt-2">
                 <button
                   onClick={() => setShowCreateForm(false)}
-                  className="flex-1 px-4 py-2 text-[14px] border border-surface-300 bg-white text-ink-700 rounded hover:bg-surface-100 transition-colors"
+                  className="flex-1 px-4 py-2 text-[15px] border border-surface-300 bg-white text-ink-700 rounded hover:bg-surface-100 transition-colors"
                 >
                   {lang === "bn" ? "বাতিল" : "Cancel"}
                 </button>
                 <button
                   onClick={handleCreate}
                   disabled={creating}
-                  className="flex-1 px-4 py-2 text-[14px] bg-brand-500 text-white rounded hover:bg-brand-600 transition-colors disabled:opacity-50"
+                  className="flex-1 px-4 py-2 text-[15px] bg-brand-500 text-white rounded hover:bg-brand-600 transition-colors disabled:opacity-50"
                 >
                   {creating
                     ? (lang === "bn" ? "তৈরি হচ্ছে..." : "Creating...")
@@ -270,7 +270,7 @@ export function ShareLinkModal({ deviceImei, deviceName, onClose }: ShareLinkMod
           ) : (
             <button
               onClick={() => setShowCreateForm(true)}
-              className="w-full px-4 py-3 text-[14px] bg-brand-500 text-white rounded-lg hover:bg-brand-600 transition-colors flex items-center justify-center gap-2"
+              className="w-full px-4 py-3 text-[15px] bg-brand-500 text-white rounded-lg hover:bg-brand-600 transition-colors flex items-center justify-center gap-2"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />

@@ -38,8 +38,8 @@ export function OrgInfoTab({ readOnly }: { readOnly: boolean }) {
     });
   }, [org]);
 
-  if (loading) return <div className="text-[14px] text-ink-400">{t("common.loading")}</div>;
-  if (error) return <div className="text-[14px] text-alarm-red">{error}</div>;
+  if (loading) return <div className="text-[15px] text-ink-400">{t("common.loading")}</div>;
+  if (error) return <div className="text-[15px] text-alarm-red">{error}</div>;
   if (!org) return null;
 
   const onSubmit = async (e: React.FormEvent) => {
@@ -66,7 +66,7 @@ export function OrgInfoTab({ readOnly }: { readOnly: boolean }) {
 
   return (
     <form onSubmit={onSubmit} className="max-w-xl space-y-4">
-      <div className="grid grid-cols-2 gap-3 rounded-lg border border-surface-200 bg-surface-50 p-3 text-[13px] text-ink-500">
+      <div className="grid grid-cols-2 gap-3 rounded-lg border border-surface-200 bg-surface-50 p-3 text-[14px] text-ink-500">
         <div>
           <div className="uppercase">{t("settings.org.plan")}</div>
           <div className="mt-0.5 font-semibold text-ink-900">{org.planTier}</div>
@@ -147,7 +147,7 @@ export function OrgInfoTab({ readOnly }: { readOnly: boolean }) {
 
       {/* Map: bring-your-own Google Maps key (ADL-style per-account map key) */}
       <fieldset className="space-y-2 rounded-lg border border-surface-200 p-3">
-        <legend className="px-1 text-[13px] font-semibold uppercase tracking-wide text-ink-700">
+        <legend className="px-1 text-[14px] font-semibold uppercase tracking-wide text-ink-700">
           {t("settings.map.title")}
         </legend>
         <Field label={t("settings.map.googleKey")}>
@@ -173,22 +173,22 @@ export function OrgInfoTab({ readOnly }: { readOnly: boolean }) {
             </button>
           </div>
         </Field>
-        <p className="text-[13px] text-ink-500">{t("settings.map.googleKeyHelp")}</p>
-        <p className="text-[13px] font-medium text-ink-700">
+        <p className="text-[14px] text-ink-500">{t("settings.map.googleKeyHelp")}</p>
+        <p className="text-[14px] font-medium text-ink-700">
           {org.googleMapsApiKey ? t("settings.map.usingOwn") : t("settings.map.usingDefault")}
         </p>
       </fieldset>
 
-      {saveError && <div className="text-[13px] text-alarm-red">{saveError}</div>}
+      {saveError && <div className="text-[14px] text-alarm-red">{saveError}</div>}
 
       {!readOnly && (
         <div className="flex flex-wrap items-center gap-3">
           <button type="submit" className="btn-primary" disabled={busy}>
             {busy ? t("common.loading") : t("common.save")}
           </button>
-          {saved && <span className="text-[13px] text-brand-500">{t("settings.org.saved")}</span>}
+          {saved && <span className="text-[14px] text-brand-500">{t("settings.org.saved")}</span>}
           {keyChanged && (
-            <span className="text-[13px] text-amber-700">
+            <span className="text-[14px] text-amber-700">
               {t("settings.map.reloadHint")}{" "}
               <button type="button" className="underline" onClick={() => window.location.reload()}>
                 {t("common.reload")}
@@ -203,8 +203,8 @@ export function OrgInfoTab({ readOnly }: { readOnly: boolean }) {
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <label className="block text-[14px]">
-      <span className="mb-1 block text-[13px] uppercase tracking-wide text-ink-500">{label}</span>
+    <label className="block text-[15px]">
+      <span className="mb-1 block text-[14px] uppercase tracking-wide text-ink-500">{label}</span>
       {children}
     </label>
   );

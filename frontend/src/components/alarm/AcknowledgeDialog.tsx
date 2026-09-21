@@ -46,7 +46,7 @@ export function AcknowledgeDialog({ alarm, deviceName, onConfirm, onClose }: Pro
           <button type="button" className="btn-icon" onClick={onClose} aria-label={t("common.close")}>×</button>
         </div>
         <div className="flex flex-col gap-3 p-4">
-          <label className="text-[13px]">
+          <label className="text-[14px]">
             <span className="mb-1 block text-ink-500">{t("alarms.processResult")}</span>
             <select className="select" value={result} onChange={(e) => setResult(e.target.value as AlarmProcessResult)}>
               {PROCESS_RESULTS.map((r) => (
@@ -54,11 +54,11 @@ export function AcknowledgeDialog({ alarm, deviceName, onConfirm, onClose }: Pro
               ))}
             </select>
           </label>
-          <label className="text-[13px]">
+          <label className="text-[14px]">
             <span className="mb-1 block text-ink-500">{t("alarms.processNotes")}</span>
             <textarea className="input min-h-[80px]" maxLength={1000} value={notes} onChange={(e) => setNotes(e.target.value)} placeholder={t("alarms.processNotesPlaceholder")} />
           </label>
-          {error && <div className="text-[13px] text-alarm-red">{error}</div>}
+          {error && <div className="text-[14px] text-alarm-red">{error}</div>}
         </div>
         <div className="modal-footer">
           <button type="button" className="btn-secondary" onClick={onClose} disabled={busy}>{t("common.cancel")}</button>

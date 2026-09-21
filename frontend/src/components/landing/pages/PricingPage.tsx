@@ -158,7 +158,7 @@ export function PricingPage() {
 
                   <ul className="mt-8 flex-1 space-y-4">
                     {plan.featureKeys.map((featureKey) => (
-                      <li key={featureKey} className={`flex items-center gap-3 text-[15px] ${plan.highlight ? "text-white" : "text-gray-600"}`}>
+                      <li key={featureKey} className={`flex items-center gap-3 text-[16px] ${plan.highlight ? "text-white" : "text-gray-600"}`}>
                         <div className={`flex h-5 w-5 items-center justify-center rounded-full ${plan.highlight ? "bg-white/20" : "bg-brand-50"}`}>
                           <Icon path={ICONS.check} className={`h-3 w-3 ${plan.highlight ? "text-white" : "text-brand-600"}`} />
                         </div>
@@ -169,7 +169,7 @@ export function PricingPage() {
 
                   <Link
                     href="/contact"
-                    className={`mt-8 block rounded-xl py-4 text-center text-[15px] font-semibold transition-all ${
+                    className={`mt-8 block rounded-xl py-4 text-center text-[16px] font-semibold transition-all ${
                       plan.highlight
                         ? "bg-white text-brand-600 hover:bg-gray-50"
                         : "bg-brand-600 text-white hover:bg-brand-700"
@@ -232,7 +232,7 @@ export function PricingPage() {
               {faq.map((item, i) => (
                 <div key={i} className="rounded-xl bg-white p-6 shadow-sm">
                   <h3 className="text-lg font-semibold text-gray-900">{t(item.qKey)}</h3>
-                  <p className="mt-2 text-[15px] leading-relaxed text-gray-600">{t(item.aKey)}</p>
+                  <p className="mt-2 text-[16px] leading-relaxed text-gray-600">{t(item.aKey)}</p>
                 </div>
               ))}
             </motion.div>

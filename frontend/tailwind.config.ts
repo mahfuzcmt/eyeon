@@ -1,8 +1,8 @@
 import type { Config } from "tailwindcss";
 
 /**
- * EyeOn Design System - ADL Moto Viewer Style
- * Matching the reference GPS tracking platform UI exactly
+ * EyeOn Design System - family safety (kids + elderly tracking).
+ * Warm, rounded and high-contrast; see CLAUDE.md section 10.1.
  */
 const config: Config = {
   darkMode: "class",
@@ -14,107 +14,122 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        // ADL Moto Viewer exact colors
+        // Family-safety palette, taken from the EyeOn poster: deep teal primary,
+        // warm yellow accent. Every text/background pair below is >= 4.5:1 (WCAG AA)
+        // because carers of elderly relatives are a core audience.
         brand: {
-          50: "#e8ebff",
-          100: "#c5cbff",
-          200: "#9ea8ff",
-          300: "#7785ff",
-          400: "#5062ff",
-          500: "#0421bc", // Primary blue (--BG-C, --HD-BG-C)
-          600: "#031a96",
-          700: "#021470",
-          800: "#010d4a",
-          900: "#000724",
+          50: "#E8F5F2",
+          100: "#C9E8E1",
+          200: "#9AD3C7",
+          300: "#63B8A8",
+          400: "#2F9A87",
+          500: "#0F6B5C", // Primary teal (6.4:1 with white)
+          600: "#0C5A4D",
+          700: "#0A4A40",
+          800: "#083B33",
+          900: "#052822",
         },
-        // Surface colors
+        // Warm accent: highlights, icon tiles, the "safe" celebratory moments.
+        // Always pair with ink-900 text (9.5:1), never white.
+        sun: {
+          50: "#FFF8E6",
+          100: "#FFEEC2",
+          200: "#FFE3A0",
+          300: "#FFD886",
+          400: "#FFC857",
+          500: "#F5B535",
+          600: "#D9971F",
+          700: "#A86F12",
+        },
+        // Surface colors (faint teal-tinted neutrals)
         surface: {
           0: "#ffffff",
-          50: "#fafbfc",
-          100: "#EAEEF2", // --S-BG-C secondary background
-          200: "#e5e9ed",
-          300: "#dddddd", // --BR-C border
-          400: "#d1d5db",
+          50: "#F7FAF9",
+          100: "#EEF4F2", // page background
+          200: "#E1EAE7",
+          300: "#D2DEDA", // border
+          400: "#BCCBC6",
         },
-        // Text colors
+        // Text colors (teal-tinted greys). 400 is the lightest shade allowed for text.
         ink: {
           50: "#ffffff",
-          100: "#f5f5f5",
-          200: "#e5e5e5",
-          300: "#cccccc",
-          400: "#888888", // --I-L-F-C input label
-          500: "#7E8792", // --A-F-C secondary text
-          600: "#4b5563",
-          700: "#3D4353", // --P-F-C primary text
-          800: "#262626", // --I-F-C input text
-          900: "#1f2937",
-          950: "#111827",
+          100: "#F2F6F5",
+          200: "#E1E8E6",
+          300: "#C2CECB",
+          400: "#637370", // placeholders, field labels (5.0:1)
+          500: "#52625F", // secondary text (6.4:1)
+          600: "#3E4E4B",
+          700: "#2B3B38", // primary text
+          800: "#1C2B28", // input text
+          900: "#0B2E28", // headings; also the text colour on sun-*
+          950: "#061C18",
         },
-        // Alarm severity / feedback colours. Used as text-alarm-red, bg-alarm-amber/10,
-        // border-l-alarm-red … across alarm UI and form errors (ADL status hues).
+        // Alarm severity / feedback colours. Darkened from the old ADL hues so they
+        // stay readable as text (text-alarm-red) as well as fills.
         alarm: {
-          red: "#ff4d4f",
-          amber: "#faad14",
-          green: "#52c41a",
+          red: "#D92D20",
+          amber: "#B45309",
+          green: "#15803D",
         },
-        // Status colors (ADL style)
+        // Status colors
         status: {
-          moving: "#52c41a",   // Green
-          stopped: "#1890ff", // Blue
-          idle: "#faad14",    // Orange
-          offline: "#8c8c8c", // Gray
+          moving: "#16A34A",  // Green
+          stopped: "#2563EB", // Blue
+          idle: "#D97706",    // Orange
+          offline: "#6B7A77", // Gray
         },
-        // ADL specific
+        // Legacy alias kept so existing `adl-*` classes pick up the new palette.
         adl: {
-          primary: "#0421bc",
-          primaryHover: "rgba(4, 33, 188, 0.1)", // --HD-BG-C-R
-          headerBg: "#0421bc",
-          sidebarBg: "#0421bc",
-          border: "#dddddd",
-          text: "#3D4353",
-          textSecondary: "#7E8792",
+          primary: "#0F6B5C",
+          primaryHover: "rgba(15, 107, 92, 0.1)",
+          headerBg: "#0F6B5C",
+          sidebarBg: "#0F6B5C",
+          border: "#D2DEDA",
+          text: "#2B3B38",
+          textSecondary: "#52625F",
           inputBg: "#ffffff",
           cardBg: "#ffffff",
-          pageBg: "#EAEEF2",
+          pageBg: "#EEF4F2",
         },
         // Marketing accent colors
         accent: {
           teal: "#14b8a6",
         },
-        // Text-link colour = ADL primary. The single accent across the app is
-        // `brand` (#0421bc); no secondary accent scale exists on purpose.
+        // Text-link colour = primary teal.
         link: {
-          DEFAULT: "#0421bc",
-          hover: "#031a96",
+          DEFAULT: "#0F6B5C",
+          hover: "#0A4A40",
         },
       },
       fontFamily: {
-        // Self-hosted via @fontsource (see app/layout.tsx). Inter for all UI text —
-        // crisp at 12–14px with true tabular figures; JetBrains Mono for machine
-        // data (IMEI, plates, coordinates); Hind Siliguri for Bengali script.
+        // Self-hosted via @fontsource (see app/layout.tsx). Nunito for UI text - rounded
+        // terminals read as friendly and stay legible for older eyes; Baloo Da 2 for
+        // headings (covers Latin + Bengali, matches the poster); JetBrains Mono for
+        // machine data (IMEI, coordinates); Hind Siliguri for Bengali body text.
         sans: [
-          '"Inter Variable"',
-          "Inter",
+          '"Nunito Variable"',
+          "Nunito",
+          '"Hind Siliguri"',
           "-apple-system",
           "BlinkMacSystemFont",
           '"Segoe UI"',
           "Roboto",
           "sans-serif",
         ],
-        display: ['"Inter Variable"', "Inter", "-apple-system", "BlinkMacSystemFont", '"Segoe UI"', "sans-serif"],
+        display: ['"Baloo Da 2 Variable"', '"Baloo Da 2"', '"Nunito Variable"', '"Hind Siliguri"', "sans-serif"],
         mono: ['"JetBrains Mono Variable"', '"JetBrains Mono"', "ui-monospace", "SFMono-Regular", "Menlo", "monospace"],
-        bengali: ['"Hind Siliguri"', '"Inter Variable"', "sans-serif"],
+        bengali: ['"Hind Siliguri"', '"Nunito Variable"', "sans-serif"],
       },
       fontSize: {
-        // ADL Moto Viewer font sizes
-        xs: ["12px", "16px"],
-        sm: ["13px", "18px"],   // --G-F-S grid font
-        base: ["14px", "20px"],
-        md: ["16px", "24px"],   // --F-S base font
-        lg: ["18px", "28px"],
-        xl: ["20px", "28px"],
-        "2xl": ["24px", "32px"],
-        "3xl": ["30px", "36px"],
+        // One step larger than the old fleet scale; 12px is the floor.
+        xs: ["13px", "18px"],
+        sm: ["14px", "20px"],
+        base: ["16px", "24px"],
+        md: ["17px", "26px"],
+        lg: ["19px", "28px"],
+        xl: ["22px", "30px"],
+        "2xl": ["26px", "34px"],
+        "3xl": ["32px", "40px"],
       },
       fontWeight: {
         normal: "400",
@@ -123,14 +138,16 @@ const config: Config = {
         bold: "700",
       },
       borderRadius: {
+        // Soft, rounded corners throughout (the poster's cards are ~20px).
         none: "0",
-        sm: "2px",
-        DEFAULT: "2px",
-        md: "4px",
-        lg: "4px",
-        xl: "8px",
-        mkt: "8px",      // Marketing pages
-        "mkt-lg": "12px", // Marketing cards
+        sm: "6px",
+        DEFAULT: "8px",
+        md: "10px",
+        lg: "12px",
+        xl: "16px",
+        "2xl": "20px",
+        mkt: "12px",      // Marketing pages
+        "mkt-lg": "20px", // Marketing cards
       },
       boxShadow: {
         sm: "0 1px 2px 0 rgba(0, 0, 0, 0.05)",

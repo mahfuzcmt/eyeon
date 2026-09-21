@@ -34,7 +34,7 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="relative min-h-screen overflow-hidden bg-gradient-to-br from-brand-900 via-[#134472] to-brand-700">
+    <main className="relative min-h-screen overflow-hidden bg-gradient-to-br from-brand-900 via-brand-800 to-brand-700">
       {/* Branded GPS background */}
       <div
         aria-hidden
@@ -60,8 +60,8 @@ export default function LoginPage() {
             <h2 className="text-3xl font-bold text-white tracking-tight">
               {t("auth.signIn")}
             </h2>
-            <p className="mt-2 text-[14px] text-brand-100/80">
-              {t("nav.dashboard")} · {t("fleet.title")}
+            <p className="mt-2 text-[15px] text-brand-100/80">
+              {t("auth.subtitle")}
             </p>
           </div>
 
@@ -69,7 +69,7 @@ export default function LoginPage() {
           <div className="panel p-8 shadow-2xl backdrop-blur-sm bg-white/95 border-surface-200">
             <form onSubmit={onSubmit} className="space-y-5">
               <div>
-                <label htmlFor="email" className="mb-1.5 block text-[13px] font-semibold uppercase tracking-wide text-ink-600">
+                <label htmlFor="email" className="mb-1.5 block text-[14px] font-semibold uppercase tracking-wide text-ink-600">
                   {t("auth.email")}
                 </label>
                 <input
@@ -77,15 +77,15 @@ export default function LoginPage() {
                   type="email"
                   autoComplete="email"
                   required
-                  className="input h-10 text-[14px]"
-                  placeholder="you@company.com"
+                  className="input h-10 text-[15px]"
+                  placeholder="you@example.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   disabled={submitting}
                 />
               </div>
               <div>
-                <label htmlFor="password" className="mb-1.5 block text-[13px] font-semibold uppercase tracking-wide text-ink-600">
+                <label htmlFor="password" className="mb-1.5 block text-[14px] font-semibold uppercase tracking-wide text-ink-600">
                   {t("auth.password")}
                 </label>
                 <input
@@ -94,7 +94,7 @@ export default function LoginPage() {
                   autoComplete="current-password"
                   required
                   minLength={8}
-                  className="input h-10 text-[14px]"
+                  className="input h-10 text-[15px]"
                   placeholder="••••••••"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
@@ -103,18 +103,18 @@ export default function LoginPage() {
               </div>
 
               {error && (
-                <div className="rounded-md border border-alarm-red/40 bg-alarm-red/10 px-3 py-2.5 text-[14px] text-alarm-red">
+                <div className="rounded-md border border-alarm-red/40 bg-alarm-red/10 px-3 py-2.5 text-[15px] text-alarm-red">
                   {error}
                 </div>
               )}
 
               <div className="-mt-2 text-right">
-                <Link href="/login/forgot" className="text-[13px] font-medium text-brand-500 hover:text-brand-600">
+                <Link href="/login/forgot" className="text-[14px] font-medium text-brand-500 hover:text-brand-600">
                   {t("auth.forgotPassword")}
                 </Link>
               </div>
 
-              <button type="submit" className="btn-primary w-full h-10 text-[14px]" disabled={submitting}>
+              <button type="submit" className="btn-primary w-full h-10 text-[15px]" disabled={submitting}>
                 {submitting ? (
                   <span className="flex items-center gap-2">
                     <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
@@ -131,15 +131,15 @@ export default function LoginPage() {
 
             {/* Footer branding */}
             <div className="mt-6 pt-5 border-t border-surface-200">
-              <p className="text-center text-[13px] text-ink-500">
-                Powered by <span className="font-semibold text-brand-500">EyeOn GPS</span>
+              <p className="text-center text-[14px] text-ink-500">
+                <span className="font-semibold text-brand-500">EyeOn</span> Family Safety
               </p>
             </div>
           </div>
 
           {/* Bottom tagline */}
-          <p className="mt-6 text-center text-[13px] text-brand-100/70">
-            Real-time fleet tracking for Bangladesh
+          <p className="mt-6 text-center text-[14px] text-brand-100/70">
+            {t("auth.tagline")}
           </p>
         </div>
       </div>

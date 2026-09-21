@@ -95,12 +95,12 @@ interface KpiProps {
 function Kpi({ label, value, unit, subValue, accent = "text-ink-800" }: KpiProps) {
   return (
     <div className="flex min-w-[72px] shrink-0 flex-col gap-0.5 border-r border-surface-200 px-2.5 py-1.5 last:border-r-0 sm:min-w-[84px] sm:px-3">
-      <span className="text-[11px] font-medium uppercase tracking-wide text-ink-500">{label}</span>
+      <span className="text-[12px] font-medium uppercase tracking-wide text-ink-500">{label}</span>
       <div className="flex items-baseline gap-1">
-        <span className={`text-[16px] font-semibold leading-none tabular-nums ${accent}`}>{value}</span>
-        {unit && <span className="text-[11px] text-ink-500">{unit}</span>}
+        <span className={`text-[17px] font-semibold leading-none tabular-nums ${accent}`}>{value}</span>
+        {unit && <span className="text-[12px] text-ink-500">{unit}</span>}
       </div>
-      {subValue && <span className="text-[11px] text-ink-500">{subValue}</span>}
+      {subValue && <span className="text-[12px] text-ink-500">{subValue}</span>}
     </div>
   );
 }

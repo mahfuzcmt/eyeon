@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useState, useEffect } from "react";
 import { useLocale } from "@/lib/i18n";
 import { LanguageToggle } from "@/components/shell/LanguageToggle";
-import Image from "next/image";
+import { EyeOnLogo } from "@/components/brand/EyeOnLogo";
 
 const NAV_LINKS = [
   { href: "/features", key: "mkt.nav.features" },
@@ -45,14 +45,7 @@ export function MarketingHeader({ variant = "light" }: { variant?: "light" | "da
       <div className="mkt-container flex h-[72px] items-center justify-between">
         {/* Logo */}
         <Link href="/" className="flex items-center">
-          <Image
-            src="/eyeon-logo.png"
-            alt="EyeOn"
-            width={160}
-            height={40}
-            className="h-10 w-auto rounded-md shadow-sm"
-            priority
-          />
+          <EyeOnLogo height={40} tone={isDark ? "dark" : "light"} />
         </Link>
 
         {/* Desktop Navigation */}

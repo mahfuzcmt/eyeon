@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { api } from "@/lib/api";
-import type { GeofenceCreate, GeofenceView } from "@/types/domain";
+import type { GeofenceCreate, GeofenceUpdate, GeofenceView } from "@/types/domain";
 
 export function useGeofences() {
   const [geofences, setGeofences] = useState<GeofenceView[]>([]);
@@ -32,6 +32,12 @@ export function useGeofences() {
     return r.data;
   }, []);
 
+  const update = useCallback(async (id: string, patch: GeofenceUpdate) => {
+    const r = await api.patch<GeofenceView>(`/geofences/${id}`, patch);
+    setGeofences((prev) => prev.map((g) => (g.id === id ? r.data : g)));
+    return r.data;
+  }, []);
+
   const remove = useCallback(async (id: string) => {
     await api.delete(`/geofences/${id}`);
     setGeofences((prev) => prev.filter((g) => g.id !== id));
@@ -50,5 +56,5 @@ export function useGeofences() {
     await api.delete(`/geofences/${geofenceId}/devices/${imei}`);
   }, []);
 
-  return { geofences, loading, error, refresh, create, remove, getAssignedDevices, assignDevices, unassignDevice };
+  return { geofences, loading, error, refresh, create, update, remove, getAssignedDevices, assignDevices, unassignDevice };
 }

@@ -116,7 +116,7 @@ export function DriverModal({ driver, onSave, onClose }: DriverModalProps) {
         {/* Form */}
         <form onSubmit={handleSubmit} className="overflow-y-auto p-6" style={{ maxHeight: "calc(90vh - 140px)" }}>
           {error && (
-            <div className="mb-4 rounded-lg bg-red-50 p-3 text-[14px] text-red-700">
+            <div className="mb-4 rounded-lg bg-red-50 p-3 text-[15px] text-red-700">
               {error}
             </div>
           )}
@@ -124,11 +124,11 @@ export function DriverModal({ driver, onSave, onClose }: DriverModalProps) {
           <div className="space-y-6">
             {/* Basic Info Section */}
             <div>
-              <h3 className="mb-3 text-[14px] font-medium text-ink-500">Basic Information</h3>
+              <h3 className="mb-3 text-[15px] font-medium text-ink-500">Basic Information</h3>
               <div className="grid gap-4 sm:grid-cols-2">
                 {/* Name */}
                 <div className="sm:col-span-2">
-                  <label htmlFor="driver-name" className="mb-1 block text-[14px] font-medium text-ink-700">
+                  <label htmlFor="driver-name" className="mb-1 block text-[15px] font-medium text-ink-700">
                     Full Name <span className="text-red-500">*</span>
                   </label>
                   <input
@@ -145,7 +145,7 @@ export function DriverModal({ driver, onSave, onClose }: DriverModalProps) {
 
                 {/* Phone */}
                 <div>
-                  <label htmlFor="phone" className="mb-1 block text-[14px] font-medium text-ink-700">
+                  <label htmlFor="phone" className="mb-1 block text-[15px] font-medium text-ink-700">
                     Phone Number
                   </label>
                   <input
@@ -161,7 +161,7 @@ export function DriverModal({ driver, onSave, onClose }: DriverModalProps) {
 
                 {/* Email */}
                 <div>
-                  <label htmlFor="email" className="mb-1 block text-[14px] font-medium text-ink-700">
+                  <label htmlFor="email" className="mb-1 block text-[15px] font-medium text-ink-700">
                     Email
                   </label>
                   <input
@@ -177,7 +177,7 @@ export function DriverModal({ driver, onSave, onClose }: DriverModalProps) {
 
                 {/* Date of Birth */}
                 <div>
-                  <label htmlFor="dateOfBirth" className="mb-1 block text-[14px] font-medium text-ink-700">
+                  <label htmlFor="dateOfBirth" className="mb-1 block text-[15px] font-medium text-ink-700">
                     Date of Birth
                   </label>
                   <input
@@ -192,7 +192,7 @@ export function DriverModal({ driver, onSave, onClose }: DriverModalProps) {
 
                 {/* NID */}
                 <div>
-                  <label htmlFor="nid" className="mb-1 block text-[14px] font-medium text-ink-700">
+                  <label htmlFor="nid" className="mb-1 block text-[15px] font-medium text-ink-700">
                     National ID (NID)
                   </label>
                   <input
@@ -208,7 +208,7 @@ export function DriverModal({ driver, onSave, onClose }: DriverModalProps) {
 
                 {/* Address */}
                 <div className="sm:col-span-2">
-                  <label htmlFor="address" className="mb-1 block text-[14px] font-medium text-ink-700">
+                  <label htmlFor="address" className="mb-1 block text-[15px] font-medium text-ink-700">
                     Address
                   </label>
                   <input
@@ -226,11 +226,11 @@ export function DriverModal({ driver, onSave, onClose }: DriverModalProps) {
 
             {/* License Info Section */}
             <div>
-              <h3 className="mb-3 text-[14px] font-medium text-ink-500">License Information</h3>
+              <h3 className="mb-3 text-[15px] font-medium text-ink-500">License Information</h3>
               <div className="grid gap-4 sm:grid-cols-3">
                 {/* License Number */}
                 <div>
-                  <label htmlFor="licenseNo" className="mb-1 block text-[14px] font-medium text-ink-700">
+                  <label htmlFor="licenseNo" className="mb-1 block text-[15px] font-medium text-ink-700">
                     License Number
                   </label>
                   <input
@@ -246,7 +246,7 @@ export function DriverModal({ driver, onSave, onClose }: DriverModalProps) {
 
                 {/* License Type */}
                 <div>
-                  <label htmlFor="licenseType" className="mb-1 block text-[14px] font-medium text-ink-700">
+                  <label htmlFor="licenseType" className="mb-1 block text-[15px] font-medium text-ink-700">
                     License Type
                   </label>
                   <select
@@ -267,7 +267,7 @@ export function DriverModal({ driver, onSave, onClose }: DriverModalProps) {
 
                 {/* License Expiry */}
                 <div>
-                  <label htmlFor="licenseExpiry" className="mb-1 block text-[14px] font-medium text-ink-700">
+                  <label htmlFor="licenseExpiry" className="mb-1 block text-[15px] font-medium text-ink-700">
                     License Expiry
                   </label>
                   <input
@@ -284,11 +284,11 @@ export function DriverModal({ driver, onSave, onClose }: DriverModalProps) {
 
             {/* Employment Section */}
             <div>
-              <h3 className="mb-3 text-[14px] font-medium text-ink-500">Employment Details</h3>
+              <h3 className="mb-3 text-[15px] font-medium text-ink-500">Employment Details</h3>
               <div className="grid gap-4 sm:grid-cols-2">
                 {/* Hire Date */}
                 <div>
-                  <label htmlFor="hireDate" className="mb-1 block text-[14px] font-medium text-ink-700">
+                  <label htmlFor="hireDate" className="mb-1 block text-[15px] font-medium text-ink-700">
                     Hire Date
                   </label>
                   <input
@@ -304,7 +304,7 @@ export function DriverModal({ driver, onSave, onClose }: DriverModalProps) {
                 {/* Status (edit only) */}
                 {isEdit && (
                   <div>
-                    <label htmlFor="status" className="mb-1 block text-[14px] font-medium text-ink-700">
+                    <label htmlFor="status" className="mb-1 block text-[15px] font-medium text-ink-700">
                       Status
                     </label>
                     <select
@@ -325,7 +325,7 @@ export function DriverModal({ driver, onSave, onClose }: DriverModalProps) {
 
                 {/* RFID Card */}
                 <div>
-                  <label htmlFor="rfidCard" className="mb-1 block text-[14px] font-medium text-ink-700">
+                  <label htmlFor="rfidCard" className="mb-1 block text-[15px] font-medium text-ink-700">
                     RFID Card Number
                   </label>
                   <input
@@ -341,7 +341,7 @@ export function DriverModal({ driver, onSave, onClose }: DriverModalProps) {
 
                 {/* Photo URL */}
                 <div>
-                  <label htmlFor="photoUrl" className="mb-1 block text-[14px] font-medium text-ink-700">
+                  <label htmlFor="photoUrl" className="mb-1 block text-[15px] font-medium text-ink-700">
                     Photo URL
                   </label>
                   <input
@@ -359,11 +359,11 @@ export function DriverModal({ driver, onSave, onClose }: DriverModalProps) {
 
             {/* Emergency Contact Section */}
             <div>
-              <h3 className="mb-3 text-[14px] font-medium text-ink-500">Emergency Contact</h3>
+              <h3 className="mb-3 text-[15px] font-medium text-ink-500">Emergency Contact</h3>
               <div className="grid gap-4 sm:grid-cols-2">
                 {/* Emergency Contact Name */}
                 <div>
-                  <label htmlFor="emergencyContact" className="mb-1 block text-[14px] font-medium text-ink-700">
+                  <label htmlFor="emergencyContact" className="mb-1 block text-[15px] font-medium text-ink-700">
                     Contact Name
                   </label>
                   <input
@@ -379,7 +379,7 @@ export function DriverModal({ driver, onSave, onClose }: DriverModalProps) {
 
                 {/* Emergency Phone */}
                 <div>
-                  <label htmlFor="emergencyPhone" className="mb-1 block text-[14px] font-medium text-ink-700">
+                  <label htmlFor="emergencyPhone" className="mb-1 block text-[15px] font-medium text-ink-700">
                     Contact Phone
                   </label>
                   <input
@@ -397,7 +397,7 @@ export function DriverModal({ driver, onSave, onClose }: DriverModalProps) {
 
             {/* Notes */}
             <div>
-              <label htmlFor="notes" className="mb-1 block text-[14px] font-medium text-ink-700">
+              <label htmlFor="notes" className="mb-1 block text-[15px] font-medium text-ink-700">
                 Notes
               </label>
               <textarea
@@ -418,7 +418,7 @@ export function DriverModal({ driver, onSave, onClose }: DriverModalProps) {
           <button
             type="button"
             onClick={onClose}
-            className="rounded-lg border border-ink-200 px-4 py-2 text-[14px] font-medium text-ink-600 hover:bg-ink-50"
+            className="rounded-lg border border-ink-200 px-4 py-2 text-[15px] font-medium text-ink-600 hover:bg-ink-50"
             disabled={saving}
           >
             Cancel
@@ -426,7 +426,7 @@ export function DriverModal({ driver, onSave, onClose }: DriverModalProps) {
           <button
             type="submit"
             onClick={handleSubmit}
-            className="rounded-lg bg-brand-600 px-4 py-2 text-[14px] font-medium text-white hover:bg-brand-700 disabled:opacity-50"
+            className="rounded-lg bg-brand-600 px-4 py-2 text-[15px] font-medium text-white hover:bg-brand-700 disabled:opacity-50"
             disabled={saving}
           >
             {saving ? (

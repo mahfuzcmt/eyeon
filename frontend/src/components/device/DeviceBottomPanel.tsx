@@ -129,7 +129,7 @@ export function DeviceBottomPanel({ device, location, onClose, onViewHistory, on
               key={tab.id}
               type="button"
               onClick={() => setActiveTab(tab.id)}
-              className={`px-4 py-2 text-[13px] font-medium transition ${
+              className={`px-4 py-2 text-[14px] font-medium transition ${
                 activeTab === tab.id
                   ? "border-b-2 border-brand-500 bg-white text-ink-900"
                   : "text-ink-500 hover:bg-white hover:text-ink-900"
@@ -144,7 +144,7 @@ export function DeviceBottomPanel({ device, location, onClose, onViewHistory, on
             <button
               type="button"
               onClick={onViewLiveTracking}
-              className="btn-primary flex items-center gap-1.5 text-[13px]"
+              className="btn-primary flex items-center gap-1.5 text-[14px]"
             >
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <circle cx="12" cy="12" r="10"/>
@@ -156,7 +156,7 @@ export function DeviceBottomPanel({ device, location, onClose, onViewHistory, on
           <button
             type="button"
             onClick={onViewHistory}
-            className="btn-secondary text-[13px]"
+            className="btn-secondary text-[14px]"
           >
             {t("fleet.viewHistory")}
           </button>
@@ -200,10 +200,10 @@ export function DeviceBottomPanel({ device, location, onClose, onViewHistory, on
 
           {/* Object control */}
           <div className="w-full p-3 md:w-52 md:border-r md:border-surface-200">
-            <div className="text-[13px] font-semibold text-ink-700 mb-2">{t("panel.objectControl")}</div>
+            <div className="text-[14px] font-semibold text-ink-700 mb-2">{t("panel.objectControl")}</div>
             <div className="space-y-2">
               <div>
-                <label className="text-[11px] text-ink-500">{t("panel.template")}</label>
+                <label className="text-[12px] text-ink-500">{t("panel.template")}</label>
                 <select
                   className="select w-full mt-0.5"
                   value={template}
@@ -220,7 +220,7 @@ export function DeviceBottomPanel({ device, location, onClose, onViewHistory, on
                 </select>
               </div>
               <div>
-                <label className="text-[11px] text-ink-500">{t("panel.command")}</label>
+                <label className="text-[12px] text-ink-500">{t("panel.command")}</label>
                 <div className="flex gap-1 mt-0.5">
                   <input
                     type="text"
@@ -243,14 +243,14 @@ export function DeviceBottomPanel({ device, location, onClose, onViewHistory, on
                   </button>
                 </div>
               </div>
-              {cmdMsg && <div className="text-[11px] text-ink-600 break-words">{cmdMsg}</div>}
+              {cmdMsg && <div className="text-[12px] text-ink-600 break-words">{cmdMsg}</div>}
             </div>
           </div>
 
           {/* Daily statistics */}
           <div className="w-full p-3 md:w-56">
-            <div className="text-[13px] font-semibold text-ink-700 mb-2">{t("panel.dailyStats")}</div>
-            <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-[13px]">
+            <div className="text-[14px] font-semibold text-ink-700 mb-2">{t("panel.dailyStats")}</div>
+            <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-[14px]">
               <span className="text-ink-500">{t("home.routeLength")}</span>
               <span className="text-ink-900 font-medium text-right">
                 {formatNumber(stats.distanceM / 1000, locale, { maximumFractionDigits: 1 })} km
@@ -271,7 +271,7 @@ export function DeviceBottomPanel({ device, location, onClose, onViewHistory, on
       {activeTab === "graph" && (
         <div className="max-h-[50vh] overflow-y-auto p-3">
           {graphLoading ? (
-            <div className="p-4 text-center text-[13px] text-ink-400">…</div>
+            <div className="p-4 text-center text-[14px] text-ink-400">…</div>
           ) : (
             <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
               <TimeSeriesChart
@@ -311,9 +311,9 @@ interface DataRowProps {
 function DataRow({ icon, label, value, valueColor = "text-ink-900", mono, link }: DataRowProps) {
   return (
     <div className="flex items-center gap-2 py-0.5">
-      <span className="text-[11px] w-5 text-center">{icon}</span>
-      <span className="text-[12px] text-ink-500 w-24 truncate">{label}</span>
-      <span className={`text-[12px] font-medium ${valueColor} ${mono ? "font-mono" : ""} ${link ? "text-brand-500 underline cursor-pointer" : ""}`}>
+      <span className="text-[12px] w-5 text-center">{icon}</span>
+      <span className="text-[13px] text-ink-500 w-24 truncate">{label}</span>
+      <span className={`text-[13px] font-medium ${valueColor} ${mono ? "font-mono" : ""} ${link ? "text-brand-500 underline cursor-pointer" : ""}`}>
         {value}
       </span>
     </div>

@@ -20,7 +20,7 @@ export default function AdminPage() {
       {/* Header */}
       <div className="shrink-0 border-b border-surface-300 bg-white px-4 py-3">
         <h1 className="text-lg font-semibold text-ink-900">Super Admin Panel</h1>
-        <p className="text-[13px] text-ink-500">Manage organizations and device assignments</p>
+        <p className="text-[14px] text-ink-500">Manage organizations and device assignments</p>
       </div>
 
       {/* Stats Bar */}
@@ -93,11 +93,11 @@ function StatCard({
 }) {
   return (
     <div className="flex flex-col">
-      <span className="text-[13px] font-medium text-ink-500">{label}</span>
+      <span className="text-[14px] font-medium text-ink-500">{label}</span>
       <span className="text-xl font-bold text-ink-900">
         {loading ? "..." : value}
       </span>
-      {sub && <span className="text-[11px] text-ink-400">{sub}</span>}
+      {sub && <span className="text-[12px] text-ink-400">{sub}</span>}
     </div>
   );
 }
@@ -115,7 +115,7 @@ function TabButton({
     <button
       type="button"
       onClick={onClick}
-      className={`border-b-2 px-2 py-2 text-[14px] font-medium transition ${
+      className={`border-b-2 px-2 py-2 text-[15px] font-medium transition ${
         active
           ? "border-brand-500 text-brand-600"
           : "border-transparent text-ink-500 hover:text-ink-700"
@@ -176,11 +176,11 @@ function OrgsTab() {
   };
 
   if (loading) {
-    return <div className="py-10 text-center text-[14px] text-ink-500">Loading...</div>;
+    return <div className="py-10 text-center text-[15px] text-ink-500">Loading...</div>;
   }
 
   if (error) {
-    return <div className="py-10 text-center text-[14px] text-status-stopped">{error}</div>;
+    return <div className="py-10 text-center text-[15px] text-status-stopped">{error}</div>;
   }
 
   return (
@@ -190,7 +190,7 @@ function OrgsTab() {
         <button
           type="button"
           onClick={() => setShowCreate(!showCreate)}
-          className="rounded-lg bg-brand-500 px-4 py-2 text-[14px] font-medium text-white hover:bg-brand-600"
+          className="rounded-lg bg-brand-500 px-4 py-2 text-[15px] font-medium text-white hover:bg-brand-600"
         >
           {showCreate ? "Cancel" : "Create Organization"}
         </button>
@@ -202,20 +202,20 @@ function OrgsTab() {
           onSubmit={handleCreate}
           className="rounded-lg border border-surface-300 bg-white p-4 shadow-sm"
         >
-          <h3 className="mb-4 text-[14px] font-semibold text-ink-900">New Organization</h3>
+          <h3 className="mb-4 text-[15px] font-semibold text-ink-900">New Organization</h3>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div>
-              <label className="mb-1 block text-[13px] font-medium text-ink-700">Name *</label>
+              <label className="mb-1 block text-[14px] font-medium text-ink-700">Name *</label>
               <input
                 type="text"
                 required
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                className="w-full rounded-md border border-surface-300 px-3 py-1.5 text-[14px] focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
+                className="w-full rounded-md border border-surface-300 px-3 py-1.5 text-[15px] focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
               />
             </div>
             <div>
-              <label className="mb-1 block text-[13px] font-medium text-ink-700">Slug *</label>
+              <label className="mb-1 block text-[14px] font-medium text-ink-700">Slug *</label>
               <input
                 type="text"
                 required
@@ -226,16 +226,16 @@ function OrgsTab() {
                     slug: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, "-"),
                   })
                 }
-                className="w-full rounded-md border border-surface-300 px-3 py-1.5 text-[14px] focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
+                className="w-full rounded-md border border-surface-300 px-3 py-1.5 text-[15px] focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
                 placeholder="org-slug"
               />
             </div>
             <div>
-              <label className="mb-1 block text-[13px] font-medium text-ink-700">Plan Tier</label>
+              <label className="mb-1 block text-[14px] font-medium text-ink-700">Plan Tier</label>
               <select
                 value={formData.planTier}
                 onChange={(e) => setFormData({ ...formData, planTier: e.target.value })}
-                className="w-full rounded-md border border-surface-300 px-3 py-1.5 text-[14px] focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
+                className="w-full rounded-md border border-surface-300 px-3 py-1.5 text-[15px] focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
               >
                 <option value="BASIC">Basic</option>
                 <option value="PRO">Pro</option>
@@ -243,41 +243,41 @@ function OrgsTab() {
               </select>
             </div>
             <div>
-              <label className="mb-1 block text-[13px] font-medium text-ink-700">Contact Email</label>
+              <label className="mb-1 block text-[14px] font-medium text-ink-700">Contact Email</label>
               <input
                 type="email"
                 value={formData.contactEmail}
                 onChange={(e) => setFormData({ ...formData, contactEmail: e.target.value })}
-                className="w-full rounded-md border border-surface-300 px-3 py-1.5 text-[14px] focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
+                className="w-full rounded-md border border-surface-300 px-3 py-1.5 text-[15px] focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
               />
             </div>
             <div>
-              <label className="mb-1 block text-[13px] font-medium text-ink-700">Contact Phone</label>
+              <label className="mb-1 block text-[14px] font-medium text-ink-700">Contact Phone</label>
               <input
                 type="tel"
                 value={formData.contactPhone}
                 onChange={(e) => setFormData({ ...formData, contactPhone: e.target.value })}
-                className="w-full rounded-md border border-surface-300 px-3 py-1.5 text-[14px] focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
+                className="w-full rounded-md border border-surface-300 px-3 py-1.5 text-[15px] focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
               />
             </div>
             <div>
-              <label className="mb-1 block text-[13px] font-medium text-ink-700">Address</label>
+              <label className="mb-1 block text-[14px] font-medium text-ink-700">Address</label>
               <input
                 type="text"
                 value={formData.address}
                 onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                className="w-full rounded-md border border-surface-300 px-3 py-1.5 text-[14px] focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
+                className="w-full rounded-md border border-surface-300 px-3 py-1.5 text-[15px] focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
               />
             </div>
           </div>
           {formError && (
-            <p className="mt-3 text-[14px] text-status-stopped">{formError}</p>
+            <p className="mt-3 text-[15px] text-status-stopped">{formError}</p>
           )}
           <div className="mt-4 flex justify-end">
             <button
               type="submit"
               disabled={creating}
-              className="rounded-lg bg-brand-500 px-4 py-2 text-[14px] font-medium text-white hover:bg-brand-600 disabled:opacity-50"
+              className="rounded-lg bg-brand-500 px-4 py-2 text-[15px] font-medium text-white hover:bg-brand-600 disabled:opacity-50"
             >
               {creating ? "Creating..." : "Create"}
             </button>
@@ -287,7 +287,7 @@ function OrgsTab() {
 
       {/* Orgs Table */}
       <div className="overflow-x-auto rounded-lg border border-surface-300 bg-white">
-        <table className="w-full text-left text-[14px]">
+        <table className="w-full text-left text-[15px]">
           <thead className="border-b border-surface-200 bg-surface-50">
             <tr>
               <th className="px-4 py-2 font-medium text-ink-700">Name</th>
@@ -311,9 +311,9 @@ function OrgsTab() {
             {orgs.map((org) => (
               <tr key={org.id} className="border-b border-surface-100 hover:bg-surface-50">
                 <td className="px-4 py-2 font-medium text-ink-900">{org.name}</td>
-                <td className="px-4 py-2 font-mono text-[13px] text-ink-600">{org.slug}</td>
+                <td className="px-4 py-2 font-mono text-[14px] text-ink-600">{org.slug}</td>
                 <td className="px-4 py-2">
-                  <span className="rounded bg-brand-50 px-2 py-0.5 text-[13px] font-medium text-brand-700">
+                  <span className="rounded bg-brand-50 px-2 py-0.5 text-[14px] font-medium text-brand-700">
                     {org.planTier}
                   </span>
                 </td>
@@ -322,14 +322,14 @@ function OrgsTab() {
                 </td>
                 <td className="px-4 py-2 text-ink-700">{org.deviceCount}</td>
                 <td className="px-4 py-2 text-ink-700">{org.userCount}</td>
-                <td className="px-4 py-2 text-[13px] text-ink-500">
+                <td className="px-4 py-2 text-[14px] text-ink-500">
                   {formatRelative(org.createdAt, locale)}
                 </td>
                 <td className="px-4 py-2">
                   <select
                     value={org.status}
                     onChange={(e) => handleStatusChange(org, e.target.value)}
-                    className="rounded border border-surface-300 px-2 py-1 text-[13px]"
+                    className="rounded border border-surface-300 px-2 py-1 text-[14px]"
                   >
                     <option value="ACTIVE">Active</option>
                     <option value="SUSPENDED">Suspended</option>
@@ -352,7 +352,7 @@ function StatusBadge({ status }: { status: string }) {
     CANCELLED: "bg-status-stopped/15 text-status-stopped",
   };
   return (
-    <span className={`rounded px-2 py-0.5 text-[13px] font-medium ${colors[status] ?? "bg-surface-200 text-ink-600"}`}>
+    <span className={`rounded px-2 py-0.5 text-[14px] font-medium ${colors[status] ?? "bg-surface-200 text-ink-600"}`}>
       {status}
     </span>
   );
@@ -390,22 +390,22 @@ function DevicesTab() {
   };
 
   if (loading) {
-    return <div className="py-10 text-center text-[14px] text-ink-500">Loading...</div>;
+    return <div className="py-10 text-center text-[15px] text-ink-500">Loading...</div>;
   }
 
   if (error) {
-    return <div className="py-10 text-center text-[14px] text-status-stopped">{error}</div>;
+    return <div className="py-10 text-center text-[15px] text-status-stopped">{error}</div>;
   }
 
   return (
     <div className="space-y-4">
       {/* Filter */}
       <div className="flex items-center gap-4">
-        <label className="text-[14px] font-medium text-ink-700">Filter by Organization:</label>
+        <label className="text-[15px] font-medium text-ink-700">Filter by Organization:</label>
         <select
           value={orgFilter}
           onChange={(e) => setOrgFilter(e.target.value)}
-          className="rounded-md border border-surface-300 px-3 py-1.5 text-[14px] focus:border-brand-500 focus:outline-none"
+          className="rounded-md border border-surface-300 px-3 py-1.5 text-[15px] focus:border-brand-500 focus:outline-none"
         >
           <option value="">All Organizations</option>
           {orgs.map((org) => (
@@ -418,7 +418,7 @@ function DevicesTab() {
 
       {/* Devices Table */}
       <div className="overflow-x-auto rounded-lg border border-surface-300 bg-white">
-        <table className="w-full text-left text-[14px]">
+        <table className="w-full text-left text-[15px]">
           <thead className="border-b border-surface-200 bg-surface-50">
             <tr>
               <th className="px-4 py-2 font-medium text-ink-700">IMEI</th>
@@ -439,7 +439,7 @@ function DevicesTab() {
             )}
             {devices.map((device) => (
               <tr key={device.imei} className="border-b border-surface-100 hover:bg-surface-50">
-                <td className="px-4 py-2 font-mono text-[13px] text-ink-700">{device.imei}</td>
+                <td className="px-4 py-2 font-mono text-[14px] text-ink-700">{device.imei}</td>
                 <td className="px-4 py-2 text-ink-900">
                   {device.name || device.vehiclePlate || "—"}
                 </td>
@@ -447,7 +447,7 @@ function DevicesTab() {
                 <td className="px-4 py-2">
                   <DeviceStatusBadge status={device.status} />
                 </td>
-                <td className="px-4 py-2 text-[13px] text-ink-500">
+                <td className="px-4 py-2 text-[14px] text-ink-500">
                   {device.lastSeenAt ? formatRelative(device.lastSeenAt, locale) : "Never"}
                 </td>
                 <td className="px-4 py-2">
@@ -460,7 +460,7 @@ function DevicesTab() {
                           [device.imei]: e.target.value,
                         }))
                       }
-                      className="rounded border border-surface-300 px-2 py-1 text-[13px]"
+                      className="rounded border border-surface-300 px-2 py-1 text-[14px]"
                     >
                       <option value="">Select org...</option>
                       {orgs
@@ -477,7 +477,7 @@ function DevicesTab() {
                       disabled={
                         !selectedTargetOrg[device.imei] || reassigning === device.imei
                       }
-                      className="rounded bg-brand-500 px-2 py-1 text-[13px] font-medium text-white hover:bg-brand-600 disabled:opacity-50"
+                      className="rounded bg-brand-500 px-2 py-1 text-[14px] font-medium text-white hover:bg-brand-600 disabled:opacity-50"
                     >
                       {reassigning === device.imei ? "..." : "Move"}
                     </button>
@@ -499,7 +499,7 @@ function DeviceStatusBadge({ status }: { status: string }) {
     NEVER_CONNECTED: "bg-status-nodata/15 text-status-nodata",
   };
   return (
-    <span className={`rounded px-2 py-0.5 text-[13px] font-medium ${colors[status] ?? "bg-surface-200 text-ink-600"}`}>
+    <span className={`rounded px-2 py-0.5 text-[14px] font-medium ${colors[status] ?? "bg-surface-200 text-ink-600"}`}>
       {status}
     </span>
   );
@@ -617,18 +617,18 @@ function SubscriptionsTab() {
     orgs.find((o) => o.id === orgId)?.name ?? "Unknown";
 
   if (loading) {
-    return <div className="py-10 text-center text-[14px] text-ink-500">Loading...</div>;
+    return <div className="py-10 text-center text-[15px] text-ink-500">Loading...</div>;
   }
 
   if (error) {
-    return <div className="py-10 text-center text-[14px] text-status-stopped">{error}</div>;
+    return <div className="py-10 text-center text-[15px] text-status-stopped">{error}</div>;
   }
 
   return (
     <div className="space-y-4">
       {/* Billing Stats */}
       <div className="rounded-lg border border-surface-300 bg-white p-4">
-        <h3 className="mb-3 text-[14px] font-semibold text-ink-900">Billing Stats</h3>
+        <h3 className="mb-3 text-[15px] font-semibold text-ink-900">Billing Stats</h3>
         <div className="flex flex-wrap gap-6">
           <StatCard label="Total" value={stats?.total ?? 0} loading={statsLoading} />
           <StatCard
@@ -662,7 +662,7 @@ function SubscriptionsTab() {
       {/* Search Filters */}
       <div className="flex flex-wrap items-end gap-4 rounded-lg border border-surface-300 bg-white p-4">
         <div>
-          <label className="mb-1 block text-[13px] font-medium text-ink-700">
+          <label className="mb-1 block text-[14px] font-medium text-ink-700">
             Search IMEI
           </label>
           <input
@@ -670,17 +670,17 @@ function SubscriptionsTab() {
             value={imeiFilter}
             onChange={(e) => setImeiFilter(e.target.value)}
             placeholder="IMEI prefix..."
-            className="rounded-md border border-surface-300 px-3 py-1.5 text-[14px] focus:border-brand-500 focus:outline-none"
+            className="rounded-md border border-surface-300 px-3 py-1.5 text-[15px] focus:border-brand-500 focus:outline-none"
           />
         </div>
         <div>
-          <label className="mb-1 block text-[13px] font-medium text-ink-700">
+          <label className="mb-1 block text-[14px] font-medium text-ink-700">
             Organization
           </label>
           <select
             value={orgFilter}
             onChange={(e) => setOrgFilter(e.target.value)}
-            className="rounded-md border border-surface-300 px-3 py-1.5 text-[14px] focus:border-brand-500 focus:outline-none"
+            className="rounded-md border border-surface-300 px-3 py-1.5 text-[15px] focus:border-brand-500 focus:outline-none"
           >
             <option value="">All</option>
             {orgs.map((org) => (
@@ -691,13 +691,13 @@ function SubscriptionsTab() {
           </select>
         </div>
         <div>
-          <label className="mb-1 block text-[13px] font-medium text-ink-700">
+          <label className="mb-1 block text-[14px] font-medium text-ink-700">
             Status
           </label>
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            className="rounded-md border border-surface-300 px-3 py-1.5 text-[14px] focus:border-brand-500 focus:outline-none"
+            className="rounded-md border border-surface-300 px-3 py-1.5 text-[15px] focus:border-brand-500 focus:outline-none"
           >
             <option value="">All</option>
             <option value="ACTIVE">Active</option>
@@ -709,21 +709,21 @@ function SubscriptionsTab() {
         <button
           type="button"
           onClick={handleSearch}
-          className="rounded-lg bg-brand-500 px-4 py-1.5 text-[14px] font-medium text-white hover:bg-brand-600"
+          className="rounded-lg bg-brand-500 px-4 py-1.5 text-[15px] font-medium text-white hover:bg-brand-600"
         >
           Search
         </button>
         <button
           type="button"
           onClick={() => findExpired()}
-          className="rounded-lg border border-surface-300 px-4 py-1.5 text-[14px] font-medium text-ink-700 hover:bg-surface-50"
+          className="rounded-lg border border-surface-300 px-4 py-1.5 text-[15px] font-medium text-ink-700 hover:bg-surface-50"
         >
           Show Expired
         </button>
         <button
           type="button"
           onClick={() => findDueSoon(7)}
-          className="rounded-lg border border-surface-300 px-4 py-1.5 text-[14px] font-medium text-ink-700 hover:bg-surface-50"
+          className="rounded-lg border border-surface-300 px-4 py-1.5 text-[15px] font-medium text-ink-700 hover:bg-surface-50"
         >
           Due Soon
         </button>
@@ -731,7 +731,7 @@ function SubscriptionsTab() {
           type="button"
           onClick={handleLoadDevicesWithoutSub}
           disabled={loadingNoSub}
-          className="rounded-lg border border-status-stopped px-4 py-1.5 text-[14px] font-medium text-status-stopped hover:bg-status-stopped/10"
+          className="rounded-lg border border-status-stopped px-4 py-1.5 text-[15px] font-medium text-status-stopped hover:bg-status-stopped/10"
         >
           {loadingNoSub ? "Loading..." : "Devices Without Subscription"}
         </button>
@@ -741,22 +741,22 @@ function SubscriptionsTab() {
       {showNoSubDevices && (
         <div className="rounded-lg border border-status-stopped/30 bg-status-stopped/5 p-4">
           <div className="mb-3 flex items-center justify-between">
-            <h3 className="text-[14px] font-semibold text-ink-900">
+            <h3 className="text-[15px] font-semibold text-ink-900">
               Devices Without Subscription ({devicesWithoutSubTotal})
             </h3>
             <button
               type="button"
               onClick={() => setShowNoSubDevices(false)}
-              className="text-[13px] text-ink-500 hover:text-ink-700"
+              className="text-[14px] text-ink-500 hover:text-ink-700"
             >
               Hide
             </button>
           </div>
           {devicesWithoutSub.length === 0 ? (
-            <p className="text-[14px] text-ink-500">All devices have subscriptions.</p>
+            <p className="text-[15px] text-ink-500">All devices have subscriptions.</p>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full text-left text-[14px]">
+              <table className="w-full text-left text-[15px]">
                 <thead className="border-b border-surface-200 bg-surface-50">
                   <tr>
                     <th className="px-3 py-2 font-medium text-ink-700">IMEI</th>
@@ -768,14 +768,14 @@ function SubscriptionsTab() {
                 <tbody>
                   {devicesWithoutSub.map((d) => (
                     <tr key={d.imei} className="border-b border-surface-100">
-                      <td className="px-3 py-2 font-mono text-[13px] text-ink-700">{d.imei}</td>
+                      <td className="px-3 py-2 font-mono text-[14px] text-ink-700">{d.imei}</td>
                       <td className="px-3 py-2 text-ink-700">{d.deviceName || "—"}</td>
                       <td className="px-3 py-2 text-ink-700">{d.orgName}</td>
                       <td className="px-3 py-2">
                         <button
                           type="button"
                           onClick={() => setShowCreateModal(d)}
-                          className="rounded bg-brand-500 px-2 py-1 text-[13px] font-medium text-white hover:bg-brand-600"
+                          className="rounded bg-brand-500 px-2 py-1 text-[14px] font-medium text-white hover:bg-brand-600"
                         >
                           Create Subscription
                         </button>
@@ -791,7 +791,7 @@ function SubscriptionsTab() {
 
       {/* Subscriptions Table */}
       <div className="overflow-x-auto rounded-lg border border-surface-300 bg-white">
-        <table className="w-full text-left text-[14px]">
+        <table className="w-full text-left text-[15px]">
           <thead className="border-b border-surface-200 bg-surface-50">
             <tr>
               <th className="px-4 py-2 font-medium text-ink-700">Device IMEI</th>
@@ -818,26 +818,26 @@ function SubscriptionsTab() {
                   sub.isExpired ? "bg-status-stopped/5" : ""
                 }`}
               >
-                <td className="px-4 py-2 font-mono text-[13px] text-ink-700">
+                <td className="px-4 py-2 font-mono text-[14px] text-ink-700">
                   {sub.deviceImei}
                 </td>
                 <td className="px-4 py-2 text-ink-700">
                   {getOrgName(sub.orgId)}
                 </td>
                 <td className="px-4 py-2">
-                  <span className="rounded bg-brand-50 px-2 py-0.5 text-[13px] font-medium text-brand-700">
+                  <span className="rounded bg-brand-50 px-2 py-0.5 text-[14px] font-medium text-brand-700">
                     {sub.planTier}
                   </span>
                 </td>
                 <td className="px-4 py-2">
                   <SubscriptionStatusBadge status={sub.effectiveStatus} />
                 </td>
-                <td className="px-4 py-2 text-[13px] text-ink-500">
+                <td className="px-4 py-2 text-[14px] text-ink-500">
                   {formatDate(sub.nextDueAt)}
                 </td>
                 <td className="px-4 py-2">
                   <span
-                    className={`text-[13px] font-medium ${
+                    className={`text-[14px] font-medium ${
                       sub.isExpired
                         ? "text-status-stopped"
                         : sub.daysUntilDue <= 7
@@ -852,7 +852,7 @@ function SubscriptionsTab() {
                   <button
                     type="button"
                     onClick={() => setShowExtendModal(sub)}
-                    className="rounded bg-brand-500 px-2 py-1 text-[13px] font-medium text-white hover:bg-brand-600"
+                    className="rounded bg-brand-500 px-2 py-1 text-[14px] font-medium text-white hover:bg-brand-600"
                   >
                     Extend
                   </button>
@@ -870,16 +870,16 @@ function SubscriptionsTab() {
             <h3 className="mb-4 text-lg font-semibold text-ink-900">
               Extend Subscription
             </h3>
-            <p className="mb-4 text-[14px] text-ink-600">
+            <p className="mb-4 text-[15px] text-ink-600">
               Device: <span className="font-mono">{showExtendModal.deviceImei}</span>
             </p>
-            <p className="mb-4 text-[14px] text-ink-600">
+            <p className="mb-4 text-[15px] text-ink-600">
               Current expiry: {formatDate(showExtendModal.nextDueAt)}
             </p>
 
             <div className="mb-4 space-y-4">
               <div>
-                <label className="mb-1 block text-[14px] font-medium text-ink-700">
+                <label className="mb-1 block text-[15px] font-medium text-ink-700">
                   Add days
                 </label>
                 <input
@@ -890,12 +890,12 @@ function SubscriptionsTab() {
                     setExtendDays(e.target.value);
                     setExtendDate("");
                   }}
-                  className="w-full rounded-md border border-surface-300 px-3 py-2 text-[14px] focus:border-brand-500 focus:outline-none"
+                  className="w-full rounded-md border border-surface-300 px-3 py-2 text-[15px] focus:border-brand-500 focus:outline-none"
                 />
               </div>
-              <div className="text-center text-[13px] text-ink-400">— or —</div>
+              <div className="text-center text-[14px] text-ink-400">— or —</div>
               <div>
-                <label className="mb-1 block text-[14px] font-medium text-ink-700">
+                <label className="mb-1 block text-[15px] font-medium text-ink-700">
                   Set specific date
                 </label>
                 <input
@@ -905,7 +905,7 @@ function SubscriptionsTab() {
                     setExtendDate(e.target.value);
                     setExtendDays("");
                   }}
-                  className="w-full rounded-md border border-surface-300 px-3 py-2 text-[14px] focus:border-brand-500 focus:outline-none"
+                  className="w-full rounded-md border border-surface-300 px-3 py-2 text-[15px] focus:border-brand-500 focus:outline-none"
                 />
               </div>
             </div>
@@ -914,7 +914,7 @@ function SubscriptionsTab() {
               <button
                 type="button"
                 onClick={() => setShowExtendModal(null)}
-                className="rounded-lg border border-surface-300 px-4 py-2 text-[14px] font-medium text-ink-700 hover:bg-surface-50"
+                className="rounded-lg border border-surface-300 px-4 py-2 text-[15px] font-medium text-ink-700 hover:bg-surface-50"
               >
                 Cancel
               </button>
@@ -922,7 +922,7 @@ function SubscriptionsTab() {
                 type="button"
                 onClick={handleExtend}
                 disabled={extending || (!extendDays && !extendDate)}
-                className="rounded-lg bg-brand-500 px-4 py-2 text-[14px] font-medium text-white hover:bg-brand-600 disabled:opacity-50"
+                className="rounded-lg bg-brand-500 px-4 py-2 text-[15px] font-medium text-white hover:bg-brand-600 disabled:opacity-50"
               >
                 {extending ? "Extending..." : "Extend"}
               </button>
@@ -938,22 +938,22 @@ function SubscriptionsTab() {
             <h3 className="mb-4 text-lg font-semibold text-ink-900">
               Create Subscription
             </h3>
-            <p className="mb-2 text-[14px] text-ink-600">
+            <p className="mb-2 text-[15px] text-ink-600">
               Device: <span className="font-mono">{showCreateModal.imei}</span>
             </p>
-            <p className="mb-4 text-[14px] text-ink-600">
+            <p className="mb-4 text-[15px] text-ink-600">
               Organization: {showCreateModal.orgName}
             </p>
 
             <div className="mb-4 space-y-4">
               <div>
-                <label className="mb-1 block text-[14px] font-medium text-ink-700">
+                <label className="mb-1 block text-[15px] font-medium text-ink-700">
                   Plan Tier
                 </label>
                 <select
                   value={createPlan}
                   onChange={(e) => setCreatePlan(e.target.value)}
-                  className="w-full rounded-md border border-surface-300 px-3 py-2 text-[14px] focus:border-brand-500 focus:outline-none"
+                  className="w-full rounded-md border border-surface-300 px-3 py-2 text-[15px] focus:border-brand-500 focus:outline-none"
                 >
                   <option value="TRIAL">Trial</option>
                   <option value="BASIC">Basic</option>
@@ -962,7 +962,7 @@ function SubscriptionsTab() {
                 </select>
               </div>
               <div>
-                <label className="mb-1 block text-[14px] font-medium text-ink-700">
+                <label className="mb-1 block text-[15px] font-medium text-ink-700">
                   Duration (days)
                 </label>
                 <input
@@ -970,7 +970,7 @@ function SubscriptionsTab() {
                   min="1"
                   value={createDays}
                   onChange={(e) => setCreateDays(e.target.value)}
-                  className="w-full rounded-md border border-surface-300 px-3 py-2 text-[14px] focus:border-brand-500 focus:outline-none"
+                  className="w-full rounded-md border border-surface-300 px-3 py-2 text-[15px] focus:border-brand-500 focus:outline-none"
                 />
               </div>
             </div>
@@ -979,7 +979,7 @@ function SubscriptionsTab() {
               <button
                 type="button"
                 onClick={() => setShowCreateModal(null)}
-                className="rounded-lg border border-surface-300 px-4 py-2 text-[14px] font-medium text-ink-700 hover:bg-surface-50"
+                className="rounded-lg border border-surface-300 px-4 py-2 text-[15px] font-medium text-ink-700 hover:bg-surface-50"
               >
                 Cancel
               </button>
@@ -987,7 +987,7 @@ function SubscriptionsTab() {
                 type="button"
                 onClick={handleCreateSubscription}
                 disabled={creating || !createDays}
-                className="rounded-lg bg-brand-500 px-4 py-2 text-[14px] font-medium text-white hover:bg-brand-600 disabled:opacity-50"
+                className="rounded-lg bg-brand-500 px-4 py-2 text-[15px] font-medium text-white hover:bg-brand-600 disabled:opacity-50"
               >
                 {creating ? "Creating..." : "Create Subscription"}
               </button>
@@ -1008,7 +1008,7 @@ function SubscriptionStatusBadge({ status }: { status: string }) {
   };
   return (
     <span
-      className={`rounded px-2 py-0.5 text-[13px] font-medium ${
+      className={`rounded px-2 py-0.5 text-[14px] font-medium ${
         colors[status] ?? "bg-surface-200 text-ink-600"
       }`}
     >

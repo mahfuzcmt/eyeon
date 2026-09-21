@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import Image from "next/image";
+import { EyeOnLogo } from "@/components/brand/EyeOnLogo";
 import { motion } from "framer-motion";
 import { useLanguage } from "./LanguageContext";
 
@@ -12,13 +12,7 @@ const CONTACT = {
 
 function Logo() {
   return (
-    <Image
-      src="/eyeon-logo.png"
-      alt="EyeOn"
-      width={180}
-      height={45}
-      className="h-11 w-auto rounded-md"
-    />
+    <EyeOnLogo height={44} tone="dark" />
   );
 }
 
@@ -54,7 +48,7 @@ export function Footer() {
         <div className="grid gap-12 lg:grid-cols-4">
           <div className="lg:col-span-2">
             <Logo />
-            <p className="mt-6 max-w-md text-[14px] leading-relaxed text-gray-400">
+            <p className="mt-6 max-w-md text-[15px] leading-relaxed text-gray-400">
               {t("footer.desc")}
             </p>
             <div className="mt-6 flex gap-3">
@@ -79,7 +73,7 @@ export function Footer() {
 
           <div>
             <h4 className="mb-5 text-sm font-semibold uppercase tracking-wider text-gray-400">{t("footer.quickLinks")}</h4>
-            <ul className="space-y-3 text-[14px]">
+            <ul className="space-y-3 text-[15px]">
               {NAV_LINKS.map((link) => (
                 <li key={link.href}>
                   <Link href={link.href} className="text-gray-400 transition-colors hover:text-brand-400">
@@ -97,7 +91,7 @@ export function Footer() {
 
           <div>
             <h4 className="mb-5 text-sm font-semibold uppercase tracking-wider text-gray-400">{t("footer.contactUs")}</h4>
-            <ul className="space-y-3 text-[14px] text-gray-400">
+            <ul className="space-y-3 text-[15px] text-gray-400">
               <li className="flex items-center gap-2">
                 <Icon path={ICONS.phone} className="h-4 w-4 text-brand-400" />
                 <a href={`tel:${CONTACT.hotline.replace(/[^+\d]/g, "")}`} className="hover:text-brand-400">{CONTACT.hotline}</a>
@@ -130,15 +124,15 @@ export function Footer() {
               <div className="flex items-center gap-2">
                 {/* bKash */}
                 <div className="flex h-8 w-14 items-center justify-center rounded bg-[#E2136E] px-2">
-                  <span className="text-[10px] font-bold text-white">bKash</span>
+                  <span className="text-[12px] font-bold text-white">bKash</span>
                 </div>
                 {/* Nagad */}
                 <div className="flex h-8 w-14 items-center justify-center rounded bg-[#F6931D] px-2">
-                  <span className="text-[10px] font-bold text-white">Nagad</span>
+                  <span className="text-[12px] font-bold text-white">Nagad</span>
                 </div>
                 {/* Visa */}
                 <div className="flex h-8 w-12 items-center justify-center rounded bg-white px-2">
-                  <span className="text-[10px] font-bold text-[#1A1F71]">VISA</span>
+                  <span className="text-[12px] font-bold text-[#1A1F71]">VISA</span>
                 </div>
                 {/* MasterCard */}
                 <div className="flex h-8 w-12 items-center justify-center rounded bg-gray-800 px-1">
@@ -149,7 +143,7 @@ export function Footer() {
                 </div>
                 {/* Cash */}
                 <div className="flex h-8 w-14 items-center justify-center rounded bg-emerald-600 px-2">
-                  <span className="text-[10px] font-bold text-white">Cash</span>
+                  <span className="text-[12px] font-bold text-white">Cash</span>
                 </div>
               </div>
             </div>

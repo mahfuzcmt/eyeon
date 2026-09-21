@@ -261,7 +261,10 @@ export interface AuthMeResponse {
 }
 
 export type GeofenceType = "CIRCLE" | "POLYGON";
-export type GeofenceNotifyOn = "ENTER" | "EXIT" | "BOTH";
+export type GeofenceNotifyOn = "ENTER" | "EXIT" | "BOTH" | "NONE";
+/** TRUSTED_PLACE: somewhere they should be (calm arrived/left). BOUNDARY: an area they must not leave. */
+export type GeofenceKind = "TRUSTED_PLACE" | "BOUNDARY";
+export type PlaceType = "HOME" | "SCHOOL" | "COACHING" | "MOSQUE" | "HOSPITAL" | "RELATIVE" | "OTHER";
 
 export interface LatLng { lat: number; lng: number; }
 
@@ -275,8 +278,25 @@ export interface GeofenceView {
   center: LatLng | null;
   radiusM: number | null;
   polygon: LatLng[];
+  kind: GeofenceKind;
+  placeType: PlaceType | null;
+  address: string | null;
+  exitBufferM: number;
+  minDwellS: number;
   createdAt: string;
   updatedAt: string;
+}
+
+/** PATCH /geofences/:id - omitted fields keep their value; sending geometry resets arrived/left state. */
+export interface GeofenceUpdate {
+  name?: string;
+  notifyOn?: GeofenceNotifyOn;
+  color?: string;
+  placeType?: PlaceType;
+  address?: string;
+  center?: LatLng;
+  radiusM?: number;
+  polygon?: LatLng[];
 }
 
 export interface GeofenceCreate {
@@ -288,6 +308,9 @@ export interface GeofenceCreate {
   radiusM?: number;
   polygon?: LatLng[];
   imeis?: string[];
+  kind?: GeofenceKind;
+  placeType?: PlaceType;
+  address?: string;
 }
 
 /** Mirrors backend domain.enums.AlarmType. */
@@ -298,6 +321,8 @@ export type AlarmType =
   | "OVERSPEED"
   | "GEOFENCE_ENTER"
   | "GEOFENCE_EXIT"
+  | "PLACE_ARRIVED"
+  | "PLACE_LEFT"
   | "COLLISION"
   | "ACC_ON"
   | "ACC_OFF"

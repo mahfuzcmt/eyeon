@@ -301,7 +301,7 @@ export function DeviceList({
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder={t("list.searchPlaceholder")}
-            className="h-8 w-full rounded-md border border-surface-300 bg-white pl-8 pr-3 text-[14px] text-ink-700 placeholder:text-ink-400 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500/40"
+            className="h-8 w-full rounded-md border border-surface-300 bg-white pl-8 pr-3 text-[15px] text-ink-700 placeholder:text-ink-400 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500/40"
           />
         </div>
       </div>
@@ -314,7 +314,7 @@ export function DeviceList({
             key={id}
             type="button"
             onClick={() => setTab(id)}
-            className={`shrink-0 whitespace-nowrap px-2 py-1.5 text-[13px] font-medium transition border-b-2 -mb-px ${
+            className={`shrink-0 whitespace-nowrap px-2 py-1.5 text-[14px] font-medium transition border-b-2 -mb-px ${
               tab === id
                 ? "border-brand-500 text-brand-500"
                 : "border-transparent text-ink-500 hover:text-ink-700"
@@ -331,7 +331,7 @@ export function DeviceList({
         <select
           value={sortKey}
           onChange={(e) => setSortKey(e.target.value as SortKey)}
-          className="h-7 rounded border border-surface-300 bg-white px-2 text-[13px] text-ink-700 focus:border-brand-500 focus:outline-none"
+          className="h-7 rounded border border-surface-300 bg-white px-2 text-[14px] text-ink-700 focus:border-brand-500 focus:outline-none"
           aria-label="Sort vehicles"
         >
           {(Object.keys(SORT_LABEL) as SortKey[]).map((k) => (
@@ -339,7 +339,7 @@ export function DeviceList({
           ))}
         </select>
         <div className="flex items-center gap-2">
-          <label className="flex cursor-pointer items-center gap-1.5 text-[13px] text-ink-500">
+          <label className="flex cursor-pointer items-center gap-1.5 text-[14px] text-ink-500">
             <input
               ref={selectAllRef}
               type="checkbox"
@@ -369,7 +369,7 @@ export function DeviceList({
       {/* Grouped vehicle list */}
       <div className="min-h-0 flex-1 overflow-y-auto">
         {filtered.length === 0 && (
-          <div className="px-3 py-10 text-center text-[14px] text-ink-500">{t("veh.none")}</div>
+          <div className="px-3 py-10 text-center text-[15px] text-ink-500">{t("veh.none")}</div>
         )}
         {sections.map((section) => {
           const isCollapsed = collapsed.has(section.id);
@@ -388,8 +388,8 @@ export function DeviceList({
                     <path d="M9 18l6-6-6-6" />
                   </svg>
                   <span className="h-2 w-2 shrink-0 rounded-full" style={{ background: section.color }} />
-                  <span className="truncate text-[14px] font-semibold text-ink-700">{section.name}</span>
-                  <span className="text-[13px] text-ink-500 tabular-nums">({section.rows.length})</span>
+                  <span className="truncate text-[15px] font-semibold text-ink-700">{section.name}</span>
+                  <span className="text-[14px] text-ink-500 tabular-nums">({section.rows.length})</span>
                 </button>
                 {/* Edit / delete for real groups; always visible on touch, hover-only with a mouse (ADL) */}
                 {section.group && (onEditGroup || onDeleteGroup) && (
@@ -493,13 +493,13 @@ function VehicleRow({ row, selected, visible, onSelect, onToggleVisible, onActio
       <span className="inline-flex shrink-0" dangerouslySetInnerHTML={{ __html: icon }} />
       {/* ADL: the whole row reads in the state colour — name, status text, icon and dot. */}
       <span
-        className={`min-w-0 flex-1 truncate text-[14px] ${selected ? "font-semibold" : "font-medium"}`}
+        className={`min-w-0 flex-1 truncate text-[15px] ${selected ? "font-semibold" : "font-medium"}`}
         style={{ color: status.color }}
         title={device.vehiclePlate ?? device.imei}
       >
         {deviceLabel(device)}
       </span>
-      <span className="shrink-0 text-[13px] font-medium tabular-nums" style={{ color: status.color }}>
+      <span className="shrink-0 text-[14px] font-medium tabular-nums" style={{ color: status.color }}>
         {status.text}
       </span>
       <span
@@ -597,7 +597,7 @@ function RowMenu({ onAction, t, groups = [], currentGroupId = null, onMoveToGrou
               type="button"
               role="menuitem"
               onClick={() => { setOpen(false); onAction(m.action); }}
-              className="flex w-full items-center px-3 py-1.5 text-left text-[14px] text-ink-700 hover:bg-surface-100"
+              className="flex w-full items-center px-3 py-1.5 text-left text-[15px] text-ink-700 hover:bg-surface-100"
             >
               {t(m.label)}
             </button>
@@ -605,7 +605,7 @@ function RowMenu({ onAction, t, groups = [], currentGroupId = null, onMoveToGrou
           {onMoveToGroup && (
             <>
               <div className="my-1 border-t border-surface-200" />
-              <div className="px-3 pb-1 pt-1.5 text-[11px] font-semibold uppercase tracking-wide text-ink-500">
+              <div className="px-3 pb-1 pt-1.5 text-[12px] font-semibold uppercase tracking-wide text-ink-500">
                 {t("group.moveTo")}
               </div>
               {[{ id: null as string | null, name: t("list.ungrouped"), color: "#7E8792" }, ...groups].map((g) => {
@@ -618,7 +618,7 @@ function RowMenu({ onAction, t, groups = [], currentGroupId = null, onMoveToGrou
                     aria-checked={active}
                     disabled={active}
                     onClick={() => { setOpen(false); onMoveToGroup(g.id); }}
-                    className={`flex w-full items-center gap-2 px-3 py-1.5 text-left text-[14px] ${
+                    className={`flex w-full items-center gap-2 px-3 py-1.5 text-left text-[15px] ${
                       active ? "cursor-default font-semibold text-ink-900" : "text-ink-700 hover:bg-surface-100"
                     }`}
                   >

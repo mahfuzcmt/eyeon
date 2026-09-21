@@ -58,10 +58,10 @@ export function AlarmOverview({ from, to, onExport, exporting }: Props) {
         </button>
       </div>
       <div className="flex-1 overflow-auto">
-        {loading && <div className="px-3 py-4 text-[13px] text-ink-500">{t("common.loading")}</div>}
-        {error && <div className="px-3 py-4 text-[13px] text-alarm-red">{error}</div>}
+        {loading && <div className="px-3 py-4 text-[14px] text-ink-500">{t("common.loading")}</div>}
+        {error && <div className="px-3 py-4 text-[14px] text-alarm-red">{error}</div>}
         {!loading && data && data.rows.length === 0 && (
-          <div className="px-3 py-12 text-center text-[13px] text-ink-500">{t("common.empty")}</div>
+          <div className="px-3 py-12 text-center text-[14px] text-ink-500">{t("common.empty")}</div>
         )}
         {!loading && data && data.rows.length > 0 && (
           <table className="data-table min-w-[640px]">
@@ -79,7 +79,7 @@ export function AlarmOverview({ from, to, onExport, exporting }: Props) {
               {data.rows.map((r) => (
                 <tr key={r.imei} className={r.total === 0 ? "text-ink-400" : ""}>
                   <td className="text-ink-900">{r.name || r.vehiclePlate || r.imei}</td>
-                  <td className="font-mono text-[12px] text-ink-500">{r.imei}</td>
+                  <td className="font-mono text-[13px] text-ink-500">{r.imei}</td>
                   {data.types.map((ty) => {
                     const n = r.counts[ty] ?? 0;
                     return (

@@ -19,7 +19,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       <div className="flex h-full items-center justify-center bg-surface-50">
         <div className="text-center">
           <h1 className="text-2xl font-semibold text-ink-900">Access Denied</h1>
-          <p className="mt-2 text-[14px] text-ink-500">
+          <p className="mt-2 text-[15px] text-ink-500">
             You need Super Admin privileges to access this section.
           </p>
         </div>

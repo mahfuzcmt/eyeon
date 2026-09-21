@@ -98,7 +98,7 @@ export function ExportModal({ onClose, devices = [], defaultType, defaultDevice 
               <h2 className="text-lg font-semibold text-ink-900">
                 {lang === "bn" ? "এক্সেল এক্সপোর্ট" : "Export to Excel"}
               </h2>
-              <p className="text-[13px] text-ink-400">
+              <p className="text-[14px] text-ink-400">
                 {lang === "bn" ? "ডেটা ডাউনলোড করুন" : "Download your data"}
               </p>
             </div>
@@ -114,7 +114,7 @@ export function ExportModal({ onClose, devices = [], defaultType, defaultDevice 
         <div className="p-4 space-y-4">
           {/* Export type selection */}
           <div>
-            <label className="block text-[14px] text-ink-600 mb-2">
+            <label className="block text-[15px] text-ink-600 mb-2">
               {lang === "bn" ? "রিপোর্টের ধরন" : "Report Type"}
             </label>
             <div className="space-y-2">
@@ -136,10 +136,10 @@ export function ExportModal({ onClose, devices = [], defaultType, defaultDevice 
                     className="mt-1"
                   />
                   <div>
-                    <p className="text-[14px] font-medium text-ink-900">
+                    <p className="text-[15px] font-medium text-ink-900">
                       {lang === "bn" ? type.label.bn : type.label.en}
                     </p>
-                    <p className="text-[13px] text-ink-400">
+                    <p className="text-[14px] text-ink-400">
                       {lang === "bn" ? type.description.bn : type.description.en}
                     </p>
                   </div>
@@ -151,13 +151,13 @@ export function ExportModal({ onClose, devices = [], defaultType, defaultDevice 
           {/* Device selection (if needed) */}
           {needsDevice && (
             <div>
-              <label className="block text-[14px] text-ink-600 mb-1">
+              <label className="block text-[15px] text-ink-600 mb-1">
                 {lang === "bn" ? "ডিভাইস নির্বাচন করুন" : "Select Device"}
               </label>
               <select
                 value={selectedDevice}
                 onChange={(e) => setSelectedDevice(e.target.value)}
-                className="w-full bg-surface-100 text-ink-900 text-[14px] px-3 py-2 rounded border border-surface-300 focus:border-brand-500 focus:outline-none"
+                className="w-full bg-surface-100 text-ink-900 text-[15px] px-3 py-2 rounded border border-surface-300 focus:border-brand-500 focus:outline-none"
               >
                 <option value="">{lang === "bn" ? "ডিভাইস নির্বাচন করুন" : "Select a device"}</option>
                 {devices.map((device) => (
@@ -173,25 +173,25 @@ export function ExportModal({ onClose, devices = [], defaultType, defaultDevice 
           {needsDateRange && (
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-[14px] text-ink-600 mb-1">
+                <label className="block text-[15px] text-ink-600 mb-1">
                   {lang === "bn" ? "থেকে" : "From"}
                 </label>
                 <input
                   type="date"
                   value={fromDate}
                   onChange={(e) => setFromDate(e.target.value)}
-                  className="w-full bg-surface-100 text-ink-900 text-[14px] px-3 py-2 rounded border border-surface-300 focus:border-brand-500 focus:outline-none"
+                  className="w-full bg-surface-100 text-ink-900 text-[15px] px-3 py-2 rounded border border-surface-300 focus:border-brand-500 focus:outline-none"
                 />
               </div>
               <div>
-                <label className="block text-[14px] text-ink-600 mb-1">
+                <label className="block text-[15px] text-ink-600 mb-1">
                   {lang === "bn" ? "পর্যন্ত" : "To"}
                 </label>
                 <input
                   type="date"
                   value={toDate}
                   onChange={(e) => setToDate(e.target.value)}
-                  className="w-full bg-surface-100 text-ink-900 text-[14px] px-3 py-2 rounded border border-surface-300 focus:border-brand-500 focus:outline-none"
+                  className="w-full bg-surface-100 text-ink-900 text-[15px] px-3 py-2 rounded border border-surface-300 focus:border-brand-500 focus:outline-none"
                 />
               </div>
             </div>
@@ -200,21 +200,21 @@ export function ExportModal({ onClose, devices = [], defaultType, defaultDevice 
           {/* Month selection (if needed) */}
           {needsMonth && (
             <div>
-              <label className="block text-[14px] text-ink-600 mb-1">
+              <label className="block text-[15px] text-ink-600 mb-1">
                 {lang === "bn" ? "মাস নির্বাচন করুন" : "Select Month"}
               </label>
               <input
                 type="month"
                 value={month}
                 onChange={(e) => setMonth(e.target.value)}
-                className="w-full bg-surface-100 text-ink-900 text-[14px] px-3 py-2 rounded border border-surface-300 focus:border-brand-500 focus:outline-none"
+                className="w-full bg-surface-100 text-ink-900 text-[15px] px-3 py-2 rounded border border-surface-300 focus:border-brand-500 focus:outline-none"
               />
             </div>
           )}
 
           {/* Error message */}
           {error && (
-            <div className="p-3 bg-red-50 border border-red-200 rounded text-[14px] text-red-700">
+            <div className="p-3 bg-red-50 border border-red-200 rounded text-[15px] text-red-700">
               {error}
             </div>
           )}
@@ -224,14 +224,14 @@ export function ExportModal({ onClose, devices = [], defaultType, defaultDevice 
         <div className="p-4 border-t border-surface-300 flex gap-3">
           <button
             onClick={onClose}
-            className="flex-1 px-4 py-2 text-[14px] border border-surface-300 bg-white text-ink-700 rounded hover:bg-surface-100 transition-colors"
+            className="flex-1 px-4 py-2 text-[15px] border border-surface-300 bg-white text-ink-700 rounded hover:bg-surface-100 transition-colors"
           >
             {lang === "bn" ? "বাতিল" : "Cancel"}
           </button>
           <button
             onClick={handleExport}
             disabled={!canExport || loading}
-            className="flex-1 px-4 py-2 text-[14px] bg-brand-500 text-white rounded hover:bg-brand-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            className="flex-1 px-4 py-2 text-[15px] bg-brand-500 text-white rounded hover:bg-brand-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
           >
             {loading ? (
               <>

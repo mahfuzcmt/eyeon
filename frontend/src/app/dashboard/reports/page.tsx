@@ -91,8 +91,8 @@ export default function Page() {
       <div className="mx-auto w-full max-w-3xl space-y-6 p-4 sm:p-6">
         <div className="panel p-4">
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            <label className="text-[14px]">
-              <span className="mb-1 block text-[13px] text-ink-400">{t("common.from")}</span>
+            <label className="text-[15px]">
+              <span className="mb-1 block text-[14px] text-ink-400">{t("common.from")}</span>
               <input
                 type="date"
                 className="input"
@@ -101,8 +101,8 @@ export default function Page() {
                 max={to}
               />
             </label>
-            <label className="text-[14px]">
-              <span className="mb-1 block text-[13px] text-ink-400">{t("common.to")}</span>
+            <label className="text-[15px]">
+              <span className="mb-1 block text-[14px] text-ink-400">{t("common.to")}</span>
               <input
                 type="date"
                 className="input"
@@ -116,7 +116,7 @@ export default function Page() {
 
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <div className="panel flex flex-col gap-3 p-4">
-            <div className="font-display text-[14px] font-semibold">{t("reports.tripsReport")}</div>
+            <div className="font-display text-[15px] font-semibold">{t("reports.tripsReport")}</div>
             <button
               type="button"
               className="btn-primary"
@@ -127,7 +127,7 @@ export default function Page() {
             </button>
           </div>
           <div className="panel flex flex-col gap-3 p-4">
-            <div className="font-display text-[14px] font-semibold">{t("reports.alarmsReport")}</div>
+            <div className="font-display text-[15px] font-semibold">{t("reports.alarmsReport")}</div>
             <button
               type="button"
               className="btn-primary"
@@ -141,10 +141,10 @@ export default function Page() {
 
         {/* Monthly driving & stoppage (AutoNemo parity) */}
         <div className="panel p-4">
-          <div className="mb-3 font-display text-[14px] font-semibold">{t("reports.monthly")}</div>
+          <div className="mb-3 font-display text-[15px] font-semibold">{t("reports.monthly")}</div>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-            <label className="text-[14px]">
-              <span className="mb-1 block text-[13px] text-ink-400">{t("reports.vehicle")}</span>
+            <label className="text-[15px]">
+              <span className="mb-1 block text-[14px] text-ink-400">{t("reports.vehicle")}</span>
               <select
                 className="select w-full"
                 value={monthlyImei}
@@ -158,8 +158,8 @@ export default function Page() {
                 ))}
               </select>
             </label>
-            <label className="text-[14px]">
-              <span className="mb-1 block text-[13px] text-ink-400">{t("reports.month")}</span>
+            <label className="text-[15px]">
+              <span className="mb-1 block text-[14px] text-ink-400">{t("reports.month")}</span>
               <input
                 type="month"
                 className="input"
@@ -204,11 +204,11 @@ export default function Page() {
           {monthly && (
             <div className="mt-4 overflow-x-auto">
               {monthly.days.length === 0 ? (
-                <p className="py-4 text-center text-[13px] text-ink-500">{t("reports.none")}</p>
+                <p className="py-4 text-center text-[14px] text-ink-500">{t("reports.none")}</p>
               ) : (
-                <table className="w-full text-[13px]">
+                <table className="w-full text-[14px]">
                   <thead>
-                    <tr className="border-b border-surface-300 text-left text-[11px] uppercase tracking-wide text-ink-400">
+                    <tr className="border-b border-surface-300 text-left text-[12px] uppercase tracking-wide text-ink-400">
                       <th className="py-1.5 pr-2">{t("reports.date")}</th>
                       <th className="py-1.5 pr-2 text-right">{t("home.trips")}</th>
                       <th className="py-1.5 pr-2 text-right">{t("kpi.km")}</th>
@@ -254,8 +254,8 @@ export default function Page() {
         <div className="panel p-4">
           <div className="flex items-center justify-between">
             <div>
-              <div className="font-display text-[14px] font-semibold">{t("reports.excelExport")}</div>
-              <p className="text-[13px] text-ink-400 mt-1">{t("reports.excelExportDesc")}</p>
+              <div className="font-display text-[15px] font-semibold">{t("reports.excelExport")}</div>
+              <p className="text-[14px] text-ink-400 mt-1">{t("reports.excelExportDesc")}</p>
             </div>
             <button
               type="button"
@@ -270,7 +270,7 @@ export default function Page() {
           </div>
         </div>
 
-        {error && <div className="text-[14px] text-alarm-red">{error}</div>}
+        {error && <div className="text-[15px] text-alarm-red">{error}</div>}
       </div>
 
       {showExportModal && (

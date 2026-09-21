@@ -101,7 +101,7 @@ function Hero() {
       <div className="relative mx-auto max-w-7xl px-4 pb-20 pt-36 sm:px-6 lg:pb-32 lg:pt-44">
         <div className="grid items-center gap-12 lg:grid-cols-2 lg:gap-16">
           <motion.div initial="hidden" animate="visible" variants={staggerContainer}>
-            <motion.div variants={fadeInUp} className="mb-6 inline-flex items-center gap-2 rounded-full bg-brand-500/20 px-4 py-2 text-[13px] font-semibold text-brand-300">
+            <motion.div variants={fadeInUp} className="mb-6 inline-flex items-center gap-2 rounded-full bg-brand-500/20 px-4 py-2 text-[14px] font-semibold text-brand-300">
               <span className="relative flex h-2 w-2">
                 <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-brand-400 opacity-75" />
                 <span className="relative inline-flex h-2 w-2 rounded-full bg-brand-400" />
@@ -119,11 +119,11 @@ function Hero() {
             </motion.p>
 
             <motion.div variants={fadeInUp} className="mt-10 flex flex-wrap items-center gap-4">
-              <a href={`tel:${CONTACT.sales.replace(/[^+\d]/g, "")}`} className="group inline-flex h-14 items-center gap-2 rounded-xl bg-brand-500 px-8 text-[15px] font-bold text-white shadow-xl shadow-brand-500/30 transition-all hover:bg-brand-600 hover:shadow-2xl">
+              <a href={`tel:${CONTACT.sales.replace(/[^+\d]/g, "")}`} className="group inline-flex h-14 items-center gap-2 rounded-xl bg-brand-500 px-8 text-[16px] font-bold text-white shadow-xl shadow-brand-500/30 transition-all hover:bg-brand-600 hover:shadow-2xl">
                 <Icon path={ICONS.phone} className="h-5 w-5" />
                 {t("hero.contactSales")}
               </a>
-              <Link href="/contact" className="inline-flex h-14 items-center gap-2 rounded-xl border-2 border-white/20 bg-white/5 px-8 text-[15px] font-semibold text-white backdrop-blur transition-all hover:border-white/40 hover:bg-white/10">
+              <Link href="/contact" className="inline-flex h-14 items-center gap-2 rounded-xl border-2 border-white/20 bg-white/5 px-8 text-[16px] font-semibold text-white backdrop-blur transition-all hover:border-white/40 hover:bg-white/10">
                 {t("nav.getDemo")}
                 <Icon path={ICONS.arrow} className="h-5 w-5" />
               </Link>
@@ -181,7 +181,7 @@ function Hero() {
                     ].map((stat) => (
                       <div key={stat.label} className="flex-1 rounded-lg bg-gray-800/80 p-2.5 backdrop-blur">
                         <div className={`text-lg font-bold ${stat.color === "amber" ? "text-brand-400" : stat.color === "emerald" ? "text-emerald-400" : "text-red-400"}`}>{stat.value}</div>
-                        <div className="text-[10px] text-gray-500">{stat.label}</div>
+                        <div className="text-[12px] text-gray-500">{stat.label}</div>
                       </div>
                     ))}
                   </motion.div>
@@ -284,13 +284,13 @@ function FeaturesSection() {
                   <Icon path={f.icon} className="h-7 w-7" />
                 </div>
                 <h3 className="text-lg font-semibold text-gray-900">{t(f.titleKey)}</h3>
-                <p className="mt-2 text-[14px] leading-relaxed text-gray-600">{t(f.descKey)}</p>
+                <p className="mt-2 text-[15px] leading-relaxed text-gray-600">{t(f.descKey)}</p>
               </motion.div>
             ))}
           </div>
 
           <motion.div variants={fadeInUp} className="mt-12 text-center">
-            <Link href="/features" className="inline-flex items-center gap-2 rounded-xl bg-brand-600 px-8 py-4 text-[15px] font-semibold text-white shadow-lg shadow-brand-600/30 transition-all hover:bg-brand-700 hover:shadow-xl">
+            <Link href="/features" className="inline-flex items-center gap-2 rounded-xl bg-brand-600 px-8 py-4 text-[16px] font-semibold text-white shadow-lg shadow-brand-600/30 transition-all hover:bg-brand-700 hover:shadow-xl">
               {t("features.viewAll")}
               <Icon path={ICONS.arrow} className="h-5 w-5" />
             </Link>
@@ -354,7 +354,7 @@ function ProductsSection() {
                   <span className="text-sm text-gray-500">{t("products.onwards")}</span>
                 </div>
 
-                <p className="mt-2 text-[14px] text-gray-600">{t(p.descKey)}</p>
+                <p className="mt-2 text-[15px] text-gray-600">{t(p.descKey)}</p>
                 <Link href="/products" className="mt-4 inline-flex items-center gap-1 text-sm font-semibold text-brand-600 transition-colors hover:text-brand-700">
                   {t("products.explore")} <Icon path={ICONS.arrow} className="h-4 w-4" />
                 </Link>
@@ -575,11 +575,11 @@ function CTASection() {
             {t("cta.desc")}
           </motion.p>
           <motion.div variants={fadeInUp} className="mt-10 flex flex-wrap justify-center gap-4">
-            <a href={`tel:${CONTACT.sales.replace(/[^+\d]/g, "")}`} className="inline-flex h-14 items-center gap-2 rounded-xl bg-white px-8 text-[16px] font-bold text-brand-600 shadow-xl transition-all hover:bg-gray-50 hover:shadow-2xl">
+            <a href={`tel:${CONTACT.sales.replace(/[^+\d]/g, "")}`} className="inline-flex h-14 items-center gap-2 rounded-xl bg-white px-8 text-[17px] font-bold text-brand-600 shadow-xl transition-all hover:bg-gray-50 hover:shadow-2xl">
               <Icon path={ICONS.phone} className="h-5 w-5" />
               {t("hero.contactSales")}
             </a>
-            <Link href="/pricing" className="inline-flex h-14 items-center gap-2 rounded-xl border-2 border-white/30 bg-white/10 px-8 text-[16px] font-semibold text-white backdrop-blur transition-all hover:bg-white/20">
+            <Link href="/pricing" className="inline-flex h-14 items-center gap-2 rounded-xl border-2 border-white/30 bg-white/10 px-8 text-[17px] font-semibold text-white backdrop-blur transition-all hover:bg-white/20">
               {t("cta.viewPricing")}
               <Icon path={ICONS.arrow} className="h-5 w-5" />
             </Link>

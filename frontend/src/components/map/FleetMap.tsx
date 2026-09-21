@@ -459,7 +459,7 @@ function GlobalFreshnessIndicator({
     <div className="flex items-center gap-2">
       {/* Overall system status */}
       <div
-        className={`glass-btn flex items-center gap-2 rounded-xl px-3 py-2 text-[13px] font-semibold ${
+        className={`glass-btn flex items-center gap-2 rounded-xl px-3 py-2 text-[14px] font-semibold ${
           isLive ? "pp-global-live" : ""
         }`}
         style={{ borderColor: `${config.color}40` }}
@@ -513,7 +513,7 @@ function BatchCountdown({ lastRefreshAt }: { lastRefreshAt: Date | null }) {
   }, [lastRefreshAt]);
 
   return (
-    <div className="glass-btn flex items-center gap-1.5 rounded-lg px-2 py-1 text-[11px] font-medium text-ink-600">
+    <div className="glass-btn flex items-center gap-1.5 rounded-lg px-2 py-1 text-[12px] font-medium text-ink-600">
       <div
         className={`h-1.5 w-1.5 rounded-full ${secondsLeft <= 2 ? "animate-pulse bg-brand-500" : "bg-emerald-500"}`}
       />
@@ -832,7 +832,7 @@ export function FleetMap({ devices, locations, selectedImei, onSelect, onRefresh
         const { latitude, longitude } = pos.coords;
         map.setView([latitude, longitude], Math.max(map.getZoom(), 15), { animate: true });
         const icon = L.divIcon({
-          html: '<div style="width:14px;height:14px;border-radius:50%;background:#2B82D4;border:3px solid #fff;box-shadow:0 0 0 2px rgba(43,130,212,.4)"></div>',
+          html: '<div style="width:14px;height:14px;border-radius:50%;background:#0F6B5C;border:3px solid #fff;box-shadow:0 0 0 2px rgba(15,107,92,.4)"></div>',
           className: "pp-user-loc",
           iconSize: [14, 14],
           iconAnchor: [7, 7],
@@ -1355,7 +1355,7 @@ export function FleetMap({ devices, locations, selectedImei, onSelect, onRefresh
           <div className="glass-btn flex overflow-hidden rounded-xl">
             <input
               type="search"
-              className="min-w-0 flex-1 bg-transparent px-3 py-2 text-[13px] text-ink-900 outline-none placeholder:text-ink-400"
+              className="min-w-0 flex-1 bg-transparent px-3 py-2 text-[14px] text-ink-900 outline-none placeholder:text-ink-400"
               placeholder="Search address…"
               value={searchQ}
               onChange={(e) => setSearchQ(e.target.value)}
@@ -1388,7 +1388,7 @@ export function FleetMap({ devices, locations, selectedImei, onSelect, onRefresh
                   <button
                     type="button"
                     onClick={() => gotoSearchResult(r)}
-                    className="block w-full border-b border-surface-200/50 px-3 py-2 text-left text-[12px] text-ink-700 transition last:border-b-0 hover:bg-white/60"
+                    className="block w-full border-b border-surface-200/50 px-3 py-2 text-left text-[13px] text-ink-700 transition last:border-b-0 hover:bg-white/60"
                   >
                     {r.label}
                   </button>
@@ -1404,7 +1404,7 @@ export function FleetMap({ devices, locations, selectedImei, onSelect, onRefresh
         {/* Auto-follow toggle - only show when a vehicle is selected */}
         {selectedImei && (
           <label
-            className={`glass-btn flex cursor-pointer items-center gap-1.5 rounded-xl px-3 py-2 text-[13px] font-semibold transition ${
+            className={`glass-btn flex cursor-pointer items-center gap-1.5 rounded-xl px-3 py-2 text-[14px] font-semibold transition ${
               autoFollow
                 ? "!bg-brand-500/90 !border-brand-400/50 text-white"
                 : "text-ink-900"
@@ -1425,7 +1425,7 @@ export function FleetMap({ devices, locations, selectedImei, onSelect, onRefresh
           </label>
         )}
         {trafficAvailable && (
-          <label className="glass-btn flex cursor-pointer items-center gap-1.5 rounded-xl px-3 py-2 text-[13px] font-semibold text-ink-900">
+          <label className="glass-btn flex cursor-pointer items-center gap-1.5 rounded-xl px-3 py-2 text-[14px] font-semibold text-ink-900">
             <input
               type="checkbox"
               checked={showTraffic}
@@ -1485,7 +1485,7 @@ export function FleetMap({ devices, locations, selectedImei, onSelect, onRefresh
           will-change: transform;
         }
         .pp-vehicle-icon.pp-selected {
-          filter: drop-shadow(0 0 6px #0421bc);
+          filter: drop-shadow(0 0 6px #0F6B5C);
           z-index: 1000 !important;
         }
         /* Overspeed: red marker that blinks until speed drops below the rule threshold */
@@ -1588,7 +1588,7 @@ export function FleetMap({ devices, locations, selectedImei, onSelect, onRefresh
         }
         .pp-label-name {
           color: #1f2937;
-          font-family: var(--font-inter), 'Inter', -apple-system, sans-serif;
+          font-family: var(--font-nunito), 'Nunito', var(--font-hind-siliguri), -apple-system, sans-serif;
           font-size: 12px;
           font-weight: 600;
           line-height: 1;
@@ -1683,7 +1683,7 @@ export function FleetMap({ devices, locations, selectedImei, onSelect, onRefresh
         }
         .pp-card {
           width: 352px;
-          font-family: var(--font-inter), 'Inter', -apple-system, sans-serif;
+          font-family: var(--font-nunito), 'Nunito', var(--font-hind-siliguri), -apple-system, sans-serif;
           font-variant-numeric: tabular-nums;
           color: #1f2937;
         }
@@ -1710,7 +1710,7 @@ export function FleetMap({ devices, locations, selectedImei, onSelect, onRefresh
           border-radius: 4px;
         }
         .pp-card-edit:hover {
-          color: #0421bc;
+          color: #0F6B5C;
           background: #e8ebff;
         }
         .pp-card-status {
@@ -1814,7 +1814,7 @@ export function FleetMap({ devices, locations, selectedImei, onSelect, onRefresh
           background: none;
           color: #475569;
           cursor: pointer;
-          font-family: var(--font-inter), 'Inter', -apple-system, sans-serif;
+          font-family: var(--font-nunito), 'Nunito', var(--font-hind-siliguri), -apple-system, sans-serif;
           font-size: 11px;
           font-weight: 500;
           transition: background 0.15s, color 0.15s;
@@ -1825,7 +1825,7 @@ export function FleetMap({ devices, locations, selectedImei, onSelect, onRefresh
         }
         .pp-card-action:hover {
           background: #e8ebff;
-          color: #0421bc;
+          color: #0F6B5C;
         }
         .pp-card-action + .pp-card-action {
           border-left: 1px solid #eef2f7;

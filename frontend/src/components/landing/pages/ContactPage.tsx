@@ -211,7 +211,7 @@ export function ContactPage() {
                       type="submit"
                       whileHover={{ scale: 1.01 }}
                       whileTap={{ scale: 0.99 }}
-                      className="flex h-14 w-full items-center justify-center gap-2 rounded-xl bg-brand-600 text-[15px] font-bold text-white shadow-lg shadow-brand-600/30 transition-all hover:bg-brand-700 hover:shadow-xl"
+                      className="flex h-14 w-full items-center justify-center gap-2 rounded-xl bg-brand-600 text-[16px] font-bold text-white shadow-lg shadow-brand-600/30 transition-all hover:bg-brand-700 hover:shadow-xl"
                     >
                       {t("contact.submit")}
                       <Icon path={ICONS.arrow} className="h-5 w-5" />

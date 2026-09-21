@@ -48,7 +48,7 @@ export function DriverCard({ driver, onEdit, onDelete }: DriverCardProps) {
           <h3 className="truncate font-medium text-ink-900">{driver.name}</h3>
           <div className="mt-0.5 flex items-center gap-2">
             <span
-              className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[13px] font-medium ${statusStyle.bg} ${statusStyle.text}`}
+              className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[14px] font-medium ${statusStyle.bg} ${statusStyle.text}`}
             >
               <span className={`h-1.5 w-1.5 rounded-full ${statusStyle.dot}`} />
               {driver.status}
@@ -81,7 +81,7 @@ export function DriverCard({ driver, onEdit, onDelete }: DriverCardProps) {
       </div>
 
       {/* Info rows */}
-      <div className="mt-4 space-y-2 text-[14px]">
+      <div className="mt-4 space-y-2 text-[15px]">
         {/* Phone */}
         {driver.phone && (
           <div className="flex items-center gap-2 text-ink-600">
@@ -101,7 +101,7 @@ export function DriverCard({ driver, onEdit, onDelete }: DriverCardProps) {
             </svg>
             <span className="text-ink-600">{driver.licenseNo}</span>
             {driver.licenseType && (
-              <span className="rounded bg-ink-100 px-1.5 py-0.5 text-[13px] text-ink-500">
+              <span className="rounded bg-ink-100 px-1.5 py-0.5 text-[14px] text-ink-500">
                 {driver.licenseType}
               </span>
             )}
@@ -115,7 +115,7 @@ export function DriverCard({ driver, onEdit, onDelete }: DriverCardProps) {
               <circle cx="12" cy="12" r="10" />
               <path d="M12 8v4M12 16h.01" />
             </svg>
-            <span className="text-[13px] font-medium">License Expired</span>
+            <span className="text-[14px] font-medium">License Expired</span>
           </div>
         )}
         {!driver.licenseExpired && driver.licenseExpiringSoon && (
@@ -123,7 +123,7 @@ export function DriverCard({ driver, onEdit, onDelete }: DriverCardProps) {
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0zM12 9v4M12 17h.01" />
             </svg>
-            <span className="text-[13px] font-medium">License Expiring Soon</span>
+            <span className="text-[14px] font-medium">License Expiring Soon</span>
           </div>
         )}
 
@@ -134,14 +134,14 @@ export function DriverCard({ driver, onEdit, onDelete }: DriverCardProps) {
               <rect x="2" y="6" width="20" height="12" rx="2" />
               <path d="M6 12h.01M10 12h.01M14 12h.01" />
             </svg>
-            <span className="font-mono text-[13px]">{driver.rfidCard}</span>
+            <span className="font-mono text-[14px]">{driver.rfidCard}</span>
           </div>
         )}
       </div>
 
       {/* Footer: Assigned vehicles */}
       <div className="mt-4 flex items-center justify-between border-t border-ink-100 pt-3">
-        <div className="flex items-center gap-1.5 text-[14px] text-ink-500">
+        <div className="flex items-center gap-1.5 text-[15px] text-ink-500">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <rect x="1" y="3" width="15" height="13" rx="2" />
             <path d="M16 8h2a2 2 0 012 2v3M16 8V5a2 2 0 012-2h2M4 16v2M8 16v2M20 14v2" />
@@ -153,7 +153,7 @@ export function DriverCard({ driver, onEdit, onDelete }: DriverCardProps) {
           </span>
         </div>
         {driver.hireDate && (
-          <span className="text-[13px] text-ink-400">
+          <span className="text-[14px] text-ink-400">
             Since {new Date(driver.hireDate).toLocaleDateString("en-GB", { month: "short", year: "numeric" })}
           </span>
         )}

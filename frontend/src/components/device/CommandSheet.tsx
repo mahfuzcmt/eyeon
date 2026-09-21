@@ -60,8 +60,8 @@ export function CommandSheet({ device, onClose }: Props) {
     <div className="absolute bottom-16 left-3 right-3 z-[1100] overflow-hidden rounded-xl border border-black/5 bg-white shadow-2xl sm:left-auto sm:w-[320px]">
       <div className="flex items-center justify-between border-b border-surface-200 px-3 py-2">
         <div className="min-w-0">
-          <div className="text-[14px] font-semibold text-ink-700">{t("cmd.title")}</div>
-          <div className="truncate text-[12px] text-ink-500">
+          <div className="text-[15px] font-semibold text-ink-700">{t("cmd.title")}</div>
+          <div className="truncate text-[13px] text-ink-500">
             {device.name || device.vehiclePlate || device.imei}
             {device.engineLocked ? ` · ${t("veh.locked")}` : ""}
           </div>
@@ -74,7 +74,7 @@ export function CommandSheet({ device, onClose }: Props) {
       </div>
 
       <div className="p-3">
-        <div className="mb-1.5 text-[12px] font-medium uppercase tracking-wide text-ink-500">{t("cmd.quick")}</div>
+        <div className="mb-1.5 text-[13px] font-medium uppercase tracking-wide text-ink-500">{t("cmd.quick")}</div>
         <div className="grid grid-cols-2 gap-2">
           {quick.map((q) => (
             <button
@@ -82,7 +82,7 @@ export function CommandSheet({ device, onClose }: Props) {
               type="button"
               disabled={busy !== null}
               onClick={() => void run(q.id)}
-              className={`h-8 rounded-md border text-[13px] font-medium transition disabled:opacity-50 ${q.tone}`}
+              className={`h-8 rounded-md border text-[14px] font-medium transition disabled:opacity-50 ${q.tone}`}
             >
               {busy === q.id ? t("cmd.sending") : q.label}
             </button>
@@ -96,13 +96,13 @@ export function CommandSheet({ device, onClose }: Props) {
             onChange={(e) => setRaw(e.target.value)}
             onKeyDown={(e) => { if (e.key === "Enter") void run("raw"); }}
             placeholder={t("cmd.customHint")}
-            className="h-8 min-w-0 flex-1 rounded-md border border-surface-300 px-2 font-mono text-[13px] text-ink-800 placeholder:text-ink-400 focus:border-brand-500 focus:outline-none"
+            className="h-8 min-w-0 flex-1 rounded-md border border-surface-300 px-2 font-mono text-[14px] text-ink-800 placeholder:text-ink-400 focus:border-brand-500 focus:outline-none"
           />
           <button
             type="button"
             disabled={busy !== null || !raw.trim()}
             onClick={() => void run("raw")}
-            className="h-8 rounded-md bg-brand-500 px-3 text-[13px] font-semibold text-white transition hover:bg-brand-600 disabled:opacity-50"
+            className="h-8 rounded-md bg-brand-500 px-3 text-[14px] font-semibold text-white transition hover:bg-brand-600 disabled:opacity-50"
           >
             {t("cmd.send")}
           </button>
@@ -110,11 +110,11 @@ export function CommandSheet({ device, onClose }: Props) {
 
         {reply && (
           <div
-            className={`mt-3 rounded-md border px-2.5 py-2 text-[13px] ${
+            className={`mt-3 rounded-md border px-2.5 py-2 text-[14px] ${
               reply.ok ? "border-emerald-200 bg-emerald-50 text-emerald-800" : "border-red-200 bg-red-50 text-red-700"
             }`}
           >
-            <div className="text-[11px] font-medium uppercase tracking-wide opacity-70">{t("cmd.reply")}</div>
+            <div className="text-[12px] font-medium uppercase tracking-wide opacity-70">{t("cmd.reply")}</div>
             <div className="break-words font-mono">{reply.text}</div>
           </div>
         )}

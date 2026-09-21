@@ -47,22 +47,22 @@ export default function RulesPage() {
     <div className="flex h-full flex-col">
       <div className="flex items-center gap-3 border-b border-surface-300 px-4 py-3">
         <h1 className="font-display text-lg font-semibold">{t("rules.title")}</h1>
-        <button type="button" className="btn-primary ml-auto px-3 py-1.5 text-[13px]"
+        <button type="button" className="btn-primary ml-auto px-3 py-1.5 text-[14px]"
                 onClick={() => setEditing("new")}>
           {t("rules.new")}
         </button>
       </div>
 
       <div className="flex-1 overflow-auto">
-        {loading && <div className="px-4 py-6 text-[14px] text-ink-400">{t("common.loading")}</div>}
-        {error && <div className="px-4 py-6 text-[14px] text-alarm-red">{error}</div>}
+        {loading && <div className="px-4 py-6 text-[15px] text-ink-400">{t("common.loading")}</div>}
+        {error && <div className="px-4 py-6 text-[15px] text-alarm-red">{error}</div>}
         {!loading && rules.length === 0 && (
-          <div className="px-4 py-12 text-center text-[14px] text-ink-400">{t("rules.empty")}</div>
+          <div className="px-4 py-12 text-center text-[15px] text-ink-400">{t("rules.empty")}</div>
         )}
 
         {rules.length > 0 && (
-          <table className="w-full min-w-[760px] text-[14px]">
-            <thead className="sticky top-0 z-10 bg-white text-left text-[13px] uppercase text-ink-9000">
+          <table className="w-full min-w-[760px] text-[15px]">
+            <thead className="sticky top-0 z-10 bg-white text-left text-[14px] uppercase text-ink-9000">
               <tr>
                 <th className="px-4 py-2">{t("rules.name")}</th>
                 <th className="px-4 py-2">{t("rules.type")}</th>
@@ -79,14 +79,14 @@ export default function RulesPage() {
                 <tr key={r.id} className="border-b border-surface-300 hover:bg-surface-50">
                   <td className="px-4 py-2 font-medium">{r.name}</td>
                   <td className="px-4 py-2">{t(`rules.type.${r.ruleType}` as StringKey)}</td>
-                  <td className="px-4 py-2 font-mono text-[13px]">{describeRule(r, locale, t)}</td>
-                  <td className="px-4 py-2 text-[13px]">
+                  <td className="px-4 py-2 font-mono text-[14px]">{describeRule(r, locale, t)}</td>
+                  <td className="px-4 py-2 text-[14px]">
                     {r.appliesToAll
                       ? t("rules.allDevices")
                       : `${r.assignedImeis.length} ${t("rules.specificDevices").toLowerCase()}`}
                   </td>
-                  <td className="px-4 py-2 text-[13px]">{r.severity}</td>
-                  <td className="px-4 py-2 text-[13px]">
+                  <td className="px-4 py-2 text-[14px]">{r.severity}</td>
+                  <td className="px-4 py-2 text-[14px]">
                     {formatNumber(r.cooldownSeconds, locale)} {t("rules.unit.seconds")}
                   </td>
                   <td className="px-4 py-2">
@@ -99,11 +99,11 @@ export default function RulesPage() {
                     </button>
                   </td>
                   <td className="space-x-1 px-4 py-2 text-right">
-                    <button type="button" className="btn-ghost px-2 py-1 text-[13px]"
+                    <button type="button" className="btn-ghost px-2 py-1 text-[14px]"
                             onClick={() => setEditing(r)}>
                       {t("users.edit")}
                     </button>
-                    <button type="button" className="btn-ghost px-2 py-1 text-[13px] text-alarm-red"
+                    <button type="button" className="btn-ghost px-2 py-1 text-[14px] text-alarm-red"
                             onClick={() => remove(r.id)}>
                       {t("common.delete")}
                     </button>
@@ -195,12 +195,12 @@ function RuleForm({ existing, onClose, onSubmit }: FormProps) {
         </div>
 
         <label className="block">
-          <span className="mb-0.5 block text-[13px] text-ink-9000">{t("rules.name")}</span>
+          <span className="mb-0.5 block text-[14px] text-ink-9000">{t("rules.name")}</span>
           <input className="input w-full py-1.5" value={name} onChange={(e) => setName(e.target.value)} required />
         </label>
 
         <label className="block">
-          <span className="mb-0.5 block text-[13px] text-ink-9000">{t("rules.type")}</span>
+          <span className="mb-0.5 block text-[14px] text-ink-9000">{t("rules.type")}</span>
           <select className="input w-full py-1.5" value={ruleType}
                   onChange={(e) => {
                     const next = e.target.value as AlarmRuleType;
@@ -219,19 +219,19 @@ function RuleForm({ existing, onClose, onSubmit }: FormProps) {
         {ruleType === "ACC_ON_DURING_WINDOW" ? (
           <div className="grid grid-cols-2 gap-2">
             <label className="block">
-              <span className="mb-0.5 block text-[13px] text-ink-9000">{t("common.from")}</span>
+              <span className="mb-0.5 block text-[14px] text-ink-9000">{t("common.from")}</span>
               <input type="time" className="input w-full py-1.5" value={windowStart}
                      onChange={(e) => setWindowStart(e.target.value)} required />
             </label>
             <label className="block">
-              <span className="mb-0.5 block text-[13px] text-ink-9000">{t("common.to")}</span>
+              <span className="mb-0.5 block text-[14px] text-ink-9000">{t("common.to")}</span>
               <input type="time" className="input w-full py-1.5" value={windowEnd}
                      onChange={(e) => setWindowEnd(e.target.value)} required />
             </label>
           </div>
         ) : (
           <label className="block">
-            <span className="mb-0.5 block text-[13px] text-ink-9000">
+            <span className="mb-0.5 block text-[14px] text-ink-9000">
               {t("rules.threshold")} ({ruleType === "SPEED_OVER" ? t("rules.unit.kph") : isMinuteRule ? t("rules.unit.minutes") : t("rules.unit.mv")})
             </span>
             <input type="number" className="input w-full py-1.5" value={threshold}
@@ -241,14 +241,14 @@ function RuleForm({ existing, onClose, onSubmit }: FormProps) {
 
         <div className="grid grid-cols-2 gap-2">
           <label className="block">
-            <span className="mb-0.5 block text-[13px] text-ink-9000">{t("rules.severity")}</span>
+            <span className="mb-0.5 block text-[14px] text-ink-9000">{t("rules.severity")}</span>
             <select className="input w-full py-1.5" value={severity}
                     onChange={(e) => setSeverity(e.target.value as AlarmSeverity)}>
               {SEVERITIES.map((s) => <option key={s} value={s}>{s}</option>)}
             </select>
           </label>
           <label className="block">
-            <span className="mb-0.5 block text-[13px] text-ink-9000">
+            <span className="mb-0.5 block text-[14px] text-ink-9000">
               {t("rules.cooldown")} ({t("rules.unit.seconds")})
             </span>
             <input type="number" className="input w-full py-1.5" value={cooldown}
@@ -257,8 +257,8 @@ function RuleForm({ existing, onClose, onSubmit }: FormProps) {
         </div>
 
         <div>
-          <span className="mb-1 block text-[13px] text-ink-9000">{t("rules.appliesTo")}</span>
-          <div className="flex gap-2 text-[13px]">
+          <span className="mb-1 block text-[14px] text-ink-9000">{t("rules.appliesTo")}</span>
+          <div className="flex gap-2 text-[14px]">
             <button type="button"
                     className={appliesToAll ? "btn-primary px-3 py-1" : "btn-ghost px-3 py-1"}
                     onClick={() => setAppliesToAll(true)}>
@@ -273,7 +273,7 @@ function RuleForm({ existing, onClose, onSubmit }: FormProps) {
           {!appliesToAll && (
             <div className="mt-2 max-h-40 overflow-y-auto rounded border border-surface-300 p-2">
               {devices.map((d) => (
-                <label key={d.imei} className="flex items-center gap-2 py-0.5 text-[13px]">
+                <label key={d.imei} className="flex items-center gap-2 py-0.5 text-[14px]">
                   <input type="checkbox"
                          checked={assignedImeis.includes(d.imei)}
                          onChange={() => toggleImei(d.imei)} />
@@ -284,13 +284,13 @@ function RuleForm({ existing, onClose, onSubmit }: FormProps) {
           )}
         </div>
 
-        {err && <div className="text-[13px] text-alarm-red">{err}</div>}
+        {err && <div className="text-[14px] text-alarm-red">{err}</div>}
 
         <div className="flex justify-end gap-2 pt-2">
-          <button type="button" onClick={onClose} className="btn-ghost px-3 py-1.5 text-[13px]">
+          <button type="button" onClick={onClose} className="btn-ghost px-3 py-1.5 text-[14px]">
             {t("common.cancel")}
           </button>
-          <button type="submit" disabled={submitting} className="btn-primary px-3 py-1.5 text-[13px]">
+          <button type="submit" disabled={submitting} className="btn-primary px-3 py-1.5 text-[14px]">
             {submitting ? t("common.loading") : t("common.save")}
           </button>
         </div>

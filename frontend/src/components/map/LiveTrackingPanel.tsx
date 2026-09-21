@@ -92,14 +92,14 @@ export function LiveTrackingPanel({ device, location, onClose }: Props) {
           </svg>
         </button>
         <div className="min-w-0 flex-1">
-          <h2 className="truncate text-[14px] font-semibold text-ink-900">
+          <h2 className="truncate text-[15px] font-semibold text-ink-900">
             {device.name || device.vehiclePlate || device.imei}
           </h2>
-          <p className={`truncate text-[13px] ${addressLoading ? "text-ink-9000" : "text-ink-600"}`}>
+          <p className={`truncate text-[14px] ${addressLoading ? "text-ink-9000" : "text-ink-600"}`}>
             📍 {address}
           </p>
         </div>
-        <div className={`rounded-full px-2.5 py-1 text-[11px] font-bold uppercase ${
+        <div className={`rounded-full px-2.5 py-1 text-[12px] font-bold uppercase ${
           isMoving ? "bg-status-moving/20 text-status-moving" : "bg-status-stopped/20 text-status-stopped"
         }`}>
           {isMoving ? "Moving" : "Stopped"}
@@ -112,13 +112,13 @@ export function LiveTrackingPanel({ device, location, onClose }: Props) {
         <div className="flex flex-col items-center">
           <Speedometer speed={currentSpeed} size={200} />
           <div className="mt-2 text-center">
-            <span className="text-[13px] text-ink-400">Live Speed</span>
+            <span className="text-[14px] text-ink-400">Live Speed</span>
           </div>
         </div>
 
         {/* Today's Summary Stats */}
         <div className="w-full max-w-xs rounded-xl border border-surface-300 bg-surface-50 p-4">
-          <h3 className="mb-4 flex items-center gap-2 text-[14px] font-semibold text-ink-900">
+          <h3 className="mb-4 flex items-center gap-2 text-[15px] font-semibold text-ink-900">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
               <line x1="16" y1="2" x2="16" y2="6" />
@@ -138,9 +138,9 @@ export function LiveTrackingPanel({ device, location, onClose }: Props) {
                     <polyline points="12 6 12 12 16 14" />
                   </svg>
                 </div>
-                <span className="text-[13px] text-ink-600">{t("panel.totalHours")}</span>
+                <span className="text-[14px] text-ink-600">{t("panel.totalHours")}</span>
               </div>
-              <span className="font-mono text-[14px] font-semibold text-ink-900">
+              <span className="font-mono text-[15px] font-semibold text-ink-900">
                 {formatDurationS(todayStats.totalHoursS, locale)}
               </span>
             </div>
@@ -155,9 +155,9 @@ export function LiveTrackingPanel({ device, location, onClose }: Props) {
                     <path d="M7 17L12 22L17 17" />
                   </svg>
                 </div>
-                <span className="text-[13px] text-ink-600">{t("panel.totalKm")}</span>
+                <span className="text-[14px] text-ink-600">{t("panel.totalKm")}</span>
               </div>
-              <span className="font-mono text-[14px] font-semibold text-ink-900">
+              <span className="font-mono text-[15px] font-semibold text-ink-900">
                 {formatNumber(todayStats.totalDistanceM / 1000, locale, { maximumFractionDigits: 1 })} km
               </span>
             </div>
@@ -172,9 +172,9 @@ export function LiveTrackingPanel({ device, location, onClose }: Props) {
                     <line x1="12" y1="17" x2="12.01" y2="17" />
                   </svg>
                 </div>
-                <span className="text-[13px] text-ink-600">{t("panel.overspeedKm")}</span>
+                <span className="text-[14px] text-ink-600">{t("panel.overspeedKm")}</span>
               </div>
-              <span className="font-mono text-[14px] font-semibold text-alarm-red">
+              <span className="font-mono text-[15px] font-semibold text-alarm-red">
                 {formatNumber(todayStats.overspeedDistanceM / 1000, locale, { maximumFractionDigits: 1 })} km
               </span>
             </div>
@@ -187,9 +187,9 @@ export function LiveTrackingPanel({ device, location, onClose }: Props) {
                     <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" />
                   </svg>
                 </div>
-                <span className="text-[13px] text-ink-600">{t("panel.maxSpeedToday")}</span>
+                <span className="text-[14px] text-ink-600">{t("panel.maxSpeedToday")}</span>
               </div>
-              <span className="font-mono text-[14px] font-semibold text-ink-900">
+              <span className="font-mono text-[15px] font-semibold text-ink-900">
                 {todayStats.maxSpeed} {t("fleet.kmh")}
               </span>
             </div>
@@ -202,13 +202,13 @@ export function LiveTrackingPanel({ device, location, onClose }: Props) {
         <div className="grid grid-cols-2 gap-3 text-center">
           <div>
             <div className="text-lg font-bold text-ink-900">{formatDurationS(todayStats.totalHoursS, locale)}</div>
-            <div className="text-[11px] text-ink-400">{t("panel.totalHours")}</div>
+            <div className="text-[12px] text-ink-400">{t("panel.totalHours")}</div>
           </div>
           <div>
             <div className="text-lg font-bold text-ink-900">
               {formatNumber(todayStats.totalDistanceM / 1000, locale, { maximumFractionDigits: 1 })} km
             </div>
-            <div className="text-[11px] text-ink-400">{t("panel.totalKm")}</div>
+            <div className="text-[12px] text-ink-400">{t("panel.totalKm")}</div>
           </div>
         </div>
       </footer>

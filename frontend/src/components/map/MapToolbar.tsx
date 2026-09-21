@@ -258,7 +258,7 @@ export function MapToolbar({ map, onFitAll, onLocate, locating, disabled, classN
       {measuring && (
         <div className="mt-2 rounded-mkt border border-white/30 bg-white/85 p-2.5 shadow-glass backdrop-blur-lg">
           <div className="flex items-center justify-between gap-2">
-            <span className="text-[11px] font-semibold uppercase tracking-wide text-ink-500">
+            <span className="text-[12px] font-semibold uppercase tracking-wide text-ink-500">
               Distance
             </span>
             <button
@@ -284,11 +284,11 @@ export function MapToolbar({ map, onFitAll, onLocate, locating, disabled, classN
               </svg>
             </button>
           </div>
-          <div className="mt-1 font-mono text-[14px] font-bold text-ink-900">
+          <div className="mt-1 font-mono text-[15px] font-bold text-ink-900">
             {measurePoints.length > 1 ? formatDistance(totalDistance) : "Click to start"}
           </div>
           {measurePoints.length > 0 && (
-            <div className="mt-0.5 text-[11px] text-ink-400">
+            <div className="mt-0.5 text-[12px] text-ink-400">
               {measurePoints.length} point{measurePoints.length !== 1 ? "s" : ""}
             </div>
           )}

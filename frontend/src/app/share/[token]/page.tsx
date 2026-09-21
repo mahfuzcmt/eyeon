@@ -130,13 +130,13 @@ export default function SharedLocationPage() {
                 {location.vehicleName || location.vehiclePlate || "Vehicle Location"}
               </h1>
               {location.vehiclePlate && location.vehicleName && (
-                <p className="text-[14px] text-ink-400">{location.vehiclePlate}</p>
+                <p className="text-[15px] text-ink-400">{location.vehiclePlate}</p>
               )}
             </div>
           </div>
           <div className="flex items-center gap-2">
             <span
-              className={`px-2 py-1 text-[13px] rounded-full ${
+              className={`px-2 py-1 text-[14px] rounded-full ${
                 location.isOnline
                   ? "bg-green-600/20 text-green-400"
                   : "bg-ink-700 text-ink-400"
@@ -151,7 +151,7 @@ export default function SharedLocationPage() {
       {/* Map */}
       <div className="relative min-h-[240px] flex-1">
         {location.showHistory && historyLoaded && history.length === 0 && (
-          <div className="pointer-events-none absolute left-1/2 top-3 z-[1000] -translate-x-1/2 whitespace-nowrap rounded-full bg-ink-900/80 px-3 py-1 text-[13px] text-white">
+          <div className="pointer-events-none absolute left-1/2 top-3 z-[1000] -translate-x-1/2 whitespace-nowrap rounded-full bg-ink-900/80 px-3 py-1 text-[14px] text-white">
             No route in the last 24 hours
           </div>
         )}
@@ -171,24 +171,24 @@ export default function SharedLocationPage() {
         <div className="max-w-6xl mx-auto">
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-center">
             <div>
-              <p className="text-[13px] text-ink-400 mb-1">Speed</p>
+              <p className="text-[14px] text-ink-400 mb-1">Speed</p>
               <p className="text-lg font-semibold text-white">{location.speed} km/h</p>
             </div>
             <div>
-              <p className="text-[13px] text-ink-400 mb-1">Heading</p>
+              <p className="text-[14px] text-ink-400 mb-1">Heading</p>
               <p className="text-lg font-semibold text-white">{location.course}°</p>
             </div>
             <div>
-              <p className="text-[13px] text-ink-400 mb-1">Last Update</p>
-              <p className="text-[14px] font-medium text-white">
+              <p className="text-[14px] text-ink-400 mb-1">Last Update</p>
+              <p className="text-[15px] font-medium text-white">
                 {location.lastUpdate
                   ? new Date(location.lastUpdate).toLocaleString("en-GB", { timeZone: "Asia/Dhaka", day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })
                   : "N/A"}
               </p>
             </div>
             <div>
-              <p className="text-[13px] text-ink-400 mb-1">Vehicle Type</p>
-              <p className="text-[14px] font-medium text-white capitalize">
+              <p className="text-[14px] text-ink-400 mb-1">Vehicle Type</p>
+              <p className="text-[15px] font-medium text-white capitalize">
                 {location.vehicleType?.toLowerCase() || "Unknown"}
               </p>
             </div>
@@ -198,7 +198,7 @@ export default function SharedLocationPage() {
 
       {/* Branding */}
       <div className="bg-ink-950 px-4 py-2 text-center">
-        <p className="text-[13px] text-ink-500">
+        <p className="text-[14px] text-ink-500">
           Powered by <span className="text-brand-500 font-medium">EyeOn</span>
         </p>
       </div>

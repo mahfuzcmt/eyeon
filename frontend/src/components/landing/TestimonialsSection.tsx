@@ -111,7 +111,7 @@ export function TestimonialsSection() {
                 </div>
 
                 {/* Quote */}
-                <p className="mb-6 text-[15px] leading-relaxed text-gray-300">
+                <p className="mb-6 text-[16px] leading-relaxed text-gray-300">
                   &ldquo;{t(testimonial.quoteKey)}&rdquo;
                 </p>
 

@@ -34,8 +34,8 @@ export function NotificationsTab() {
     setPush(new Set(settings.pushTypes));
   }, [settings]);
 
-  if (loading) return <div className="text-[14px] text-ink-400">{t("common.loading")}</div>;
-  if (error) return <div className="text-[14px] text-alarm-red">{error}</div>;
+  if (loading) return <div className="text-[15px] text-ink-400">{t("common.loading")}</div>;
+  if (error) return <div className="text-[15px] text-alarm-red">{error}</div>;
   if (!settings) return null;
 
   const types = settings.availableTypes.length ? settings.availableTypes : ALARM_TYPES;
@@ -179,8 +179,8 @@ export function NotificationsTab() {
         ))}
       </ul>
 
-      {saveError && <div className="text-[13px] text-alarm-red">{saveError}</div>}
-      {soundBlocked && <div className="text-[13px] text-amber-700">{t("notif.soundBlocked")}</div>}
+      {saveError && <div className="text-[14px] text-alarm-red">{saveError}</div>}
+      {soundBlocked && <div className="text-[14px] text-amber-700">{t("notif.soundBlocked")}</div>}
 
       <div className="flex flex-wrap items-center gap-3">
         <button type="button" className="btn-primary" disabled={busy} onClick={() => void onSave()}>
@@ -192,7 +192,7 @@ export function NotificationsTab() {
         <button type="button" className="btn-secondary" onClick={onPreview}>
           {t("notif.previewPopup")}
         </button>
-        {saved && <span className="text-[13px] text-brand-500">{t("settings.org.saved")}</span>}
+        {saved && <span className="text-[14px] text-brand-500">{t("settings.org.saved")}</span>}
       </div>
     </div>
   );

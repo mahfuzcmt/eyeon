@@ -89,12 +89,12 @@ export default function CalendarTab({ imei, onApply }: { imei: string; onApply: 
         <div className="panel p-3">
           <div className="mb-2 flex items-center justify-between">
             <button type="button" className="btn-icon" onClick={() => shiftMonth(-1)}>‹</button>
-            <span className="text-[13px] font-semibold text-ink-900">{MONTHS[view.m]} {view.y}</span>
+            <span className="text-[14px] font-semibold text-ink-900">{MONTHS[view.m]} {view.y}</span>
             <button type="button" className="btn-icon" onClick={() => shiftMonth(1)}>›</button>
           </div>
           <div className="grid grid-cols-7 gap-1">
             {WD.map((w) => (
-              <div key={w} className="py-1 text-center text-[11px] text-ink-400">{w}</div>
+              <div key={w} className="py-1 text-center text-[12px] text-ink-400">{w}</div>
             ))}
             {cells.map((c, i) => {
               if (!c) return <div key={`b${i}`} />;
@@ -108,13 +108,13 @@ export default function CalendarTab({ imei, onApply }: { imei: string; onApply: 
                   type="button"
                   disabled={future}
                   onClick={() => setPending(rangeFromDays(c, c, fmtDay(c)))}
-                  className={`flex aspect-square flex-col items-center justify-center rounded-sm border text-[12px] transition ${
+                  className={`flex aspect-square flex-col items-center justify-center rounded-sm border text-[13px] transition ${
                     sel ? "border-brand-500 bg-brand-50" : "border-transparent hover:bg-surface-100"
                   } ${future ? "opacity-30" : ""}`}
                 >
                   <span className={isToday ? "font-bold text-brand-600" : "text-ink-900"}>{c.d}</span>
                   {km != null && (
-                    <span className="text-[11px] leading-none text-status-moving">
+                    <span className="text-[12px] leading-none text-status-moving">
                       {formatNumber(km / 1000, locale, { maximumFractionDigits: 0 })}k
                     </span>
                   )}
@@ -126,7 +126,7 @@ export default function CalendarTab({ imei, onApply }: { imei: string; onApply: 
 
         {/* Stop interval */}
         <div className="panel p-3">
-          <div className="mb-1.5 text-[11px] uppercase tracking-wide text-ink-500">Stop interval (min)</div>
+          <div className="mb-1.5 text-[12px] uppercase tracking-wide text-ink-500">Stop interval (min)</div>
           <div className="flex gap-1.5">
             {STOP_INTERVALS.map((n) => (
               <button

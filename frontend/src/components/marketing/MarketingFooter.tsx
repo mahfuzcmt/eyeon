@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useLocale } from "@/lib/i18n";
-import Image from "next/image";
+import { EyeOnLogo } from "@/components/brand/EyeOnLogo";
 
 export function MarketingFooter() {
   const { t } = useLocale();
@@ -37,15 +37,9 @@ export function MarketingFooter() {
           {/* Brand section */}
           <div className="lg:col-span-2">
             <Link href="/" className="inline-flex items-center">
-              <Image
-                src="/eyeon-logo.png"
-                alt="EyeOn"
-                width={160}
-                height={40}
-                className="h-10 w-auto rounded-md"
-              />
+              <EyeOnLogo height={40} tone="dark" />
             </Link>
-            <p className="mt-5 max-w-xs text-[15px] leading-relaxed text-slate-400">
+            <p className="mt-5 max-w-xs text-[16px] leading-relaxed text-slate-400">
               {t("mkt.footer.tagline")}
             </p>
 
@@ -53,7 +47,7 @@ export function MarketingFooter() {
             <div className="mt-8 space-y-3">
               <a
                 href="tel:+8801999036999"
-                className="group flex items-center gap-3 text-[15px] text-slate-400 transition-colors hover:text-white"
+                className="group flex items-center gap-3 text-[16px] text-slate-400 transition-colors hover:text-white"
               >
                 <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-white/5 text-slate-400 transition-all group-hover:bg-brand-500/20 group-hover:text-brand-400">
                   <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
@@ -64,7 +58,7 @@ export function MarketingFooter() {
               </a>
               <a
                 href="mailto:hello@eyeongps.com"
-                className="group flex items-center gap-3 text-[15px] text-slate-400 transition-colors hover:text-white"
+                className="group flex items-center gap-3 text-[16px] text-slate-400 transition-colors hover:text-white"
               >
                 <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-white/5 text-slate-400 transition-all group-hover:bg-brand-500/20 group-hover:text-brand-400">
                   <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">

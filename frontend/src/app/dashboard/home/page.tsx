@@ -70,8 +70,8 @@ export default function HomePage() {
         {/* ── Fleet Status ─────────────────────────────────────────── */}
         <section>
           <div className="mb-2 flex items-baseline gap-2">
-            <h1 className="text-[14px] font-semibold text-ink-900">{t("home.fleetStatus")}</h1>
-            <span className="text-[13px] text-ink-500">
+            <h1 className="text-[15px] font-semibold text-ink-900">{t("home.fleetStatus")}</h1>
+            <span className="text-[14px] text-ink-500">
               {t("home.total")} {devices.length}
             </span>
           </div>
@@ -82,7 +82,7 @@ export default function HomePage() {
                 href={`/dashboard/devices?state=${s.id}`}
                 className="panel flex flex-col gap-1 p-3 transition hover:border-brand-400 hover:shadow-panel"
               >
-                <span className="flex items-center gap-1.5 text-[12px] font-semibold text-ink-600">
+                <span className="flex items-center gap-1.5 text-[13px] font-semibold text-ink-600">
                   <span className="status-dot" style={{ backgroundColor: VEHICLE_STATE_COLOR[s.id] }} />
                   {t(s.label)}
                 </span>
@@ -95,12 +95,12 @@ export default function HomePage() {
         {/* ── Single Vehicle Stats ─────────────────────────────────── */}
         <section className="panel">
           <div className="panel-header">
-            <span className="text-[13px] font-semibold text-ink-900">{t("home.vehicleStats")}</span>
-            <span className="text-[11px] text-ink-500">{t("home.today")}</span>
+            <span className="text-[14px] font-semibold text-ink-900">{t("home.vehicleStats")}</span>
+            <span className="text-[12px] text-ink-500">{t("home.today")}</span>
           </div>
           <div className="panel-body flex flex-col gap-3">
             {devices.length === 0 ? (
-              <p className="py-6 text-center text-[13px] text-ink-500">{t("home.noVehicles")}</p>
+              <p className="py-6 text-center text-[14px] text-ink-500">{t("home.noVehicles")}</p>
             ) : (
               <>
                 <select
@@ -132,7 +132,7 @@ export default function HomePage() {
                   <Tile label={t("home.stopDuration")} value={formatDurationS(stats.stopS, locale)} loading={loading} />
                 </div>
 
-                <p className="text-[11px] text-ink-400">{t("home.fuelNote")}</p>
+                <p className="text-[12px] text-ink-400">{t("home.fuelNote")}</p>
               </>
             )}
           </div>
@@ -145,8 +145,8 @@ export default function HomePage() {
 function Tile({ label, value, loading }: { label: string; value: string; loading: boolean }) {
   return (
     <div className="rounded-sm border border-surface-200 bg-surface-50 px-3 py-2">
-      <div className="text-[11px] uppercase tracking-wide text-ink-500">{label}</div>
-      <div className="mt-0.5 text-[14px] font-semibold text-ink-900">{loading ? "…" : value}</div>
+      <div className="text-[12px] uppercase tracking-wide text-ink-500">{label}</div>
+      <div className="mt-0.5 text-[15px] font-semibold text-ink-900">{loading ? "…" : value}</div>
     </div>
   );
 }
