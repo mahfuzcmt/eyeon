@@ -202,6 +202,15 @@ It refuses to run without DNS, checks that other sites' upstream names still res
 the shared nginx, does a Let's Encrypt dry run before the real request, runs `nginx -t` before any reload
 and restores the previous site file if the test fails.
 
+HTTPS went live 2026-09-21 (certificate valid to 2026-12-20, renewed automatically by `kosaibari-certbot`).
+
+**Let's Encrypt "Timeout during connect" is intermittent on this host.** The first real request failed at
+*secondary validation* (one remote vantage point could not reach port 80) right after a successful dry run;
+the retry minutes later succeeded. The certbot log shows the same failure for `motolinkgps.com` in the past,
+and those renewals still went through. Nothing local blocks port 80. If it happens: re-run the script, at most
+3 times per hour (the limit is 5 failed validations per hostname per hour). If a renewal ever fails for days,
+check `docker exec kosaibari-certbot certbot certificates` - `certbot renew` retries every 12 hours on its own.
+
 ### Rules for the shared nginx (learned the hard way)
 
 1. **EyeOn's compose services must be named `eyeon-*`.** Compose registers the service name as a DNS
