@@ -7,6 +7,7 @@ import com.webinnovation.eyeon.repository.LocationRepository;
 import com.webinnovation.eyeon.repository.TripRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -35,6 +36,15 @@ public class TripService {
     /** km/h above which we treat the device as moving even without an explicit ACC signal. */
     private static final int MOVING_SPEED_THRESHOLD = 5;
 
+    /**
+     * Trips are a vehicle concept (ignition on -> off). EyeOn tracks people, so detection is
+     * off by default; day activity comes from {@link com.webinnovation.eyeon.repository.ActivityRepository}
+     * instead. Set {@code eyeon.trips.enabled=true} only for a vehicle deployment.
+     */
+    @Value("${eyeon.trips.enabled:false}")
+    private boolean enabled;
+
+
     /** Idle gap (seconds) after which a movement-without-ACC restarts a trip. */
     private static final long RESTART_IDLE_SECONDS = 5 * 60;
 
@@ -46,6 +56,7 @@ public class TripService {
 
     @Transactional
     public void onLocation(LocationData loc) {
+        if (!enabled) return;
         if (loc.getOrgId() == null || loc.getImei() == null || !loc.isValid()) return;
         try {
             Optional<Trip> openOpt = tripRepo.findOpenForDevice(loc.getImei());
@@ -78,6 +89,7 @@ public class TripService {
     /** Periodic sweeper closes trips that have stopped receiving locations. */
     @Transactional
     public int closeStaleTrips() {
+        if (!enabled) return 0;
         List<UUID> stale = tripRepo.findStaleOpenTripIds(STALE_TRIP_SECONDS);
         Instant now = Instant.now();
         for (UUID id : stale) {

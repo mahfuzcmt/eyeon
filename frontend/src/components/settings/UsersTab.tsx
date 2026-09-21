@@ -453,7 +453,7 @@ function DeviceAssignmentDialog({
               <input
                 type="text"
                 className="input mb-2 text-[15px]"
-                placeholder="Search by name, plate, or IMEI..."
+                placeholder={t("common.searchPlaceholder")}
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
               />

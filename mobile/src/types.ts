@@ -186,6 +186,25 @@ export interface GeofenceView {
   updatedAt: string;
 }
 
+/** Mirrors backend domain.Activity: a person's day, derived from location points. */
+export interface ActivitySummary {
+  distanceM: number;
+  movingS: number;
+  stillS: number;
+  maxSpeed: number;
+  points: number;
+  firstTs: string | null;
+  lastTs: string | null;
+}
+
+/** Mirrors backend domain.Activity.Day. `date` is an Asia/Dhaka calendar day, YYYY-MM-DD. */
+export interface ActivityDay {
+  date: string;
+  distanceM: number;
+  movingS: number;
+  points: number;
+}
+
 export type TripStatus = "IN_PROGRESS" | "COMPLETED";
 
 /** Mirrors backend dto.TripDtos.TripView — the "moving history" record. */

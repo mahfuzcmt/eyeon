@@ -180,7 +180,6 @@ function VehicleCard({
 }) {
   const ts = live?.ts ?? d.lastSeenAt;
   const speed = live?.speed ?? d.lastSpeed ?? 0;
-  const accOn = live?.accOn ?? null;
   const overspeed = speedLimits.isOverspeed(d.imei, speed);
   const color = overspeed ? OVERSPEED_COLOR : VEHICLE_STATE_COLOR[state];
   // Different "since" times per state:
@@ -234,21 +233,6 @@ function VehicleCard({
       </div>
 
       <div className="mt-2 flex flex-wrap items-center gap-1.5">
-        {accOn != null && (
-          <span
-            className={`inline-flex h-[18px] items-center rounded-sm px-1.5 text-[12px] font-semibold ${
-              accOn ? "bg-status-moving/15 text-status-moving" : "bg-surface-200 text-ink-600"
-            }`}
-          >
-            {t("fleet.acc")} {accOn ? t("fleet.accOn") : t("fleet.accOff")}
-          </span>
-        )}
-        {d.engineLocked && (
-          <span className="inline-flex h-[18px] items-center gap-1 rounded-sm bg-status-stopped/15 px-1.5 text-[12px] font-semibold text-status-stopped">
-            <LockIcon />
-            {t("veh.locked")}
-          </span>
-        )}
       </div>
 
       <div className="mt-2 flex items-center justify-between border-t border-surface-100 pt-1.5 text-[12px] text-ink-500">
@@ -277,11 +261,3 @@ function VehicleIcon({ color }: { color: string }) {
   );
 }
 
-function LockIcon() {
-  return (
-    <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-      <rect x="5" y="11" width="14" height="10" rx="2" />
-      <path d="M8 11V7a4 4 0 0 1 8 0v4" />
-    </svg>
-  );
-}

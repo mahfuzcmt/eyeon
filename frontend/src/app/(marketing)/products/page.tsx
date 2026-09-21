@@ -1,8 +1,8 @@
 import { ProductsPage } from "@/components/landing/pages/ProductsPage";
 
 export const metadata = {
-  title: "GPS Tracker Devices — EyeOn GPS Tracking Bangladesh",
-  description: "Professional GPS tracking devices for cars, motorcycles, trucks, and assets. GT06N, OBD trackers, portable GPS, and dashcam solutions. Call for best price.",
+  title: "The EyeOn tracker",
+  description: "A small, light tracker with an SOS button, carried in the bag, on a lanyard or on the wrist, and paired with the EyeOn app.",
 };
 
 export default function Products() {

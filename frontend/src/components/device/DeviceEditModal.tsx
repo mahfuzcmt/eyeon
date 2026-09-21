@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { api, extractError } from "@/lib/api";
 import { useLocale, type StringKey } from "@/lib/i18n";
-import { buildVehicleSvg, VEHICLE_TYPES, DEFAULT_ICON_COLOR, type VehicleTypeId } from "@/lib/vehicleIcons";
+import { buildPersonSvg, PERSON_TYPES, DEFAULT_ICON_COLOR, normalizePersonType, type PersonTypeId } from "@/lib/personIcons";
 import { useDeviceGroups } from "@/hooks/useDeviceGroups";
 import type { DeviceView } from "@/types/domain";
 
@@ -30,11 +30,8 @@ export function DeviceEditModal({ device, onClose, onSaved }: Props) {
   const [name, setName] = useState(device.name ?? "");
   const [simMsisdn, setSimMsisdn] = useState(device.simMsisdn ?? "");
   const [plate, setPlate] = useState(device.vehiclePlate ?? "");
-  const [vehicleType, setVehicleType] = useState<VehicleTypeId>(
-    (VEHICLE_TYPES as readonly string[]).includes(device.vehicleType ?? "")
-      ? (device.vehicleType as VehicleTypeId)
-      : "CAR",
-  );
+  // Stored in devices.vehicle_type (the column name is inherited); values are person types.
+  const [vehicleType, setVehicleType] = useState<PersonTypeId>(normalizePersonType(device.vehicleType));
   const [iconColor, setIconColor] = useState(device.iconColor || DEFAULT_ICON_COLOR);
   const { groups, assignDevices, unassignDevices } = useDeviceGroups();
   const [groupId, setGroupId] = useState<string>(device.groupId ?? "");
@@ -121,14 +118,15 @@ export function DeviceEditModal({ device, onClose, onSaved }: Props) {
           </label>
 
           <div className="text-[14px]">
-            <span className="mb-1 block text-ink-9000">{t("veh.icon")}</span>
-            <div className="grid grid-cols-5 gap-1.5">
-              {VEHICLE_TYPES.map((ty) => (
+            <span className="mb-1 block text-ink-900">{t("veh.icon")}</span>
+            <div className="grid grid-cols-3 gap-2">
+              {PERSON_TYPES.map((ty) => (
                 <button
                   key={ty}
                   type="button"
                   onClick={() => setVehicleType(ty)}
-                  className={`flex flex-col items-center gap-0.5 rounded-sm border p-1.5 transition ${
+                  aria-pressed={vehicleType === ty}
+                  className={`flex flex-col items-center gap-0.5 rounded-md border p-2 transition ${
                     vehicleType === ty
                       ? "border-brand-500 bg-brand-50"
                       : "border-surface-300 hover:bg-surface-100"
@@ -136,9 +134,9 @@ export function DeviceEditModal({ device, onClose, onSaved }: Props) {
                 >
                   <span
                     // Trusted static SVG built from our own constants.
-                    dangerouslySetInnerHTML={{ __html: buildVehicleSvg(ty, iconColor, 0, 34) }}
+                    dangerouslySetInnerHTML={{ __html: buildPersonSvg(ty, iconColor, null, 30) }}
                   />
-                  <span className="text-[12px] text-ink-700">{t(`veh.type.${ty}` as StringKey)}</span>
+                  <span className="text-[13px] text-ink-700">{t(`person.type.${ty}` as StringKey)}</span>
                 </button>
               ))}
             </div>

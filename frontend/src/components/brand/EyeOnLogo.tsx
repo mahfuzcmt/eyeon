@@ -60,3 +60,8 @@ export function EyeOnLogo({ height = 40, tone = "light", className = "" }: LogoP
     </span>
   );
 }
+
+/** Auth-page lockup. dark=true means it sits on a dark background. */
+export function EyeOnLogoInline({ dark = true }: { dark?: boolean }) {
+  return <EyeOnLogo height={36} tone={dark ? "dark" : "light"} />;
+}

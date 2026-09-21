@@ -213,7 +213,7 @@ export function MapToolbar({ map, onFitAll, onLocate, locating, disabled, classN
         type="button"
         onClick={onFitAll}
         disabled={disabled}
-        title="Fit all vehicles"
+        title="Show everyone on the map"
         className={buttonClass}
       >
         <svg

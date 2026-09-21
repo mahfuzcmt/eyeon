@@ -81,7 +81,7 @@ export default function HomeScreen() {
             {devices.map((d) => (
               <Chip
                 key={d.imei}
-                label={d.vehiclePlate ?? d.name ?? d.imei.slice(-6)}
+                label={d.name ?? d.vehiclePlate ?? d.imei.slice(-6)}
                 active={d.imei === selectedImei}
                 onPress={() => setPicked(d.imei)}
               />
@@ -108,11 +108,8 @@ function SingleVehicleStats({ imei, onOpen }: { imei: string; onOpen: () => void
       ) : (
         <View style={styles.statsGrid}>
           <Metric label={t("home.routeLength")} value={fmtDistance(stats.distanceM)} />
-          <Metric label={t("home.trips")} value={String(stats.trips)} />
           <Metric label={t("home.moveDuration")} value={fmtDuration(stats.moveS)} />
-          <Metric label={t("home.idleDuration")} value={fmtDuration(stats.idleS)} />
-          <Metric label={t("home.topSpeed")} value={`${stats.maxSpeed} ${t("veh.kmh")}`} />
-          <Metric label={t("hist.avgSpeed")} value={`${stats.avgSpeed} ${t("veh.kmh")}`} />
+          <Metric label={t("home.stopDuration")} value={fmtDuration(stats.stillS)} />
         </View>
       )}
       <Text style={styles.openLink} onPress={onOpen}>

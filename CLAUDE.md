@@ -22,6 +22,12 @@ No inherited `motolink`/`pingpath` identifiers remain in the tree. (Correction 2
 
 **Primary audience (changed 2026-09-21): family safety.** EyeOn is sold mainly as a tracker for **children and elderly relatives** - a small device in a bag, on a lanyard or on the wrist, and a phone app for the carer (poster tagline: `চোখে চোখে রাখুন, ও যেখানেই থাকুক।`). Headline features: live location, safe-zone (trusted place) alerts, geofence, SOS button, route history, long battery, fully Bengali app. The app user is the carer, never the wearer. The roadmap for this audience is [`docs/FAMILY_SAFETY_PLAN.md`](docs/FAMILY_SAFETY_PLAN.md); it audits each poster feature against the code and takes precedence over §16 Phases 7-14 for prioritisation. The vehicle/fleet capability below is inherited, still works, and remains a secondary market - but no fleet vocabulary (vehicle, driver, fuel, ignition) should appear on a screen a family user can reach.
 
+**People, not vehicles (decided 2026-09-21).** The tracked thing is a **person** - a child such as Rafi, Mahim or Jannatun - never a vehicle, and the corporate customer is a **school** (also coaching centres, madrasas, day-care); a family is simply a small organization. Consequences that are now implemented:
+- **No trips.** Trips are an ignition concept. `TripService` is off unless `eyeon.trips.enabled=true` (default false; `TripServiceDisabledTest`), and the trips page, trip reports/exports, the Drivers and Scheduled-commands sections and every engine cut/restore control are removed from web and mobile. Day statistics come from **`GET /devices/{imei}/activity`** and **`/activity/daily`** (`ActivityRepository`, window functions over `locations`): distance and moving time count only segments where the tracker reported >= 2 km/h, segments faster than 45 m/s (GPS jumps) or spanning a gap over 10 min are ignored. The history tab is the whole day's route with playback plus a plain-language timeline built from `PLACE_ARRIVED` / `PLACE_LEFT` / `GEOFENCE_*` / `SOS` alarms.
+- **Vocabulary.** UI says person/people (`সদস্য`), never vehicle/fleet/driver/plate. `devices.vehicle_plate` is shown as "Class / ID (optional)"; `devices.vehicle_type` stores a person type `BOY` / `GIRL` / `PERSON` (anything else, including legacy `CAR`, renders as `PERSON`). Labels always put the **name first**, then class/ID, then IMEI. Column and DTO names (`vehiclePlate`, `vehicleType`) are inherited and unchanged - do not rename them without a migration plan.
+- **Markers** are upright round avatars from `frontend/src/lib/personIcons.ts` (a person's face is never rotated); a small heading pointer appears only while moving. The mobile WebView map still draws the old top-down silhouettes (`mobile/src/components/WebMap.tsx`) - not yet converted.
+- **Website** (`components/landing/*`) is rewritten for parents and schools and opens in Bengali. It must never show clients, testimonials, statistics, certifications, prices or specs that are not real: `PARTNER_SCHOOLS` in `pages/HomePage.tsx` and the testimonials array are empty by design and render nothing until real, consenting entries are added. The inherited site displayed logos of companies that were never EyeOn customers, invented testimonials and "150+ companies / BTRC certified"; all removed. The old `components/marketing/*`, `/industries` and `/products/[id]` are deleted.
+
 **Product (inherited platform):** Multi-tenant SaaS platform for vehicle GPS fleet tracking, built around the Concox GT06 family of cellular GPS hardware trackers. Targets the Bangladesh market initially: motorbike anti-theft, ride-sharing fleets, delivery riders (Pathao/Foodpanda partners), CNG/taxi operators, school van services, logistics fleets. Native **Android + iOS** apps serve professional and corporate fleet clients (see §16 Phase 5).
 
 **Owner:** Mahfuz Ahmed — Web Innovation
@@ -1127,7 +1133,15 @@ DELETE /geofences/:id/devices/:imei     → 204  (unassign)
 
 **Notification wording (`service/NotificationComposer`, pure + unit-tested).** Push title/body are composed per language - Bengali or English - from `push_tokens.locale` (V19; the language that phone's app is set to, sent by the mobile app on `POST /users/me/push-tokens { token, platform, locale }` and re-sent when the language changes), falling back to `organizations.locale`. There is **no `users.locale` column**, contrary to §12.3. Bengali templates are deliberately verb-free ("রাফি এখন School-এ") because verb endings change with respect and the backend does not know whether the wearer is a child or a grandparent. Place events use Android channel `arrivals` (normal importance); everything else uses `alarms`. SMS bodies are still English and the SOS SMS recipient is still a null stub (plan step F1).
 
-### 8.6 Trips
+### 8.6 Activity (replaces Trips)
+
+```
+GET /devices/:imei/activity          ?from=ISO&to=ISO → { distanceM, movingS, stillS, maxSpeed, points, firstTs, lastTs }   (default: last 24 h)
+GET /devices/:imei/activity/daily    ?from=ISO&to=ISO → [{ date: "YYYY-MM-DD" (Asia/Dhaka), distanceM, movingS, points }]   (max 93 days)
+```
+
+The `/trips` endpoints below still exist in the backend but nothing in EyeOn calls them and no trips are created while `eyeon.trips.enabled=false`.
+
 
 ```
 GET /trips                          ?from=ISO&to=ISO&device=imei → Trip[]

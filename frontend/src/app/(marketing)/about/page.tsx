@@ -1,8 +1,8 @@
 import { AboutPage } from "@/components/landing/pages/AboutPage";
 
 export const metadata = {
-  title: "About Us — EyeOn GPS Tracking Bangladesh",
-  description: "EyeOn GPS Tracking Service is a trusted and affordable vehicle tracking and fleet management solution in Bangladesh since 2016.",
+  title: "About EyeOn",
+  description: "EyeOn is a child-safety tracker built in Bangladesh: a small wearable device and a Bengali app for parents and schools.",
 };
 
 export default function About() {

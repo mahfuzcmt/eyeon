@@ -10,7 +10,7 @@ import {
   VEHICLE_STATE_COLOR,
   type VehicleState,
 } from "@/lib/format";
-import { buildVehicleSvg } from "@/lib/vehicleIcons";
+import { buildPersonSvg } from "@/lib/personIcons";
 import { useSpeedLimits } from "@/hooks/useSpeedLimits";
 import { useTicker } from "@/hooks/useTicker";
 import type { DeviceGroupView, DeviceView, LocationView } from "@/types/domain";
@@ -332,7 +332,7 @@ export function DeviceList({
           value={sortKey}
           onChange={(e) => setSortKey(e.target.value as SortKey)}
           className="h-7 rounded border border-surface-300 bg-white px-2 text-[14px] text-ink-700 focus:border-brand-500 focus:outline-none"
-          aria-label="Sort vehicles"
+          aria-label={t("list.sort")}
         >
           {(Object.keys(SORT_LABEL) as SortKey[]).map((k) => (
             <option key={k} value={k}>{t(SORT_LABEL[k])}</option>
@@ -465,7 +465,7 @@ function VehicleRow({ row, selected, visible, onSelect, onToggleVisible, onActio
   const status = rowStatus(row, t);
   const iconColor = overspeed ? OVERSPEED_COLOR : VEHICLE_STATE_COLOR[state];
   const online = ONLINE_STATES.has(state);
-  const icon = useMemo(() => buildVehicleSvg(device.vehicleType, iconColor, 0, 14), [device.vehicleType, iconColor]);
+  const icon = useMemo(() => buildPersonSvg(device.vehicleType, iconColor, null, 14), [device.vehicleType, iconColor]);
 
   return (
     <div

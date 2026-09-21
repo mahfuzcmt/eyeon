@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useDevices } from "@/hooks/useDevices";
 import { useLiveLocations } from "@/hooks/useLiveLocations";
-import { useTrips } from "@/hooks/useTrips";
+import { useActivity } from "@/hooks/useActivity";
 import { useSession } from "@/lib/session-context";
 import { useLocale, type StringKey } from "@/lib/i18n";
 import {
@@ -46,23 +46,7 @@ export default function HomePage() {
 
   // Fixed "today" window for the session; a page reload re-anchors it.
   const range = useMemo(() => ({ from: dhakaTodayStartIso(), to: new Date().toISOString() }), []);
-  const { trips, loading } = useTrips({ imei: selImei || undefined, fromIso: range.from, toIso: range.to });
-
-  const stats = useMemo(() => {
-    const distanceM = trips.reduce((s, t) => s + t.distanceM, 0);
-    const durationS = trips.reduce((s, t) => s + (t.durationS ?? 0), 0);
-    const idleS = trips.reduce((s, t) => s + t.idleTimeS, 0);
-    const maxSpeed = trips.reduce((m, t) => Math.max(m, t.maxSpeed), 0);
-    const elapsedS = Math.max(0, (Date.now() - new Date(range.from).getTime()) / 1000);
-    return {
-      distanceM,
-      moveS: Math.max(0, durationS - idleS),
-      idleS,
-      stopS: Math.max(0, elapsedS - durationS),
-      maxSpeed,
-      trips: trips.length,
-    };
-  }, [trips, range.from]);
+  const { activity, loading } = useActivity({ imei: selImei || null, fromIso: range.from, toIso: range.to });
 
   return (
     <div className="h-full overflow-y-auto bg-surface-50 p-4">
@@ -118,21 +102,13 @@ export default function HomePage() {
                 <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
                   <Tile
                     label={t("home.routeLength")}
-                    value={`${formatNumber(stats.distanceM / 1000, locale, { maximumFractionDigits: 1 })} ${t("kpi.km")}`}
+                    value={`${formatNumber(activity.distanceM / 1000, locale, { maximumFractionDigits: 1 })} ${t("kpi.km")}`}
                     loading={loading}
                   />
-                  <Tile
-                    label={t("home.topSpeed")}
-                    value={`${formatNumber(stats.maxSpeed, locale)} ${t("fleet.kmh")}`}
-                    loading={loading}
-                  />
-                  <Tile label={t("home.trips")} value={formatNumber(stats.trips, locale)} loading={loading} />
-                  <Tile label={t("home.moveDuration")} value={formatDurationS(stats.moveS, locale)} loading={loading} />
-                  <Tile label={t("home.idleDuration")} value={formatDurationS(stats.idleS, locale)} loading={loading} />
-                  <Tile label={t("home.stopDuration")} value={formatDurationS(stats.stopS, locale)} loading={loading} />
+                  <Tile label={t("home.moveDuration")} value={formatDurationS(activity.movingS, locale)} loading={loading} />
+                  <Tile label={t("home.stopDuration")} value={formatDurationS(activity.stillS, locale)} loading={loading} />
                 </div>
 
-                <p className="text-[12px] text-ink-400">{t("home.fuelNote")}</p>
               </>
             )}
           </div>

@@ -139,7 +139,7 @@ export function DeviceDetailPanel({ device, location, onClose }: Props) {
         )}
         {device.vehiclePlate && (
           <div className="data-row">
-            <dt>Plate</dt>
+            <dt>{t("veh.plate")}</dt>
             <dd className="font-mono">{device.vehiclePlate}</dd>
           </div>
         )}

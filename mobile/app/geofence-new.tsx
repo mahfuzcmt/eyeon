@@ -73,7 +73,7 @@ export default function GeofenceNewScreen() {
             lng: l.longitude,
             course: l.course,
             color: colors.textFaint,
-            label: d?.vehiclePlate ?? d?.name ?? l.imei.slice(-6),
+            label: d?.name ?? d?.vehiclePlate ?? l.imei.slice(-6),
           };
         }),
     [locations, byImei],
@@ -168,7 +168,7 @@ export default function GeofenceNewScreen() {
           {devices.map((d) => (
             <Chip
               key={d.imei}
-              label={d.vehiclePlate ?? d.name ?? d.imei.slice(-6)}
+              label={d.name ?? d.vehiclePlate ?? d.imei.slice(-6)}
               active={imeis.has(d.imei)}
               onPress={() => toggleImei(d.imei)}
             />

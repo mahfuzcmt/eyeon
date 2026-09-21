@@ -28,7 +28,7 @@ const STRINGS = {
   // ── Tabs ──────────────────────────────────────────────────────────
   "tab.home": { en: "Home", bn: "হোম" },
   "tab.map": { en: "Map", bn: "মানচিত্র" },
-  "tab.vehicles": { en: "Vehicles", bn: "যানবাহন" },
+  "tab.vehicles": { en: "People", bn: "সদস্য" },
   "tab.alerts": { en: "Alerts", bn: "সতর্কতা" },
   "tab.more": { en: "More", bn: "আরও" },
   "more.language": { en: "Language", bn: "ভাষা" },
@@ -39,50 +39,50 @@ const STRINGS = {
   "auth.password": { en: "Password", bn: "পাসওয়ার্ড" },
   "auth.loginFailed": { en: "Invalid email or password", bn: "ভুল ইমেইল বা পাসওয়ার্ড" },
   "auth.signOut": { en: "Sign out", bn: "সাইন আউট" },
-  "auth.tagline": { en: "Fleet tracking", bn: "ফ্লিট ট্র্যাকিং" },
+  "auth.tagline": { en: "Family safety tracking", bn: "পরিবারের নিরাপত্তায়" },
 
   // ── Home ──────────────────────────────────────────────────────────
-  "home.fleetStatus": { en: "Fleet Status", bn: "ফ্লিট অবস্থা" },
+  "home.fleetStatus": { en: "Overview", bn: "সারসংক্ষেপ" },
   "home.alarmsToday": { en: "Alarms today", bn: "আজকের অ্যালার্ম" },
   "home.unacked": { en: "Unacknowledged", bn: "অস্বীকৃত" },
   "home.tripsToday": { en: "Trips today", bn: "আজকের ট্রিপ" },
-  "home.fleetDistance": { en: "Fleet distance", bn: "ফ্লিট দূরত্ব" },
+  "home.fleetDistance": { en: "Distance today", bn: "আজকের দূরত্ব" },
   "home.geofences": { en: "Geofences", bn: "জিও-ফেন্স" },
-  "home.vehicleStats": { en: "Single Vehicle Stats", bn: "একক যানবাহন পরিসংখ্যান" },
-  "home.selectVehicle": { en: "Select a vehicle", bn: "যানবাহন নির্বাচন করুন" },
-  "home.routeLength": { en: "Route length", bn: "রুট দৈর্ঘ্য" },
+  "home.vehicleStats": { en: "One person's day", bn: "একজনের আজকের তথ্য" },
+  "home.selectVehicle": { en: "Choose a person", bn: "একজনকে বেছে নিন" },
+  "home.routeLength": { en: "Distance covered", bn: "মোট পথ" },
   "home.moveDuration": { en: "Move duration", bn: "চলার সময়" },
-  "home.idleDuration": { en: "Idle duration", bn: "নিষ্ক্রিয় সময়" },
-  "home.stopDuration": { en: "Stop duration", bn: "থামার সময়" },
+  "home.idleDuration": { en: "Paused time", bn: "থেমে থাকার সময়" },
+  "home.stopDuration": { en: "Time in one place", bn: "এক জায়গায় থাকার সময়" },
   "home.topSpeed": { en: "Top speed", bn: "সর্বোচ্চ গতি" },
   "home.trips": { en: "Trips", bn: "ট্রিপ" },
   "home.loading": { en: "Loading dashboard…", bn: "ড্যাশবোর্ড লোড হচ্ছে…" },
-  "home.fleet": { en: "Fleet", bn: "ফ্লিট" },
+  "home.fleet": { en: "Everyone", bn: "সবাই" },
   "home.geofenceSub": {
-    en: "Zone entry/exit alerts for your vehicles",
-    bn: "আপনার যানবাহনের জোনে প্রবেশ/প্রস্থান সতর্কতা",
+    en: "Alerts when someone enters or leaves a zone",
+    bn: "কেউ জোনে ঢুকলে বা বের হলে সতর্কতা",
   },
-  "home.noVehicles": { en: "No vehicles yet.", bn: "এখনও কোনো যানবাহন নেই।" },
+  "home.noVehicles": { en: "No one added yet.", bn: "এখনও কাউকে যোগ করা হয়নি।" },
   "home.loadingToday": { en: "Loading today…", bn: "আজকের তথ্য লোড হচ্ছে…" },
-  "home.openVehicle": { en: "Open vehicle →", bn: "যানবাহন খুলুন →" },
+  "home.openVehicle": { en: "See details →", bn: "বিস্তারিত দেখুন →" },
 
   // ── Motion states ─────────────────────────────────────────────────
-  "state.moving": { en: "Moving", bn: "চলমান" },
-  "state.idle": { en: "Idle", bn: "নিষ্ক্রিয়" },
-  "state.stopped": { en: "Stopped", bn: "থেমে আছে" },
+  "state.moving": { en: "Moving", bn: "চলছে" },
+  "state.idle": { en: "Paused", bn: "থেমে আছে" },
+  "state.stopped": { en: "Still", bn: "এক জায়গায়" },
   "state.offline": { en: "Offline", bn: "অফলাইন" },
   "state.overspeed": { en: "Overspeed", bn: "অতিরিক্ত গতি" },
 
   // ── Vehicles ──────────────────────────────────────────────────────
-  "veh.search": { en: "Search plate, name or IMEI", bn: "প্লেট, নাম বা IMEI খুঁজুন" },
-  "veh.noneMatch": { en: "No vehicles match.", bn: "কোনো যানবাহন মেলেনি।" },
-  "veh.loading": { en: "Loading vehicles…", bn: "যানবাহন লোড হচ্ছে…" },
+  "veh.search": { en: "Search by name", bn: "নাম দিয়ে খুঁজুন" },
+  "veh.noneMatch": { en: "No one matches.", bn: "কাউকে পাওয়া যায়নি।" },
+  "veh.loading": { en: "Loading people…", bn: "সদস্য লোড হচ্ছে…" },
   "veh.ignitionOn": { en: "Ignition ON", bn: "ইগনিশন চালু" },
   "veh.ignitionOff": { en: "Ignition OFF", bn: "ইগনিশন বন্ধ" },
   "veh.lastSeen": { en: "Last seen", bn: "সর্বশেষ দেখা" },
-  "veh.parkedFor": { en: "Parked for", bn: "পার্কিং সময়" },
+  "veh.parkedFor": { en: "In one place for", bn: "এক জায়গায় আছে" },
   "veh.kmh": { en: "km/h", bn: "কিমি/ঘ" },
-  "veh.noneInAccount": { en: "No vehicles in this account.", bn: "এই অ্যাকাউন্টে কোনো যানবাহন নেই।" },
+  "veh.noneInAccount": { en: "No one added yet.", bn: "এখনও কাউকে যোগ করা হয়নি।" },
 
   // ── Subscription ──────────────────────────────────────────────────
   "sub.title": { en: "Subscription", bn: "সাবস্ক্রিপশন" },
@@ -92,7 +92,7 @@ const STRINGS = {
   "sub.expiringSoon": { en: "Subscription expires soon", bn: "সাবস্ক্রিপশন শীঘ্রই শেষ হবে" },
   "sub.renewNote": {
     en: "Contact EyeOn to renew and keep tracking.",
-    bn: "ট্র্যাকিং চালু রাখতে নবায়নের জন্য মটোলিংকের সাথে যোগাযোগ করুন।",
+    bn: "ট্র্যাকিং চালু রাখতে নবায়নের জন্য EyeOn-এর সাথে যোগাযোগ করুন।",
   },
 
   // ── Device detail tabs ────────────────────────────────────────────
@@ -114,8 +114,8 @@ const STRINGS = {
   "ctrl.model": { en: "Model", bn: "মডেল" },
   "ctrl.protocol": { en: "Protocol", bn: "প্রোটোকল" },
   "ctrl.sim": { en: "SIM Number", bn: "সিম নম্বর" },
-  "ctrl.plate": { en: "Plate", bn: "প্লেট" },
-  "ctrl.type": { en: "Vehicle Type", bn: "যানবাহনের ধরন" },
+  "ctrl.plate": { en: "Class / ID", bn: "শ্রেণি / আইডি" },
+  "ctrl.type": { en: "Type", bn: "ধরন" },
   "ctrl.engineControl": { en: "Engine Control", bn: "ইঞ্জিন নিয়ন্ত্রণ" },
   "ctrl.engineState": { en: "Engine State", bn: "ইঞ্জিন অবস্থা" },
   "ctrl.cutEngine": { en: "Cut Engine", bn: "ইঞ্জিন বন্ধ" },
@@ -188,7 +188,7 @@ const STRINGS = {
   "hist.end": { en: "End", bn: "শেষ" },
 
   // ── Calendar tab (daily mileage) ──────────────────────────────────
-  "cal.dailyMileage": { en: "Daily mileage", bn: "দৈনিক মাইলেজ" },
+  "cal.dailyMileage": { en: "Daily distance", bn: "প্রতিদিনের দূরত্ব" },
   "cal.tapDay": { en: "Tap a day to see its summary.", bn: "সারাংশ দেখতে একটি দিনে চাপুন।" },
   "cal.monthTotal": { en: "Month total", bn: "মাসের মোট" },
   "cal.startTime": { en: "Start time", bn: "শুরুর সময়" },
@@ -236,9 +236,9 @@ const STRINGS = {
   "geo.deleteTitle": { en: "Delete geofence?", bn: "জিও-ফেন্স মুছবেন?" },
   "geo.deleteMsg": { en: "will stop firing alerts.", bn: "আর সতর্কতা পাঠাবে না।" },
   "geo.name": { en: "Name", bn: "নাম" },
-  "geo.namePlaceholder": { en: "e.g. Home parking", bn: "যেমন: বাড়ির পার্কিং" },
+  "geo.namePlaceholder": { en: "e.g. Playground", bn: "যেমন: খেলার মাঠ" },
   "geo.notify": { en: "Notify", bn: "বিজ্ঞপ্তি" },
-  "geo.watchVehicles": { en: "Vehicles to watch", bn: "নজরদারির যানবাহন" },
+  "geo.watchVehicles": { en: "Who is this for?", bn: "কার জন্য?" },
   "geo.create": { en: "Create geofence", bn: "জিও-ফেন্স তৈরি করুন" },
   "geo.tapCenter": {
     en: "Tap the map to place the zone center",
@@ -247,11 +247,24 @@ const STRINGS = {
   "geo.centerSet": { en: "Center set", bn: "কেন্দ্র নির্ধারিত" },
   "geo.errName": { en: "Give the geofence a name.", bn: "জিও-ফেন্সের একটি নাম দিন।" },
   "geo.errVehicles": {
-    en: "Select at least one vehicle to watch.",
-    bn: "নজরদারির জন্য অন্তত একটি যানবাহন নির্বাচন করুন।",
+    en: "Choose at least one person.",
+    bn: "অন্তত একজনকে বেছে নিন।",
   },
 
   "geo.noAlerts": { en: "alerts off", bn: "অ্যালার্ট বন্ধ" },
+
+  // ── Day history (route playback + timeline; EyeOn has no trips) ───
+  "hist.timeline": { en: "Timeline", bn: "সারাদিনের তথ্য" },
+  "hist.noData": { en: "No location recorded in this period.", bn: "এই সময়ে কোনো লোকেশন পাওয়া যায়নি।" },
+  "hist.noEvents": {
+    en: "No arrivals or departures in this period. Add trusted places to see them here.",
+    bn: "এই সময়ে কোথাও পৌঁছানো বা বের হওয়ার তথ্য নেই। বিশ্বস্ত জায়গা যোগ করলে এখানে দেখা যাবে।",
+  },
+  "hist.event.PLACE_ARRIVED": { en: "Arrived", bn: "পৌঁছানো" },
+  "hist.event.PLACE_LEFT": { en: "Left", bn: "বের হওয়া" },
+  "hist.event.GEOFENCE_EXIT": { en: "Left the safe area", bn: "নিরাপদ এলাকার বাইরে" },
+  "hist.event.GEOFENCE_ENTER": { en: "Back in the safe area", bn: "আবার নিরাপদ এলাকায়" },
+  "hist.event.SOS": { en: "SOS pressed", bn: "SOS চাপা হয়েছে" },
 
   // ── Trusted places ────────────────────────────────────────────────
   "home.places": { en: "Trusted places", bn: "বিশ্বস্ত জায়গা" },
@@ -313,7 +326,7 @@ const STRINGS = {
   "stats.loading": { en: "Loading statistics…", bn: "পরিসংখ্যান লোড হচ্ছে…" },
   "stats.today": { en: "Today (Asia/Dhaka)", bn: "আজ (ঢাকা সময়)" },
   "stats.current": { en: "Current", bn: "বর্তমান" },
-  "stats.odometer": { en: "Odometer", bn: "ওডোমিটার" },
+  "stats.odometer": { en: "Total distance", bn: "মোট দূরত্ব" },
   "stats.engineHours": { en: "Engine hrs", bn: "ইঞ্জিন ঘণ্টা" },
   "stats.location": { en: "Location", bn: "অবস্থান" },
   "stats.deviceHealth": { en: "Device health", bn: "ডিভাইসের স্বাস্থ্য" },

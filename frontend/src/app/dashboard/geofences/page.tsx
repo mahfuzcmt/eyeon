@@ -291,7 +291,7 @@ export default function Page() {
                       <input
                         type="text"
                         className="input flex-1 text-[15px]"
-                        placeholder="Search by name, plate, or IMEI..."
+                        placeholder={t("common.searchPlaceholder")}
                         value={deviceSearch}
                         onChange={(e) => setDeviceSearch(e.target.value)}
                       />

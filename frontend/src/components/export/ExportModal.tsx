@@ -19,19 +19,9 @@ const EXPORT_TYPES: { value: ExportType; label: { en: string; bn: string }; desc
     description: { en: "Export all devices with current status", bn: "সব ডিভাইসের বর্তমান অবস্থা" },
   },
   {
-    value: "trips",
-    label: { en: "Trips Report", bn: "ট্রিপ রিপোর্ট" },
-    description: { en: "Export completed trips within date range", bn: "নির্দিষ্ট তারিখের ট্রিপ" },
-  },
-  {
     value: "alarms",
     label: { en: "Alarms Report", bn: "অ্যালার্ম রিপোর্ট" },
     description: { en: "Export all alarms within date range", bn: "নির্দিষ্ট তারিখের অ্যালার্ম" },
-  },
-  {
-    value: "monthly-summary",
-    label: { en: "Monthly Summary", bn: "মাসিক সারাংশ" },
-    description: { en: "Daily driving summary for a month", bn: "মাসের দৈনিক ড্রাইভিং সারাংশ" },
   },
   {
     value: "locations",

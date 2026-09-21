@@ -125,7 +125,7 @@ function VehicleCard({
     >
       <View style={styles.cardTop}>
         <Text style={[styles.plate, overspeed && styles.plateOverspeed]}>
-          {device.vehiclePlate ?? device.name ?? device.imei}
+          {device.name ?? device.vehiclePlate ?? device.imei}
         </Text>
         <Text style={[styles.speed, overspeed && styles.plateOverspeed]}>
           {speed} {t("veh.kmh")}

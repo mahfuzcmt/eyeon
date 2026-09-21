@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { forgotPassword, resetPassword } from "@/lib/auth";
 import { useLocale } from "@/lib/i18n";
 import { LanguageToggle } from "@/components/shell/LanguageToggle";
-import { EyeOnLogoInline } from "@/components/marketing/EyeOnLogo";
+import { EyeOnLogoInline } from "@/components/brand/EyeOnLogo";
 
 type Step = "email" | "code" | "done";
 

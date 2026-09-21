@@ -51,7 +51,6 @@ const NAV_SECTIONS: NavSection[] = [
     children: [
       { href: "/dashboard/home", label: "nav.home", icon: <HomeIcon /> },
       { href: "/dashboard/reports", label: "nav.reports", icon: <ReportIcon /> },
-      { href: "/dashboard/trips", label: "nav.trips", icon: <TripsIcon /> },
     ],
   },
   {
@@ -62,11 +61,9 @@ const NAV_SECTIONS: NavSection[] = [
     activeColor: "#0C5A4D",
     children: [
       { href: "/dashboard/devices", label: "nav.vehicles", icon: <DeviceIcon /> },
-      { href: "/dashboard/drivers", label: "nav.drivers", icon: <DriverIcon /> },
       { href: "/dashboard/geofences", label: "nav.geofences", icon: <GeofenceIcon /> },
       { href: "/dashboard/alarms", label: "nav.alarms", icon: <AlarmIcon /> },
       { href: "/dashboard/rules", label: "nav.rules", icon: <RulesIcon /> },
-      { href: "/dashboard/scheduled", label: "nav.scheduled", icon: <ScheduledIcon /> },
       { href: "/dashboard/settings", label: "nav.settings", icon: <SettingsIcon /> },
       { href: "/dashboard/audit-log", label: "nav.auditLog", icon: <AuditIcon />, adminOnly: true },
     ],
@@ -426,30 +423,11 @@ function DeviceIcon() {
   );
 }
 
-function DriverIcon() {
-  return (
-    <svg {...ICON_PROPS} width="16" height="16">
-      <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-      <circle cx="9" cy="7" r="4" />
-    </svg>
-  );
-}
-
 function GeofenceIcon() {
   return (
     <svg {...ICON_PROPS} width="16" height="16">
       <path d="M4 8 12 4l8 4v8l-8 4-8-4V8Z" />
       <circle cx="12" cy="12" r="2" />
-    </svg>
-  );
-}
-
-function TripsIcon() {
-  return (
-    <svg {...ICON_PROPS} width="16" height="16">
-      <path d="M5 18c4-8 10-8 14 0" />
-      <circle cx="5" cy="18" r="2" />
-      <circle cx="19" cy="18" r="2" />
     </svg>
   );
 }
@@ -477,15 +455,6 @@ function RulesIcon() {
     <svg {...ICON_PROPS} width="16" height="16">
       <path d="M9 11l3 3L22 4" />
       <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
-    </svg>
-  );
-}
-
-function ScheduledIcon() {
-  return (
-    <svg {...ICON_PROPS} width="16" height="16">
-      <circle cx="12" cy="12" r="9" />
-      <path d="M12 7v5l3 2" />
     </svg>
   );
 }

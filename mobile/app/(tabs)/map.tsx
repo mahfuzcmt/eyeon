@@ -57,7 +57,7 @@ export default function MapScreen() {
         lng: loc.longitude,
         course: loc.course,
         color: overspeed ? colors.danger : motionColor(motion),
-        label: d?.vehiclePlate ?? d?.name ?? loc.imei.slice(-6),
+        label: d?.name ?? d?.vehiclePlate ?? loc.imei.slice(-6),
         vehicleType: d?.vehicleType,
         iconColor: d?.iconColor,
         overspeed,

@@ -30,7 +30,7 @@ import {
   type VehicleState,
   formatBatteryPercent,
 } from "@/lib/format";
-import { buildVehicleSvg, getIconDimensions, noseOffset } from "@/lib/vehicleIcons";
+import { buildPersonSvg, getIconDimensions, noseOffset } from "@/lib/personIcons";
 import { useSpeedLimits } from "@/hooks/useSpeedLimits";
 import { useLocale } from "@/lib/i18n";
 import type { DeviceView, LocationView } from "@/types/domain";
@@ -323,9 +323,9 @@ function gpsQualityInfo(location: LocationView | undefined, device: DeviceView |
     return { status: "Never Connected", color: "#6B7280", icon: "○" };
   }
   if (noFix && stale) {
-    // Device hasn't reported valid GPS in a while - show "Parked" or time since last seen
+    // No valid GPS fix for a while (typically indoors): say so, with how long ago it was seen
     const since = ts ? formatSince(ts) : "";
-    return { status: since ? `Parked · ${since} ago` : "Parked", color: "#6B7280", icon: "P" };
+    return { status: since ? `Indoors / no GPS · ${since} ago` : "Indoors / no GPS", color: "#6B7280", icon: "P" };
   }
   if (noFix) {
     // Device is communicating but no GPS fix - likely indoors or weak signal
@@ -390,7 +390,7 @@ function createVehicleIcon(
   ` : '';
 
   return L.divIcon({
-    html: `<div style="position: relative;">${buildVehicleSvg(vehicleType, isOverspeed ? OVERSPEED_COLOR : bodyColor, rotation, baseSize)}${warningBadge}</div>`,
+    html: `<div style="position: relative;">${buildPersonSvg(vehicleType, isOverspeed ? OVERSPEED_COLOR : bodyColor, isMoving ? rotation : null, baseSize)}${warningBadge}</div>`,
     className: classes,
     iconSize: [width, height],
     iconAnchor: [width / 2, height / 2], // Center anchor for top-down view
@@ -400,7 +400,7 @@ function createVehicleIcon(
 
 // Compact plate label: name, speed chip when moving, GPS warning when not live.
 function plateLabelHtml(device: DeviceView | undefined, location: LocationView | LiveLocationView | undefined, stateColor: string): string {
-  const text = esc(device?.vehiclePlate || device?.name || device?.imei.slice(-8) || "—");
+  const text = esc(device?.name || device?.vehiclePlate || device?.imei.slice(-8) || "—");
   const speed = filterSpeed(location?.speed, location?.valid);
   const gpsInfo = gpsQualityInfo(location, device);
   const warning = gpsInfo.status !== "Live"
@@ -1409,7 +1409,7 @@ export function FleetMap({ devices, locations, selectedImei, onSelect, onRefresh
                 ? "!bg-brand-500/90 !border-brand-400/50 text-white"
                 : "text-ink-900"
             }`}
-            title={autoFollow ? "Map follows selected vehicle" : "Click to follow selected vehicle"}
+            title={autoFollow ? "Map follows the selected person" : "Click to follow the selected person"}
           >
             <input
               type="checkbox"

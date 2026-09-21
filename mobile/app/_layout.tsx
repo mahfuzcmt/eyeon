@@ -22,7 +22,7 @@ export default function RootLayout() {
             name="device/[imei]"
             options={{
               headerShown: true,
-              headerTitle: "Vehicle",
+              headerTitle: "",
               headerStyle: { backgroundColor: colors.surface },
               headerTintColor: colors.text,
             }}
@@ -31,7 +31,7 @@ export default function RootLayout() {
             name="places"
             options={{
               headerShown: true,
-              headerTitle: "Trusted places",
+              headerTitle: "",
               headerStyle: { backgroundColor: colors.surface },
               headerTintColor: colors.text,
             }}
@@ -49,7 +49,7 @@ export default function RootLayout() {
             name="geofences"
             options={{
               headerShown: true,
-              headerTitle: "Geofences",
+              headerTitle: "",
               headerStyle: { backgroundColor: colors.surface },
               headerTintColor: colors.text,
             }}
@@ -58,7 +58,7 @@ export default function RootLayout() {
             name="geofence-new"
             options={{
               headerShown: true,
-              headerTitle: "New geofence",
+              headerTitle: "",
               headerStyle: { backgroundColor: colors.surface },
               headerTintColor: colors.text,
             }}

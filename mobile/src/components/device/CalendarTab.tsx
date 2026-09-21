@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
-import { tripsForDevice } from "@/api/endpoints";
+import { deviceDailyActivity } from "@/api/endpoints";
 import {
   addDays,
   daysInMonth,
@@ -11,10 +11,10 @@ import {
   weekday,
   type DayParts,
 } from "@/dateRange";
-import { fmtDistance } from "@/format";
+import { fmtDistance, fmtDuration } from "@/format";
 import { useI18n } from "@/i18n";
 import { colors, radius, space } from "@/theme";
-import type { TripView } from "@/types";
+import type { ActivityDay } from "@/types";
 
 // Saturday-first week (Bangladesh convention) — same as DateRangePicker.
 const WD = ["Sa", "Su", "Mo", "Tu", "We", "Th", "Fr"];
@@ -22,17 +22,16 @@ const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "
 
 interface DayAgg {
   distanceM: number;
-  trips: number;
-  maxSpeed: number;
+  movingS: number;
 }
 
-/** AutoNemo-style calendar mileage view: per-day km in a month grid. */
+/** Month grid of per-day distance, from location-derived activity (EyeOn has no trips). */
 export default function CalendarTab({ imei }: { imei: string }) {
   const { t } = useI18n();
   const today = dhakaParts();
   const [view, setView] = useState({ y: today.y, m: today.m });
   const [selected, setSelected] = useState<DayParts | null>(null);
-  const [trips, setTrips] = useState<TripView[]>([]);
+  const [days, setDays] = useState<ActivityDay[]>([]);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -41,12 +40,12 @@ export default function CalendarTab({ imei }: { imei: string }) {
     const start: DayParts = { y: view.y, m: view.m, d: 1 };
     const end: DayParts = { y: view.y, m: view.m, d: daysInMonth(view.y, view.m) };
     const range = rangeFromDays(start, end, "");
-    tripsForDevice(imei, range.fromIso, range.toIso)
+    deviceDailyActivity(imei, range.fromIso, range.toIso)
       .then((r) => {
-        if (!cancelled) setTrips(r);
+        if (!cancelled) setDays(r);
       })
       .catch(() => {
-        if (!cancelled) setTrips([]);
+        if (!cancelled) setDays([]);
       })
       .finally(() => {
         if (!cancelled) setLoading(false);
@@ -58,17 +57,14 @@ export default function CalendarTab({ imei }: { imei: string }) {
 
   const byDay = useMemo(() => {
     const m = new Map<number, DayAgg>();
-    for (const tr of trips) {
-      const p = dhakaParts(new Date(tr.startedAt).getTime());
-      if (p.y !== view.y || p.m !== view.m) continue;
-      const agg = m.get(p.d) ?? { distanceM: 0, trips: 0, maxSpeed: 0 };
-      agg.distanceM += tr.distanceM;
-      agg.trips += 1;
-      agg.maxSpeed = Math.max(agg.maxSpeed, tr.maxSpeed);
-      m.set(p.d, agg);
+    // `date` is already an Asia/Dhaka calendar day (YYYY-MM-DD) from the backend.
+    for (const day of days) {
+      const [y, mo, d] = day.date.split("-").map(Number);
+      if (y !== view.y || mo !== view.m) continue;
+      m.set(d, { distanceM: day.distanceM, movingS: day.movingS });
     }
     return m;
-  }, [trips, view]);
+  }, [days, view]);
 
   const monthTotal = useMemo(() => {
     let d = 0;
@@ -154,8 +150,7 @@ export default function CalendarTab({ imei }: { imei: string }) {
         ) : (
           <View style={styles.sumRow}>
             <Summary label={t("hist.distance")} value={fmtDistance(sel?.distanceM ?? 0)} />
-            <Summary label={t("home.trips")} value={String(sel?.trips ?? 0)} />
-            <Summary label={t("home.topSpeed")} value={`${sel?.maxSpeed ?? 0} ${t("veh.kmh")}`} />
+            <Summary label={t("home.moveDuration")} value={fmtDuration(sel?.movingS ?? 0)} />
           </View>
         )}
       </View>

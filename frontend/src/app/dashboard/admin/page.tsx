@@ -422,7 +422,7 @@ function DevicesTab() {
           <thead className="border-b border-surface-200 bg-surface-50">
             <tr>
               <th className="px-4 py-2 font-medium text-ink-700">IMEI</th>
-              <th className="px-4 py-2 font-medium text-ink-700">Name/Plate</th>
+              <th className="px-4 py-2 font-medium text-ink-700">Name / class</th>
               <th className="px-4 py-2 font-medium text-ink-700">Organization</th>
               <th className="px-4 py-2 font-medium text-ink-700">Status</th>
               <th className="px-4 py-2 font-medium text-ink-700">Last Seen</th>

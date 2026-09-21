@@ -6,7 +6,7 @@ import Link from "next/link";
 import { login } from "@/lib/auth";
 import { useLocale } from "@/lib/i18n";
 import { LanguageToggle } from "@/components/shell/LanguageToggle";
-import { EyeOnLogoInline } from "@/components/marketing/EyeOnLogo";
+import { EyeOnLogoInline } from "@/components/brand/EyeOnLogo";
 
 export default function LoginPage() {
   const router = useRouter();

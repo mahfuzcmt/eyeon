@@ -1,5 +1,7 @@
 import { api } from "./client";
 import type {
+  ActivityDay,
+  ActivitySummary,
   AlarmRuleView,
   AlarmView,
   CommandResponse,
@@ -13,7 +15,6 @@ import type {
   LoginResponse,
   OrgSummary,
   PlaceType,
-  TripView,
 } from "@/types";
 
 // ----- Auth -----
@@ -93,7 +94,7 @@ export async function lastKnownAll(): Promise<LocationView[]> {
   return r.data;
 }
 
-/** Historical points for one device in a time range — trip playback. */
+/** Historical points for one person in a time range — route playback. */
 export async function locationHistory(
   imei: string,
   fromIso: string,
@@ -106,15 +107,21 @@ export async function locationHistory(
   return r.data;
 }
 
-// ----- Trips (moving history) -----
-export async function tripsForDevice(
-  imei: string,
-  fromIso: string,
-  toIso: string,
-): Promise<TripView[]> {
-  const r = await api.get<TripView[]>(`/trips/device/${imei}`, {
-    params: { from: fromIso, to: toIso },
-  });
+// ----- Activity (derived from location points; EyeOn has no trips) -----
+export async function deviceActivity(imei: string, fromIso: string, toIso: string): Promise<ActivitySummary> {
+  const r = await api.get<ActivitySummary>(`/devices/${imei}/activity`, { params: { from: fromIso, to: toIso } });
+  return r.data;
+}
+
+/** One row per Asia/Dhaka calendar day that has data. */
+export async function deviceDailyActivity(imei: string, fromIso: string, toIso: string): Promise<ActivityDay[]> {
+  const r = await api.get<ActivityDay[]>(`/devices/${imei}/activity/daily`, { params: { from: fromIso, to: toIso } });
+  return r.data;
+}
+
+/** Alarms for one person in a range — feeds the day timeline (arrived / left / SOS). */
+export async function alarmsForDevice(imei: string, fromIso: string, toIso: string): Promise<AlarmView[]> {
+  const r = await api.get<AlarmView[]>("/alarms", { params: { imei, from: fromIso, to: toIso, limit: 500 } });
   return r.data;
 }
 

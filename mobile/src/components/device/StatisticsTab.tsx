@@ -27,17 +27,12 @@ export default function StatisticsTab({ imei, orgId }: { imei: string; orgId: st
     >
       <Section title={t("stats.today")}>
         <Metric label={t("hist.distance")} value={fmtDistance(stats.distanceM)} />
-        <Metric label={t("home.trips")} value={String(stats.trips)} />
-        <Metric label={t("hist.maxSpeed")} value={`${stats.maxSpeed} ${t("veh.kmh")}`} />
-        <Metric label={t("hist.avgSpeed")} value={`${stats.avgSpeed} ${t("veh.kmh")}`} />
         <Metric label={t("home.moveDuration")} value={fmtDuration(stats.moveS)} />
-        <Metric label={t("home.idleDuration")} value={fmtDuration(stats.idleS)} />
+        <Metric label={t("home.stopDuration")} value={fmtDuration(stats.stillS)} />
       </Section>
 
       <Section title={t("stats.current")}>
         <Metric label={t("graph.speed")} value={`${loc?.speed ?? device?.lastSpeed ?? 0} ${t("veh.kmh")}`} />
-        <Metric label={t("stats.odometer")} value={fmtDistance(loc?.mileageMeters)} />
-        <Metric label={t("stats.engineHours")} value={fmtDuration(device?.lastEngineHoursSeconds)} />
         <Metric
           label={t("stats.location")}
           width="66%"

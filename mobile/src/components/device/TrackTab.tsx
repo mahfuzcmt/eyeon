@@ -43,7 +43,7 @@ export default function TrackTab({ imei, orgId }: { imei: string; orgId: string 
         lng: loc.longitude,
         course: loc.course,
         color: overspeed ? colors.danger : motionColor(motionOf(device, loc)),
-        label: device.vehiclePlate ?? device.name ?? imei.slice(-6),
+        label: device.name ?? device.vehiclePlate ?? imei.slice(-6),
         vehicleType: device.vehicleType,
         iconColor: device.iconColor,
         overspeed,

@@ -124,6 +124,18 @@ try:
     pend = psql(f"select is_inside, coalesce(pending_inside::text,'null') from geofence_states where geofence_id='{gid}' and device_imei='{IMEI}'")
     check("15 m past the edge is ignored (ST_DWithin buffer)", pend == "t|null", f"state={pend!r}")
 
+    # --- people, not vehicles: activity comes from location points and no trip is ever opened
+    code, d = call("GET", f"/devices/{IMEI}/activity")
+    act = unwrap(d)
+    check("activity summary from location points", code == 200 and isinstance(act, dict) and act.get("points", 0) > 0
+          and act.get("distanceM", -1) >= 0 and act.get("maxSpeed", 0) > 0, f"{code} {str(d)[:200]}")
+    code, d = call("GET", f"/devices/{IMEI}/activity/daily")
+    days = unwrap(d)
+    check("daily activity has today (Asia/Dhaka)", code == 200 and isinstance(days, list) and len(days) >= 1
+          and len(days[0].get("date", "")) == 10, f"{code} {str(d)[:200]}")
+    ntrips = psql(f"select count(*) from trips where device_imei='{IMEI}'")
+    check("no trips are created (eyeon.trips.enabled=false)", ntrips == "0", f"trips={ntrips}")
+
     code, d = call("PATCH", f"/geofences/{gid}", {"radiusM": 300})
     left = psql(f"select count(*) from geofence_states where geofence_id='{gid}'")
     check("reshaping resets state", code == 200 and left == "0", f"{code} rows={left}")

@@ -2,9 +2,9 @@
 
 import { useMemo, useState } from "react";
 import { useLocale } from "@/lib/i18n";
-import { useTrips } from "@/hooks/useTrips";
+import { useActivity } from "@/hooks/useActivity";
 import { useLocationHistory } from "@/hooks/useLocationHistory";
-import { cutFuel, restoreFuel, queryAddress, rebootDevice, sendRawCommand } from "@/lib/deviceCommands";
+import { queryAddress, rebootDevice, sendRawCommand } from "@/lib/deviceCommands";
 import { extractError } from "@/lib/api";
 import { dhakaTodayStartIso, filterSpeed, formatDurationS, formatNumber, formatSince, formatBatteryPercent } from "@/lib/format";
 import { TimeSeriesChart, chartColors } from "@/components/charts/TimeSeriesChart";
@@ -19,7 +19,8 @@ interface Props {
 }
 
 type TabId = "data" | "graph";
-type CommandTemplate = "custom" | "cut" | "restore" | "address" | "reboot";
+// No engine cut/restore here: EyeOn trackers are worn by people, not wired into a vehicle.
+type CommandTemplate = "custom" | "address" | "reboot";
 
 function formatDateTime(ts: string | null | undefined): string {
   if (!ts) return "—";
@@ -35,11 +36,6 @@ function formatDateTime(ts: string | null | undefined): string {
   }).replace(",", "");
 }
 
-function formatOdometer(meters: number | undefined | null): string {
-  if (meters == null) return "—";
-  return `${(meters / 1000).toFixed(0)} km`;
-}
-
 export function DeviceBottomPanel({ device, location, onClose, onViewHistory, onViewLiveTracking }: Props) {
   const { t, locale } = useLocale();
   const [activeTab, setActiveTab] = useState<TabId>("data");
@@ -50,23 +46,8 @@ export function DeviceBottomPanel({ device, location, onClose, onViewHistory, on
 
   // Today (Asia/Dhaka) — shared by the stats block and the graphs.
   const range = useMemo(() => ({ from: dhakaTodayStartIso(), to: new Date().toISOString() }), []);
-  const { trips } = useTrips({ imei: device.imei, fromIso: range.from, toIso: range.to });
-
-  const stats = useMemo(() => {
-    const distanceM = trips.reduce((s, tr) => s + tr.distanceM, 0);
-    const durationS = trips.reduce((s, tr) => s + (tr.durationS ?? 0), 0);
-    const idleS = trips.reduce((s, tr) => s + tr.idleTimeS, 0);
-    const maxSpeed = trips.reduce((m, tr) => Math.max(m, tr.maxSpeed), 0);
-    const avgSpeed = durationS > 0 ? Math.round(distanceM / 1000 / (durationS / 3600)) : 0;
-    const elapsedS = Math.max(0, (Date.now() - new Date(range.from).getTime()) / 1000);
-    return {
-      distanceM,
-      moveS: Math.max(0, durationS - idleS),
-      stopS: Math.max(0, elapsedS - durationS),
-      maxSpeed,
-      avgSpeed,
-    };
-  }, [trips, range.from]);
+  const { activity } = useActivity({ imei: device.imei, fromIso: range.from, toIso: range.to });
+  const stats = { distanceM: activity.distanceM, moveS: activity.movingS, stopS: activity.stillS, maxSpeed: activity.maxSpeed };
 
   // Graph data — only fetched while the Graph tab is open.
   const { locations: graphLocs, loading: graphLoading } = useLocationHistory(
@@ -95,15 +76,12 @@ export function DeviceBottomPanel({ device, location, onClose, onViewHistory, on
   async function sendCommand() {
     if (busy) return;
     if (template === "custom" && !rawText.trim()) return;
-    if (template === "cut" && !window.confirm(t("panel.confirmCut"))) return;
     if (template === "reboot" && !window.confirm(t("panel.confirmReboot"))) return;
     setBusy(true);
     setCmdMsg(null);
     try {
       const res =
-        template === "cut" ? await cutFuel(device.imei)
-        : template === "restore" ? await restoreFuel(device.imei)
-        : template === "address" ? await queryAddress(device.imei)
+        template === "address" ? await queryAddress(device.imei)
         : template === "reboot" ? await rebootDevice(device.imei)
         : await sendRawCommand(device.imei, rawText.trim());
       setCmdMsg(res.ok ? res.reply ?? t("panel.commandSent") : res.error ?? t("panel.commandFailed"));
@@ -177,25 +155,22 @@ export function DeviceBottomPanel({ device, location, onClose, onViewHistory, on
         <div className="flex max-h-[50vh] flex-col divide-y divide-surface-200 overflow-y-auto md:max-h-none md:flex-row md:divide-x md:divide-y-0 md:overflow-visible">
           {/* Left data columns */}
           <div className="flex-1 grid grid-cols-1 gap-x-8 p-3 sm:grid-cols-2">
-            <DataRow icon="001" label="Odometer" value={formatOdometer(location?.mileageMeters)} />
-            <DataRow icon="📱" label="SIM card num..." value={device.simMsisdn || "—"} mono />
-            <DataRow icon="📶" label="Status" value={status} valueColor={isMoving ? "text-status-moving" : !isOnline ? "text-ink-400" : "text-status-stopped"} />
-            <DataRow icon="⛰" label="Altitude" value={location?.altitude != null ? `${location.altitude} m` : "0 m"} />
-            <DataRow icon="🧭" label="Angle" value={location?.course != null ? `${location.course} °` : "— °"} />
-            <DataRow icon="📍" label="Position" value={location ? `${location.latitude.toFixed(6)} °, ${location.longitude.toFixed(6)} °` : "—"} link />
-            <DataRow icon="🚗" label="Speed" value={`${filterSpeed(location?.speed, location?.valid)} kph`} />
+            <DataRow icon="📱" label={t("data.sim")} value={device.simMsisdn || "—"} mono />
+            <DataRow icon="📶" label={t("data.status")} value={status} valueColor={isMoving ? "text-status-moving" : !isOnline ? "text-ink-400" : "text-status-stopped"} />
+            <DataRow icon="⛰" label={t("data.altitude")} value={location?.altitude != null ? `${location.altitude} m` : "0 m"} />
+            <DataRow icon="🧭" label={t("data.heading")} value={location?.course != null ? `${location.course} °` : "— °"} />
+            <DataRow icon="📍" label={t("data.position")} value={location ? `${location.latitude.toFixed(6)} °, ${location.longitude.toFixed(6)} °` : "—"} link />
+            <DataRow icon="🏃" label={t("fleet.speed")} value={`${filterSpeed(location?.speed, location?.valid)} kph`} />
             {device.parkedSince && !isMoving && (
-              <DataRow icon="🅿️" label="Parked for" value={formatSince(device.parkedSince)} />
+              <DataRow icon="📌" label={t("data.stillFor")} value={formatSince(device.parkedSince)} />
             )}
           </div>
 
           {/* Middle data columns */}
           <div className="flex-1 grid grid-cols-1 gap-x-8 p-3 sm:grid-cols-2">
-            <DataRow icon="🕐" label="Time (position)" value={formatDateTime(location?.ts)} />
-            <DataRow icon="🕐" label="Time (server)" value={formatDateTime(location?.ts)} />
-            <DataRow icon="🔋" label="Battery Level" value={formatBatteryPercent(location?.voltageMv)} />
-            <DataRow icon="🔑" label="Engine ACC" value={location?.accOn == null ? "—" : location.accOn ? "ON" : "OFF"} valueColor={location?.accOn ? "text-status-moving" : "text-ink-500"} />
-            <DataRow icon="⚡" label="External Power" value={location?.voltageMv ? "ON" : "—"} valueColor={location?.voltageMv ? "text-status-moving" : "text-ink-500"} />
+            <DataRow icon="🕐" label={t("data.timePosition")} value={formatDateTime(location?.ts)} />
+            <DataRow icon="🕐" label={t("data.timeServer")} value={formatDateTime(location?.ts)} />
+            <DataRow icon="🔋" label={t("stats.battery")} value={formatBatteryPercent(location?.voltageMv)} />
           </div>
 
           {/* Object control */}
@@ -213,8 +188,6 @@ export function DeviceBottomPanel({ device, location, onClose, onViewHistory, on
                   }}
                 >
                   <option value="custom">{t("panel.custom")}</option>
-                  <option value="cut">{t("panel.cutEngine")}</option>
-                  <option value="restore">{t("panel.restoreEngine")}</option>
                   <option value="address">{t("panel.queryAddress")}</option>
                   <option value="reboot">{t("panel.rebootDevice")}</option>
                 </select>
@@ -226,7 +199,7 @@ export function DeviceBottomPanel({ device, location, onClose, onViewHistory, on
                     type="text"
                     className="input flex-1 font-mono disabled:bg-surface-100"
                     placeholder={template === "custom" ? "SPDADD,ON,10,2#" : ""}
-                    value={template === "custom" ? rawText : template === "cut" ? "DYD" : template === "restore" ? "HFYD" : template === "address" ? "DWXX" : "RESET"}
+                    value={template === "custom" ? rawText : template === "address" ? "DWXX" : "RESET"}
                     disabled={template !== "custom"}
                     onChange={(e) => setRawText(e.target.value)}
                     onKeyDown={(e) => { if (e.key === "Enter") void sendCommand(); }}
@@ -259,10 +232,8 @@ export function DeviceBottomPanel({ device, location, onClose, onViewHistory, on
               <span className="text-ink-900 font-medium text-right">{formatDurationS(stats.moveS, locale)}</span>
               <span className="text-ink-500">{t("home.stopDuration")}</span>
               <span className="text-ink-900 font-medium text-right">{formatDurationS(stats.stopS, locale)}</span>
-              <span className="text-ink-500">{t("trips.maxSpeed")}</span>
+              <span className="text-ink-500">{t("home.topSpeed")}</span>
               <span className="text-ink-900 font-medium text-right">{stats.maxSpeed} {t("fleet.kmh")}</span>
-              <span className="text-ink-500">{t("trips.avgSpeed")}</span>
-              <span className="text-ink-900 font-medium text-right">{stats.avgSpeed} {t("fleet.kmh")}</span>
             </div>
           </div>
         </div>

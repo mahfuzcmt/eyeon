@@ -62,7 +62,7 @@ export default function Login() {
             autoCapitalize="none"
             keyboardType="email-address"
             autoComplete="email"
-            placeholder="you@company.com"
+            placeholder="you@example.com"
           />
           <Field
             label={t("auth.password")}

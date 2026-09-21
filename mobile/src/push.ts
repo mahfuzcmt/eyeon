@@ -35,7 +35,7 @@ export async function registerForAlarmPush(locale: "bn" | "en"): Promise<void> {
     if (Platform.OS === "android") {
       // Backend sends channelId "alarms" — the channel must exist client-side.
       await Notifications.setNotificationChannelAsync("alarms", {
-        name: "Vehicle alarms",
+        name: "Urgent alerts",
         importance: Notifications.AndroidImportance.MAX,
         sound: "default",
         vibrationPattern: [0, 250, 250, 250],

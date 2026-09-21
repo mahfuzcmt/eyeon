@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { useTrips } from "@/hooks/useTrips";
+import { useDailyActivity } from "@/hooks/useActivity";
 import { useLocale } from "@/lib/i18n";
 import { formatNumber } from "@/lib/format";
 import {
@@ -33,22 +33,23 @@ export default function CalendarTab({ imei, onApply }: { imei: string; onApply: 
   const [pending, setPending] = useState<DateRange>(() => presetRange("today"));
   const [stopMin, setStopMin] = useState<(typeof STOP_INTERVALS)[number]>(5);
 
-  // Trips for the whole viewed month → per-day distance (km) in the cells.
+  // Activity for the whole viewed month → per-day distance (km) in the cells.
   const monthRange = useMemo(() => {
     const start: DayParts = { y: view.y, m: view.m, d: 1 };
     const end: DayParts = { y: view.y, m: view.m, d: daysInMonth(view.y, view.m) };
     return rangeFromDays(start, end, "");
   }, [view]);
-  const { trips } = useTrips({ imei, fromIso: monthRange.fromIso, toIso: monthRange.toIso });
+  const { days } = useDailyActivity({ imei, fromIso: monthRange.fromIso, toIso: monthRange.toIso });
 
   const kmByDay = useMemo(() => {
     const m = new Map<number, number>();
-    for (const tr of trips) {
-      const p = dhakaParts(new Date(tr.startedAt).getTime());
-      if (p.y === view.y && p.m === view.m) m.set(p.d, (m.get(p.d) ?? 0) + tr.distanceM);
+    // `date` is already an Asia/Dhaka calendar day (YYYY-MM-DD) from the backend.
+    for (const day of days) {
+      const [y, mo, d] = day.date.split("-").map(Number);
+      if (y === view.y && mo === view.m) m.set(d, day.distanceM);
     }
     return m;
-  }, [trips, view]);
+  }, [days, view]);
 
   const cells = useMemo(() => {
     const first: DayParts = { y: view.y, m: view.m, d: 1 };

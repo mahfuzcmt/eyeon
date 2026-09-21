@@ -1,38 +1,67 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useTrips } from "@/hooks/useTrips";
+import { api } from "@/lib/api";
+import { useActivity } from "@/hooks/useActivity";
 import { useDeviceHistory } from "@/hooks/useDeviceHistory";
-import { useLocale } from "@/lib/i18n";
-import { formatDurationS, formatNumber, formatRelative } from "@/lib/format";
+import { useLocale, type StringKey } from "@/lib/i18n";
+import { formatDurationS, formatNumber } from "@/lib/format";
 import { HistoryMap } from "./HistoryMap";
 import type { DetailRange } from "./types";
-import type { TripView } from "@/types/domain";
+import type { AlarmView } from "@/types/domain";
 
 const SPEEDS = [1, 2, 4] as const;
+/** The events that tell the story of a day: where they arrived, where they left, and anything urgent. */
+const TIMELINE_TYPES = new Set(["PLACE_ARRIVED", "PLACE_LEFT", "GEOFENCE_EXIT", "GEOFENCE_ENTER", "SOS"]);
 
+/**
+ * "Where were they all day": the whole range as one route with playback, and beside it a
+ * plain-language timeline (reached School, left School ...). EyeOn has no trips.
+ */
 export default function HistoryTab({ imei, range }: { imei: string; range: DetailRange }) {
   const { t, locale } = useLocale();
-  const { trips, loading } = useTrips({ imei, fromIso: range.from, toIso: range.to });
+  const { activity } = useActivity({ imei, fromIso: range.from, toIso: range.to });
 
-  const [selected, setSelected] = useState<TripView | null>(null);
+  const [events, setEvents] = useState<AlarmView[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
   const [idx, setIdx] = useState(0);
   const [playing, setPlaying] = useState(false);
   const [speed, setSpeed] = useState<(typeof SPEEDS)[number]>(1);
 
-  // Reset selection when the range changes.
+  // Reset playback when the range changes.
   useEffect(() => {
-    setSelected(null);
+    setSelectedId(null);
     setPlaying(false);
     setIdx(0);
   }, [range.from, range.to]);
 
-  const { history } = useDeviceHistory({
-    imei: selected ? imei : null,
-    from: selected?.startedAt,
-    to: selected?.endedAt ?? new Date().toISOString(),
-    limit: 5000,
-  });
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    (async () => {
+      try {
+        const r = await api.get<AlarmView[]>("/alarms", {
+          params: { imei, from: range.from, to: range.to, limit: 500 },
+        });
+        if (cancelled) return;
+        setEvents(
+          r.data
+            .filter((a) => TIMELINE_TYPES.has(a.type))
+            .sort((a, b) => new Date(a.ts).getTime() - new Date(b.ts).getTime()),
+        );
+      } catch {
+        if (!cancelled) setEvents([]);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [imei, range.from, range.to]);
+
+  const { history } = useDeviceHistory({ imei, from: range.from, to: range.to, limit: 5000 });
   const points = useMemo(
     () => [...history].filter((p) => p.valid).sort((a, b) => new Date(a.ts).getTime() - new Date(b.ts).getTime()),
     [history],
@@ -58,24 +87,40 @@ export default function HistoryTab({ imei, range }: { imei: string; range: Detai
     };
   }, [playing, speed, points.length, stride]);
 
-  const totalKm = trips.reduce((s, tr) => s + tr.distanceM, 0) / 1000;
-  const maxKph = trips.reduce((m, tr) => Math.max(m, tr.maxSpeed), 0);
-  const curKph = points[idx]?.speed ?? 0;
+  const totalKm = activity.distanceM / 1000;
+  const curTs = points[idx]?.ts;
+
+  /** Move the playback marker to the point closest in time to a timeline event. */
+  const jumpTo = (ev: AlarmView) => {
+    setSelectedId(ev.id);
+    setPlaying(false);
+    if (points.length === 0) return;
+    const target = new Date(ev.ts).getTime();
+    let best = 0;
+    let bestGap = Infinity;
+    points.forEach((p, i) => {
+      const gap = Math.abs(new Date(p.ts).getTime() - target);
+      if (gap < bestGap) {
+        bestGap = gap;
+        best = i;
+      }
+    });
+    setIdx(best);
+  };
 
   return (
     <div className="flex h-full min-h-0 flex-col md:flex-row">
       {/* Map + playback */}
       <div className="relative min-h-[280px] flex-1">
         <HistoryMap points={points} movingIndex={idx} />
-        {selected && points.length > 0 && (
+        {points.length > 0 && (
           <>
             <div className="pointer-events-none absolute left-3 top-3 z-[1000] rounded-md border border-surface-300 bg-white/95 px-3 py-1.5 shadow-menu">
-              <span className="text-xl font-bold leading-none text-ink-900">{curKph}</span>
-              <span className="ml-1 text-[12px] text-ink-500">{t("fleet.kmh")}</span>
+              <span className="text-xl font-bold leading-none text-ink-900">{fmtTime(curTs)}</span>
             </div>
             <div className="absolute inset-x-3 bottom-3 z-[1000] flex items-center gap-2 rounded-md border border-surface-300 bg-white/95 px-3 py-2 shadow-menu">
-              <button type="button" className="btn-icon" onClick={() => setIdx(0)}>⏮</button>
-              <button type="button" className="btn-primary !h-7 !px-3" onClick={() => setPlaying((p) => !p)}>
+              <button type="button" className="btn-icon" aria-label={t("hist.restart")} onClick={() => setIdx(0)}>⏮</button>
+              <button type="button" className="btn-primary" aria-label={t(playing ? "hist.pause" : "hist.play")} onClick={() => setPlaying((p) => !p)}>
                 {playing ? "❚❚" : "▶"}
               </button>
               <input
@@ -83,7 +128,7 @@ export default function HistoryTab({ imei, range }: { imei: string; range: Detai
                 onChange={(e) => { setPlaying(false); setIdx(Number(e.target.value)); }}
                 className="flex-1 accent-brand-500"
               />
-              <button type="button" className="btn-secondary !h-7 !px-2"
+              <button type="button" className="btn-secondary"
                 onClick={() => setSpeed(SPEEDS[(SPEEDS.indexOf(speed) + 1) % SPEEDS.length])}>
                 {speed}×
               </button>
@@ -92,42 +137,48 @@ export default function HistoryTab({ imei, range }: { imei: string; range: Detai
         )}
       </div>
 
-      {/* Segment list */}
+      {/* Day timeline */}
       <div className="flex min-h-0 w-full flex-col border-t border-surface-300 md:w-80 md:border-l md:border-t-0">
-        <div className="flex shrink-0 items-center gap-3 border-b border-surface-300 bg-surface-100 px-3 py-2 text-[14px]">
-          <span className="font-semibold text-ink-900">{range.label}</span>
-          <span className="text-ink-500">{formatNumber(totalKm, locale, { maximumFractionDigits: 1 })} {t("kpi.km")}</span>
-          <span className="text-ink-500">max {maxKph} {t("fleet.kmh")}</span>
+        <div className="shrink-0 border-b border-surface-300 bg-surface-100 px-3 py-2 text-[14px]">
+          <div className="font-semibold text-ink-900">{range.label}</div>
+          <div className="text-ink-500">
+            {formatNumber(totalKm, locale, { maximumFractionDigits: 1 })} {t("kpi.km")} · {t("hist.moving")}{" "}
+            {formatDurationS(activity.movingS, locale)}
+          </div>
         </div>
         <div className="min-h-0 flex-1 overflow-y-auto">
           {loading ? (
             <p className="py-8 text-center text-[14px] text-ink-500">{t("common.loading")}</p>
-          ) : trips.length === 0 ? (
-            <p className="py-8 text-center text-[14px] text-ink-500">{t("common.empty")}</p>
+          ) : events.length === 0 ? (
+            <p className="px-4 py-8 text-center text-[14px] text-ink-500">
+              {points.length === 0 ? t("hist.noData") : t("hist.noEvents")}
+            </p>
           ) : (
-            trips.map((tr) => (
-              <button
-                key={tr.id}
-                type="button"
-                onClick={() => { setSelected(tr); setIdx(0); setPlaying(false); }}
-                className={`flex w-full items-center gap-2 border-b border-surface-100 px-3 py-2 text-left transition hover:bg-surface-50 ${
-                  selected?.id === tr.id ? "bg-brand-50" : ""
-                }`}
-              >
-                <div className="min-w-0 flex-1">
-                  <div className="text-[14px] font-semibold text-ink-900">
-                    {fmtTime(tr.startedAt)} → {fmtTime(tr.endedAt)}
-                  </div>
-                  <div className="text-[13px] text-ink-500">
-                    {formatNumber(tr.distanceM / 1000, locale, { maximumFractionDigits: 1 })} {t("kpi.km")} ·{" "}
-                    {formatDurationS(tr.durationS ?? 0, locale)} · max {tr.maxSpeed}
-                  </div>
-                </div>
-                <span className={`text-[12px] ${tr.status === "IN_PROGRESS" ? "text-status-moving" : "text-ink-400"}`}>
-                  {tr.status === "IN_PROGRESS" ? t("trips.inProgress") : formatRelative(tr.startedAt, locale)}
-                </span>
-              </button>
-            ))
+            events.map((ev) => {
+              const place = typeof ev.metadata?.geofenceName === "string" ? ev.metadata.geofenceName : null;
+              const urgent = ev.type === "SOS" || ev.type === "GEOFENCE_EXIT";
+              return (
+                <button
+                  key={ev.id}
+                  type="button"
+                  onClick={() => jumpTo(ev)}
+                  className={`flex min-h-[52px] w-full items-center gap-3 border-b border-surface-100 px-3 py-2 text-left transition hover:bg-surface-50 ${
+                    selectedId === ev.id ? "bg-brand-50" : ""
+                  }`}
+                >
+                  <span className="w-[68px] shrink-0 text-[14px] font-semibold tabular-nums text-ink-900">
+                    {fmtTime(ev.ts)}
+                  </span>
+                  <span className={`h-2.5 w-2.5 shrink-0 rounded-full ${urgent ? "bg-alarm-red" : "bg-brand-500"}`} />
+                  <span className="min-w-0 flex-1">
+                    <span className={`block text-[14px] font-semibold ${urgent ? "text-alarm-red" : "text-ink-900"}`}>
+                      {t(`hist.event.${ev.type}` as StringKey)}
+                    </span>
+                    {place && <span className="block truncate text-[13px] text-ink-500">{place}</span>}
+                  </span>
+                </button>
+              );
+            })
           )}
         </div>
       </div>

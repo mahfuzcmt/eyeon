@@ -3,9 +3,8 @@
 import { useEffect, useState, useMemo } from "react";
 import { Speedometer } from "./Speedometer";
 import { useLocale } from "@/lib/i18n";
-import { useTrips } from "@/hooks/useTrips";
+import { useActivity } from "@/hooks/useActivity";
 import { dhakaTodayStartIso, filterSpeed, formatDurationS, formatNumber } from "@/lib/format";
-import { useSpeedLimits } from "@/hooks/useSpeedLimits";
 import type { DeviceView, LocationView } from "@/types/domain";
 
 interface Props {
@@ -18,31 +17,15 @@ export function LiveTrackingPanel({ device, location, onClose }: Props) {
   const { t, locale } = useLocale();
   const [address, setAddress] = useState<string>("Loading address...");
   const [addressLoading, setAddressLoading] = useState(false);
-  const speedLimits = useSpeedLimits();
 
-  // Get today's trips for this device
+  // Today's activity for this person, derived from location points.
   const range = useMemo(() => ({ from: dhakaTodayStartIso(), to: new Date().toISOString() }), []);
-  const { trips } = useTrips({ imei: device.imei, fromIso: range.from, toIso: range.to });
-
-  // Calculate today's stats
-  const todayStats = useMemo(() => {
-    const distanceM = trips.reduce((s, tr) => s + tr.distanceM, 0);
-    const durationS = trips.reduce((s, tr) => s + (tr.durationS ?? 0), 0);
-    const maxSpeed = trips.reduce((m, tr) => Math.max(m, tr.maxSpeed), 0);
-
-    // Calculate overspeed distance (simplified - in reality would need location history)
-    // For now, estimate based on max speed exceeding limit
-    const speedLimit = speedLimits.limitFor(device.imei) ?? 80; // default 80 kph if no rule
-    const overspeedTrips = trips.filter(tr => tr.maxSpeed > speedLimit);
-    const overspeedDistanceM = overspeedTrips.reduce((s, tr) => s + tr.distanceM * 0.2, 0); // estimate 20% of trip
-
-    return {
-      totalHoursS: durationS,
-      totalDistanceM: distanceM,
-      overspeedDistanceM,
-      maxSpeed,
-    };
-  }, [trips, device.imei, speedLimits]);
+  const { activity } = useActivity({ imei: device.imei, fromIso: range.from, toIso: range.to });
+  const todayStats = {
+    totalHoursS: activity.movingS,
+    totalDistanceM: activity.distanceM,
+    maxSpeed: activity.maxSpeed,
+  };
 
   // Reverse geocode to get address
   useEffect(() => {
@@ -159,23 +142,6 @@ export function LiveTrackingPanel({ device, location, onClose }: Props) {
               </div>
               <span className="font-mono text-[15px] font-semibold text-ink-900">
                 {formatNumber(todayStats.totalDistanceM / 1000, locale, { maximumFractionDigits: 1 })} km
-              </span>
-            </div>
-
-            {/* Overspeed KM */}
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-red-500/20">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#EF4444" strokeWidth="2">
-                    <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
-                    <line x1="12" y1="9" x2="12" y2="13" />
-                    <line x1="12" y1="17" x2="12.01" y2="17" />
-                  </svg>
-                </div>
-                <span className="text-[14px] text-ink-600">{t("panel.overspeedKm")}</span>
-              </div>
-              <span className="font-mono text-[15px] font-semibold text-alarm-red">
-                {formatNumber(todayStats.overspeedDistanceM / 1000, locale, { maximumFractionDigits: 1 })} km
               </span>
             </div>
 

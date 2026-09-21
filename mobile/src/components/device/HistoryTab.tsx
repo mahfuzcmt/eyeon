@@ -1,31 +1,35 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { FlatList, Pressable, StyleSheet, Text, View } from "react-native";
-import { locationHistory, tripsForDevice } from "@/api/endpoints";
+import { alarmsForDevice, deviceActivity, locationHistory } from "@/api/endpoints";
 import { extractError } from "@/api/client";
 import WebMap, { MapPoint } from "@/components/WebMap";
 import DateRangePicker from "@/components/device/DateRangePicker";
 import { EmptyState, Loading } from "@/ui";
-import { fmtDateTime, fmtDistance, fmtDuration, fmtTime } from "@/format";
+import { fmtDistance, fmtDuration, fmtTime } from "@/format";
 import { presetRange, type DateRange } from "@/dateRange";
-import { useI18n } from "@/i18n";
+import { useI18n, type StringKey } from "@/i18n";
 import { colors, radius, space } from "@/theme";
-import type { LocationView, TripView } from "@/types";
+import type { ActivitySummary, AlarmView, LocationView } from "@/types";
 
 const SPEEDS = [1, 2, 4] as const;
+/** The events that tell the story of a day. */
+const TIMELINE_TYPES = new Set(["PLACE_ARRIVED", "PLACE_LEFT", "GEOFENCE_EXIT", "GEOFENCE_ENTER", "SOS"]);
 
-/** Trip list + route replay (play/pause/speed, live km/h). */
+/**
+ * "Where were they all day": the whole range as one route with playback, and under it a
+ * plain-language timeline (arrived at School, left School ...). EyeOn has no trips.
+ */
 export default function HistoryTab({ imei }: { imei: string }) {
   const { t } = useI18n();
-  const [range, setRange] = useState<DateRange>(() => presetRange("last7"));
+  const [range, setRange] = useState<DateRange>(() => presetRange("today"));
   const [pickerOpen, setPickerOpen] = useState(false);
 
-  const [trips, setTrips] = useState<TripView[]>([]);
+  const [points, setPoints] = useState<LocationView[]>([]);
+  const [events, setEvents] = useState<AlarmView[]>([]);
+  const [activity, setActivity] = useState<ActivitySummary | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
-  const [selected, setSelected] = useState<TripView | null>(null);
-  const [points, setPoints] = useState<LocationView[]>([]);
-  const [loadingPoints, setLoadingPoints] = useState(false);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
 
   const [idx, setIdx] = useState(0);
   const [playing, setPlaying] = useState(false);
@@ -35,15 +39,26 @@ export default function HistoryTab({ imei }: { imei: string }) {
     let mounted = true;
     setLoading(true);
     setError(null);
-    setSelected(null);
-    setPoints([]);
-    setTrips([]);
+    setSelectedId(null);
+    setPlaying(false);
+    setIdx(0);
     (async () => {
       try {
-        const rows = await tripsForDevice(imei, range.fromIso, range.toIso);
-        if (mounted) setTrips(rows);
+        const [pts, alarms, act] = await Promise.all([
+          locationHistory(imei, range.fromIso, range.toIso),
+          alarmsForDevice(imei, range.fromIso, range.toIso),
+          deviceActivity(imei, range.fromIso, range.toIso),
+        ]);
+        if (!mounted) return;
+        setPoints(pts.filter((p) => p.valid).sort((a, b) => Date.parse(a.ts) - Date.parse(b.ts)));
+        setEvents(alarms.filter((a) => TIMELINE_TYPES.has(a.type)).sort((a, b) => Date.parse(a.ts) - Date.parse(b.ts)));
+        setActivity(act);
       } catch (e) {
-        if (mounted) setError(extractError(e).message);
+        if (!mounted) return;
+        setError(extractError(e).message);
+        setPoints([]);
+        setEvents([]);
+        setActivity(null);
       } finally {
         if (mounted) setLoading(false);
       }
@@ -52,25 +67,6 @@ export default function HistoryTab({ imei }: { imei: string }) {
       mounted = false;
     };
   }, [imei, range]);
-
-  const selectTrip = useCallback(
-    async (trip: TripView) => {
-      setSelected(trip);
-      setPlaying(false);
-      setIdx(0);
-      setLoadingPoints(true);
-      try {
-        const to = trip.endedAt ?? new Date().toISOString();
-        const pts = await locationHistory(imei, trip.startedAt, to);
-        setPoints(pts.filter((p) => p.valid));
-      } catch {
-        setPoints([]);
-      } finally {
-        setLoadingPoints(false);
-      }
-    },
-    [imei],
-  );
 
   const stride = useMemo(() => Math.max(1, Math.floor(points.length / 150)), [points.length]);
 
@@ -98,14 +94,31 @@ export default function HistoryTab({ imei }: { imei: string }) {
     const p = points[idx];
     return p ? { lat: p.latitude, lng: p.longitude, course: p.course } : null;
   }, [points, idx]);
-  const currentKmph = points[idx]?.speed ?? 0;
+
+  /** Move the playback marker to the point closest in time to a timeline event. */
+  function jumpTo(ev: AlarmView) {
+    setSelectedId(ev.id);
+    setPlaying(false);
+    if (points.length === 0) return;
+    const target = Date.parse(ev.ts);
+    let best = 0;
+    let bestGap = Infinity;
+    points.forEach((p, i) => {
+      const gap = Math.abs(Date.parse(p.ts) - target);
+      if (gap < bestGap) {
+        bestGap = gap;
+        best = i;
+      }
+    });
+    setIdx(best);
+  }
 
   return (
     <>
     <FlatList
       style={styles.screen}
-      data={trips}
-      keyExtractor={(t) => t.id}
+      data={events}
+      keyExtractor={(e) => e.id}
       contentContainerStyle={styles.list}
       ListHeaderComponent={
         <View style={styles.header}>
@@ -115,11 +128,10 @@ export default function HistoryTab({ imei }: { imei: string }) {
           </Pressable>
           <View style={styles.mapBox}>
             <WebMap route={route} moving={moving} fitRoute={!playing} />
-            {selected ? (
+            {points.length > 0 ? (
               <View style={styles.hud} pointerEvents="box-none">
                 <View style={styles.kmphBox}>
-                  <Text style={styles.kmph}>{currentKmph}</Text>
-                  <Text style={styles.kmphUnit}>{t("veh.kmh")}</Text>
+                  <Text style={styles.kmph}>{fmtTime(points[idx]?.ts)}</Text>
                 </View>
                 <View style={styles.playbar}>
                   <CtlBtn label="⏮" onPress={() => setIdx(0)} />
@@ -133,26 +145,47 @@ export default function HistoryTab({ imei }: { imei: string }) {
             ) : null}
           </View>
 
-          {selected ? (
-            <TripSummary trip={selected} loading={loadingPoints} />
-          ) : (
-            <Text style={styles.hint}>{t("hist.selectTrip")}</Text>
-          )}
-          <Text style={styles.sectionTitle}>{t("home.trips")} · {range.label}</Text>
+          {activity ? (
+            <View style={styles.summary}>
+              <View style={styles.summaryRow}>
+                <Stat label={t("hist.distance")} value={fmtDistance(activity.distanceM)} />
+                <Stat label={t("home.moveDuration")} value={fmtDuration(activity.movingS)} />
+                <Stat label={t("home.stopDuration")} value={fmtDuration(activity.stillS)} />
+              </View>
+            </View>
+          ) : null}
+          <Text style={styles.sectionTitle}>{t("hist.timeline")} · {range.label}</Text>
         </View>
       }
       ListEmptyComponent={
         loading ? (
-          <Loading label={t("hist.loadingTrips")} />
+          <Loading label={t("common.loading")} />
         ) : error ? (
           <EmptyState text={error} />
         ) : (
-          <EmptyState text={t("hist.noTrips")} />
+          <EmptyState text={points.length === 0 ? t("hist.noData") : t("hist.noEvents")} />
         )
       }
-      renderItem={({ item }) => (
-        <TripRow trip={item} active={selected?.id === item.id} onPress={() => selectTrip(item)} />
-      )}
+      renderItem={({ item }) => {
+        const place = typeof item.metadata?.geofenceName === "string" ? item.metadata.geofenceName : null;
+        const urgent = item.type === "SOS" || item.type === "GEOFENCE_EXIT";
+        return (
+          <Pressable
+            onPress={() => jumpTo(item)}
+            style={[styles.tripRow, selectedId === item.id && styles.tripRowActive]}
+            accessibilityRole="button"
+          >
+            <Text style={styles.eventTime}>{fmtTime(item.ts)}</Text>
+            <View style={[styles.eventDot, { backgroundColor: urgent ? colors.danger : colors.brand }]} />
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.tripTime, urgent && { color: colors.danger }]}>
+                {t(`hist.event.${item.type}` as StringKey)}
+              </Text>
+              {place ? <Text style={styles.tripSub}>{place}</Text> : null}
+            </View>
+          </Pressable>
+        );
+      }}
     />
     <DateRangePicker
       visible={pickerOpen}
@@ -163,53 +196,6 @@ export default function HistoryTab({ imei }: { imei: string }) {
       onClose={() => setPickerOpen(false)}
     />
     </>
-  );
-}
-
-function TripSummary({ trip, loading }: { trip: TripView; loading: boolean }) {
-  const { t } = useI18n();
-  return (
-    <View style={styles.summary}>
-      <View style={styles.summaryRow}>
-        <Stat label={t("hist.distance")} value={fmtDistance(trip.distanceM)} />
-        <Stat label={t("hist.duration")} value={fmtDuration(trip.durationS)} />
-        <Stat label={t("hist.max")} value={`${trip.maxSpeed} ${t("veh.kmh")}`} />
-        <Stat label={t("hist.avg")} value={`${trip.avgSpeed} ${t("veh.kmh")}`} />
-      </View>
-      <View style={styles.timeline}>
-        <Text style={styles.tlLine}>
-          <Text style={styles.tlDot}>▶ </Text>{t("hist.start")} {fmtDateTime(trip.startedAt)}
-          {trip.startLat != null ? `  (${trip.startLat.toFixed(4)}, ${trip.startLng?.toFixed(4)})` : ""}
-        </Text>
-        <Text style={styles.tlLine}>
-          <Text style={styles.tlDot}>⏹ </Text>{t("hist.end")} {fmtDateTime(trip.endedAt)}
-          {trip.endLat != null ? `  (${trip.endLat.toFixed(4)}, ${trip.endLng?.toFixed(4)})` : ""}
-        </Text>
-      </View>
-      {loading ? <Text style={styles.loadingPts}>{t("hist.loadingRoute")}</Text> : null}
-    </View>
-  );
-}
-
-function TripRow({ trip, active, onPress }: { trip: TripView; active: boolean; onPress: () => void }) {
-  const { t } = useI18n();
-  return (
-    <Pressable
-      onPress={onPress}
-      style={({ pressed }) => [styles.tripRow, active && styles.tripRowActive, pressed && { opacity: 0.85 }]}
-    >
-      <View style={{ flex: 1 }}>
-        <Text style={styles.tripTime}>
-          {fmtTime(trip.startedAt)} → {fmtTime(trip.endedAt)}
-        </Text>
-        <Text style={styles.tripSub}>
-          {fmtDistance(trip.distanceM)} · {fmtDuration(trip.durationS)} · {t("hist.max")} {trip.maxSpeed} {t("veh.kmh")}
-        </Text>
-      </View>
-      <Text style={[styles.tripStatus, trip.status === "IN_PROGRESS" && { color: colors.ok }]}>
-        {trip.status === "IN_PROGRESS" ? t("common.live") : "▸"}
-      </Text>
-    </Pressable>
   );
 }
 
@@ -302,6 +288,8 @@ const styles = StyleSheet.create({
     padding: space.md,
   },
   tripRowActive: { borderColor: colors.brand },
+  eventTime: { color: colors.text, fontSize: 15, fontWeight: "700", width: 74 },
+  eventDot: { width: 10, height: 10, borderRadius: 5 },
   tripTime: { color: colors.text, fontSize: 15, fontWeight: "600" },
   tripSub: { color: colors.textFaint, fontSize: 13, marginTop: 2 },
   tripStatus: { color: colors.textFaint, fontSize: 16 },
