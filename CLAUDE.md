@@ -1652,21 +1652,32 @@ A feature is considered **DONE** when:
 
 ### Phase 1 — Foundation (Weeks 1–2)
 
+> **Checkbox status, audited 2026-09-21 against the tree.** `[x]` means verified present in
+> this repository. An unchecked box with a `↳` note is partly done or not started, and the
+> note says which. Phases 8, 9, 11 and 14 have no notes because nothing in them exists yet.
+> Ticks describe code that is present, not code that has been load-tested or run in production.
+
 **Goal:** A real GT06 device can connect, log in, and have its location stored and visible via REST API.
 
-- [ ] Bootstrap Spring Boot project with all dependencies
-- [ ] Flyway migrations V1–V2 (schema + seed data)
-- [ ] Netty TCP server + frame decoder (0x78 0x78 and 0x79 0x79 variants)
-- [ ] CRC-ITU implementation with unit tests
-- [ ] LoginHandler with IMEI extraction
-- [ ] LocationHandler for V1.8 + V3 + V4 + 4G variants
-- [ ] HeartbeatHandler with status decode
-- [ ] LocationService.saveAndBroadcast (DB + Redis)
-- [ ] DeviceService basic CRUD
-- [ ] REST: `/devices`, `/devices/{imei}/locations/last`, `/devices/{imei}/locations`
-- [ ] JWT auth + multi-tenant TenantContext
-- [ ] Python device simulator script in `/scripts/simulate_device.py`
-- [ ] Integration test: simulator → Netty → DB → REST returns location
+- [x] Bootstrap Spring Boot project with all dependencies
+- [x] Flyway migrations V1–V2 (schema + seed data)  
+      ↳ schema is now at V18
+- [x] Netty TCP server + frame decoder (0x78 0x78 and 0x79 0x79 variants)
+- [x] CRC-ITU implementation with unit tests  
+      ↳ `ChecksumUtilTest`
+- [x] LoginHandler with IMEI extraction  
+      ↳ `Gt06Handler.handleLogin`, auto-registers unknown IMEIs
+- [x] LocationHandler for V1.8 + V3 + V4 + 4G variants  
+      ↳ 0x12 / 0x22 / 0x32 / 0xA0 in `PacketType`
+- [x] HeartbeatHandler with status decode  
+      ↳ plus the Jimi heartbeat variant
+- [x] LocationService.saveAndBroadcast (DB + Redis)
+- [x] DeviceService basic CRUD
+- [x] REST: `/devices`, `/devices/{imei}/locations/last`, `/devices/{imei}/locations`
+- [x] JWT auth + multi-tenant TenantContext
+- [x] Python device simulator script in `/scripts/simulate_device.py`
+- [ ] Integration test: simulator → Netty → DB → REST returns location  
+      ↳ **not done** — Testcontainers is a `pom.xml` dependency but no test uses it; all 10 test classes are unit tests
 
 **Exit criteria:** A real Concox GT06N tracker connects to the dev server and its position is queryable via REST. Multi-tenant isolation tested.
 
@@ -1674,16 +1685,20 @@ A feature is considered **DONE** when:
 
 **Goal:** A user can log in, see live vehicles on a Mapbox map, and they update in real time.
 
-- [ ] Next.js 15 project with Tailwind + Mapbox
-- [ ] Login page + auth flow + JWT storage in HTTP-only cookie
-- [ ] Dashboard layout (sidebar + map)
-- [ ] FleetMap component with initial REST fetch + WebSocket subscription
-- [ ] STOMP WebSocket gateway on backend with org-scoped topics
-- [ ] LocationFanout: Redis sub → STOMP topic
-- [ ] Custom vehicle marker SVG + smooth animation
-- [ ] Device list sidebar with online/offline indicators
-- [ ] Click marker → device detail panel
-- [ ] Bengali / English language toggle (i18n basic strings)
+- [x] Next.js 15 project with Tailwind + Mapbox  
+      ↳ Leaflet + Google/OSM base layer, not Mapbox — see §2
+- [x] Login page + auth flow + JWT storage in HTTP-only cookie  
+      ↳ `frontend/src/lib/session.ts`, httpOnly + sameSite=lax
+- [x] Dashboard layout (sidebar + map)
+- [x] FleetMap component with initial REST fetch + WebSocket subscription
+- [x] STOMP WebSocket gateway on backend with org-scoped topics  
+      ↳ `StompAuthChannelInterceptor`
+- [x] LocationFanout: Redis sub → STOMP topic  
+      ↳ plus `BatchLocationFanout` and `AlarmFanout`
+- [x] Custom vehicle marker SVG + smooth animation
+- [x] Device list sidebar with online/offline indicators
+- [x] Click marker → device detail panel
+- [x] Bengali / English language toggle (i18n basic strings)
 
 **Exit criteria:** Open dashboard, see all org devices on map, watch positions update live. Bengali toggle works.
 
@@ -1691,16 +1706,23 @@ A feature is considered **DONE** when:
 
 **Goal:** Geofencing, trips, alarms, basic reports.
 
-- [ ] Geofence schema, repository, service
-- [ ] GeofenceService.evaluate() called from LocationService
-- [ ] Geofence editor UI (draw circle and polygon on map)
-- [ ] Trip detection logic (ACC on/off + idle-based fallback)
-- [ ] Trip list page + replay UI (animated polyline)
-- [ ] Alarm pipeline: 0x16 packet → Alarm record → SMS + WS broadcast
-- [ ] AlarmList page, acknowledge action, alarm banner
-- [ ] Daily / monthly reports (Apache POI for Excel, OpenPDF for PDF)
-- [ ] Background job: stale device → OFFLINE
-- [ ] DeviceCommandService: cut fuel / restore / query address from UI
+- [x] Geofence schema, repository, service
+- [x] GeofenceService.evaluate() called from LocationService  
+      ↳ `LocationService` line ~112
+- [x] Geofence editor UI (draw circle and polygon on map)  
+      ↳ `components/geofence/GeofenceEditor.tsx`, both CIRCLE and POLYGON
+- [x] Trip detection logic (ACC on/off + idle-based fallback)
+- [x] Trip list page + replay UI (animated polyline)  
+      ↳ `components/trip/TripReplay.tsx`, rAF-driven polyline
+- [x] Alarm pipeline: 0x16 packet → Alarm record → SMS + WS broadcast  
+      ↳ `AlarmService` publishes to Redis and dispatches SMS + push
+- [x] AlarmList page, acknowledge action, alarm banner
+- [ ] Daily / monthly reports (Apache POI for Excel, OpenPDF for PDF)  
+      ↳ **partial** — Excel via Apache POI (`ExcelExportService`, `/exports/*.xlsx`) is done; there is no PDF output and no OpenPDF/iText dependency
+- [x] Background job: stale device → OFFLINE  
+      ↳ `DeviceStatusJob`
+- [x] DeviceCommandService: cut fuel / restore / query address from UI  
+      ↳ `DYD` / `HFYD` / `DWXX` + `CommandSheet.tsx`
 
 **Exit criteria:** Drawing a geofence around a building and driving in/out triggers an alarm and sends an SMS. Trip with start/end appears on report.
 
@@ -1708,15 +1730,23 @@ A feature is considered **DONE** when:
 
 **Goal:** Production-ready for Bangladesh customers.
 
-- [ ] SSL Wireless SMS integration with Bengali templates
-- [ ] bKash subscription billing + webhooks
-- [ ] DeviceProvisioningService: SMS-based GT06 config from admin UI
-- [ ] Org/User management UI (invite, roles, suspend)
-- [ ] All UI strings translated to Bengali (Hind Siliguri font)
-- [ ] Numbers/dates formatted for `bn-BD`
-- [ ] BDT pricing display with `৳` symbol
-- [ ] Audit log + super-admin org-switch UI
-- [ ] Bengali installation guide PDF in `/docs`
+- [ ] SSL Wireless SMS integration with Bengali templates  
+      ↳ **partial** — the SSL Wireless client is done (`SmsService`, with a log stub when the token is blank), but message bodies are English strings built at each call site; there are no Bengali templates
+- [ ] bKash subscription billing + webhooks  
+      ↳ **not started** — `BillingController` is read-only subscription queries; there is no `BillingService`, checkout, execute call or webhook anywhere in `backend/src`, yet the marketing site advertises bKash/Nagad billing
+- [ ] DeviceProvisioningService: SMS-based GT06 config from admin UI  
+      ↳ **not started** — no such service exists; devices are configured by hand over SMS
+- [x] Org/User management UI (invite, roles, suspend)  
+      ↳ Settings → Org / Users tabs, admin-only
+- [x] All UI strings translated to Bengali (Hind Siliguri font)  
+      ↳ `lib/i18n.ts` + `LanguageContext.tsx`; Hind Siliguri Bengali subsets are imported in `layout.tsx`. Not audited string-by-string
+- [x] Numbers/dates formatted for `bn-BD`  
+      ↳ `lib/format.ts`
+- [x] BDT pricing display with `৳` symbol
+- [ ] Audit log + super-admin org-switch UI  
+      ↳ **partial** — `audit_log`, `AuditController` and `/dashboard/audit-log` are done, and super admins get an admin console with an org filter; there is no `X-Org-Id` org-switch (the header is only listed in the CORS config, nothing reads it)
+- [ ] Bengali installation guide PDF in `/docs`  
+      ↳ **not done** — no such file in `docs/`
 
 **Exit criteria:** A new customer can sign up, pay via bKash, provision their first device entirely in Bengali, and start tracking.
 
@@ -1730,7 +1760,8 @@ A feature is considered **DONE** when:
 - [x] Trip history screen
 - [x] Push notifications for alarms — via **Expo Push Service** (relays through FCM on Android / APNs on iOS). Chosen over direct FCM so the backend needs no Firebase credentials and the app stays Expo Go-compatible (no native build). Backend `PushService` POSTs to `exp.host`; tokens live in `push_tokens` (V7), registered via `POST/DELETE /users/me/push-tokens`; WARNING/CRITICAL alarms only.
 - [x] Geofence creation (basic) — circle-only on mobile: tap-to-place center on the WebView map, radius presets, notify-on choice, fleet assignment (preselects all vehicles). List screen with delete. Polygon drawing stays web-dashboard-only.
-- [ ] iOS + Android builds via EAS Build
+- [ ] iOS + Android builds via EAS Build  
+      ↳ **partial** — `mobile/eas.json` defines development/preview/production profiles, but only Android apk build types; no iOS profile and no evidence a build has been produced
 
 **Exit criteria:** APK installable, owner sees own bike live on map, gets push when SOS button pressed.
 
@@ -1738,16 +1769,24 @@ A feature is considered **DONE** when:
 
 **Goal:** Deploy to AWS Mumbai with monitoring, backups, runbook.
 
-- [ ] Terraform infra (EC2, RDS, ElastiCache, NLB for TCP, CloudFront)
-- [ ] CI/CD pipeline GitHub Actions → ECR → ECS
-- [ ] Prometheus + Grafana dashboards (TCP connections, packet rate, DB queries)
+- [ ] Terraform infra (EC2, RDS, ElastiCache, NLB for TCP, CloudFront)  
+      ↳ `infra/terraform/` contains only a `.gitkeep`
+- [ ] CI/CD pipeline GitHub Actions → ECR → ECS  
+      ↳ `.github/workflows/` contains only a `.gitkeep`
+- [ ] Prometheus + Grafana dashboards (TCP connections, packet rate, DB queries)  
+      ↳ no monitoring config anywhere in the tree
 - [ ] CloudWatch alerts (high error rate, low free disk, etc.)
 - [ ] RDS automated backups + tested restore
 - [ ] Load test: 1000 simulated devices for 24 hours
-- [ ] Runbook in `/docs/RUNBOOK.md`: common incidents and fixes
+- [ ] Runbook in `/docs/RUNBOOK.md`: common incidents and fixes  
+      ↳ not present
 - [ ] DNS, SSL cert, soft-launch with first paying customer
 
 **Exit criteria:** First paying customer is live, monitoring shows healthy metrics, on-call runbook is in place.
+
+Nothing in Phase 6 is done. Deployment today is `scripts/deploy_vps.sh` onto a single
+Ubuntu VPS with `docker-compose.prod.yml` and `infra/nginx/nginx.conf` — a different path
+from the AWS/ECS/Terraform plan above. See `docs/DEPLOYMENT.md`.
 
 ---
 
@@ -1759,12 +1798,17 @@ The following phases represent the evolution toward a next-generation AI-powered
 
 **Goal:** Enterprise-grade fleet operations with KPIs and driver monitoring.
 
-- [ ] **Fleet Dashboard 2.0** — unified view with fleet-wide KPIs, health indicators, utilization metrics
-- [ ] **Vehicle Groups** — logical groupings (by branch, type, route, driver)
+- [ ] **Fleet Dashboard 2.0** — unified view with fleet-wide KPIs, health indicators, utilization metrics  
+      ↳ **partial** — `DashboardService.snapshot()` returns device/alarm/trip counts and distance-today, shown as the KPI strip; no health indicators or utilization metrics
+- [x] **Vehicle Groups** — logical groupings (by branch, type, route, driver)  
+      ↳ `device_groups` (V11) + per-user ownership (V18), `DeviceGroupService`, group accordion in the vehicle panel
 - [ ] **Branch Management** — multi-location support with per-branch admins and reporting
-- [ ] **KPI Dashboard** — fleet utilization, on-time delivery, idle time, fuel efficiency metrics
-- [ ] **Driver Behavior Basics** — harsh braking detection, rapid acceleration, harsh cornering (from accelerometer data)
-- [ ] **Driver Assignment** — link drivers to vehicles, track driver-specific metrics
+- [ ] **KPI Dashboard** — fleet utilization, on-time delivery, idle time, fuel efficiency metrics  
+      ↳ **not started** — none of these four metrics are computed; see the Fleet Dashboard 2.0 note above
+- [ ] **Driver Behavior Basics** — harsh braking detection, rapid acceleration, harsh cornering (from accelerometer data)  
+      ↳ **partial** — the GT06 reports harsh acceleration/deceleration/collision itself (0xF0/0xF1/0xF2) and those are stored as alarms; there is no per-driver detection, aggregation or scoring
+- [x] **Driver Assignment** — link drivers to vehicles, track driver-specific metrics  
+      ↳ `drivers` + `driver_assignments` (V12), `DriverService`, `/dashboard/drivers`
 
 **Exit criteria:** Fleet manager can view branch-level KPIs, assign drivers, and see basic driving behavior scores.
 
@@ -2642,7 +2686,8 @@ export async function getFleetHealthSummary(): Promise<{
 - [ ] **Traffic Overlay** — real-time traffic data on routes (Google Traffic API)
 - [ ] **Weather Integration** — weather conditions at vehicle locations, severe weather alerts
 - [ ] **ETA Calculations** — accurate arrival time based on traffic, driver behavior, historical patterns
-- [ ] **Street View Integration** — click location to see Google Street View
+- [x] **Street View Integration** — click location to see Google Street View  
+      ↳ link-out only: the vehicle popup's Street view action opens Google Maps in a new tab, it is not an embedded panorama
 - [ ] **Historical Traffic Playback** — replay trips with traffic conditions at the time
 
 **Exit criteria:** User views 3D map with traffic overlay, sees ETA for in-progress deliveries.
@@ -2666,7 +2711,8 @@ export async function getFleetHealthSummary(): Promise<{
 
 - [ ] **Temperature Sensors** — cold chain monitoring for pharma/food logistics (BLE or wired sensors)
 - [ ] **Door Sensors** — cargo door open/close alerts with location
-- [ ] **RFID Driver ID** — driver swipe to start vehicle, automatic driver assignment
+- [ ] **RFID Driver ID** — driver swipe to start vehicle, automatic driver assignment  
+      ↳ `PacketType.RFID` (0x17) is defined but `Gt06Handler` has no case for it, so swipes are dropped
 - [ ] **Dashcam Integration** — live streaming, event-triggered recording, AI incident detection
 - [ ] **BLE Beacon Support** — asset tracking within vehicles, trailer attachment detection
 - [ ] **OBD-II Integration** — direct vehicle diagnostics, DTC codes, real-time engine data
@@ -2682,11 +2728,13 @@ export async function getFleetHealthSummary(): Promise<{
 - [ ] **White Label Platform** — custom branding, domain, logo for resellers
 - [ ] **Multi-Company Management** — parent company oversees subsidiaries, consolidated reporting
 - [ ] **Enhanced API** — GraphQL API, webhooks, rate limiting tiers, API key management
-- [ ] **Advanced Audit Logs** — detailed action logging, compliance reports, data export
+- [ ] **Advanced Audit Logs** — detailed action logging, compliance reports, data export  
+      ↳ **partial** — `audit_log`, `AuditController` and `/dashboard/audit-log` exist; no compliance reports and no export endpoint
 - [ ] **2FA (Two-Factor Authentication)** — SMS/authenticator app for all users
 - [ ] **Biometric Login** — fingerprint/face ID on mobile app
 - [ ] **Device Binding** — lock app to specific devices, prevent unauthorized access
-- [ ] **Role-Based Permissions** — granular permissions (view-only, edit, admin per feature)
+- [ ] **Role-Based Permissions** — granular permissions (view-only, edit, admin per feature)  
+      ↳ **partial** — three fixed roles (SUPER_ADMIN / ORG_ADMIN / ORG_USER) plus per-user device assignments (V8); no per-feature granularity
 
 **Exit criteria:** Reseller deploys white-label instance, enterprise client passes security audit.
 

@@ -93,7 +93,6 @@ table has a `bkash_trx_id` column and the marketing site advertises
 "bKash & Nagad Billing", so the landing page currently promises more than the
 backend delivers — worth closing before launch (`CLAUDE.md` §12.1).
 
-> The per-phase checkboxes in `CLAUDE.md` §16 were not kept up to date in the
-> upstream project and still show Phases 1–4 as unstarted. Treat this section
-> and the code as the source of truth for what exists; §16 remains the plan of
-> record for what is still ahead (Phases 7–14).
+`CLAUDE.md` §16's per-phase checkboxes were audited against the tree on
+2026-09-21 and now carry a `↳` note wherever an item is only partly done, so
+that section is the detailed breakdown behind this summary.
