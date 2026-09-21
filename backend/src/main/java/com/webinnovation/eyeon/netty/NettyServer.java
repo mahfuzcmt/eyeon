@@ -20,7 +20,7 @@ import org.springframework.stereotype.Component;
 @Slf4j
 public class NettyServer {
 
-    @Value("${eyeon.netty.tcp-port:5023}")
+    @Value("${eyeon.netty.tcp-port:5024}")
     private int port;
 
     @Value("${eyeon.netty.boss-threads:1}")

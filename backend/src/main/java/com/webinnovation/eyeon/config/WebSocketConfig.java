@@ -17,7 +17,7 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
     private final StompAuthChannelInterceptor authInterceptor;
 
-    @Value("${eyeon.cors.allowed-origins:http://localhost:3000}")
+    @Value("${eyeon.cors.allowed-origins:http://localhost:3001}")
     private String allowedOrigins;
 
     @Override

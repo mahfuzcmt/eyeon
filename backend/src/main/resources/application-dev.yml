@@ -10,7 +10,7 @@ logging:
 
 eyeon:
   cors:
-    allowed-origins: ${EYEON_CORS_ALLOWED_ORIGINS:http://localhost:3000}
+    allowed-origins: ${EYEON_CORS_ALLOWED_ORIGINS:http://localhost:3001}
   seed:
     enabled: true
     admin-email: admin@eyeon.local

@@ -21,10 +21,10 @@ This starts:
 
 | Service    | Port | Purpose                              |
 |------------|------|--------------------------------------|
-| PostgreSQL | 5432 | App database (PostGIS 3.4 enabled)   |
-| Redis      | 6379 | Hot cache + location pub/sub channel |
+| PostgreSQL | 5433 | App database (PostGIS 3.4 enabled); container port is 5432 |
+| Redis      | 6380 | Hot cache + location pub/sub channel; container port is 6379 |
 
-The backend (Spring Boot + Netty TCP on `5023`) and frontend (Next.js on `3000`) are not yet implemented — that's Phase 1, see `CLAUDE.md` §16.
+The backend (Spring Boot on `8081` + Netty TCP on `5024`) and frontend (Next.js on `3001`) are not yet implemented — that's Phase 1, see `CLAUDE.md` §16.
 
 ---
 

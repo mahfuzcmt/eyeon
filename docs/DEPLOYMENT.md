@@ -9,7 +9,7 @@ This document supersedes the AWS Mumbai outline in CLAUDE.md §15.2 for single-V
 ### Target
 - One Ubuntu 22.04+ VPS with a public IPv4
 - Backend (Spring Boot + Netty TCP), Postgres+PostGIS, Redis, and Next.js frontend co-located
-- No TLS, no nginx, no domain — accessed at `http://<public-ip>:3000`
+- No TLS, no nginx, no domain — accessed at `http://<public-ip>:3001`
 
 ### Prerequisites (you, before running the script)
 - [ ] **Rotate the root password** if it was ever shared in plaintext. Then `passwd` on the box.
@@ -39,7 +39,7 @@ The script pauses at two checkpoints:
 
 1. Verifies Ubuntu/Debian
 2. Installs Docker, docker-compose plugin, ufw, git, python3
-3. Resets ufw and opens 22 (ssh), 8080 (backend), 3000 (frontend), 5023 (Netty TCP)
+3. Resets ufw and opens 22 (ssh), 8081 (backend), 3001 (frontend), 5024 (Netty TCP)
 4. Clones `https://github.com/mahfuzcmt/eyeon.git` into `/opt/eyeon` (or pulls if exists)
 5. Generates `/opt/eyeon/.env` with random JWT secret + Postgres password (chmod 600)
 6. Prompts for Mapbox token
@@ -54,10 +54,10 @@ The script pauses at two checkpoints:
 
 ```bash
 # Backend up?
-curl http://<public-ip>:8080/api/v1/actuator/health
+curl http://<public-ip>:8081/api/v1/actuator/health
 
 # Frontend up?
-curl -I http://<public-ip>:3000
+curl -I http://<public-ip>:3001
 
 # What's running?
 docker compose -f /opt/eyeon/docker-compose.prod.yml --env-file /opt/eyeon/.env ps
@@ -91,7 +91,7 @@ docker exec -it eyeon-postgres psql -U eyeon -d eyeon -c "SELECT email, role, is
 Configure the device via SMS (per CLAUDE.md §7.4):
 
 ```
-SERVER,0,<public-ip>,5023,0#
+SERVER,0,<public-ip>,5024,0#
 APN,gpinternet#
 GMT,E,6,0#
 TIMER,30,300#
@@ -132,12 +132,12 @@ certbot --nginx -d <your-hostname> --non-interactive --agree-tos -m <your-email>
 # Then rebuild frontend (Mapbox token + WS_BASE are baked in):
 docker compose -f /opt/eyeon/docker-compose.prod.yml --env-file /opt/eyeon/.env up -d --build frontend backend
 
-# Open 80/443, close 3000/8080 from the public internet (nginx now proxies them)
+# Open 80/443, close 3001/8081 from the public internet (nginx now proxies them)
 ufw allow 80/tcp
 ufw allow 443/tcp
-ufw delete allow 3000/tcp
-ufw delete allow 8080/tcp
-# 5023 stays open — Netty TCP is direct, not proxied (GT06 doesn't speak TLS)
+ufw delete allow 3001/tcp
+ufw delete allow 8081/tcp
+# 5024 stays open — Netty TCP is direct, not proxied (GT06 doesn't speak TLS)
 ```
 
 ### After Phase 2: harden SSH

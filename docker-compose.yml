@@ -8,7 +8,7 @@ services:
       POSTGRES_USER: ${POSTGRES_USER:-eyeon}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-eyeon_dev}
     ports:
-      - "5432:5432"
+      - "5433:5432"   # host 5433 -> container 5432 (5432 is PingPath)
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -22,7 +22,7 @@ services:
     container_name: eyeon-redis
     restart: unless-stopped
     ports:
-      - "6379:6379"
+      - "6380:6379"   # host 6380 -> container 6379 (6379 is PingPath)
     volumes:
       - redis_data:/data
     healthcheck:

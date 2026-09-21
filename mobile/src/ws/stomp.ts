@@ -4,7 +4,7 @@ import type { AlarmView, LocationView } from "@/types";
 
 type Listener<T> = (msg: T) => void;
 
-const wsUrl = process.env.EXPO_PUBLIC_WS_BASE ?? "ws://10.0.2.2:8080/ws";
+const wsUrl = process.env.EXPO_PUBLIC_WS_BASE ?? "ws://10.0.2.2:8081/ws";
 
 /**
  * One shared STOMP client for the app. The CONNECT frame carries the JWT

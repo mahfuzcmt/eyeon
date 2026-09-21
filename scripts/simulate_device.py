@@ -6,7 +6,7 @@ Sends a login (0x01) packet then periodic V3 location (0x22) and heartbeat (0x13
 packets to the Netty server. Useful for end-to-end testing without real hardware.
 
 Usage:
-    python simulate_device.py --imei 864290061234567 --host 127.0.0.1 --port 5023
+    python simulate_device.py --imei 864290061234567 --host 127.0.0.1 --port 5024
     python simulate_device.py --imei 864290061234567 --lat 23.7806 --lng 90.4193
 
 The default IMEI matches the Flyway V2 seed device for the demo org.
@@ -119,7 +119,7 @@ def expect_ack(sock: socket.socket, label: str) -> None:
 def main() -> int:
     parser = argparse.ArgumentParser(description="GT06 device simulator")
     parser.add_argument("--host", default="127.0.0.1")
-    parser.add_argument("--port", type=int, default=5023)
+    parser.add_argument("--port", type=int, default=5024)
     parser.add_argument("--imei", default="864290061234567")
     parser.add_argument("--lat", type=float, default=23.7806)   # Dhaka
     parser.add_argument("--lng", type=float, default=90.4193)

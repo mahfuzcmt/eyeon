@@ -3,7 +3,7 @@
 
 import { cookies } from "next/headers";
 
-export const COOKIE_NAME = process.env.SESSION_COOKIE_NAME ?? "pp_session";
+export const COOKIE_NAME = process.env.SESSION_COOKIE_NAME ?? "eyeon_session";
 const MAX_AGE = Number(process.env.SESSION_COOKIE_MAX_AGE ?? 86_400);
 
 export interface SessionPayload {
@@ -43,5 +43,5 @@ export async function clearSession(): Promise<void> {
 }
 
 export function backendBase(): string {
-  return process.env.BACKEND_BASE ?? "http://localhost:8080";
+  return process.env.BACKEND_BASE ?? "http://localhost:8081";
 }

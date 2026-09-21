@@ -81,7 +81,7 @@ No inherited `motolink`/`pingpath` identifiers remain in the tree. The one delib
 │ GT06 Vehicle Device │  Concox GT06N / Teltonika / Coban
 │ (cellular SIM)      │
 └──────────┬──────────┘
-           │ TCP binary (port 5023)
+           │ TCP binary (port 5024)
            ▼
 ┌─────────────────────┐
 │ Netty TCP Server    │  GT06 frame decoder + protocol handler
@@ -124,12 +124,14 @@ No inherited `motolink`/`pingpath` identifiers remain in the tree. The one delib
 
 ### 3.3 Network Topology
 
-- Netty TCP server: port `5023` (TCP, public, no TLS — GT06 doesn't support TLS)
-- REST API: port `8080` (HTTPS via Nginx in prod)
-- WebSocket: port `8080` (same backend, different path `/ws`)
-- Frontend: port `3000` (dev), behind CloudFront in prod
-- PostgreSQL: port `5432` (private subnet only)
-- Redis: port `6379` (private subnet only)
+- Netty TCP server: port `5024` (TCP, public, no TLS — GT06 doesn't support TLS)
+- REST API: port `8081` (HTTPS via Nginx in prod)
+- WebSocket: port `8081` (same backend, different path `/ws`)
+- Frontend: port `3001` (dev), behind CloudFront in prod
+- PostgreSQL: container port `5432`, published on host `5433` (private subnet only)
+- Redis: container port `6379`, published on host `6380` (private subnet only)
+
+**Every port is deliberately +1 from PingPath/MotoLink** (which uses 5023 / 8080 / 3000 / 5432 / 6379) so both stacks can run on the same machine at once. The session cookie is `eyeon_session` rather than `pp_session` for the same reason: browser cookies are shared across ports on the same host, so two stacks on `localhost` would otherwise clobber each other's login. Docker container names are `eyeon-*` and the compose project name comes from the `eyeon/` directory, so volumes are namespaced too.
 
 ---
 
@@ -977,7 +979,7 @@ public class ProvisioningConfig {
     String adminPhone;       // SOS,A
     String apn;              // gpinternet, internet, blweb
     String serverHost;       // track.yourdomain.com
-    int serverPort;          // 5023
+    int serverPort;          // 5024
     int gmtOffsetHours;      // 6 for Bangladesh
     int reportIntervalAccOn; // seconds, e.g. 30
     int reportIntervalAccOff; // seconds, e.g. 300
@@ -1444,7 +1446,7 @@ public void checkPendingDeviceCommands() { ... }
 ### 14.4 CORS
 
 - Production: only `https://app.eyeongps.com`
-- Dev: `http://localhost:3000`
+- Dev: `http://localhost:3001`
 
 ### 14.5 Secrets Management
 
@@ -1465,9 +1467,9 @@ Services:
 ```bash
 cp .env.example .env
 docker compose up --build
-# Backend: http://localhost:8080
-# Frontend: http://localhost:3000
-# Netty TCP: localhost:5023 (point your device simulator here)
+# Backend: http://localhost:8081
+# Frontend: http://localhost:3001
+# Netty TCP: localhost:5024 (point your device simulator here)
 ```
 
 ### 15.2 Production — AWS Mumbai
@@ -1477,7 +1479,7 @@ docker compose up --build
 | Service | AWS resource | Sizing (start) |
 |---|---|---|
 | Backend | ECS Fargate (2 tasks for HA) or single t3.medium EC2 | 2 vCPU, 4 GB |
-| TCP Server | Same backend instance, port 5023 in NLB | — |
+| TCP Server | Same backend instance, port 5024 in NLB | — |
 | PostgreSQL | RDS db.t3.medium, multi-AZ | 100 GB gp3 |
 | Redis | ElastiCache cache.t3.micro | — |
 | Frontend | CloudFront + S3 | — |

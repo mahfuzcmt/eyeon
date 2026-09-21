@@ -26,7 +26,7 @@ FROM node:22-alpine AS runtime
 WORKDIR /app
 ENV NODE_ENV=production \
     NEXT_TELEMETRY_DISABLED=1 \
-    PORT=3000
+    PORT=3001
 
 RUN addgroup --system --gid 1001 nextjs \
  && adduser --system --uid 1001 --ingroup nextjs nextjs
@@ -37,5 +37,5 @@ COPY --from=build --chown=nextjs:nextjs /workspace/node_modules ./node_modules
 COPY --from=build --chown=nextjs:nextjs /workspace/package.json ./package.json
 
 USER nextjs
-EXPOSE 3000
+EXPOSE 3001
 CMD ["npm", "run", "start"]

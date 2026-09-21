@@ -7,7 +7,7 @@ spring:
     virtual:
       enabled: true
   datasource:
-    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/eyeon}
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5433/eyeon}
     username: ${SPRING_DATASOURCE_USERNAME:eyeon}
     password: ${SPRING_DATASOURCE_PASSWORD:eyeon_dev}
     hikari:
@@ -24,7 +24,7 @@ spring:
   data:
     redis:
       host: ${SPRING_REDIS_HOST:localhost}
-      port: ${SPRING_REDIS_PORT:6379}
+      port: ${SPRING_REDIS_PORT:6380}
       timeout: 30000ms
       lettuce:
         pool:
@@ -38,7 +38,7 @@ spring:
     default-property-inclusion: non_null
 
 server:
-  port: 8080
+  port: 8081
   servlet:
     context-path: /api/v1
   error:
@@ -64,7 +64,7 @@ eyeon:
     access-ttl-minutes: ${JWT_ACCESS_TTL_MINUTES:60}
     refresh-ttl-days: ${JWT_REFRESH_TTL_DAYS:30}
   netty:
-    tcp-port: ${NETTY_TCP_PORT:5023}
+    tcp-port: ${NETTY_TCP_PORT:5024}
     boss-threads: 1
     worker-threads: 4
     idle-read-seconds: 600

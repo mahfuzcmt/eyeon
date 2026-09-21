@@ -23,7 +23,7 @@ public class SecurityConfig {
 
     private final JwtFilter jwtFilter;
 
-    @Value("${eyeon.cors.allowed-origins:http://localhost:3000}")
+    @Value("${eyeon.cors.allowed-origins:http://localhost:3001}")
     private String allowedOrigins;
 
     @Bean

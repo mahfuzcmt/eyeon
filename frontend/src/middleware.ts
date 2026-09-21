@@ -6,7 +6,7 @@ export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // Check for session cookie
-  const sessionCookie = request.cookies.get(process.env.SESSION_COOKIE_NAME ?? "pp_session");
+  const sessionCookie = request.cookies.get(process.env.SESSION_COOKIE_NAME ?? "eyeon_session");
   const isAuthenticated = !!sessionCookie?.value;
 
   // If user is authenticated and visiting root "/", redirect to dashboard

@@ -11,6 +11,6 @@ WORKDIR /app
 RUN groupadd --system eyeon && useradd --system --gid eyeon eyeon
 COPY target/eyeon.jar app.jar
 USER eyeon
-EXPOSE 8080 5023
+EXPOSE 8081 5024
 ENV JAVA_OPTS="-XX:+UseG1GC -XX:MaxRAMPercentage=75.0"
 ENTRYPOINT ["sh", "-c", "java $JAVA_OPTS -jar /app/app.jar"]

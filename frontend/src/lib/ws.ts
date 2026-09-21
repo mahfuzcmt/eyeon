@@ -34,11 +34,11 @@ class WsClient {
         if (typeof window !== "undefined") {
           const proto = window.location.protocol === "https:" ? "wss:" : "ws:";
           const host = window.location.host;
-          // WebSocket connects to backend on port 8080 with /api/v1 context path
-          const backendHost = host.replace(/:3000$/, ":8080");
+          // WebSocket connects to backend on port 8081 with /api/v1 context path
+          const backendHost = host.replace(/:3001$/, ":8081");
           return `${proto}//${backendHost}/api/v1/ws`;
         }
-        return "ws://localhost:8080/api/v1/ws";
+        return "ws://localhost:8081/api/v1/ws";
       };
 
       const wsUrl = getWsUrl();

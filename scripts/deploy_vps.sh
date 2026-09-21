@@ -11,9 +11,9 @@ set -euo pipefail
 REPO_URL="${REPO_URL:-https://github.com/mahfuzcmt/eyeon.git}"
 REPO_DIR="${REPO_DIR:-/opt/eyeon}"
 PUBLIC_IP="${PUBLIC_IP:-$(curl -fsS https://api.ipify.org || echo 127.0.0.1)}"
-FRONTEND_PORT="${FRONTEND_PORT:-3000}"
-BACKEND_PORT="${BACKEND_PORT:-8080}"
-NETTY_PORT="${NETTY_PORT:-5023}"
+FRONTEND_PORT="${FRONTEND_PORT:-3001}"
+BACKEND_PORT="${BACKEND_PORT:-8081}"
+NETTY_PORT="${NETTY_PORT:-5024}"
 
 log()   { printf "\n\033[1;36m[deploy]\033[0m %s\n" "$*"; }
 warn()  { printf "\n\033[1;33m[warn]\033[0m %s\n" "$*"; }
@@ -136,7 +136,7 @@ NEXT_PUBLIC_MAPBOX_TOKEN=$MAPBOX_TOKEN
 NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=$GOOGLE_MAPS_API_KEY
 
 # Frontend runtime
-SESSION_COOKIE_NAME=pp_session
+SESSION_COOKIE_NAME=eyeon_session
 SESSION_COOKIE_MAX_AGE=86400
 
 # SSL Wireless SMS (optional — leave blank to disable SMS dispatch)

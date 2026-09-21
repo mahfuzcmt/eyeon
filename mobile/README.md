@@ -42,11 +42,11 @@ npm start                 # scan the QR with Expo Go, or press a/i for emulator
 | Var | Meaning |
 |---|---|
 | `EXPO_PUBLIC_API_BASE` | Backend REST base incl. `/api/v1`. Emulator→`10.0.2.2`, device→LAN IP. |
-| `EXPO_PUBLIC_WS_BASE` | STOMP endpoint, e.g. `ws://10.0.2.2:8080/ws`. |
+| `EXPO_PUBLIC_WS_BASE` | STOMP endpoint, e.g. `ws://10.0.2.2:8081/ws`. |
 | `EXPO_PUBLIC_GOOGLE_MAPS_API_KEY` | Google Maps JS API key (same one the web app uses). Empty → free OSM fallback. Referrer-restricted keys must allow `https://mobile.eyeongps.app/*`. |
 
 The backend must be reachable from the phone/emulator. For a physical device, run the backend
-on your machine and use its LAN IP (e.g. `http://192.168.0.10:8080/api/v1`), same Wi‑Fi.
+on your machine and use its LAN IP (e.g. `http://192.168.0.10:8081/api/v1`), same Wi‑Fi.
 
 ## Layout
 ```
