@@ -24,7 +24,26 @@ This starts:
 | PostgreSQL | 5433 | App database (PostGIS 3.4 enabled); container port is 5432 |
 | Redis      | 6380 | Hot cache + location pub/sub channel; container port is 6379 |
 
-The backend (Spring Boot on `8081` + Netty TCP on `5024`) and frontend (Next.js on `3001`) are not yet implemented — that's Phase 1, see `CLAUDE.md` §16.
+Then run the backend and frontend (they are not in `docker-compose.yml`; that file
+only brings up the data services):
+
+```bash
+# Backend — REST + WebSocket on :8081, Netty GT06 TCP ingest on :5024
+cd backend && ./mvnw spring-boot:run
+
+# Frontend — Next.js dev server on :3001
+cd frontend && npm install && npm run dev
+
+# Mobile (optional) — Expo dev client
+cd mobile && npm install && npm start
+```
+
+Every port is +1 from PingPath/MotoLink so both stacks can run at once — see
+`CLAUDE.md` §3.3. To point a device simulator at the TCP server:
+
+```bash
+python3 scripts/simulate_device.py --imei 864290061234567 --host 127.0.0.1 --port 5024
+```
 
 ---
 
@@ -34,18 +53,47 @@ The backend (Spring Boot on `8081` + Netty TCP on `5024`) and frontend (Next.js 
 eyeon/
 ├── CLAUDE.md             # Canonical spec — read first
 ├── docker-compose.yml    # Local Postgres + Redis
+├── docker-compose.prod.yml  # Single-VPS production stack
 ├── .env.example          # Required environment variables
-├── backend/              # Spring Boot 3.3 + Netty + JdbcTemplate (Phase 1)
-├── frontend/             # Next.js 15 + Tailwind + Mapbox (Phase 2)
-├── infra/                # Terraform + Nginx config (Phase 6)
-├── scripts/              # Device simulator, load test (Phase 1, Phase 6)
-└── docs/                 # GT06 protocol notes, API ref, runbook
+├── backend/              # Spring Boot 3.3 + Netty GT06 server + JdbcTemplate
+├── frontend/             # Next.js 15 App Router + Tailwind + Leaflet
+├── mobile/               # Expo / React Native app (Android + iOS)
+├── infra/nginx/          # Reverse-proxy config (infra/terraform is still empty)
+├── scripts/              # deploy_vps.sh, GT06 device simulator
+└── docs/                 # GT06 protocol notes, deployment, competitor analysis
 ```
 
 ---
 
 ## Status
 
-**Current phase:** Pre-Phase 1 — repo skeleton only. No application code yet.
+Inherited from the MotoLink/PingPath fork, so the launch-phase feature work is
+largely built rather than pending:
 
-See `CLAUDE.md` §16 for the 6-phase, 12-week build plan.
+- **Backend** — 24 REST controllers, 18 Flyway migrations, GT06 protocol decoder
+  (0x12 V1.8 / 0x22 V3 / 0x32 V4 / 0xA0 4G), Netty TCP ingest, STOMP WebSocket
+  fanout, geofences, trips, alarms + alarm rules, device commands,
+  reports/Excel export, subscriptions, SSL Wireless SMS, Expo push.
+  10 test classes, 36 tests.
+- **Frontend** — dashboard (live map, devices, geofences, trips, alarms, rules,
+  drivers, reports, scheduled commands, audit log, admin, settings) plus a
+  Bengali/English marketing site and public share links.
+- **Mobile** — Expo app: login, live map, vehicle list, device detail, alerts,
+  circle geofences, push notifications.
+
+Not yet done: CI (`.github/workflows` is empty), Terraform
+(`infra/terraform` is empty), Prometheus/Grafana monitoring, load testing, and
+frontend tests. Deployment today is `scripts/deploy_vps.sh` onto a single VPS —
+see [`docs/DEPLOYMENT.md`](./docs/DEPLOYMENT.md).
+
+**No payment gateway is implemented.** `BillingController` exposes read-only
+subscription endpoints only; there is no bKash or Nagad checkout, execute call
+or webhook anywhere in `backend/src`, and no `BillingService`. The `payments`
+table has a `bkash_trx_id` column and the marketing site advertises
+"bKash & Nagad Billing", so the landing page currently promises more than the
+backend delivers — worth closing before launch (`CLAUDE.md` §12.1).
+
+> The per-phase checkboxes in `CLAUDE.md` §16 were not kept up to date in the
+> upstream project and still show Phases 1–4 as unstarted. Treat this section
+> and the code as the source of truth for what exists; §16 remains the plan of
+> record for what is still ahead (Phases 7–14).
