@@ -185,7 +185,9 @@ cd /opt/eyeon
 docker compose -f docker-compose.shared.yml --env-file .env up -d --build eyeon-backend
 nice -n 15 ionice -c3 docker compose -f docker-compose.shared.yml --env-file .env build eyeon-frontend   # ~3 min, heap capped at 1 GB
 docker compose -f docker-compose.shared.yml --env-file .env up -d eyeon-frontend
-python3 scripts/smoke_trusted_places.py      # end-to-end check against the live stack; removes its own data
+# end-to-end checks against the live stack; each removes its own data. Run detached and under a lock:
+# an SSH drop leaves the remote run going, and two overlapping runs delete each other's test data.
+nohup flock -n /tmp/eyeon-smoke.lock sh -c "python3 scripts/smoke_trusted_places.py; python3 scripts/smoke_privacy.py" > /tmp/eyeon-smoke.log 2>&1 &
 ```
 
 Never use `down -v` (it deletes the database volume `eyeon_postgres_data`).

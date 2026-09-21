@@ -161,8 +161,8 @@ def main() -> int:
             time.sleep(args.interval)
 
         if args.sos:
-            # A real tracker sends SOS some time after login; give the server's asynchronous
-            # login lookup a moment so the alarm is not dropped (CLAUDE.md section 18 item 0).
+            # Packets sent while the server is still looking up the login are queued, not dropped
+            # (netty/LoginGate, since 2026-09-21), so the SOS can follow the login immediately.
             sos = build_location_v3(args.lat, args.lng, 0, args.course, serial, alarm_code=0x01)
             print(f"-> SOS alarm ({len(sos)} bytes): {sos.hex()}")
             sock.sendall(sos)

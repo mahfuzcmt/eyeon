@@ -79,6 +79,14 @@ public class GlobalExceptionHandler {
                 .body(new ErrorEnvelope(new ErrorBody("MALFORMED_REQUEST", "Request body could not be read", null)));
     }
 
+    /** A malformed path or query value, e.g. /geofences/not-a-uuid: the client's mistake, not a server error. */
+    @ExceptionHandler(org.springframework.web.method.annotation.MethodArgumentTypeMismatchException.class)
+    public ResponseEntity<ErrorEnvelope> handleTypeMismatch(
+            org.springframework.web.method.annotation.MethodArgumentTypeMismatchException e) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(new ErrorEnvelope(new ErrorBody("VALIDATION", "Invalid value for '" + e.getName() + "'", null)));
+    }
+
     @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
     public ResponseEntity<ErrorEnvelope> handleMethod(HttpRequestMethodNotSupportedException e) {
         return ResponseEntity.status(HttpStatus.METHOD_NOT_ALLOWED)

@@ -150,30 +150,57 @@ public class Gt06Handler extends SimpleChannelInboundHandler<ByteBuf> {
         // ACK first — devices disconnect after 5s without a response
         ctx.writeAndFlush(packetEncoder.buildLoginAck(serial));
 
-        // Lookup off the event loop
+        // Packets that arrive while the lookup below is running wait in this gate instead of
+        // being dropped (a tracker may send its SOS milliseconds after logging in).
+        LoginGate fresh = new LoginGate();
+        LoginGate existing = ctx.channel().attr(ChannelKeys.LOGIN_GATE_KEY).setIfAbsent(fresh);
+        LoginGate gate = existing != null ? existing : fresh;
+
+        // Lookup off the event loop. The gate is resolved exactly once, in `finally`, so even an
+        // unexpected failure (database briefly unreachable) never leaves packets queued forever.
         ingestExecutor.execute(() -> {
-            Optional<Device> deviceOpt = deviceService.findByImei(imei);
-            Device d;
-            if (deviceOpt.isEmpty()) {
-                // Auto-register new devices on first connection
-                log.info("New device IMEI {} — auto-registering", imei);
-                try {
-                    d = deviceService.autoRegister(imei);
-                } catch (Exception e) {
-                    log.error("Auto-registration failed for IMEI {}: {}", imei, e.getMessage());
-                    ctx.channel().attr(ChannelKeys.IMEI_KEY).set(imei);
-                    ctx.channel().attr(ChannelKeys.REGISTERED_KEY).set(false);
-                    return;
+            LoginGate.Session session = null;
+            try {
+                Optional<Device> deviceOpt = deviceService.findByImei(imei);
+                Device d;
+                if (deviceOpt.isEmpty()) {
+                    // Auto-register new devices on first connection
+                    log.info("New device IMEI {} — auto-registering", imei);
+                    try {
+                        d = deviceService.autoRegister(imei);
+                    } catch (Exception e) {
+                        log.error("Auto-registration failed for IMEI {}: {}", imei, e.getMessage());
+                        ctx.channel().attr(ChannelKeys.IMEI_KEY).set(imei);
+                        ctx.channel().attr(ChannelKeys.REGISTERED_KEY).set(false);
+                        return;
+                    }
+                } else {
+                    d = deviceOpt.get();
                 }
-            } else {
-                d = deviceOpt.get();
+                ctx.channel().attr(ChannelKeys.IMEI_KEY).set(imei);
+                ctx.channel().attr(ChannelKeys.ORG_ID_KEY).set(d.orgId());
+                ctx.channel().attr(ChannelKeys.REGISTERED_KEY).set(true);
+                session = new LoginGate.Session(imei, d.orgId());
+                deviceCommandService.registerChannel(imei, ctx.channel());
+                deviceService.markOnline(imei);
+            } catch (Exception e) {
+                log.error("Login lookup failed for IMEI {}: {}", imei, e.getMessage(), e);
+            } finally {
+                int n = gate.resolve(session, ingestExecutor);
+                if (n > 0) {
+                    if (session != null) {
+                        log.info("Released {} packets from IMEI {} that arrived during login", n, imei);
+                    } else {
+                        log.warn("Discarded {} packets from IMEI {} whose login could not be completed", n, imei);
+                    }
+                }
             }
-            ctx.channel().attr(ChannelKeys.IMEI_KEY).set(imei);
-            ctx.channel().attr(ChannelKeys.ORG_ID_KEY).set(d.orgId());
-            ctx.channel().attr(ChannelKeys.REGISTERED_KEY).set(true);
-            deviceCommandService.registerChannel(imei, ctx.channel());
-            deviceService.markOnline(imei);
         });
+    }
+
+    /** The connection's login gate; null when no login packet has been seen on this channel. */
+    private static LoginGate gateOf(ChannelHandlerContext ctx) {
+        return ctx.channel().attr(ChannelKeys.LOGIN_GATE_KEY).get();
     }
 
     @Override
@@ -188,17 +215,9 @@ public class Gt06Handler extends SimpleChannelInboundHandler<ByteBuf> {
         // ACK immediately
         ctx.writeAndFlush(packetEncoder.buildAck(proto, serial));
 
-        Boolean registered = ctx.channel().attr(ChannelKeys.REGISTERED_KEY).get();
-        if (registered == null || !registered) {
-            log.debug("Dropping location packet from unregistered channel id={}",
-                    ctx.channel().id());
-            return;
-        }
-
-        String imei = ctx.channel().attr(ChannelKeys.IMEI_KEY).get();
-        UUID orgId = ctx.channel().attr(ChannelKeys.ORG_ID_KEY).get();
-        if (imei == null || orgId == null) {
-            log.debug("Dropping location packet — missing imei/orgId on channel attrs");
+        LoginGate gate = gateOf(ctx);
+        if (gate == null) {
+            log.debug("Dropping packet on channel id={} that never logged in", ctx.channel().id());
             return;
         }
 
@@ -206,7 +225,9 @@ public class Gt06Handler extends SimpleChannelInboundHandler<ByteBuf> {
         byte[] raw = new byte[content.readableBytes()];
         content.getBytes(content.readerIndex(), raw);
 
-        ingestExecutor.execute(() -> {
+        gate.submit(session -> {
+            String imei = session.imei();
+            UUID orgId = session.orgId();
             try {
                 io.netty.buffer.ByteBuf detached = io.netty.buffer.Unpooled.wrappedBuffer(raw);
                 LocationData loc = packetDecoder.decodeLocation(detached, proto);
@@ -220,26 +241,25 @@ public class Gt06Handler extends SimpleChannelInboundHandler<ByteBuf> {
             } catch (Exception e) {
                 log.error("Location decode/persist failed for imei={}: {}", imei, e.getMessage(), e);
             }
-        });
+        }, ingestExecutor);
     }
 
     private void handleAlarm(ChannelHandlerContext ctx, int serial, ByteBuf content) {
         // ACK first — alarm packets follow the standard ACK protocol
         ctx.writeAndFlush(packetEncoder.buildAck(PacketType.ALARM, serial));
 
-        Boolean registered = ctx.channel().attr(ChannelKeys.REGISTERED_KEY).get();
-        if (registered == null || !registered) {
-            log.debug("Dropping alarm packet from unregistered channel id={}", ctx.channel().id());
+        LoginGate gate = gateOf(ctx);
+        if (gate == null) {
+            log.debug("Dropping packet on channel id={} that never logged in", ctx.channel().id());
             return;
         }
-        String imei = ctx.channel().attr(ChannelKeys.IMEI_KEY).get();
-        UUID orgId = ctx.channel().attr(ChannelKeys.ORG_ID_KEY).get();
-        if (imei == null || orgId == null) return;
 
         byte[] raw = new byte[content.readableBytes()];
         content.getBytes(content.readerIndex(), raw);
 
-        ingestExecutor.execute(() -> {
+        gate.submit(session -> {
+            String imei = session.imei();
+            UUID orgId = session.orgId();
             try {
                 io.netty.buffer.ByteBuf detached = io.netty.buffer.Unpooled.wrappedBuffer(raw);
                 LocationData loc = packetDecoder.decodeAlarm(detached);
@@ -286,7 +306,7 @@ public class Gt06Handler extends SimpleChannelInboundHandler<ByteBuf> {
             } catch (Exception e) {
                 log.error("Alarm decode/persist failed for imei={}: {}", imei, e.getMessage(), e);
             }
-        });
+        }, ingestExecutor);
     }
 
     private void handleCommandReply(ChannelHandlerContext ctx, ByteBuf content) {
@@ -307,15 +327,20 @@ public class Gt06Handler extends SimpleChannelInboundHandler<ByteBuf> {
 
     private void handleHeartbeat(ChannelHandlerContext ctx, int serial, ByteBuf content) {
         ctx.writeAndFlush(packetEncoder.buildAck(PacketType.HEARTBEAT, serial));
-        String imei = ctx.channel().attr(ChannelKeys.IMEI_KEY).get();
-        if (imei == null) return;
+        LoginGate gate = gateOf(ctx);
+        if (gate == null) {
+            log.debug("Dropping packet on channel id={} that never logged in", ctx.channel().id());
+            return;
+        }
 
         // Snapshot the status block off the event loop. Older firmware sends a
         // bare heartbeat (no status); decoder returns null in that case.
         byte[] raw = new byte[content.readableBytes()];
         content.getBytes(content.readerIndex(), raw);
 
-        ingestExecutor.execute(() -> {
+        gate.submit(session -> {
+            String imei = session.imei();
+            UUID orgId = session.orgId();
             try {
                 io.netty.buffer.ByteBuf detached = io.netty.buffer.Unpooled.wrappedBuffer(raw);
                 PacketDecoder.HeartbeatStatus status = packetDecoder.decodeHeartbeat(detached);
@@ -328,7 +353,7 @@ public class Gt06Handler extends SimpleChannelInboundHandler<ByteBuf> {
                 log.warn("Heartbeat status decode failed for imei={}: {}", imei, e.getMessage());
                 deviceService.markOnline(imei);
             }
-        });
+        }, ingestExecutor);
     }
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -341,13 +366,18 @@ public class Gt06Handler extends SimpleChannelInboundHandler<ByteBuf> {
      */
     private void handleJimiHeartbeat(ChannelHandlerContext ctx, int serial, ByteBuf content) {
         ctx.writeAndFlush(packetEncoder.buildAck(PacketType.JIMI_HEARTBEAT, serial));
-        String imei = ctx.channel().attr(ChannelKeys.IMEI_KEY).get();
-        if (imei == null) return;
+        LoginGate gate = gateOf(ctx);
+        if (gate == null) {
+            log.debug("Dropping packet on channel id={} that never logged in", ctx.channel().id());
+            return;
+        }
 
         byte[] raw = new byte[content.readableBytes()];
         content.getBytes(content.readerIndex(), raw);
 
-        ingestExecutor.execute(() -> {
+        gate.submit(session -> {
+            String imei = session.imei();
+            UUID orgId = session.orgId();
             try {
                 io.netty.buffer.ByteBuf detached = io.netty.buffer.Unpooled.wrappedBuffer(raw);
                 PacketDecoder.HeartbeatStatus status = packetDecoder.decodeHeartbeat(detached);
@@ -360,7 +390,7 @@ public class Gt06Handler extends SimpleChannelInboundHandler<ByteBuf> {
                 log.warn("Jimi heartbeat decode failed for imei={}: {}", imei, e.getMessage());
                 deviceService.markOnline(imei);
             }
-        });
+        }, ingestExecutor);
     }
 
     /**
@@ -369,19 +399,18 @@ public class Gt06Handler extends SimpleChannelInboundHandler<ByteBuf> {
     private void handleJimiAlarm(ChannelHandlerContext ctx, int serial, ByteBuf content) {
         ctx.writeAndFlush(packetEncoder.buildAck(PacketType.JIMI_ALARM, serial));
 
-        Boolean registered = ctx.channel().attr(ChannelKeys.REGISTERED_KEY).get();
-        if (registered == null || !registered) {
-            log.debug("Dropping Jimi alarm from unregistered channel id={}", ctx.channel().id());
+        LoginGate gate = gateOf(ctx);
+        if (gate == null) {
+            log.debug("Dropping packet on channel id={} that never logged in", ctx.channel().id());
             return;
         }
-        String imei = ctx.channel().attr(ChannelKeys.IMEI_KEY).get();
-        UUID orgId = ctx.channel().attr(ChannelKeys.ORG_ID_KEY).get();
-        if (imei == null || orgId == null) return;
 
         byte[] raw = new byte[content.readableBytes()];
         content.getBytes(content.readerIndex(), raw);
 
-        ingestExecutor.execute(() -> {
+        gate.submit(session -> {
+            String imei = session.imei();
+            UUID orgId = session.orgId();
             try {
                 io.netty.buffer.ByteBuf detached = io.netty.buffer.Unpooled.wrappedBuffer(raw);
                 LocationData loc = packetDecoder.decodeJimiAlarm(detached);
@@ -401,7 +430,7 @@ public class Gt06Handler extends SimpleChannelInboundHandler<ByteBuf> {
             } catch (Exception e) {
                 log.error("Jimi alarm decode/persist failed for imei={}: {}", imei, e.getMessage(), e);
             }
-        });
+        }, ingestExecutor);
     }
 
     /**
@@ -410,19 +439,18 @@ public class Gt06Handler extends SimpleChannelInboundHandler<ByteBuf> {
     private void handleJimiAlarmHvt001(ChannelHandlerContext ctx, int serial, ByteBuf content) {
         ctx.writeAndFlush(packetEncoder.buildAck(PacketType.JIMI_ALARM_HVT001, serial));
 
-        Boolean registered = ctx.channel().attr(ChannelKeys.REGISTERED_KEY).get();
-        if (registered == null || !registered) {
-            log.debug("Dropping Jimi HVT001 alarm from unregistered channel id={}", ctx.channel().id());
+        LoginGate gate = gateOf(ctx);
+        if (gate == null) {
+            log.debug("Dropping packet on channel id={} that never logged in", ctx.channel().id());
             return;
         }
-        String imei = ctx.channel().attr(ChannelKeys.IMEI_KEY).get();
-        UUID orgId = ctx.channel().attr(ChannelKeys.ORG_ID_KEY).get();
-        if (imei == null || orgId == null) return;
 
         byte[] raw = new byte[content.readableBytes()];
         content.getBytes(content.readerIndex(), raw);
 
-        ingestExecutor.execute(() -> {
+        gate.submit(session -> {
+            String imei = session.imei();
+            UUID orgId = session.orgId();
             try {
                 io.netty.buffer.ByteBuf detached = io.netty.buffer.Unpooled.wrappedBuffer(raw);
                 // HVT001 uses the same alarm format as standard Jimi alarm
@@ -442,7 +470,7 @@ public class Gt06Handler extends SimpleChannelInboundHandler<ByteBuf> {
             } catch (Exception e) {
                 log.error("Jimi HVT001 alarm decode/persist failed for imei={}: {}", imei, e.getMessage(), e);
             }
-        });
+        }, ingestExecutor);
     }
 
     /**
@@ -451,16 +479,18 @@ public class Gt06Handler extends SimpleChannelInboundHandler<ByteBuf> {
     private void handleJimiLbsAlarm(ChannelHandlerContext ctx, int serial, ByteBuf content) {
         ctx.writeAndFlush(packetEncoder.buildAck(PacketType.JIMI_LBS_ALARM, serial));
 
-        Boolean registered = ctx.channel().attr(ChannelKeys.REGISTERED_KEY).get();
-        if (registered == null || !registered) return;
-        String imei = ctx.channel().attr(ChannelKeys.IMEI_KEY).get();
-        UUID orgId = ctx.channel().attr(ChannelKeys.ORG_ID_KEY).get();
-        if (imei == null || orgId == null) return;
+        LoginGate gate = gateOf(ctx);
+        if (gate == null) {
+            log.debug("Dropping packet on channel id={} that never logged in", ctx.channel().id());
+            return;
+        }
 
         byte[] raw = new byte[content.readableBytes()];
         content.getBytes(content.readerIndex(), raw);
 
-        ingestExecutor.execute(() -> {
+        gate.submit(session -> {
+            String imei = session.imei();
+            UUID orgId = session.orgId();
             try {
                 io.netty.buffer.ByteBuf detached = io.netty.buffer.Unpooled.wrappedBuffer(raw);
                 LocationData loc = packetDecoder.decodeJimiLbsAlarm(detached);
@@ -482,7 +512,7 @@ public class Gt06Handler extends SimpleChannelInboundHandler<ByteBuf> {
             } catch (Exception e) {
                 log.error("Jimi LBS alarm decode failed for imei={}: {}", imei, e.getMessage(), e);
             }
-        });
+        }, ingestExecutor);
     }
 
     /**
@@ -521,12 +551,18 @@ public class Gt06Handler extends SimpleChannelInboundHandler<ByteBuf> {
      */
     private void handleJimiInfoTransmission(ChannelHandlerContext ctx, int serial, ByteBuf content) {
         ctx.writeAndFlush(packetEncoder.buildAck(PacketType.JIMI_INFO_TRANSMISSION, serial));
-        String imei = ctx.channel().attr(ChannelKeys.IMEI_KEY).get();
+        LoginGate gate = gateOf(ctx);
+        if (gate == null) {
+            log.debug("Dropping packet on channel id={} that never logged in", ctx.channel().id());
+            return;
+        }
 
         byte[] raw = new byte[content.readableBytes()];
         content.getBytes(content.readerIndex(), raw);
 
-        ingestExecutor.execute(() -> {
+        gate.submit(session -> {
+            String imei = session.imei();
+            UUID orgId = session.orgId();
             try {
                 io.netty.buffer.ByteBuf detached = io.netty.buffer.Unpooled.wrappedBuffer(raw);
                 String info = packetDecoder.decodeJimiInfoTransmission(detached);
@@ -534,7 +570,7 @@ public class Gt06Handler extends SimpleChannelInboundHandler<ByteBuf> {
             } catch (Exception e) {
                 log.warn("Jimi info transmission decode failed for imei={}: {}", imei, e.getMessage());
             }
-        });
+        }, ingestExecutor);
     }
 
     /**
