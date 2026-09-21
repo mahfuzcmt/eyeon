@@ -120,10 +120,18 @@ public class ExcelExportService {
     /**
      * Export alarms report to Excel.
      */
-    public byte[] exportAlarms(UUID orgId, LocalDate from, LocalDate to) throws IOException {
+    /**
+     * @param visible children the requesting user may see; null = the whole organization
+     * @param viewer  the requesting user, for the geofence-owner rule (their own place alerts only)
+     */
+    public byte[] exportAlarms(UUID orgId, LocalDate from, LocalDate to,
+                               java.util.Set<String> visible, UUID viewer) throws IOException {
         Instant fromTs = from.atStartOfDay(DHAKA).toInstant();
         Instant toTs = to.plusDays(1).atStartOfDay(DHAKA).toInstant();
-        List<Alarm> alarms = alarmRepo.findInRange(orgId, fromTs, toTs);
+        List<Alarm> alarms = alarmRepo.findInRange(orgId, fromTs, toTs).stream()
+                .filter(a -> DeviceAccessService.canSee(visible, a.deviceImei()))
+                .filter(a -> com.webinnovation.eyeon.repository.AlarmRepository.visibleTo(a, viewer))
+                .toList();
 
         try (XSSFWorkbook workbook = new XSSFWorkbook()) {
             Sheet sheet = workbook.createSheet("Alarms Report");

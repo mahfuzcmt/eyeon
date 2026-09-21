@@ -50,7 +50,8 @@ const NAV_SECTIONS: NavSection[] = [
     activeColor: "#0C5A4D",
     children: [
       { href: "/dashboard/home", label: "nav.home", icon: <HomeIcon /> },
-      { href: "/dashboard/reports", label: "nav.reports", icon: <ReportIcon /> },
+      // Organization-wide reports need an admin (server: DeviceAccessService.requireSeesAll).
+      { href: "/dashboard/reports", label: "nav.reports", icon: <ReportIcon />, adminOnly: true },
     ],
   },
   {

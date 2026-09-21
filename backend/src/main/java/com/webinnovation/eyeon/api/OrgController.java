@@ -48,6 +48,7 @@ public class OrgController {
     private static final String ROLE_SUPER = "SUPER_ADMIN";
 
     private final OrganizationRepository orgRepo;
+    private final com.webinnovation.eyeon.ws.LiveAudience liveAudience;
     private final UserRepository userRepo;
     private final UserDeviceRepository userDeviceRepo;
     private final DeviceRepository deviceRepo;
@@ -108,6 +109,7 @@ public class OrgController {
                 passwordEncoder.encode(body.password()), body.fullName(), role);
         User created = userRepo.findById(id).orElseThrow();
 
+        liveAudience.invalidate(TenantContext.requireOrgId());
         audit.record("USER_CREATE", "user", id.toString(),
                 Map.of("email", body.email(), "role", role));
         return ResponseEntity.status(HttpStatus.CREATED).body(UserView.of(created));
@@ -135,6 +137,7 @@ public class OrgController {
         }
 
         User updated = userRepo.findById(id).orElseThrow();
+        liveAudience.invalidate(TenantContext.requireOrgId());
         audit.record("USER_UPDATE", "user", id.toString(),
                 Map.of("fields", nonNullFields(body), "passwordChanged",
                         body.password() != null && !body.password().isBlank()));
@@ -154,6 +157,7 @@ public class OrgController {
         if (rows == 0) {
             throw new NotFoundException("user", id.toString());
         }
+        liveAudience.invalidate(TenantContext.requireOrgId());
         audit.record("USER_DISABLE", "user", id.toString(), null);
         return ResponseEntity.noContent().build();
     }
@@ -189,6 +193,7 @@ public class OrgController {
 
         userDeviceRepo.assignMultiple(userId, body.deviceImeis(), assignedBy);
 
+        liveAudience.invalidate(TenantContext.requireOrgId());
         audit.record("USER_DEVICES_ASSIGN", "user", userId.toString(),
                 Map.of("devices", body.deviceImeis()));
 
@@ -215,6 +220,7 @@ public class OrgController {
         List<String> imeis = body.deviceImeis() == null ? List.of() : body.deviceImeis();
         userDeviceRepo.replaceAssignments(userId, imeis, assignedBy);
 
+        liveAudience.invalidate(TenantContext.requireOrgId());
         audit.record("USER_DEVICES_SET", "user", userId.toString(),
                 Map.of("devices", imeis));
 
@@ -235,6 +241,7 @@ public class OrgController {
 
         userDeviceRepo.unassign(userId, imei);
 
+        liveAudience.invalidate(TenantContext.requireOrgId());
         audit.record("USER_DEVICE_UNASSIGN", "user", userId.toString(),
                 Map.of("device", imei));
 
@@ -255,6 +262,7 @@ public class OrgController {
 
         userRepo.updateSeeAllDevices(userId, orgId, body.seeAllDevices());
 
+        liveAudience.invalidate(TenantContext.requireOrgId());
         audit.record("USER_SEE_ALL_DEVICES_UPDATE", "user", userId.toString(),
                 Map.of("seeAllDevices", body.seeAllDevices()));
 

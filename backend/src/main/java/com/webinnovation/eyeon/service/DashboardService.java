@@ -28,8 +28,16 @@ public class DashboardService {
     private final AlarmRepository alarms;
     private final TripRepository trips;
 
-    public KpiSnapshot snapshot(UUID orgId) {
-        Map<String, Integer> byStatus = devices.countByStatus(orgId);
+    /**
+     * @param visible IMEIs the viewer may see; null = the whole organization
+     * @param viewer  the user asking, for the geofence-owner rule on alarm counts
+     */
+    public KpiSnapshot snapshot(UUID orgId, java.util.Set<String> visible, UUID viewer) {
+        Map<String, Integer> byStatus = visible == null
+                ? devices.countByStatus(orgId)
+                : devices.listForOrg(orgId).stream()
+                        .filter(d -> visible.contains(d.imei()))
+                        .collect(java.util.stream.Collectors.toMap(d -> d.status(), d -> 1, Integer::sum));
         int online = byStatus.getOrDefault("ONLINE", 0);
         int offline = byStatus.getOrDefault("OFFLINE", 0);
         int never = byStatus.getOrDefault("NEVER_CONNECTED", 0);
@@ -42,12 +50,12 @@ public class DashboardService {
                 online,
                 offline,
                 never,
-                alarms.countSince(orgId, startOfDay),
-                alarms.countCriticalSince(orgId, startOfDay),
-                alarms.countUnacknowledged(orgId),
-                trips.countActive(orgId),
-                trips.countCompletedSince(orgId, startOfDay),
-                trips.sumDistanceSince(orgId, startOfDay),
+                alarms.countSince(orgId, startOfDay, visible, viewer),
+                alarms.countCriticalSince(orgId, startOfDay, visible, viewer),
+                alarms.countUnacknowledged(orgId, visible, viewer),
+                visible == null ? trips.countActive(orgId) : 0,
+                visible == null ? trips.countCompletedSince(orgId, startOfDay) : 0,
+                visible == null ? trips.sumDistanceSince(orgId, startOfDay) : 0,
                 Instant.now()
         );
     }

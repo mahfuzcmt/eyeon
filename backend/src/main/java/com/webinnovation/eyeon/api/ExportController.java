@@ -3,6 +3,7 @@ package com.webinnovation.eyeon.api;
 import com.webinnovation.eyeon.exception.DomainException;
 import com.webinnovation.eyeon.security.TenantContext;
 import com.webinnovation.eyeon.service.ExcelExportService;
+import com.webinnovation.eyeon.service.DeviceAccessService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpHeaders;
@@ -30,6 +31,7 @@ public class ExportController {
             "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
 
     private final ExcelExportService exportService;
+    private final DeviceAccessService access;
     private final com.webinnovation.eyeon.service.AlarmService alarmService;
 
     /**
@@ -41,6 +43,7 @@ public class ExportController {
             @RequestParam(name = "from") String fromIso,
             @RequestParam(name = "to") String toIso) throws IOException {
         UUID orgId = TenantContext.requireOrgId();
+        access.requireSeesAll();
         LocalDate from = parseDate(fromIso, "from");
         LocalDate to = parseDate(toIso, "to");
         validateDateRange(from, to);
@@ -63,8 +66,10 @@ public class ExportController {
         LocalDate to = parseDate(toIso, "to");
         validateDateRange(from, to);
 
+        // Filtered to the caller: a parent exports only their own children's alerts.
         log.info("Exporting alarms to Excel for org={} from={} to={}", orgId, from, to);
-        byte[] data = exportService.exportAlarms(orgId, from, to);
+        byte[] data = exportService.exportAlarms(orgId, from, to,
+                access.visibleForCurrentUser(), TenantContext.currentUserId());
         return xlsx(data, "alarms_" + from + "_" + to + ".xlsx");
     }
 
@@ -79,7 +84,8 @@ public class ExportController {
         validateDateRange(from, to);
         java.time.ZoneId dhaka = java.time.ZoneId.of("Asia/Dhaka");
         var overview = alarmService.overview(orgId,
-                from.atStartOfDay(dhaka).toInstant(), to.plusDays(1).atStartOfDay(dhaka).toInstant());
+                from.atStartOfDay(dhaka).toInstant(), to.plusDays(1).atStartOfDay(dhaka).toInstant(),
+                access.visibleForCurrentUser(), TenantContext.currentUserId());
         byte[] data = exportService.exportAlarmOverview(orgId, from, to, overview);
         return xlsx(data, "alarm_overview_" + from + "_" + to + ".xlsx");
     }
@@ -93,6 +99,7 @@ public class ExportController {
             @RequestParam(name = "device") String imei,
             @RequestParam(name = "month") String monthStr) throws IOException {
         UUID orgId = TenantContext.requireOrgId();
+        access.requireVisible(imei);
         YearMonth month = parseMonth(monthStr);
 
         log.info("Exporting monthly summary to Excel for org={} device={} month={}", orgId, imei, month);
@@ -107,6 +114,7 @@ public class ExportController {
     @GetMapping(value = "/devices.xlsx", produces = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
     public ResponseEntity<byte[]> exportDevices() throws IOException {
         UUID orgId = TenantContext.requireOrgId();
+        access.requireSeesAll();
 
         log.info("Exporting devices to Excel for org={}", orgId);
         byte[] data = exportService.exportDevices(orgId);
@@ -123,6 +131,7 @@ public class ExportController {
             @RequestParam(name = "from") String fromIso,
             @RequestParam(name = "to") String toIso) throws IOException {
         UUID orgId = TenantContext.requireOrgId();
+        access.requireVisible(imei);
         LocalDate from = parseDate(fromIso, "from");
         LocalDate to = parseDate(toIso, "to");
         validateDateRange(from, to);

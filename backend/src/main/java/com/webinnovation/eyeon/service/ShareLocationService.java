@@ -92,6 +92,13 @@ public class ShareLocationService {
      * Revoke (deactivate) a share link.
      */
     @Transactional
+    /** The tracker a link shares; 404 when the link does not exist in this organization. */
+    public String deviceImeiOf(UUID orgId, UUID linkId) {
+        return linkRepo.findById(orgId, linkId)
+                .map(ShareLocationLink::deviceImei)
+                .orElseThrow(() -> new NotFoundException("Share link not found"));
+    }
+
     public void revokeLink(UUID orgId, UUID linkId) {
         boolean success = linkRepo.deactivate(orgId, linkId);
         if (!success) {

@@ -102,16 +102,53 @@ public class AlarmRepository {
     }
 
     public List<Alarm> listForOrg(UUID orgId, Boolean onlyUnacked, int limit, int offset) {
-        return listForOrg(orgId, new AlarmFilter(onlyUnacked, null, null, null, null, null, null), limit, offset);
+        return listForOrg(orgId, new AlarmFilter(onlyUnacked, null, null, null, null, null, null, null), limit, offset);
+    }
+
+    /** Metadata key holding the user who owns the geofence / trusted place that raised an alarm. */
+    public static final String GEOFENCE_OWNER_KEY = "geofenceOwnerId";
+
+    private static final java.util.Set<String> GEOFENCE_TYPES =
+            java.util.Set.of("PLACE_ARRIVED", "PLACE_LEFT", "GEOFENCE_ENTER", "GEOFENCE_EXIT");
+
+    /**
+     * Geofences and trusted places belong to one user, so the alarms they raise are that user's
+     * alone: a parent's "reached Home" is not shown to the school admin or to another parent of
+     * the same child. Alarms without an owner (raised by the tracker's own geofence feature, or
+     * before owners existed) stay visible to everyone who can see the child.
+     */
+    private static final String OWNER_FILTER =
+            " AND (type NOT IN ('PLACE_ARRIVED','PLACE_LEFT','GEOFENCE_ENTER','GEOFENCE_EXIT')"
+            + " OR metadata->>'" + GEOFENCE_OWNER_KEY + "' IS NULL"
+            + " OR metadata->>'" + GEOFENCE_OWNER_KEY + "' = :viewer)";
+
+    /** Same rule as {@link #OWNER_FILTER}, for a single alarm already loaded. */
+    public static boolean visibleTo(Alarm a, UUID viewer) {
+        if (viewer == null || !GEOFENCE_TYPES.contains(a.type()) || a.metadata() == null) return true;
+        Object owner = a.metadata().get(GEOFENCE_OWNER_KEY);
+        return owner == null || owner.toString().equals(viewer.toString());
+    }
+
+    private static void restrict(StringBuilder sql, MapSqlParameterSource params,
+                                 Collection<String> imeis, UUID viewer) {
+        if (imeis != null) {
+            sql.append(" AND device_imei IN (:imeis)");
+            params.addValue("imeis", imeis);
+        }
+        if (viewer != null) {
+            sql.append(OWNER_FILTER);
+            params.addValue("viewer", viewer.toString());
+        }
     }
 
     /**
      * Optional filters for the alarm center; every field may be null.
      * {@code imeis} restricts results to the caller's visible devices: null = unrestricted,
-     * empty = the caller may see no device at all (returns nothing).
+     * empty = the caller may see no device at all (returns nothing). {@code viewer} applies the
+     * geofence-owner rule ({@link #OWNER_FILTER}); null = no owner filtering.
      */
     public record AlarmFilter(Boolean onlyUnacked, String type, String severity, String imei,
-                              Instant from, Instant to, Collection<String> imeis) {}
+                              Instant from, Instant to, Collection<String> imeis, UUID viewer) {}
 
     public List<Alarm> listForOrg(UUID orgId, AlarmFilter f, int limit, int offset) {
         var params = new MapSqlParameterSource()
@@ -119,11 +156,8 @@ public class AlarmRepository {
                 .addValue("limit", limit)
                 .addValue("offset", offset);
         StringBuilder sql = new StringBuilder(SELECT_FIELDS).append(" WHERE org_id = :orgId");
-        if (f.imeis() != null) {
-            if (f.imeis().isEmpty()) return List.of();
-            sql.append(" AND device_imei IN (:imeis)");
-            params.addValue("imeis", f.imeis());
-        }
+        if (f.imeis() != null && f.imeis().isEmpty()) return List.of();
+        restrict(sql, params, f.imeis(), f.viewer());
         if (Boolean.TRUE.equals(f.onlyUnacked())) {
             sql.append(" AND acknowledged = false");
         }
@@ -151,17 +185,16 @@ public class AlarmRepository {
         return jdbc.query(sql.toString(), params, rowMapper);
     }
 
-    public List<Alarm> listForDevice(UUID orgId, String imei, int limit, int offset) {
+    public List<Alarm> listForDevice(UUID orgId, String imei, int limit, int offset, UUID viewer) {
         var params = new MapSqlParameterSource()
                 .addValue("orgId", orgId)
                 .addValue("imei", imei)
                 .addValue("limit", limit)
                 .addValue("offset", offset);
-        return jdbc.query(SELECT_FIELDS + """
-                 WHERE org_id = :orgId AND device_imei = :imei
-                 ORDER BY ts DESC
-                 LIMIT :limit OFFSET :offset
-                """, params, rowMapper);
+        StringBuilder sql = new StringBuilder(SELECT_FIELDS).append(" WHERE org_id = :orgId AND device_imei = :imei");
+        restrict(sql, params, null, viewer);
+        sql.append(" ORDER BY ts DESC LIMIT :limit OFFSET :offset");
+        return jdbc.query(sql.toString(), params, rowMapper);
     }
 
     public List<Alarm> findInRange(UUID orgId, Instant from, Instant to) {
@@ -173,6 +206,29 @@ public class AlarmRepository {
                  WHERE org_id = :orgId AND ts >= :from AND ts < :to
                  ORDER BY ts ASC
                 """, params, rowMapper);
+    }
+
+    /** Counts for the KPI strip, limited to what one viewer may see (null/null = whole org). */
+    public int countSince(UUID orgId, Instant since, Collection<String> imeis, UUID viewer) {
+        return count(orgId, " AND ts >= :since", since, imeis, viewer);
+    }
+
+    public int countCriticalSince(UUID orgId, Instant since, Collection<String> imeis, UUID viewer) {
+        return count(orgId, " AND ts >= :since AND severity = 'CRITICAL'", since, imeis, viewer);
+    }
+
+    public int countUnacknowledged(UUID orgId, Collection<String> imeis, UUID viewer) {
+        return count(orgId, " AND acknowledged = false", null, imeis, viewer);
+    }
+
+    private int count(UUID orgId, String condition, Instant since, Collection<String> imeis, UUID viewer) {
+        if (imeis != null && imeis.isEmpty()) return 0;
+        var params = new MapSqlParameterSource("orgId", orgId);
+        if (since != null) params.addValue("since", Timestamp.from(since));
+        StringBuilder sql = new StringBuilder("SELECT COUNT(*)::int FROM alarms WHERE org_id = :orgId").append(condition);
+        restrict(sql, params, imeis, viewer);
+        Integer n = jdbc.queryForObject(sql.toString(), params, Integer.class);
+        return n == null ? 0 : n;
     }
 
     /** Total alarms for the org since {@code since}. */
@@ -225,24 +281,20 @@ public class AlarmRepository {
     /** One row per (device, type) with its count — feeds the Alarm Overview report. */
     public record TypeCount(String imei, String type, int count) {}
 
-    /** @param imeis null = every device in the org; empty = nothing. */
-    public List<TypeCount> countByDeviceAndType(UUID orgId, Instant from, Instant to, Collection<String> imeis) {
+    /** @param imeis null = every device in the org; empty = nothing. @param viewer see {@link #OWNER_FILTER}. */
+    public List<TypeCount> countByDeviceAndType(UUID orgId, Instant from, Instant to,
+                                                Collection<String> imeis, UUID viewer) {
         if (imeis != null && imeis.isEmpty()) return List.of();
         var params = new MapSqlParameterSource("orgId", orgId)
                 .addValue("from", Timestamp.from(from))
                 .addValue("to", Timestamp.from(to));
-        String restrict = "";
-        if (imeis != null) {
-            restrict = " AND device_imei IN (:imeis)";
-            params.addValue("imeis", imeis);
-        }
-        return jdbc.query("""
+        StringBuilder sql = new StringBuilder("""
                 SELECT device_imei, type, COUNT(*)::int AS n
                   FROM alarms
-                 WHERE org_id = :orgId AND ts >= :from AND ts < :to
-                """ + restrict + """
-                 GROUP BY device_imei, type
-                """, params,
+                 WHERE org_id = :orgId AND ts >= :from AND ts < :to""");
+        restrict(sql, params, imeis, viewer);
+        sql.append(" GROUP BY device_imei, type");
+        return jdbc.query(sql.toString(), params,
                 (rs, rn) -> new TypeCount(rs.getString("device_imei"), rs.getString("type"), rs.getInt("n")));
     }
 

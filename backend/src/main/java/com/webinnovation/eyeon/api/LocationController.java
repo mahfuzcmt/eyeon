@@ -7,6 +7,7 @@ import com.webinnovation.eyeon.repository.DeviceRepository;
 import com.webinnovation.eyeon.repository.LocationRepository;
 import com.webinnovation.eyeon.security.SubscriptionGuard;
 import com.webinnovation.eyeon.security.TenantContext;
+import com.webinnovation.eyeon.service.DeviceAccessService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -31,12 +32,12 @@ public class LocationController {
     private final LocationRepository locationRepo;
     private final DeviceRepository deviceRepo;
     private final SubscriptionGuard subscriptionGuard;
+    private final DeviceAccessService access;
 
     @GetMapping("/last")
     public LocationView last(@PathVariable String imei) {
         UUID orgId = TenantContext.requireOrgId();
-        deviceRepo.findByOrgAndImei(orgId, imei)
-                .orElseThrow(() -> new NotFoundException("device", imei));
+        access.requireVisible(imei);
         return locationRepo.findLastForImei(imei)
                 .map(LocationView::of)
                 .orElseThrow(() -> new NotFoundException("location", imei));
@@ -52,8 +53,7 @@ public class LocationController {
             @RequestParam(value = "limit", required = false) Integer limit
     ) {
         UUID orgId = TenantContext.requireOrgId();
-        deviceRepo.findByOrgAndImei(orgId, imei)
-                .orElseThrow(() -> new NotFoundException("device", imei));
+        access.requireVisible(imei);
 
         // Require active subscription for location history (not last position)
         subscriptionGuard.requireActiveSubscription(imei);

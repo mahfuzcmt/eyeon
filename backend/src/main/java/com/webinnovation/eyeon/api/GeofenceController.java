@@ -9,6 +9,7 @@ import com.webinnovation.eyeon.dto.GeofenceDtos.GeofenceView;
 import com.webinnovation.eyeon.dto.GeofenceDtos.UpdateRequest;
 import com.webinnovation.eyeon.security.TenantContext;
 import com.webinnovation.eyeon.service.AuditService;
+import com.webinnovation.eyeon.service.DeviceAccessService;
 import com.webinnovation.eyeon.service.GeofenceService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -33,19 +34,28 @@ public class GeofenceController {
 
     private final GeofenceService service;
     private final AuditService audit;
+    private final DeviceAccessService access;
 
-    /** @param kind optional filter: TRUSTED_PLACE or BOUNDARY */
+    /** The caller's own geofences and trusted places (per user since V21). @param kind TRUSTED_PLACE or BOUNDARY */
     @GetMapping
     public List<GeofenceView> list(@RequestParam(required = false) String kind) {
         UUID orgId = TenantContext.requireOrgId();
-        return service.listForOrg(orgId, GeofenceService.parseKind(kind))
+        return service.listForOwner(orgId, TenantContext.requireUserId(), GeofenceService.parseKind(kind))
                 .stream().map(GeofenceView::of).toList();
     }
 
     @GetMapping("/{id}")
     public GeofenceView get(@PathVariable UUID id) {
         UUID orgId = TenantContext.requireOrgId();
-        return GeofenceView.of(service.getOrThrow(orgId, id));
+        return GeofenceView.of(service.getOrThrow(orgId, TenantContext.requireUserId(), id));
+    }
+
+    /** A place may only watch children its owner can see. */
+    private void requireVisibleAll(List<String> imeis) {
+        if (imeis == null) return;
+        for (String imei : imeis) {
+            if (imei != null && !imei.isBlank()) access.requireVisible(imei);
+        }
     }
 
     @PostMapping
@@ -56,11 +66,12 @@ public class GeofenceController {
         }
         GeofenceType type = GeofenceService.parseType(req.type());
         GeofenceNotifyOn notify = GeofenceService.parseNotifyOn(req.notifyOn());
+        requireVisibleAll(req.imeis());
         GeofenceService.Labels labels = new GeofenceService.Labels(
                 GeofenceService.parseKind(req.kind()),
                 GeofenceService.parsePlaceType(req.placeType()),
                 req.address(),
-                TenantContext.currentUserId());
+                TenantContext.requireUserId());
 
         Geofence saved = switch (type) {
             case CIRCLE -> {
@@ -91,7 +102,7 @@ public class GeofenceController {
         UUID orgId = TenantContext.requireOrgId();
         List<Geofence.LatLng> polygon = req.polygon() == null ? null
                 : req.polygon().stream().map(p -> new Geofence.LatLng(p.lat(), p.lng())).toList();
-        Geofence saved = service.update(orgId, id, new GeofenceService.Patch(
+        Geofence saved = service.update(orgId, TenantContext.requireUserId(), id, new GeofenceService.Patch(
                 req.name(),
                 req.notifyOn() == null ? null : GeofenceService.parseNotifyOn(req.notifyOn()),
                 req.color(),
@@ -111,7 +122,7 @@ public class GeofenceController {
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> delete(@PathVariable UUID id) {
         UUID orgId = TenantContext.requireOrgId();
-        service.delete(orgId, id);
+        service.delete(orgId, TenantContext.requireUserId(), id);
         audit.record("GEOFENCE_DELETE", "geofence", id.toString(), null);
         return ResponseEntity.noContent().build();
     }
@@ -119,13 +130,14 @@ public class GeofenceController {
     @GetMapping("/{id}/devices")
     public List<String> assignedDevices(@PathVariable UUID id) {
         UUID orgId = TenantContext.requireOrgId();
-        return service.listAssignedImeis(orgId, id);
+        return service.listAssignedImeis(orgId, TenantContext.requireUserId(), id);
     }
 
     @PostMapping("/{id}/devices")
     public ResponseEntity<Void> assignDevices(@PathVariable UUID id, @RequestBody AssignRequest req) {
         UUID orgId = TenantContext.requireOrgId();
-        service.assignDevices(orgId, id, req.imeis());
+        requireVisibleAll(req.imeis());
+        service.assignDevices(orgId, TenantContext.requireUserId(), id, req.imeis());
         audit.record("GEOFENCE_ASSIGN", "geofence", id.toString(),
                 java.util.Map.of("imeis", req.imeis() == null ? List.of() : req.imeis()));
         return ResponseEntity.noContent().build();
@@ -134,7 +146,7 @@ public class GeofenceController {
     @DeleteMapping("/{id}/devices/{imei}")
     public ResponseEntity<Void> unassignDevice(@PathVariable UUID id, @PathVariable String imei) {
         UUID orgId = TenantContext.requireOrgId();
-        service.unassignDevice(orgId, id, imei);
+        service.unassignDevice(orgId, TenantContext.requireUserId(), id, imei);
         audit.record("GEOFENCE_UNASSIGN", "geofence", id.toString(),
                 java.util.Map.of("imei", imei));
         return ResponseEntity.noContent().build();

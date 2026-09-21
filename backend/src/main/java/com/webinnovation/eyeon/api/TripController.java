@@ -3,6 +3,7 @@ package com.webinnovation.eyeon.api;
 import com.webinnovation.eyeon.dto.TripDtos.TripView;
 import com.webinnovation.eyeon.security.TenantContext;
 import com.webinnovation.eyeon.service.TripService;
+import com.webinnovation.eyeon.service.DeviceAccessService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -20,6 +21,7 @@ import java.util.UUID;
 public class TripController {
 
     private final TripService tripService;
+    private final DeviceAccessService access;
 
     @GetMapping
     public List<TripView> list(
@@ -28,6 +30,7 @@ public class TripController {
             @RequestParam(name = "limit", defaultValue = "100") int limit,
             @RequestParam(name = "offset", defaultValue = "0") int offset) {
         UUID orgId = TenantContext.requireOrgId();
+        access.requireSeesAll();
         Instant from = fromIso == null ? Instant.now().minusSeconds(7L * 24 * 3600) : Instant.parse(fromIso);
         Instant to = toIso == null ? Instant.now() : Instant.parse(toIso);
         return tripService.listForOrg(orgId, from, to, limit, offset)
@@ -40,6 +43,7 @@ public class TripController {
             @RequestParam(name = "from", required = false) String fromIso,
             @RequestParam(name = "to", required = false) String toIso) {
         UUID orgId = TenantContext.requireOrgId();
+        access.requireSeesAll();
         Instant from = fromIso == null ? Instant.now().minusSeconds(7L * 24 * 3600) : Instant.parse(fromIso);
         Instant to = toIso == null ? Instant.now() : Instant.parse(toIso);
         return tripService.listForDevice(orgId, imei, from, to)
@@ -49,6 +53,7 @@ public class TripController {
     @GetMapping("/{id}")
     public TripView get(@PathVariable UUID id) {
         UUID orgId = TenantContext.requireOrgId();
+        access.requireSeesAll();
         return TripView.of(tripService.getOrThrow(orgId, id));
     }
 }

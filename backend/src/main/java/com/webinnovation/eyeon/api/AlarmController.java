@@ -5,6 +5,7 @@ import com.webinnovation.eyeon.dto.AlarmDtos.AlarmOverview;
 import com.webinnovation.eyeon.dto.AlarmDtos.AlarmView;
 import com.webinnovation.eyeon.exception.DomainException;
 import com.webinnovation.eyeon.exception.NotFoundException;
+import com.webinnovation.eyeon.repository.AlarmRepository;
 import com.webinnovation.eyeon.repository.AlarmRepository.AlarmFilter;
 import com.webinnovation.eyeon.domain.NotificationDefaults;
 import com.webinnovation.eyeon.security.TenantContext;
@@ -47,6 +48,14 @@ public class AlarmController {
         }
     }
 
+    /** The child must be visible AND, for a geofence/place alert, the caller must own that place. */
+    private void requireVisibleAlarm(com.webinnovation.eyeon.domain.Alarm alarm) {
+        requireVisible(visible(), alarm.deviceImei());
+        if (!AlarmRepository.visibleTo(alarm, TenantContext.currentUserId())) {
+            throw new NotFoundException("Alarm not found: " + alarm.id());
+        }
+    }
+
     private static final Set<String> SEVERITIES = Set.of("INFO", "WARNING", "CRITICAL");
 
     /**
@@ -82,7 +91,7 @@ public class AlarmController {
         Set<String> visible = visible();
         String imeiN = blankToNull(imei);
         if (imeiN != null && !DeviceAccessService.canSee(visible, imeiN)) return List.of();
-        var filter = new AlarmFilter(onlyUnacked, typeN, sevN, imeiN, from, to, visible);
+        var filter = new AlarmFilter(onlyUnacked, typeN, sevN, imeiN, from, to, visible, TenantContext.currentUserId());
         return alarmService.listForOrg(orgId, filter, limit, offset)
                 .stream().map(AlarmView::of).toList();
     }
@@ -100,7 +109,7 @@ public class AlarmController {
         if (!to.isAfter(from)) {
             throw new DomainException("INVALID_RANGE", "to must be after from");
         }
-        return alarmService.overview(orgId, from, to, visible());
+        return alarmService.overview(orgId, from, to, visible(), TenantContext.currentUserId());
     }
 
     @GetMapping("/device/{imei}")
@@ -110,7 +119,7 @@ public class AlarmController {
             @RequestParam(name = "offset", defaultValue = "0") int offset) {
         UUID orgId = TenantContext.requireOrgId();
         requireVisible(visible(), imei);
-        return alarmService.listForDevice(orgId, imei, limit, offset)
+        return alarmService.listForDevice(orgId, imei, limit, offset, TenantContext.currentUserId())
                 .stream().map(AlarmView::of).toList();
     }
 
@@ -118,7 +127,7 @@ public class AlarmController {
     public AlarmView get(@PathVariable UUID id) {
         UUID orgId = TenantContext.requireOrgId();
         var alarm = alarmService.getOrThrow(orgId, id);
-        requireVisible(visible(), alarm.deviceImei());
+        requireVisibleAlarm(alarm);
         return AlarmView.of(alarm);
     }
 
@@ -137,7 +146,7 @@ public class AlarmController {
         if (notes != null && notes.length() > 1000) {
             throw new DomainException("NOTES_TOO_LONG", "notes must be 1000 characters or fewer");
         }
-        requireVisible(visible(), alarmService.getOrThrow(orgId, id).deviceImei());
+        requireVisibleAlarm(alarmService.getOrThrow(orgId, id));
         boolean ok = alarmService.acknowledge(orgId, id, userId, result, notes);
         if (!ok) {
             // Either non-existent or already acknowledged — fetch and 404 on miss.

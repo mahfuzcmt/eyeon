@@ -15,7 +15,6 @@ import org.springframework.messaging.support.MessageHeaderAccessor;
 import org.springframework.stereotype.Component;
 
 import java.util.UUID;
-import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
@@ -80,13 +79,10 @@ public class StompAuthChannelInterceptor implements ChannelInterceptor {
             throw new MessagingException("Not authenticated");
         }
 
-        Matcher m = ORG_TOPIC.matcher(dest);
-        if (m.matches()) {
-            String topicOrg = m.group(1);
-            if (!principal.getOrgId().toString().equals(topicOrg)) {
-                throw new MessagingException("Forbidden topic: " + dest);
-            }
-            return;
+        // Organization-wide topics are closed: they carried every child's data to every member.
+        // Live data is now delivered per user on /user/queue/... (see LiveAudience).
+        if (ORG_TOPIC.matcher(dest).matches()) {
+            throw new MessagingException("Organization-wide topics are not available; subscribe to /user/queue/... instead");
         }
         if (USER_QUEUE.matcher(dest).matches()) {
             return;  // Spring routes /user/** by Principal.getName(), no org check needed

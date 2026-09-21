@@ -7,6 +7,7 @@ import com.webinnovation.eyeon.security.SubscriptionGuard;
 import com.webinnovation.eyeon.security.TenantContext;
 import com.webinnovation.eyeon.service.AuditService;
 import com.webinnovation.eyeon.service.DeviceCommandService;
+import com.webinnovation.eyeon.service.DeviceAccessService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -41,9 +42,11 @@ public class DeviceCommandController {
     private final DeviceRepository deviceRepo;
     private final AuditService audit;
     private final SubscriptionGuard subscriptionGuard;
+    private final DeviceAccessService access;
 
     @GetMapping("/online")
     public Map<String, Boolean> isOnline(@PathVariable String imei) {
+        access.requireVisible(imei);
         return Map.of("online", commandService.isOnline(imei));
     }
 
@@ -51,6 +54,7 @@ public class DeviceCommandController {
     public ResponseEntity<CommandResponse> cutFuel(@PathVariable String imei,
                                                    @RequestBody CommandRequest req) {
         UUID orgId = TenantContext.requireOrgId();
+        access.requireVisible(imei);
         subscriptionGuard.requireActiveSubscription(imei);
         audit.record("DEVICE_CMD_CUT_FUEL", "device", imei, null);
         ResponseEntity<CommandResponse> resp = await(commandService.cutFuel(orgId, imei, password(req)));
@@ -64,6 +68,7 @@ public class DeviceCommandController {
     public ResponseEntity<CommandResponse> restoreFuel(@PathVariable String imei,
                                                        @RequestBody CommandRequest req) {
         UUID orgId = TenantContext.requireOrgId();
+        access.requireVisible(imei);
         subscriptionGuard.requireActiveSubscription(imei);
         audit.record("DEVICE_CMD_RESTORE_FUEL", "device", imei, null);
         ResponseEntity<CommandResponse> resp = await(commandService.restoreFuel(orgId, imei, password(req)));
@@ -87,6 +92,7 @@ public class DeviceCommandController {
     public ResponseEntity<CommandResponse> queryAddress(@PathVariable String imei,
                                                         @RequestBody CommandRequest req) {
         UUID orgId = TenantContext.requireOrgId();
+        access.requireVisible(imei);
         subscriptionGuard.requireActiveSubscription(imei);
         audit.record("DEVICE_CMD_QUERY_ADDRESS", "device", imei, null);
         return await(commandService.queryAddress(orgId, imei, req.devicePassword()));
@@ -96,6 +102,7 @@ public class DeviceCommandController {
     public ResponseEntity<CommandResponse> raw(@PathVariable String imei,
                                                @RequestBody CommandRequest req) {
         UUID orgId = TenantContext.requireOrgId();
+        access.requireVisible(imei);
         subscriptionGuard.requireActiveSubscription(imei);
         if (req.rawCommand() == null || req.rawCommand().isBlank()) {
             return ResponseEntity.badRequest()

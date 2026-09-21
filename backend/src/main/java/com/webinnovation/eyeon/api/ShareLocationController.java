@@ -3,6 +3,7 @@ package com.webinnovation.eyeon.api;
 import com.webinnovation.eyeon.dto.ShareLocationDtos.*;
 import com.webinnovation.eyeon.security.TenantContext;
 import com.webinnovation.eyeon.service.ShareLocationService;
+import com.webinnovation.eyeon.service.DeviceAccessService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -22,6 +23,7 @@ import java.util.UUID;
 public class ShareLocationController {
 
     private final ShareLocationService shareService;
+    private final DeviceAccessService access;
 
     /**
      * Create a new share link for a device.
@@ -31,6 +33,7 @@ public class ShareLocationController {
     public ShareLinkView create(@Valid @RequestBody CreateShareLinkRequest req) {
         UUID orgId = TenantContext.requireOrgId();
         UUID userId = TenantContext.currentUserId();
+        access.requireVisible(req.deviceImei());
         return shareService.createLink(orgId, userId, req);
     }
 
@@ -40,6 +43,7 @@ public class ShareLocationController {
     @GetMapping("/device/{imei}")
     public List<ShareLinkView> listByDevice(@PathVariable String imei) {
         UUID orgId = TenantContext.requireOrgId();
+        access.requireVisible(imei);
         return shareService.listByDevice(orgId, imei);
     }
 
@@ -50,6 +54,7 @@ public class ShareLocationController {
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void revoke(@PathVariable UUID id) {
         UUID orgId = TenantContext.requireOrgId();
+        access.requireVisible(shareService.deviceImeiOf(orgId, id));
         shareService.revokeLink(orgId, id);
     }
 }

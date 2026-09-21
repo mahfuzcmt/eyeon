@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.webinnovation.eyeon.dto.ReportDtos.MonthlySummary;
 import com.webinnovation.eyeon.exception.DomainException;
+import com.webinnovation.eyeon.service.DeviceAccessService;
 
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
@@ -28,12 +29,14 @@ public class ReportController {
     private static final MediaType TEXT_CSV = new MediaType("text", "csv", StandardCharsets.UTF_8);
 
     private final ReportService service;
+    private final DeviceAccessService access;
 
     @GetMapping(value = "/trips.csv", produces = "text/csv;charset=UTF-8")
     public ResponseEntity<byte[]> tripsCsv(
             @RequestParam(name = "from") String fromIso,
             @RequestParam(name = "to") String toIso) {
         UUID orgId = TenantContext.requireOrgId();
+        access.requireSeesAll();
         LocalDate from = LocalDate.parse(fromIso);
         LocalDate to = LocalDate.parse(toIso);
         byte[] body = service.tripsCsv(orgId, from, to).getBytes(StandardCharsets.UTF_8);
@@ -45,6 +48,7 @@ public class ReportController {
             @RequestParam(name = "from") String fromIso,
             @RequestParam(name = "to") String toIso) {
         UUID orgId = TenantContext.requireOrgId();
+        access.requireSeesAll();
         LocalDate from = LocalDate.parse(fromIso);
         LocalDate to = LocalDate.parse(toIso);
         byte[] body = service.alarmsCsv(orgId, from, to).getBytes(StandardCharsets.UTF_8);
@@ -56,6 +60,7 @@ public class ReportController {
             @RequestParam(name = "device") String imei,
             @RequestParam(name = "month") String month) {
         UUID orgId = TenantContext.requireOrgId();
+        access.requireVisible(imei);
         return service.monthlySummary(orgId, imei, parseMonth(month));
     }
 
@@ -64,6 +69,7 @@ public class ReportController {
             @RequestParam(name = "device") String imei,
             @RequestParam(name = "month") String month) {
         UUID orgId = TenantContext.requireOrgId();
+        access.requireVisible(imei);
         YearMonth ym = parseMonth(month);
         byte[] body = service.monthlySummaryCsv(orgId, imei, ym).getBytes(StandardCharsets.UTF_8);
         return csv(body, "monthly_" + ym + "_" + imei + ".csv");

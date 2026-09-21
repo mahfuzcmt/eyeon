@@ -82,8 +82,8 @@ public class AlarmService {
         return repo.listForOrg(orgId, filter, clamp(limit, 1, 500), Math.max(0, offset));
     }
 
-    public List<Alarm> listForDevice(UUID orgId, String imei, int limit, int offset) {
-        return repo.listForDevice(orgId, imei, clamp(limit, 1, 500), Math.max(0, offset));
+    public List<Alarm> listForDevice(UUID orgId, String imei, int limit, int offset, UUID viewer) {
+        return repo.listForDevice(orgId, imei, clamp(limit, 1, 500), Math.max(0, offset), viewer);
     }
 
     public List<Alarm> listForRange(UUID orgId, Instant from, Instant to) {
@@ -103,13 +103,12 @@ public class AlarmService {
      * (zero rows included) so the report doubles as a "quiet vehicles" check,
      * mirroring ADL's Alarm Overview.
      */
-    public AlarmOverview overview(UUID orgId, Instant from, Instant to) {
-        return overview(orgId, from, to, null);
-    }
-
-    /** @param visible IMEIs the caller may see; null = unrestricted. */
-    public AlarmOverview overview(UUID orgId, Instant from, Instant to, Set<String> visible) {
-        List<AlarmRepository.TypeCount> counts = repo.countByDeviceAndType(orgId, from, to, visible);
+    /**
+     * @param visible IMEIs the caller may see; null = unrestricted.
+     * @param viewer  applies the geofence-owner rule; null = none.
+     */
+    public AlarmOverview overview(UUID orgId, Instant from, Instant to, Set<String> visible, UUID viewer) {
+        List<AlarmRepository.TypeCount> counts = repo.countByDeviceAndType(orgId, from, to, visible, viewer);
         Map<String, Map<String, Integer>> byImei = new TreeMap<>();
         TreeSet<String> types = new TreeSet<>();
         for (var c : counts) {

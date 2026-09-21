@@ -66,7 +66,11 @@ public class PushTokenRepository {
      * Tokens of org users who opted in to {@code alarmType} pushes AND may see the device:
      * admins, {@code see_all_devices} users, or an explicit {@code user_devices} row.
      */
-    public List<Target> listTokensForOrgAndType(UUID orgId, String alarmType, String deviceImei) {
+    /**
+     * @param onlyUserId when set, only that user's installs (the owner of the geofence / place
+     *                   that raised the alarm); null = everyone who can see the tracker
+     */
+    public List<Target> listTokensForOrgAndType(UUID orgId, String alarmType, String deviceImei, UUID onlyUserId) {
         return jdbc.query("""
                 SELECT pt.token, COALESCE(pt.locale, o.locale) AS locale
                   FROM push_tokens pt
@@ -76,13 +80,15 @@ public class PushTokenRepository {
                  WHERE pt.org_id = :orgId
                    AND u.is_active = true
                    AND (s.user_id IS NULL OR :type = ANY(s.push_types))
+                   AND (CAST(:onlyUser AS UUID) IS NULL OR pt.user_id = :onlyUser)
                    AND (u.role IN ('SUPER_ADMIN', 'ORG_ADMIN')
                         OR u.see_all_devices = true
                         OR EXISTS (SELECT 1 FROM user_devices ud
                                     WHERE ud.user_id = pt.user_id AND ud.device_imei = :imei))
                 """, new MapSqlParameterSource("orgId", orgId)
                         .addValue("type", alarmType)
-                        .addValue("imei", deviceImei),
+                        .addValue("imei", deviceImei)
+                        .addValue("onlyUser", onlyUserId),
                 (rs, rn) -> new Target(rs.getString("token"), rs.getString("locale")));
     }
 

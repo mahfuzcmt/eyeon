@@ -86,23 +86,26 @@ public class GeofenceRepository {
             FROM geofences
             """;
 
-    /** @param kind TRUSTED_PLACE / BOUNDARY, or null for every kind */
-    public List<Geofence> listForOrg(UUID orgId, String kind) {
+    /**
+     * The owner's geofences. Geofences are per user (V21): nobody else - not even an org admin -
+     * lists or edits them. @param kind TRUSTED_PLACE / BOUNDARY, or null for every kind
+     */
+    public List<Geofence> listForOwner(UUID orgId, UUID ownerUserId, String kind) {
         return jdbc.query(
                 SELECT_FIELDS + """
-                         WHERE org_id = :orgId AND is_active = true
+                         WHERE org_id = :orgId AND owner_user_id = :owner AND is_active = true
                            AND (CAST(:kind AS VARCHAR) IS NULL OR kind = :kind)
                          ORDER BY created_at DESC
                         """,
-                new MapSqlParameterSource("orgId", orgId).addValue("kind", kind),
+                new MapSqlParameterSource("orgId", orgId).addValue("owner", ownerUserId).addValue("kind", kind),
                 ROW_MAPPER);
     }
 
-    public Optional<Geofence> findByOrgAndId(UUID orgId, UUID id) {
+    public Optional<Geofence> findByOwnerAndId(UUID orgId, UUID ownerUserId, UUID id) {
         try {
             Geofence g = jdbc.queryForObject(
-                    SELECT_FIELDS + " WHERE org_id = :orgId AND id = :id",
-                    new MapSqlParameterSource("orgId", orgId).addValue("id", id),
+                    SELECT_FIELDS + " WHERE org_id = :orgId AND owner_user_id = :owner AND id = :id",
+                    new MapSqlParameterSource("orgId", orgId).addValue("owner", ownerUserId).addValue("id", id),
                     ROW_MAPPER);
             return Optional.ofNullable(g);
         } catch (EmptyResultDataAccessException e) {
@@ -126,7 +129,7 @@ public class GeofenceRepository {
         jdbc.update("""
                 INSERT INTO geofences
                   (id, org_id, name, type, geom, radius_m, center, color, notify_on, is_active,
-                   kind, place_type, address, created_by)
+                   kind, place_type, address, created_by, owner_user_id)
                 VALUES
                   (:id, :orgId, :name, 'CIRCLE',
                    ST_Buffer(ST_SetSRID(ST_MakePoint(:lng, :lat), 4326)::geography, :radius),
@@ -135,7 +138,7 @@ public class GeofenceRepository {
                    COALESCE(:color, '#0F6B5C'),
                    :notifyOn,
                    true,
-                   :kind, :placeType, :address, :createdBy)
+                   :kind, :placeType, :address, :createdBy, :createdBy)
                 """, params);
         return id;
     }
@@ -158,14 +161,14 @@ public class GeofenceRepository {
         jdbc.update("""
                 INSERT INTO geofences
                   (id, org_id, name, type, geom, color, notify_on, is_active,
-                   kind, place_type, address, created_by)
+                   kind, place_type, address, created_by, owner_user_id)
                 VALUES
                   (:id, :orgId, :name, 'POLYGON',
                    ST_SetSRID(ST_GeomFromText(:wkt), 4326)::geography,
                    COALESCE(:color, '#0F6B5C'),
                    :notifyOn,
                    true,
-                   :kind, :placeType, :address, :createdBy)
+                   :kind, :placeType, :address, :createdBy, :createdBy)
                 """, params);
         return id;
     }
@@ -225,11 +228,11 @@ public class GeofenceRepository {
                 new MapSqlParameterSource("gid", geofenceId));
     }
 
-    public boolean softDelete(UUID orgId, UUID id) {
+    public boolean softDelete(UUID orgId, UUID ownerUserId, UUID id) {
         int n = jdbc.update("""
                 UPDATE geofences SET is_active = false, updated_at = now()
-                WHERE org_id = :orgId AND id = :id
-                """, new MapSqlParameterSource("orgId", orgId).addValue("id", id));
+                WHERE org_id = :orgId AND owner_user_id = :owner AND id = :id
+                """, new MapSqlParameterSource("orgId", orgId).addValue("owner", ownerUserId).addValue("id", id));
         return n > 0;
     }
 
@@ -267,7 +270,7 @@ public class GeofenceRepository {
                 .addValue("lat", lat)
                 .addValue("lng", lng);
         return jdbc.query("""
-                SELECT g.id, g.name, g.notify_on, g.kind, g.place_type, g.min_dwell_s,
+                SELECT g.id, g.name, g.notify_on, g.kind, g.place_type, g.min_dwell_s, g.owner_user_id,
                        ST_Covers(g.geom, ST_SetSRID(ST_MakePoint(:lng, :lat), 4326)::geography) AS inside,
                        ST_DWithin(g.geom, ST_SetSRID(ST_MakePoint(:lng, :lat), 4326)::geography,
                                   g.exit_buffer_m) AS within_buffer,
@@ -284,6 +287,7 @@ public class GeofenceRepository {
                         rs.getString("name"),
                         rs.getString("notify_on"),
                         rs.getString("kind"),
+                        rs.getObject("owner_user_id", UUID.class),
                         rs.getString("place_type"),
                         rs.getInt("min_dwell_s"),
                         rs.getBoolean("inside"),
@@ -324,7 +328,7 @@ public class GeofenceRepository {
 
     /** Per-fence snapshot used by {@link com.webinnovation.eyeon.service.GeofenceService#evaluate}. */
     public record EvaluationRow(UUID geofenceId, String name, String notifyOn,
-                                String kind, String placeType, int minDwellS,
+                                String kind, UUID ownerUserId, String placeType, int minDwellS,
                                 boolean inside, boolean withinBuffer, Boolean previousInside,
                                 Boolean pendingInside, Instant pendingSince) {}
 

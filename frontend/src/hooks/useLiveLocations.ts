@@ -283,7 +283,8 @@ function startAnimationIfNeeded(
 /**
  * Holds the current last-known position per IMEI for the org. On mount:
  * 1. REST GET /devices/locations/all-last for the bootstrap snapshot
- * 2. STOMP subscribe /topic/org/{orgId}/locations/batch for batched updates (every 10s)
+ * 2. STOMP subscribe /user/queue/locations/batch: batched updates every 10s, already filtered
+ *    on the server to the children this user may see
  * 3. On visibility change, refresh from REST API
  *
  * Returns a map keyed by IMEI plus a `bumpId` that increments on every

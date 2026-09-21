@@ -55,7 +55,7 @@ class PushServiceTest {
     @Test
     void sends_messages_and_purges_unregistered_tokens() {
         UUID orgId = UUID.randomUUID();
-        when(tokenRepo.listTokensForOrgAndType(eq(orgId), any(), any()))
+        when(tokenRepo.listTokensForOrgAndType(eq(orgId), any(), any(), any()))
                 .thenReturn(List.of(
                         new PushTokenRepository.Target("ExponentPushToken[aaa]", "en"),
                         new PushTokenRepository.Target("ExponentPushToken[bbb]", "en")));
@@ -85,7 +85,7 @@ class PushServiceTest {
     @Test
     void each_install_gets_the_place_event_in_its_own_language() {
         UUID orgId = UUID.randomUUID();
-        when(tokenRepo.listTokensForOrgAndType(eq(orgId), any(), any()))
+        when(tokenRepo.listTokensForOrgAndType(eq(orgId), any(), any(), any()))
                 .thenReturn(List.of(
                         new PushTokenRepository.Target("ExponentPushToken[bangla]", "bn-BD"),
                         new PushTokenRepository.Target("ExponentPushToken[english]", "en")));
@@ -113,7 +113,7 @@ class PushServiceTest {
     @Test
     void no_registered_tokens_sends_nothing() {
         UUID orgId = UUID.randomUUID();
-        when(tokenRepo.listTokensForOrgAndType(eq(orgId), any(), any())).thenReturn(List.of());
+        when(tokenRepo.listTokensForOrgAndType(eq(orgId), any(), any(), any())).thenReturn(List.of());
 
         pushService.sendAlarmPush(alarm(orgId));
 
@@ -130,6 +130,6 @@ class PushServiceTest {
         disabled.sendAlarmPush(alarm(UUID.randomUUID()));
 
         disabledServer.verify();
-        verify(tokenRepo, never()).listTokensForOrgAndType(any(), any(), any());
+        verify(tokenRepo, never()).listTokensForOrgAndType(any(), any(), any(), any());
     }
 }

@@ -32,7 +32,6 @@ export function KpiStrip({ liveOnlineCount, liveOfflineCount, leftInset = 0 }: P
 
   const online = liveOnlineCount ?? kpis.devicesOnline;
   const offline = liveOfflineCount ?? kpis.devicesOffline;
-  const distanceKm = kpis.distanceTodayMeters / 1000;
 
   return (
     <div
@@ -55,17 +54,11 @@ export function KpiStrip({ liveOnlineCount, liveOfflineCount, leftInset = 0 }: P
                 ? `${formatNumber(kpis.alarmsCriticalToday, locale)} ${t("kpi.critical")}`
                 : undefined}
             />
+            {/* No trip tiles: EyeOn tracks people and has no trips (trip counts/distance would always be 0). */}
             <Kpi
-              label={t("kpi.tripsActive")}
-              value={formatNumber(kpis.tripsActive, locale)}
-              accent="text-ink-800"
-              subValue={`${formatNumber(kpis.tripsCompletedToday, locale)} ${t("kpi.done")}`}
-            />
-            <Kpi
-              label={t("kpi.distanceToday")}
-              value={formatNumber(distanceKm, locale, { maximumFractionDigits: distanceKm >= 100 ? 0 : 1 })}
-              unit={t("kpi.km")}
-              accent="text-ink-800"
+              label={t("kpi.unacknowledged")}
+              value={formatNumber(kpis.alarmsUnacknowledged, locale)}
+              accent={kpis.alarmsUnacknowledged > 0 ? "text-amber-600" : "text-ink-800"}
             />
           </>
         )}

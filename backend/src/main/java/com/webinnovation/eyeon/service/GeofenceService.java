@@ -30,6 +30,9 @@ import java.util.UUID;
  * {@link GeofenceTransition} for the drift guards. Trusted places raise calm
  * {@code PLACE_ARRIVED}/{@code PLACE_LEFT} events; boundaries raise
  * {@code GEOFENCE_ENTER}/{@code GEOFENCE_EXIT} warnings.
+ *
+ * <p>Geofences are per user (V21): every CRUD method takes the owner, and the alarms a geofence
+ * raises carry {@code metadata.geofenceOwnerId} so only its owner is told about them.
  */
 @Service
 @RequiredArgsConstructor
@@ -38,6 +41,7 @@ public class GeofenceService {
 
     private final GeofenceRepository repo;
     private final AlarmService alarmService;
+    private final DeviceAccessService access;
 
     /** Below this a wearable's GPS error alone produces false arrivals/departures. */
     static final int MIN_PLACE_RADIUS_M = 80;
@@ -62,16 +66,13 @@ public class GeofenceService {
                         Geofence.LatLng center, Integer radiusM, List<Geofence.LatLng> polygon,
                         Integer exitBufferM, Integer minDwellS) {}
 
-    public List<Geofence> listForOrg(UUID orgId) {
-        return repo.listForOrg(orgId, null);
+    public List<Geofence> listForOwner(UUID orgId, UUID ownerUserId, GeofenceKind kind) {
+        return repo.listForOwner(orgId, ownerUserId, kind == null ? null : kind.name());
     }
 
-    public List<Geofence> listForOrg(UUID orgId, GeofenceKind kind) {
-        return repo.listForOrg(orgId, kind == null ? null : kind.name());
-    }
-
-    public Geofence getOrThrow(UUID orgId, UUID id) {
-        return repo.findByOrgAndId(orgId, id)
+    /** 404 unless the geofence exists AND belongs to {@code ownerUserId}. */
+    public Geofence getOrThrow(UUID orgId, UUID ownerUserId, UUID id) {
+        return repo.findByOwnerAndId(orgId, ownerUserId, id)
                 .orElseThrow(() -> new NotFoundException("Geofence not found: " + id));
     }
 
@@ -83,7 +84,7 @@ public class GeofenceService {
         UUID id = repo.insertCircle(orgId, name, notifyOn.name(), color,
                 centerLat, centerLng, radiusM, meta);
         attach(id, assignedImeis);
-        return getOrThrow(orgId, id);
+        return getOrThrow(orgId, labels.createdBy(), id);
     }
 
     public Geofence createPolygon(UUID orgId, String name, GeofenceNotifyOn notifyOn, String color,
@@ -95,11 +96,11 @@ public class GeofenceService {
         }
         UUID id = repo.insertPolygon(orgId, name, notifyOn.name(), color, vertices, meta);
         attach(id, assignedImeis);
-        return getOrThrow(orgId, id);
+        return getOrThrow(orgId, labels.createdBy(), id);
     }
 
-    public Geofence update(UUID orgId, UUID id, Patch p) {
-        Geofence cur = getOrThrow(orgId, id);
+    public Geofence update(UUID orgId, UUID ownerUserId, UUID id, Patch p) {
+        Geofence cur = getOrThrow(orgId, ownerUserId, id);
 
         boolean toPolygon = p.polygon() != null;
         boolean circleChange = !toPolygon && (p.center() != null || p.radiusM() != null);
@@ -146,7 +147,7 @@ public class GeofenceService {
         if (toPolygon || circleChange || exitBuffer != cur.exitBufferM()) {
             repo.resetStates(id);
         }
-        return getOrThrow(orgId, id);
+        return getOrThrow(orgId, ownerUserId, id);
     }
 
     private static void validateRadius(int radiusM, GeofenceKind kind) {
@@ -164,24 +165,24 @@ public class GeofenceService {
         return s == null || s.isBlank() ? null : s.trim();
     }
 
-    public void delete(UUID orgId, UUID id) {
-        if (!repo.softDelete(orgId, id)) {
+    public void delete(UUID orgId, UUID ownerUserId, UUID id) {
+        if (!repo.softDelete(orgId, ownerUserId, id)) {
             throw new NotFoundException("Geofence not found: " + id);
         }
     }
 
-    public void assignDevices(UUID orgId, UUID id, List<String> imeis) {
-        getOrThrow(orgId, id);
+    public void assignDevices(UUID orgId, UUID ownerUserId, UUID id, List<String> imeis) {
+        getOrThrow(orgId, ownerUserId, id);
         attach(id, imeis);
     }
 
-    public void unassignDevice(UUID orgId, UUID id, String imei) {
-        getOrThrow(orgId, id);
+    public void unassignDevice(UUID orgId, UUID ownerUserId, UUID id, String imei) {
+        getOrThrow(orgId, ownerUserId, id);
         repo.unassignDevice(id, imei);
     }
 
-    public List<String> listAssignedImeis(UUID orgId, UUID id) {
-        getOrThrow(orgId, id);
+    public List<String> listAssignedImeis(UUID orgId, UUID ownerUserId, UUID id) {
+        getOrThrow(orgId, ownerUserId, id);
         return repo.listAssignedImeis(id);
     }
 
@@ -242,6 +243,13 @@ public class GeofenceService {
         };
         if (!shouldNotify) return;
 
+        // The owner may since have lost access to this child (unassigned by the school):
+        // then their place must not keep reporting that child's movements to them.
+        if (row.ownerUserId() != null
+                && !DeviceAccessService.canSee(access.visibleImeis(row.ownerUserId()), loc.getImei())) {
+            return;
+        }
+
         boolean trustedPlace = GeofenceKind.TRUSTED_PLACE.name().equals(row.kind());
         AlarmType type = trustedPlace
                 ? (inside ? AlarmType.PLACE_ARRIVED : AlarmType.PLACE_LEFT)
@@ -253,6 +261,9 @@ public class GeofenceService {
         meta.put("geofenceId", row.geofenceId().toString());
         meta.put("geofenceName", row.name());
         meta.put("geofenceKind", row.kind());
+        if (row.ownerUserId() != null) {
+            meta.put(com.webinnovation.eyeon.repository.AlarmRepository.GEOFENCE_OWNER_KEY, row.ownerUserId().toString());
+        }
         if (row.placeType() != null) meta.put("placeType", row.placeType());
         alarmService.raise(
                 loc.getOrgId(), loc.getImei(), type, severity,

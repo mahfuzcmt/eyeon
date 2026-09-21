@@ -230,6 +230,7 @@ const STRINGS = {
   "kpi.done": { en: "done today", bn: "আজ শেষ" },
   "kpi.distanceToday": { en: "Distance today", bn: "আজকের দূরত্ব" },
   "kpi.km": { en: "km", bn: "কিমি" },
+  "kpi.unacknowledged": { en: "Not yet seen", bn: "এখনও দেখা হয়নি" },
 
   // ── Common ────────────────────────────────────────────────────────
   "common.loading": { en: "Loading…", bn: "লোড হচ্ছে…" },

@@ -3,6 +3,7 @@ package com.webinnovation.eyeon.api;
 import com.webinnovation.eyeon.dto.LocationDtos.LocationView;
 import com.webinnovation.eyeon.repository.LocationRepository;
 import com.webinnovation.eyeon.security.TenantContext;
+import com.webinnovation.eyeon.service.DeviceAccessService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -22,6 +23,7 @@ import java.util.UUID;
 public class BulkLocationController {
 
     private final LocationRepository locationRepo;
+    private final DeviceAccessService access;
 
     /**
      * Last-known position for every device in the org — initial dashboard load.
@@ -32,7 +34,9 @@ public class BulkLocationController {
     @GetMapping("/last")
     public List<LocationView> allLastKnown() {
         UUID orgId = TenantContext.requireOrgId();
+        java.util.Set<String> visible = access.visibleForCurrentUser();
         return locationRepo.findAllLastKnownWithFixForOrg(orgId).stream()
+                .filter(f -> DeviceAccessService.canSee(visible, f.latest().deviceImei()))
                 .map(f -> LocationView.ofLastKnown(f.latest(), f.lastValid()))
                 .toList();
     }

@@ -114,18 +114,26 @@ function get(): WsClient {
   return singleton;
 }
 
+// Live data is delivered per user on /user/queue/..., filtered on the server to the children
+// this user may see (the org-wide /topic/org/... topics are closed). Locations arrive in
+// batches every ~10 s; this unpacks them so callers still get one location at a time.
+// (Before 2026-09-21 the app listened on a single-location topic nothing published to, so the
+// mobile map never updated live.) `orgId` stays in the signatures for callers.
+
 export function subscribeLocations(
-  orgId: string,
+  _orgId: string,
   listener: (loc: LocationView) => void,
 ): Promise<() => void> {
-  return get().subscribe<LocationView>(`/topic/org/${orgId}/locations`, listener);
+  return get().subscribe<LocationView[]>("/user/queue/locations/batch", (batch) => {
+    for (const loc of batch) listener(loc);
+  });
 }
 
 export function subscribeAlarms(
-  orgId: string,
+  _orgId: string,
   listener: (alarm: AlarmView) => void,
 ): Promise<() => void> {
-  return get().subscribe<AlarmView>(`/topic/org/${orgId}/alarms`, listener);
+  return get().subscribe<AlarmView>("/user/queue/alarms", listener);
 }
 
 export function disconnectWs(): void {

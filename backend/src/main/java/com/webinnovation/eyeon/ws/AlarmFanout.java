@@ -20,7 +20,8 @@ import java.nio.charset.StandardCharsets;
 
 /**
  * Mirrors {@link LocationFanout} for alarm events. Reads from the Redis
- * {@code alarm-events} channel and forwards to {@code /topic/org/{orgId}/alarms}.
+ * {@code alarm-events} channel and delivers each alarm to {@code /user/queue/alarms} of every
+ * user who may see that child (and, for a geofence alarm, only to the geofence's owner).
  */
 @Component
 @RequiredArgsConstructor
@@ -29,6 +30,7 @@ public class AlarmFanout implements MessageListener {
 
     private final SimpMessagingTemplate broker;
     private final ObjectMapper objectMapper;
+    private final LiveAudience audience;
 
     @Override
     public void onMessage(Message message, byte[] pattern) {
@@ -41,7 +43,15 @@ public class AlarmFanout implements MessageListener {
                 return;
             }
             JsonNode payload = stripInternalFields(node);
-            broker.convertAndSend("/topic/org/" + orgId + "/alarms", payload);
+            String imei = node.path("imei").asText(null);
+            // A geofence / trusted-place alarm belongs to the place's owner alone.
+            String owner = node.path("metadata")
+                    .path(com.webinnovation.eyeon.repository.AlarmRepository.GEOFENCE_OWNER_KEY).asText(null);
+            for (LiveAudience.Viewer v : audience.forOrg(java.util.UUID.fromString(orgId))) {
+                if (!v.canSee(imei)) continue;
+                if (owner != null && !owner.equals(v.userName())) continue;
+                broker.convertAndSendToUser(v.userName(), "/queue/alarms", payload);
+            }
         } catch (Exception e) {
             log.warn("Failed to fan out alarm event: {}", e.getMessage());
         }

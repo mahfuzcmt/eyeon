@@ -82,6 +82,19 @@ public class UserDeviceRepository {
     /**
      * Get all device IMEIs assigned to a user.
      */
+    /** One row per (user, tracker) assignment of an organization's active users. */
+    public record Assignment(UUID userId, String deviceImei) {}
+
+    public List<Assignment> listForOrg(UUID orgId) {
+        return jdbc.query("""
+                SELECT ud.user_id, ud.device_imei
+                  FROM user_devices ud
+                  JOIN users u ON u.id = ud.user_id
+                 WHERE u.org_id = :orgId AND u.is_active = true
+                """, new MapSqlParameterSource("orgId", orgId),
+                (rs, rn) -> new Assignment(rs.getObject("user_id", UUID.class), rs.getString("device_imei")));
+    }
+
     public List<String> getDeviceImeis(UUID userId) {
         var sql = "SELECT device_imei FROM user_devices WHERE user_id = :userId";
         return jdbc.queryForList(sql, new MapSqlParameterSource("userId", userId), String.class);

@@ -36,6 +36,7 @@ public class LocationFanout implements MessageListener {
 
     private final SimpMessagingTemplate broker;
     private final ObjectMapper objectMapper;
+    private final LiveAudience audience;
 
     @Override
     public void onMessage(Message message, byte[] pattern) {
@@ -48,8 +49,10 @@ public class LocationFanout implements MessageListener {
                 return;
             }
             JsonNode payload = stripInternalFields(node);
-            String topic = "/topic/org/" + orgId + "/locations";
-            broker.convertAndSend(topic, payload);
+            String imei = node.path("imei").asText(null);
+            for (LiveAudience.Viewer v : audience.forOrg(java.util.UUID.fromString(orgId))) {
+                if (v.canSee(imei)) broker.convertAndSendToUser(v.userName(), "/queue/locations", payload);
+            }
         } catch (Exception e) {
             log.warn("Failed to fan out location event: {}", e.getMessage());
         }

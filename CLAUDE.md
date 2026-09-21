@@ -63,7 +63,7 @@ No inherited `motolink`/`pingpath` identifiers remain in the tree. (Correction 2
 | Frontend framework | Next.js | 15.x (App Router) | SSR + RSC, file-based routing |
 | Frontend language | TypeScript | 5.x (strict mode) | No `any` allowed |
 | UI framework | Tailwind CSS | 3.4.x | Utility-first, no design system framework |
-| Map library | Leaflet + Google Maps base layer | Leaflet 1.9.x, `leaflet.gridlayer.googlemutant` 0.14.x | Switched from OSM tiles 2026-07-12: OSM misses Bangladesh roads/buildings/POIs. Google JS API rendered as a Leaflet layer (web `frontend/src/lib/leaflet.ts`, mobile WebView `mobile/src/components/WebMap.tsx`); free OSM/Esri fallback when `*_GOOGLE_MAPS_API_KEY` is unset. Mapbox no longer used. **Per-org key (2026-09-16, V14):** `organizations.google_maps_api_key` lets a customer bring their own browser key (Settings → Organization → Map, ORG_ADMIN; `PATCH /orgs/me { googleMapsApiKey }`, blank clears). Web applies it via `setGoogleMapsApiKey()` in `DashboardShell`; mobile reads it from `/orgs/me` on session start. Falls back to the platform env key. |
+| Map library | Leaflet + Google Maps base layer | Leaflet 1.9.x, `leaflet.gridlayer.googlemutant` 0.14.x | Switched from OSM tiles 2026-07-12: OSM misses Bangladesh roads/buildings/POIs. Google JS API rendered as a Leaflet layer (web `frontend/src/lib/leaflet.ts`, mobile WebView `mobile/src/components/WebMap.tsx`); free OSM/Esri fallback when `*_GOOGLE_MAPS_API_KEY` is unset. Mapbox no longer used. **Per-org key (2026-09-16, V14):** `organizations.google_maps_api_key` lets a customer bring their own browser key (Settings → Organization → Map, ORG_ADMIN; `PATCH /orgs/me { googleMapsApiKey }`, blank clears). Web applies it via `setGoogleMapsApiKey()` in `DashboardShell`; mobile reads it from `/orgs/me` on session start. Falls back to the platform env key. **Production** (2026-09-21) uses the same browser key as MotoLink (`NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` in `/opt/eyeon/.env`, compiled into the frontend at build time - a rebuild is needed after changing it); verified in a real browser with no `*MapError`. The mobile app reads the org key from `/orgs/me` or `EXPO_PUBLIC_GOOGLE_MAPS_API_KEY` at build time, otherwise it shows OpenStreetMap. |
 | WebSocket client | @stomp/stompjs | 7.x | STOMP over WebSocket, matches Spring's broker |
 | Mobile (Phase 5) | React Native + Expo | 51.x | Cross-platform end-user app |
 | Container | Docker | 24+ | Local dev + production parity |
@@ -1205,7 +1205,19 @@ HTTP status codes: 200 OK, 201 Created, 204 No Content, 400 Bad Request, 401 Una
 **Endpoint:** `wss://api.eyeongps.com/ws` (STOMP over SockJS fallback)
 **Auth:** JWT in `Authorization` header during STOMP CONNECT frame.
 
-### 9.1 Server → Client Topics
+### 9.0 Per-user delivery (since 2026-09-21) - read this first
+
+**Live data is delivered per user, never per organization.** Clients subscribe to:
+
+```
+/user/queue/locations/batch   LocationView[] every ~10 s - only the children this user may see
+/user/queue/alarms            AlarmView - child visible to this user; a geofence/place alarm only to its owner
+/user/queue/locations         (single-location producer is currently unused)
+```
+
+`ws/LiveAudience` resolves, per organization, which user may see which child (admins and `see_all_devices` = everyone, others = their `user_devices` rows). It is cached for 30 s and invalidated by every user / assignment change in `OrgController`; `BatchLocationFanout` and `AlarmFanout` send each user a filtered copy with `convertAndSendToUser`. `StompAuthChannelInterceptor` **refuses** any `/topic/org/...` subscription. The topics below are historical: they sent every child's live position to every parent in a school (§9.3's org check did not stop that), and the mobile app listened on `/topic/org/{orgId}/locations`, which nothing published, so it never updated live. Covered by `LiveFanoutPrivacyTest` and, end to end, `scripts/smoke_privacy.py`.
+
+### 9.1 Server → Client Topics (historical - closed)
 
 ```
 /topic/org/{orgId}/locations     LocationEvent on every device location
@@ -1335,6 +1347,15 @@ Reworked 2026-09-15 to match (and tidy up) the ADL Moto Viewer live-monitoring s
 - **JWT contains `orgId`** in claims
 - **`TenantContext`** is a `ThreadLocal<UUID>` set by `JwtFilter` on every request; cleared in `finally`
 - **`@PreAuthorize("@orgGuard.matches(#orgId)")`** on controller methods that take an explicit org ID
+
+### 11.2a Per-user privacy inside an organization (since 2026-09-21)
+
+A school is one organization with many families, so org-level isolation is not enough. **A parent (ORG_USER without `see_all_devices`) may only ever read data about children assigned to them in `user_devices`.**
+- **Every endpoint that takes an IMEI calls `DeviceAccessService.requireVisible(imei)`** (org + per-user, 404 either way). Until 2026-09-21 locations, activity, commands, share links, per-device reports/exports and `/devices/locations/last` checked only the organization, so any parent could read any child's history by IMEI.
+- Organization-wide reports/exports/trips call `requireSeesAll()` (403 for parents); the Reports menu is `adminOnly`. Alarm exports and the dashboard KPIs are filtered to what the caller may see instead.
+- **Geofences and trusted places are per user** (V21 `geofences.owner_user_id`, like groups/rules in V18): only the owner lists, edits, deletes or assigns them - not even an ORG_ADMIN sees another user's - and a place can only be attached to children the owner can see. Their alarms carry `metadata.geofenceOwnerId`; `AlarmRepository.OWNER_FILTER` / `visibleTo`, push (`PushTokenRepository ... onlyUserId`) and `AlarmFanout` deliver them to the owner alone, so a school admin is not told that a child reached a parent's private Home. If the owner loses access to the child, the place stops alerting. Two parents of the same child each keep their own places.
+- `DeviceAccessService.visibleImeis(UUID)` (used by background code) returned an **empty set for admins** until 2026-09-21 (`Optional.map` of a null result), which silently disabled admins' "all children" alarm rules; see `DeviceAccessServiceTest`.
+- Live test: `scripts/smoke_privacy.py` (two parents, one child each: 11 REST routes, place ownership, the WebSocket feed, alarm lists).
 
 ### 11.2 Cross-Tenant Protection
 

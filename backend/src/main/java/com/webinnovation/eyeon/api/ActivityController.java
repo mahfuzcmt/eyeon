@@ -7,6 +7,7 @@ import com.webinnovation.eyeon.repository.ActivityRepository;
 import com.webinnovation.eyeon.repository.DeviceRepository;
 import com.webinnovation.eyeon.security.SubscriptionGuard;
 import com.webinnovation.eyeon.security.TenantContext;
+import com.webinnovation.eyeon.service.DeviceAccessService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -36,6 +37,7 @@ public class ActivityController {
     private final ActivityRepository activityRepo;
     private final DeviceRepository deviceRepo;
     private final SubscriptionGuard subscriptionGuard;
+    private final DeviceAccessService access;
 
     @GetMapping
     public Activity summary(@PathVariable String imei,
@@ -57,8 +59,7 @@ public class ActivityController {
 
     private Range resolve(String imei, Instant from, Instant to) {
         UUID orgId = TenantContext.requireOrgId();
-        deviceRepo.findByOrgAndImei(orgId, imei)
-                .orElseThrow(() -> new NotFoundException("device", imei));
+        access.requireVisible(imei);
         subscriptionGuard.requireActiveSubscription(imei);
 
         Instant toResolved = to == null ? Instant.now() : to;

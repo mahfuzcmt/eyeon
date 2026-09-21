@@ -143,11 +143,15 @@ function get(): WsClient {
   return singleton;
 }
 
+// Live data is delivered per user on /user/queue/..., filtered on the server to the children
+// this user may see. The org-wide /topic/org/{orgId}/... topics are closed (they sent every
+// child's position to every parent in a school). `orgId` stays in the signatures for callers.
+
 export function subscribeLocations(
-  orgId: string,
+  _orgId: string,
   listener: (loc: LocationView) => void,
 ): Promise<() => void> {
-  return get().subscribe<LocationView>(`/topic/org/${orgId}/locations`, listener);
+  return get().subscribe<LocationView>("/user/queue/locations", listener);
 }
 
 /**
@@ -159,22 +163,17 @@ export function subscribeLocations(
  * @returns Unsubscribe function
  */
 export function subscribeBatchLocations(
-  orgId: string,
+  _orgId: string,
   listener: (locations: LocationView[]) => void,
 ): Promise<() => void> {
-  const topic = `/topic/org/${orgId}/locations/batch`;
-  console.log(`[ws] Subscribing to batch topic: ${topic}`);
-  return get().subscribe<LocationView[]>(topic, (locations) => {
-    console.log(`[ws] Received batch message on ${topic}: ${locations.length} locations`);
-    listener(locations);
-  });
+  return get().subscribe<LocationView[]>("/user/queue/locations/batch", listener);
 }
 
 export function subscribeAlarms(
-  orgId: string,
+  _orgId: string,
   listener: (alarm: AlarmView) => void,
 ): Promise<() => void> {
-  return get().subscribe<AlarmView>(`/topic/org/${orgId}/alarms`, listener);
+  return get().subscribe<AlarmView>("/user/queue/alarms", listener);
 }
 
 export function disconnectWs(): void {

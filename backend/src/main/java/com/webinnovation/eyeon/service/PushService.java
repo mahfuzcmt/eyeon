@@ -15,6 +15,7 @@ import java.util.EnumMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 /**
  * Push notification dispatch via the Expo Push Service
@@ -69,8 +70,12 @@ public class PushService {
         if (!enabled) return;
         try {
             // Respect each user's push preferences (Settings → Notifications).
+            // A geofence / trusted-place alarm belongs to the place's owner alone.
+            Object owner = alarm.metadata() == null ? null
+                    : alarm.metadata().get(com.webinnovation.eyeon.repository.AlarmRepository.GEOFENCE_OWNER_KEY);
+            UUID onlyUser = owner == null ? null : UUID.fromString(owner.toString());
             List<PushTokenRepository.Target> targets =
-                    tokenRepo.listTokensForOrgAndType(alarm.orgId(), alarm.type(), alarm.deviceImei());
+                    tokenRepo.listTokensForOrgAndType(alarm.orgId(), alarm.type(), alarm.deviceImei(), onlyUser);
             if (targets.isEmpty()) return;
 
             String personName = deviceRepo.findByImei(alarm.deviceImei())

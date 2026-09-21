@@ -25,7 +25,8 @@ import java.nio.charset.StandardCharsets;
  * <p>Producer side: LocationBufferService publishes batch JSON on Redis "batch-location-events"
  * every 3 seconds.
  *
- * <p>Consumer side: This listener routes each batch message to /topic/org/{orgId}/locations/batch
+ * <p>Consumer side: this listener sends each user the part of the batch they may see, on
+ * /user/queue/locations/batch (see {@link LiveAudience}).
  * so only subscribers in that tenant receive it.
  *
  * <p>The batch message format from Redis:
@@ -50,6 +51,7 @@ public class BatchLocationFanout implements MessageListener {
 
     private final SimpMessagingTemplate broker;
     private final ObjectMapper objectMapper;
+    private final LiveAudience audience;
 
     @Override
     public void onMessage(Message message, byte[] pattern) {
@@ -80,10 +82,18 @@ public class BatchLocationFanout implements MessageListener {
                 }
             }
 
-            String topic = "/topic/org/" + orgId + "/locations/batch";
-            broker.convertAndSend(topic, payload);
-
-            log.info("Fanned out batch of {} locations to {}", payload.size(), topic);
+            // Each user gets only the children they may see, on their own queue.
+            int users = 0;
+            for (LiveAudience.Viewer v : audience.forOrg(java.util.UUID.fromString(orgId))) {
+                ArrayNode mine = objectMapper.createArrayNode();
+                for (JsonNode loc : payload) {
+                    if (v.canSee(loc.path("imei").asText(null))) mine.add(loc);
+                }
+                if (mine.isEmpty()) continue;
+                broker.convertAndSendToUser(v.userName(), "/queue/locations/batch", mine);
+                users++;
+            }
+            log.debug("Fanned out batch of {} locations for org {} to {} users", payload.size(), orgId, users);
         } catch (Exception e) {
             log.warn("Failed to fan out batch location event: {}", e.getMessage());
         }
