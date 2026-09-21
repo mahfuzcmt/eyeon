@@ -254,12 +254,12 @@ const styles = StyleSheet.create({
 
   statusRow: { flexDirection: "row", alignItems: "center", gap: space.sm, width: "100%", paddingVertical: space.sm },
   statusDot: { width: 12, height: 12, borderRadius: 6 },
-  statusText: { color: colors.text, fontSize: 15, fontWeight: "600" },
+  statusText: { color: colors.text, fontSize: 16, fontWeight: "600" },
 
   lockRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", width: "100%", paddingVertical: space.sm },
-  lockLabel: { color: colors.textDim, fontSize: 13 },
+  lockLabel: { color: colors.textDim, fontSize: 14 },
   lockBadge: { paddingHorizontal: space.md, paddingVertical: space.xs, borderRadius: radius.sm, backgroundColor: colors.surfaceAlt },
-  lockValue: { fontSize: 14, fontWeight: "700" },
+  lockValue: { fontSize: 15, fontWeight: "700" },
 
   actions: { flexDirection: "row", gap: space.md, paddingTop: space.sm, width: "100%" },
   cmdBtn: {
@@ -275,10 +275,10 @@ const styles = StyleSheet.create({
   },
   cmdBtnFull: { flex: 0, width: "100%", marginTop: space.sm },
   cmdIcon: { fontSize: 16 },
-  cmdText: { fontWeight: "700", fontSize: 14 },
+  cmdText: { fontWeight: "700", fontSize: 15 },
   cmdGrid: { width: "100%" },
 
-  note: { color: colors.textFaint, fontSize: 11, marginTop: space.sm, width: "100%" },
+  note: { color: colors.textFaint, fontSize: 12, marginTop: space.sm, width: "100%" },
 
   replyBox: {
     backgroundColor: colors.surfaceAlt,
@@ -287,14 +287,14 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.brand,
   },
-  replyTitle: { color: colors.textDim, fontSize: 12, fontWeight: "600", marginBottom: space.xs },
-  replyText: { color: colors.text, fontSize: 13, fontFamily: "monospace" },
+  replyTitle: { color: colors.textDim, fontSize: 13, fontWeight: "600", marginBottom: space.xs },
+  replyText: { color: colors.text, fontSize: 14, fontFamily: "monospace" },
 
   subRow: { flexDirection: "row", alignItems: "center", gap: space.md, width: "100%", paddingVertical: space.sm },
   subBadge: { borderWidth: 1, borderRadius: radius.sm, paddingHorizontal: space.sm, paddingVertical: space.xs },
-  subStatus: { fontSize: 12, fontWeight: "700" },
-  subExpiry: { color: colors.textDim, fontSize: 12 },
-  expiredNote: { color: colors.danger, fontSize: 12, marginTop: space.xs, width: "100%" },
+  subStatus: { fontSize: 13, fontWeight: "700" },
+  subExpiry: { color: colors.textDim, fontSize: 13 },
+  expiredNote: { color: colors.danger, fontSize: 13, marginTop: space.xs, width: "100%" },
 
-  disclaimer: { color: colors.textFaint, fontSize: 11, textAlign: "center", marginTop: space.md },
+  disclaimer: { color: colors.textFaint, fontSize: 12, textAlign: "center", marginTop: space.md },
 });

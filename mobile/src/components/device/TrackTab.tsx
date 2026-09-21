@@ -186,9 +186,9 @@ const styles = StyleSheet.create({
     padding: space.md,
     gap: 4,
   },
-  bannerTitle: { fontSize: 13, fontWeight: "800" },
-  bannerNote: { color: colors.textDim, fontSize: 12 },
-  parked: { color: colors.textDim, fontSize: 12, paddingHorizontal: space.md },
+  bannerTitle: { fontSize: 14, fontWeight: "800" },
+  bannerNote: { color: colors.textDim, fontSize: 13 },
+  parked: { color: colors.textDim, fontSize: 13, paddingHorizontal: space.md },
   speedo: {
     position: "absolute",
     right: space.md,
@@ -202,7 +202,7 @@ const styles = StyleSheet.create({
     paddingVertical: space.sm,
   },
   speedoVal: { color: colors.text, fontSize: 24, fontWeight: "800" },
-  speedoUnit: { color: colors.textFaint, fontSize: 11 },
+  speedoUnit: { color: colors.textFaint, fontSize: 12 },
   lockRow: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -210,8 +210,8 @@ const styles = StyleSheet.create({
     width: "100%",
     paddingBottom: space.xs,
   },
-  lockLabel: { color: colors.textFaint, fontSize: 12 },
-  lockValue: { fontSize: 14, fontWeight: "700" },
+  lockLabel: { color: colors.textFaint, fontSize: 13 },
+  lockValue: { fontSize: 15, fontWeight: "700" },
   actions: { flexDirection: "row", gap: space.md, paddingVertical: space.sm, width: "100%" },
   action: {
     flex: 1,
@@ -220,6 +220,6 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     alignItems: "center",
   },
-  actionText: { fontWeight: "700", fontSize: 14 },
-  note: { color: colors.textFaint, fontSize: 11, paddingHorizontal: space.md },
+  actionText: { fontWeight: "700", fontSize: 15 },
+  note: { color: colors.textFaint, fontSize: 12, paddingHorizontal: space.md },
 });

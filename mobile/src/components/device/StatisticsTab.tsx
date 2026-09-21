@@ -79,5 +79,5 @@ function fmtExpiry(date: string | null | undefined, t: (k: StringKey) => string)
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.bg },
   content: { padding: space.md, gap: space.md, paddingBottom: space.xl },
-  server: { color: colors.textFaint, fontSize: 11 },
+  server: { color: colors.textFaint, fontSize: 12 },
 });

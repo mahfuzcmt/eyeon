@@ -11,7 +11,7 @@ function SignOut() {
   const { t } = useI18n();
   return (
     <Pressable onPress={() => void signOut()} hitSlop={12} style={{ paddingHorizontal: space.md }}>
-      <Text style={{ color: colors.brand, fontSize: 13, fontWeight: "600" }}>{t("auth.signOut")}</Text>
+      <Text style={{ color: colors.brand, fontSize: 14, fontWeight: "600" }}>{t("auth.signOut")}</Text>
     </Pressable>
   );
 }
@@ -28,7 +28,8 @@ export default function TabsLayout() {
         headerStyle: { backgroundColor: colors.surface },
         headerTintColor: colors.text,
         tabBarStyle: { backgroundColor: colors.surface, borderTopColor: colors.border },
-        tabBarActiveTintColor: colors.text,
+        tabBarLabelStyle: { fontSize: 13, fontWeight: "600" },
+        tabBarActiveTintColor: colors.brand,
         tabBarInactiveTintColor: colors.textFaint,
       }}
     >
@@ -36,7 +37,7 @@ export default function TabsLayout() {
         name="index"
         options={{
           title: t("tab.home"),
-          tabBarIcon: ({ color }) => <Ionicons name="home-outline" size={22} color={color} />,
+          tabBarIcon: ({ color }) => <Ionicons name="home-outline" size={26} color={color} />,
           headerRight: () => <SignOut />,
         }}
       />
@@ -45,14 +46,14 @@ export default function TabsLayout() {
         options={{
           title: t("tab.map"),
           headerShown: false,
-          tabBarIcon: ({ color }) => <Ionicons name="location-outline" size={22} color={color} />,
+          tabBarIcon: ({ color }) => <Ionicons name="location-outline" size={26} color={color} />,
         }}
       />
       <Tabs.Screen
         name="vehicles"
         options={{
           title: t("tab.vehicles"),
-          tabBarIcon: ({ color }) => <Ionicons name="car-outline" size={22} color={color} />,
+          tabBarIcon: ({ color }) => <Ionicons name="people-outline" size={26} color={color} />,
           headerRight: () => <SignOut />,
         }}
       />
@@ -60,7 +61,7 @@ export default function TabsLayout() {
         name="alerts"
         options={{
           title: t("tab.alerts"),
-          tabBarIcon: ({ color }) => <Ionicons name="notifications-outline" size={22} color={color} />,
+          tabBarIcon: ({ color }) => <Ionicons name="notifications-outline" size={26} color={color} />,
           headerRight: () => <SignOut />,
         }}
       />
@@ -68,7 +69,7 @@ export default function TabsLayout() {
         name="more"
         options={{
           title: t("tab.more"),
-          tabBarIcon: ({ color }) => <Ionicons name="ellipsis-horizontal" size={22} color={color} />,
+          tabBarIcon: ({ color }) => <Ionicons name="ellipsis-horizontal" size={26} color={color} />,
         }}
       />
     </Tabs>

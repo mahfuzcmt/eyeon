@@ -9,7 +9,7 @@ import {
   View,
   ViewStyle,
 } from "react-native";
-import { colors, radius, space } from "./theme";
+import { colors, radius, space, touch } from "./theme";
 
 export function Card({ children, style }: { children: React.ReactNode; style?: ViewStyle }) {
   return <View style={[styles.card, style]}>{children}</View>;
@@ -46,7 +46,7 @@ export function PrimaryButton({
       ]}
     >
       {loading ? (
-        <ActivityIndicator color="#000" />
+        <ActivityIndicator color={colors.onBrand} />
       ) : (
         <Text style={styles.btnText}>{label}</Text>
       )}
@@ -82,7 +82,7 @@ export function Chip({
       onPress={onPress}
       style={[styles.chip, active ? styles.chipOn : styles.chipOff]}
     >
-      <Text style={[styles.chipText, { color: active ? "#000" : colors.textDim }]}>{label}</Text>
+      <Text style={[styles.chipText, { color: active ? colors.onBrand : colors.textDim }]}>{label}</Text>
     </Pressable>
   );
 }
@@ -137,20 +137,22 @@ const styles = StyleSheet.create({
     gap: 5,
     borderWidth: 1,
     borderRadius: 999,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
   },
-  dot: { width: 7, height: 7, borderRadius: 4 },
-  pillText: { fontSize: 11, fontWeight: "600" },
+  dot: { width: 8, height: 8, borderRadius: 4 },
+  pillText: { fontSize: 12, fontWeight: "600" },
   btn: {
     backgroundColor: colors.brand,
     borderRadius: radius.md,
+    minHeight: touch.button,
     paddingVertical: 14,
+    paddingHorizontal: space.lg,
     alignItems: "center",
     justifyContent: "center",
   },
-  btnText: { color: "#000", fontWeight: "700", fontSize: 15 },
-  label: { color: colors.textDim, fontSize: 13 },
+  btnText: { color: colors.onBrand, fontWeight: "700", fontSize: 17 },
+  label: { color: colors.textDim, fontSize: 14 },
   input: {
     backgroundColor: colors.surfaceAlt,
     borderWidth: 1,
@@ -158,21 +160,24 @@ const styles = StyleSheet.create({
     borderRadius: radius.sm,
     paddingHorizontal: space.md,
     paddingVertical: 12,
+    minHeight: touch.min,
     color: colors.text,
-    fontSize: 15,
+    fontSize: 16,
   },
   chip: {
     borderRadius: 999,
-    paddingHorizontal: 14,
-    paddingVertical: 7,
+    paddingHorizontal: 16,
+    paddingVertical: 9,
+    minHeight: 40,
+    justifyContent: "center",
     borderWidth: 1,
   },
   chipOn: { backgroundColor: colors.brand, borderColor: colors.brand },
   chipOff: { backgroundColor: "transparent", borderColor: colors.border },
-  chipText: { fontSize: 13, fontWeight: "600" },
+  chipText: { fontSize: 14, fontWeight: "600" },
   center: { flex: 1, alignItems: "center", justifyContent: "center", padding: space.xl, gap: space.sm },
-  dim: { color: colors.textFaint, fontSize: 14, textAlign: "center" },
-  sectionTitle: { color: colors.textDim, fontSize: 13, fontWeight: "700" },
+  dim: { color: colors.textFaint, fontSize: 15, textAlign: "center" },
+  sectionTitle: { color: colors.textDim, fontSize: 14, fontWeight: "700" },
   sectionCard: {
     flexDirection: "row",
     flexWrap: "wrap",
@@ -184,6 +189,6 @@ const styles = StyleSheet.create({
     paddingVertical: space.xs,
   },
   metric: { paddingVertical: space.sm },
-  metricValue: { color: colors.text, fontSize: 15, fontWeight: "700" },
-  metricLabel: { color: colors.textFaint, fontSize: 11, marginTop: 2 },
+  metricValue: { color: colors.text, fontSize: 16, fontWeight: "700" },
+  metricLabel: { color: colors.textFaint, fontSize: 12, marginTop: 2 },
 });

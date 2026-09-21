@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { useRouter } from "expo-router";
 import * as Notifications from "expo-notifications";
 import { registerForAlarmPush } from "@/push";
+import { useI18n } from "@/i18n";
 
 // Survives hook remounts (sign out/in) so a cold-start tap is handled once.
 let lastHandledId: string | null = null;
@@ -13,6 +14,12 @@ let lastHandledId: string | null = null;
  */
 export function usePushNotifications(enabled: boolean): void {
   const router = useRouter();
+  const { locale } = useI18n();
+
+  // Re-registers when the app language changes so notifications follow it.
+  useEffect(() => {
+    if (enabled) void registerForAlarmPush(locale);
+  }, [enabled, locale]);
 
   useEffect(() => {
     if (!enabled) return;
@@ -28,8 +35,6 @@ export function usePushNotifications(enabled: boolean): void {
         router.push("/(tabs)/alerts");
       }
     }
-
-    void registerForAlarmPush();
 
     // Cold start: the app may have been launched by tapping a notification.
     void Notifications.getLastNotificationResponseAsync().then((resp) => {

@@ -131,6 +131,8 @@ export type AlarmType =
   | "OVERSPEED"
   | "GEOFENCE_ENTER"
   | "GEOFENCE_EXIT"
+  | "PLACE_ARRIVED"
+  | "PLACE_LEFT"
   | "COLLISION"
   | "ACC_ON"
   | "ACC_OFF"
@@ -159,7 +161,10 @@ export interface LatLng {
 }
 
 export type GeofenceType = "CIRCLE" | "POLYGON";
-export type GeofenceNotifyOn = "ENTER" | "EXIT" | "BOTH";
+export type GeofenceNotifyOn = "ENTER" | "EXIT" | "BOTH" | "NONE";
+/** TRUSTED_PLACE: somewhere they should be (calm arrived/left). BOUNDARY: an area they must not leave. */
+export type GeofenceKind = "TRUSTED_PLACE" | "BOUNDARY";
+export type PlaceType = "HOME" | "SCHOOL" | "COACHING" | "MOSQUE" | "HOSPITAL" | "RELATIVE" | "OTHER";
 
 /** Mirrors backend dto.GeofenceDtos.GeofenceView. */
 export interface GeofenceView {
@@ -172,6 +177,11 @@ export interface GeofenceView {
   center: LatLng | null; // CIRCLE only
   radiusM: number | null; // CIRCLE only
   polygon: LatLng[]; // POLYGON only
+  kind: GeofenceKind;
+  placeType: PlaceType | null; // TRUSTED_PLACE only
+  address: string | null;
+  exitBufferM: number;
+  minDwellS: number;
   createdAt: string;
   updatedAt: string;
 }

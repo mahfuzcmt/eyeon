@@ -16,6 +16,12 @@ export default function MoreScreen() {
     <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
       <View style={styles.card}>
         <MenuRow
+          icon="shield-checkmark-outline"
+          label={t("home.places")}
+          onPress={() => router.push("/places")}
+        />
+        <View style={styles.divider} />
+        <MenuRow
           icon="locate-outline"
           label={t("home.geofences")}
           onPress={() => router.push("/geofences")}
@@ -84,7 +90,7 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
   },
   rowLeft: { flexDirection: "row", alignItems: "center", gap: space.md },
-  rowLabel: { color: colors.text, fontSize: 15, fontWeight: "600" },
+  rowLabel: { color: colors.text, fontSize: 16, fontWeight: "600" },
   divider: { height: 1, backgroundColor: colors.border, marginLeft: space.lg },
-  meta: { color: colors.textFaint, fontSize: 12, textAlign: "center" },
+  meta: { color: colors.textFaint, fontSize: 13, textAlign: "center" },
 });

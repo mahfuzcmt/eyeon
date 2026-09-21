@@ -28,7 +28,7 @@ let currentToken: string | null = null;
  * it with the backend. Best-effort: any failure (simulator, permission
  * denied, offline) resolves silently — push must never block sign-in.
  */
-export async function registerForAlarmPush(): Promise<void> {
+export async function registerForAlarmPush(locale: "bn" | "en"): Promise<void> {
   try {
     if (!Device.isDevice) return; // emulators/simulators can't receive push
 
@@ -39,7 +39,15 @@ export async function registerForAlarmPush(): Promise<void> {
         importance: Notifications.AndroidImportance.MAX,
         sound: "default",
         vibrationPattern: [0, 250, 250, 250],
-        lightColor: "#E8900A",
+        lightColor: "#0F6B5C",
+      });
+      // "Reached School" / "left School": good news, so a normal-importance channel
+      // with the default sound rather than the alarm treatment.
+      await Notifications.setNotificationChannelAsync("arrivals", {
+        name: "Arrivals and departures",
+        importance: Notifications.AndroidImportance.DEFAULT,
+        sound: "default",
+        lightColor: "#0F6B5C",
       });
     }
 
@@ -56,7 +64,7 @@ export async function registerForAlarmPush(): Promise<void> {
       projectId ? { projectId } : {},
     );
 
-    await registerPushToken(token, Platform.OS === "ios" ? "IOS" : "ANDROID");
+    await registerPushToken(token, Platform.OS === "ios" ? "IOS" : "ANDROID", locale);
     currentToken = token;
   } catch {
     // Swallowed by design — see doc comment.

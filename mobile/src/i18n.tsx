@@ -251,6 +251,55 @@ const STRINGS = {
     bn: "নজরদারির জন্য অন্তত একটি যানবাহন নির্বাচন করুন।",
   },
 
+  "geo.noAlerts": { en: "alerts off", bn: "অ্যালার্ট বন্ধ" },
+
+  // ── Trusted places ────────────────────────────────────────────────
+  "home.places": { en: "Trusted places", bn: "বিশ্বস্ত জায়গা" },
+  "place.add": { en: "Add a place", bn: "নতুন জায়গা যোগ করুন" },
+  "place.edit": { en: "Edit place", bn: "জায়গা সম্পাদনা" },
+  "place.none": { en: "No trusted places yet.", bn: "এখনও কোনো বিশ্বস্ত জায়গা নেই।" },
+  "place.noneHint": {
+    en: "Add Home or School and we will tell you when they arrive and when they leave.",
+    bn: "বাসা বা স্কুল যোগ করুন — পৌঁছালে ও বের হলে আমরা জানিয়ে দেব।",
+  },
+  "place.whatKind": { en: "What kind of place?", bn: "এটা কোন ধরনের জায়গা?" },
+  "place.type.HOME": { en: "Home", bn: "বাসা" },
+  "place.type.SCHOOL": { en: "School", bn: "স্কুল" },
+  "place.type.COACHING": { en: "Coaching", bn: "কোচিং" },
+  "place.type.MOSQUE": { en: "Mosque", bn: "মসজিদ" },
+  "place.type.HOSPITAL": { en: "Hospital", bn: "হাসপাতাল" },
+  "place.type.RELATIVE": { en: "Relative's home", bn: "আত্মীয়ের বাসা" },
+  "place.type.OTHER": { en: "Other", bn: "অন্যান্য" },
+  "place.name": { en: "Name of the place", bn: "জায়গার নাম" },
+  "place.tapMap": { en: "Tap the map to drop the pin", bn: "পিন বসাতে ম্যাপে ট্যাপ করুন" },
+  "place.pinSet": { en: "Pin placed", bn: "পিন বসানো হয়েছে" },
+  "place.useCurrent": { en: "Or use where they are right now:", bn: "অথবা এখন যেখানে আছে সেটাই ব্যবহার করুন:" },
+  "place.size": { en: "How big is the area?", bn: "এলাকাটা কত বড়?" },
+  "place.sizeHint": {
+    en: "Cover the whole building and its gate. Very small areas cause false alerts indoors.",
+    bn: "পুরো ভবন ও গেট যেন ভেতরে থাকে। খুব ছোট এলাকায় ঘরের ভেতরে ভুল অ্যালার্ট আসতে পারে।",
+  },
+  "place.tellMe": { en: "Tell me when they", bn: "কখন জানাব?" },
+  "place.arrive": { en: "Arrive", bn: "পৌঁছালে" },
+  "place.leave": { en: "Leave", bn: "বের হলে" },
+  "place.who": { en: "Who is this for?", bn: "কার জন্য?" },
+  "place.save": { en: "Save place", bn: "জায়গা সেভ করুন" },
+  "place.saveChanges": { en: "Save changes", bn: "পরিবর্তন সেভ করুন" },
+  "place.errPin": { en: "Drop a pin on the map first.", bn: "আগে ম্যাপে পিন বসান।" },
+  "place.errWho": { en: "Choose at least one person.", bn: "অন্তত একজনকে বেছে নিন।" },
+  "place.deleteTitle": { en: "Remove this place?", bn: "জায়গাটি মুছবেন?" },
+  "place.deleteMsg": { en: "You will stop getting alerts for it.", bn: "এর জন্য আর অ্যালার্ট আসবে না।" },
+  "place.alerts.BOTH": { en: "Alerts: arrive and leave", bn: "অ্যালার্ট: পৌঁছালে ও বের হলে" },
+  "place.alerts.ENTER": { en: "Alerts: arrive only", bn: "অ্যালার্ট: শুধু পৌঁছালে" },
+  "place.alerts.EXIT": { en: "Alerts: leave only", bn: "অ্যালার্ট: শুধু বের হলে" },
+  "place.alerts.NONE": { en: "Alerts off", bn: "অ্যালার্ট বন্ধ" },
+
+  // ── Alert labels for zone events ──────────────────────────────────
+  "alarm.PLACE_ARRIVED": { en: "Arrived", bn: "পৌঁছানো" },
+  "alarm.PLACE_LEFT": { en: "Left", bn: "বের হওয়া" },
+  "alarm.GEOFENCE_EXIT": { en: "Outside safe area", bn: "নিরাপদ এলাকার বাইরে" },
+  "alarm.GEOFENCE_ENTER": { en: "Back in safe area", bn: "আবার নিরাপদ এলাকায়" },
+
   // ── Map ───────────────────────────────────────────────────────────
   "map.traffic": { en: "Traffic", bn: "ট্রাফিক" },
   "map.refresh": { en: "Refresh", bn: "রিফ্রেশ" },
@@ -296,7 +345,8 @@ const LocaleContext = createContext<LocaleCtx>({
 });
 
 export function LocaleProvider({ children }: { children: ReactNode }) {
-  const [locale, setLocaleState] = useState<Locale>("en");
+  // Bengali first: the product promise is a fully Bengali app. A saved choice still wins.
+  const [locale, setLocaleState] = useState<Locale>("bn");
 
   useEffect(() => {
     SecureStore.getItemAsync(STORE_KEY)

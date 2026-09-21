@@ -4,6 +4,7 @@ import type {
   AlarmView,
   CommandResponse,
   DeviceView,
+  GeofenceKind,
   GeofenceNotifyOn,
   GeofenceView,
   KpiSnapshot,
@@ -11,6 +12,7 @@ import type {
   LocationView,
   LoginResponse,
   OrgSummary,
+  PlaceType,
   TripView,
 } from "@/types";
 
@@ -117,8 +119,8 @@ export async function tripsForDevice(
 }
 
 // ----- Geofences -----
-export async function listGeofences(): Promise<GeofenceView[]> {
-  const r = await api.get<GeofenceView[]>("/geofences");
+export async function listGeofences(kind?: GeofenceKind): Promise<GeofenceView[]> {
+  const r = await api.get<GeofenceView[]>("/geofences", { params: kind ? { kind } : undefined });
   return r.data;
 }
 
@@ -129,6 +131,10 @@ export async function createCircleGeofence(req: {
   radiusM: number;
   notifyOn: GeofenceNotifyOn;
   imeis: string[];
+  /** Omit for a plain boundary geofence. */
+  kind?: GeofenceKind;
+  placeType?: PlaceType;
+  address?: string;
 }): Promise<GeofenceView> {
   const r = await api.post<GeofenceView>("/geofences", {
     name: req.name,
@@ -137,8 +143,45 @@ export async function createCircleGeofence(req: {
     center: req.center,
     radiusM: req.radiusM,
     imeis: req.imeis,
+    kind: req.kind,
+    placeType: req.placeType,
+    address: req.address,
   });
   return r.data;
+}
+
+/** Partial update; omitted fields keep their value. Reshaping resets arrived/left state server-side. */
+export async function updateGeofence(
+  id: string,
+  patch: Partial<{
+    name: string;
+    notifyOn: GeofenceNotifyOn;
+    placeType: PlaceType;
+    address: string;
+    center: LatLng;
+    radiusM: number;
+  }>,
+): Promise<GeofenceView> {
+  const r = await api.patch<GeofenceView>(`/geofences/${id}`, patch);
+  return r.data;
+}
+
+export async function getGeofence(id: string): Promise<GeofenceView> {
+  const r = await api.get<GeofenceView>(`/geofences/${id}`);
+  return r.data;
+}
+
+export async function listGeofenceImeis(id: string): Promise<string[]> {
+  const r = await api.get<string[]>(`/geofences/${id}/devices`);
+  return r.data;
+}
+
+export async function assignGeofenceDevices(id: string, imeis: string[]): Promise<void> {
+  await api.post(`/geofences/${id}/devices`, { imeis });
+}
+
+export async function unassignGeofenceDevice(id: string, imei: string): Promise<void> {
+  await api.delete(`/geofences/${id}/devices/${imei}`);
 }
 
 export async function deleteGeofence(id: string): Promise<void> {
@@ -149,8 +192,10 @@ export async function deleteGeofence(id: string): Promise<void> {
 export async function registerPushToken(
   token: string,
   platform: "ANDROID" | "IOS",
+  locale: "bn" | "en",
 ): Promise<void> {
-  await api.post("/users/me/push-tokens", { token, platform });
+  // locale decides the language the backend writes this install's notifications in.
+  await api.post("/users/me/push-tokens", { token, platform, locale });
 }
 
 /** Token goes in the query string — Expo tokens contain reserved chars like [ ]. */

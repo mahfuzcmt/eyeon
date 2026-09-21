@@ -13,6 +13,7 @@ const NOTIFY_KEY: Record<GeofenceView["notifyOn"], StringKey> = {
   ENTER: "geo.onEnter",
   EXIT: "geo.onExit",
   BOTH: "geo.enterExit",
+  NONE: "geo.noAlerts",
 };
 
 export default function GeofencesScreen() {
@@ -26,7 +27,8 @@ export default function GeofencesScreen() {
     setLoading(true);
     setError(null);
     try {
-      setFences(await listGeofences());
+      // Trusted places have their own screen; this one is the draw-a-boundary list.
+      setFences(await listGeofences("BOUNDARY"));
     } catch (e) {
       setError(extractError(e).message);
     } finally {
@@ -115,10 +117,10 @@ const styles = StyleSheet.create({
     padding: space.md,
   },
   rowMain: { flex: 1, gap: 2 },
-  name: { color: colors.text, fontSize: 15, fontWeight: "700" },
-  meta: { color: colors.textFaint, fontSize: 12 },
+  name: { color: colors.text, fontSize: 16, fontWeight: "700" },
+  meta: { color: colors.textFaint, fontSize: 13 },
   deleteBtn: { paddingLeft: space.xs },
   deleteText: { color: colors.danger, fontSize: 16, fontWeight: "700" },
   footer: { padding: space.md },
-  error: { color: colors.danger, fontSize: 13, marginBottom: space.sm },
+  error: { color: colors.danger, fontSize: 14, marginBottom: space.sm },
 });

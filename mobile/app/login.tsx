@@ -86,7 +86,7 @@ const styles = StyleSheet.create({
   brand: { flexDirection: "row", alignItems: "center", gap: space.sm },
   dot: { width: 12, height: 12, borderRadius: 6, backgroundColor: colors.brand },
   brandText: { color: colors.text, fontSize: 28, fontWeight: "800", letterSpacing: -0.5 },
-  tagline: { color: colors.textFaint, fontSize: 15, marginTop: -space.sm },
+  tagline: { color: colors.textFaint, fontSize: 16, marginTop: -space.sm },
   form: { gap: space.md, marginTop: space.lg },
-  error: { color: colors.danger, fontSize: 13 },
+  error: { color: colors.danger, fontSize: 14 },
 });

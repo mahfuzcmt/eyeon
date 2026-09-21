@@ -184,8 +184,8 @@ const styles = StyleSheet.create({
   cardOverspeed: { borderColor: colors.danger },
   plateOverspeed: { color: colors.danger },
   plate: { color: colors.text, fontSize: 16, fontWeight: "700", fontVariant: ["tabular-nums"] },
-  speed: { color: colors.textDim, fontSize: 13 },
-  sub: { color: colors.textFaint, fontSize: 13 },
+  speed: { color: colors.textDim, fontSize: 14 },
+  sub: { color: colors.textFaint, fontSize: 14 },
   pills: { flexDirection: "row", flexWrap: "wrap", gap: space.sm, marginTop: 2 },
-  seen: { color: colors.textFaint, fontSize: 12, marginTop: 2 },
+  seen: { color: colors.textFaint, fontSize: 13, marginTop: 2 },
 });

@@ -225,7 +225,7 @@ function Stat({ label, value }: { label: string; value: string }) {
 function CtlBtn({ label, onPress, big }: { label: string; onPress: () => void; big?: boolean }) {
   return (
     <Pressable onPress={onPress} style={({ pressed }) => [styles.ctl, big && styles.ctlBig, pressed && { opacity: 0.7 }]}>
-      <Text style={[styles.ctlText, big && { fontSize: 20 }]}>{label}</Text>
+      <Text style={[styles.ctlText, big && { fontSize: 20, color: colors.onBrand }]}>{label}</Text>
     </Pressable>
   );
 }
@@ -247,8 +247,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: space.md,
     paddingVertical: space.sm,
   },
-  rangeBtnText: { color: colors.text, fontSize: 14, fontWeight: "700" },
-  rangeBtnHint: { color: colors.brand, fontSize: 12, fontWeight: "600" },
+  rangeBtnText: { color: colors.text, fontSize: 15, fontWeight: "700" },
+  rangeBtnHint: { color: colors.brand, fontSize: 13, fontWeight: "600" },
   mapBox: { height: 320, backgroundColor: colors.bg },
   hud: { position: "absolute", left: 0, right: 0, bottom: 0, padding: space.md, gap: space.sm, alignItems: "center" },
   kmphBox: {
@@ -264,7 +264,7 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
   },
   kmph: { color: colors.text, fontSize: 20, fontWeight: "800" },
-  kmphUnit: { color: colors.textFaint, fontSize: 12 },
+  kmphUnit: { color: colors.textFaint, fontSize: 13 },
   playbar: {
     flexDirection: "row",
     alignItems: "center",
@@ -277,19 +277,19 @@ const styles = StyleSheet.create({
     paddingVertical: space.sm,
   },
   ctl: { minWidth: 40, alignItems: "center" },
-  ctlBig: { width: 44, height: 44, borderRadius: 22, backgroundColor: colors.brand, alignItems: "center", justifyContent: "center" },
+  ctlBig: { width: 52, height: 52, borderRadius: 26, backgroundColor: colors.brand, alignItems: "center", justifyContent: "center" },
   ctlText: { color: colors.text, fontSize: 16, fontWeight: "700" },
-  hint: { color: colors.textFaint, fontSize: 13, paddingHorizontal: space.md },
+  hint: { color: colors.textFaint, fontSize: 14, paddingHorizontal: space.md },
   summary: { marginHorizontal: space.md, backgroundColor: colors.surface, borderRadius: radius.md, borderWidth: 1, borderColor: colors.border, padding: space.md, gap: space.md },
   summaryRow: { flexDirection: "row", justifyContent: "space-between" },
   stat: { alignItems: "center", flex: 1 },
-  statValue: { color: colors.text, fontSize: 15, fontWeight: "700" },
-  statLabel: { color: colors.textFaint, fontSize: 11, marginTop: 2 },
+  statValue: { color: colors.text, fontSize: 16, fontWeight: "700" },
+  statLabel: { color: colors.textFaint, fontSize: 12, marginTop: 2 },
   timeline: { gap: 6, borderTopWidth: 1, borderTopColor: colors.border, paddingTop: space.sm },
-  tlLine: { color: colors.textDim, fontSize: 12 },
+  tlLine: { color: colors.textDim, fontSize: 13 },
   tlDot: { color: colors.brand },
-  loadingPts: { color: colors.textFaint, fontSize: 12 },
-  sectionTitle: { color: colors.textDim, fontSize: 13, fontWeight: "700", paddingHorizontal: space.md },
+  loadingPts: { color: colors.textFaint, fontSize: 13 },
+  sectionTitle: { color: colors.textDim, fontSize: 14, fontWeight: "700", paddingHorizontal: space.md },
   tripRow: {
     flexDirection: "row",
     alignItems: "center",
@@ -302,7 +302,7 @@ const styles = StyleSheet.create({
     padding: space.md,
   },
   tripRowActive: { borderColor: colors.brand },
-  tripTime: { color: colors.text, fontSize: 14, fontWeight: "600" },
-  tripSub: { color: colors.textFaint, fontSize: 12, marginTop: 2 },
+  tripTime: { color: colors.text, fontSize: 15, fontWeight: "600" },
+  tripSub: { color: colors.textFaint, fontSize: 13, marginTop: 2 },
   tripStatus: { color: colors.textFaint, fontSize: 16 },
 });

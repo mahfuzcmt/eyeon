@@ -230,9 +230,9 @@ ${googleScripts}
       + '<rect x="8.6" y="36.4" width="6.8" height="1.2" rx=".6" fill="#D23131"/>'; }
   };
   function vehHtml(v){
-    const body = (BODY[v.vehicleType]||BODY.CAR)(v.overspeed ? '#DC2626' : (v.iconColor||'#E8900A'));
+    const body = (BODY[v.vehicleType]||BODY.CAR)(v.overspeed ? '#DC2626' : (v.iconColor||'#0F6B5C'));
     return '<div class="vwrap'+(v.overspeed?' ovs':'')+'">'
-      + (v.label ? '<div class="lbl" style="background:'+(v.color||'#0F2742')+'">'+esc(v.label)+'</div>' : '')
+      + (v.label ? '<div class="lbl" style="background:'+(v.color||'#0B2E28')+'">'+esc(v.label)+'</div>' : '')
       + '<div class="veh" style="transform:rotate('+(v.course||0)+'deg)">'
       + '<svg width="40" height="40" viewBox="0 0 40 40"><g transform="translate(8 0)">'+body+'</g></svg>'
       + '</div></div>';

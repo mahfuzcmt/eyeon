@@ -28,6 +28,24 @@ export default function RootLayout() {
             }}
           />
           <Stack.Screen
+            name="places"
+            options={{
+              headerShown: true,
+              headerTitle: "Trusted places",
+              headerStyle: { backgroundColor: colors.surface },
+              headerTintColor: colors.text,
+            }}
+          />
+          <Stack.Screen
+            name="place-new"
+            options={{
+              headerShown: true,
+              headerTitle: "",
+              headerStyle: { backgroundColor: colors.surface },
+              headerTintColor: colors.text,
+            }}
+          />
+          <Stack.Screen
             name="geofences"
             options={{
               headerShown: true,

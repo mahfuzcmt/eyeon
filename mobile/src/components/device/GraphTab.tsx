@@ -215,7 +215,7 @@ const styles = StyleSheet.create({
     paddingVertical: space.sm,
   },
   nav: { color: colors.brand, fontSize: 24, fontWeight: "800", paddingHorizontal: space.md },
-  dayTitle: { color: colors.text, fontSize: 14, fontWeight: "700" },
+  dayTitle: { color: colors.text, fontSize: 15, fontWeight: "700" },
   card: {
     backgroundColor: colors.surface,
     borderWidth: 1,
@@ -225,9 +225,9 @@ const styles = StyleSheet.create({
     gap: space.sm,
   },
   chartHead: { flexDirection: "row", justifyContent: "space-between", alignItems: "baseline" },
-  chartTitle: { color: colors.text, fontSize: 13, fontWeight: "700" },
-  chartUnit: { color: colors.textFaint, fontSize: 11, fontWeight: "400" },
-  chartStats: { color: colors.textFaint, fontSize: 11 },
+  chartTitle: { color: colors.text, fontSize: 14, fontWeight: "700" },
+  chartUnit: { color: colors.textFaint, fontSize: 12, fontWeight: "400" },
+  chartStats: { color: colors.textFaint, fontSize: 12 },
   plot: {
     flexDirection: "row",
     alignItems: "flex-end",
@@ -237,6 +237,6 @@ const styles = StyleSheet.create({
   },
   barSlot: { flex: 1, height: "100%", justifyContent: "flex-end", alignItems: "center" },
   axis: { flexDirection: "row", justifyContent: "space-between" },
-  axisText: { color: colors.textFaint, fontSize: 9 },
-  empty: { color: colors.textFaint, fontSize: 12, paddingVertical: space.lg, textAlign: "center" },
+  axisText: { color: colors.textFaint, fontSize: 12 },
+  empty: { color: colors.textFaint, fontSize: 13, paddingVertical: space.lg, textAlign: "center" },
 });

@@ -72,7 +72,7 @@ const styles = StyleSheet.create({
   },
   tab: { paddingVertical: space.md, marginRight: space.lg, borderBottomWidth: 2, borderBottomColor: "transparent" },
   tabActive: { borderBottomColor: colors.brand },
-  tabText: { color: colors.textFaint, fontSize: 14, fontWeight: "600" },
+  tabText: { color: colors.textFaint, fontSize: 15, fontWeight: "600" },
   tabTextActive: { color: colors.text },
   body: { flex: 1 },
 });

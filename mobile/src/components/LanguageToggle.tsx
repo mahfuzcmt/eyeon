@@ -26,5 +26,5 @@ const styles = StyleSheet.create({
     paddingHorizontal: space.md,
     paddingVertical: 6,
   },
-  text: { color: colors.brand, fontSize: 12, fontWeight: "700" },
+  text: { color: colors.brand, fontSize: 13, fontWeight: "700" },
 });
