@@ -14,11 +14,13 @@
 
 **Naming (full rename completed 2026-09-21):** Everything says **EyeOn** / `eyeon`. Java package `com.webinnovation.eyeon`, main class `EyeOnApplication`, Maven `artifactId`/`finalName` `eyeon`, `spring.application.name: eyeon`, config-property prefix `eyeon.*`, env vars `EYEON_*`, Postgres database + user `eyeon`/`eyeon_dev`, Docker container names `eyeon-*`, frontend package `eyeon-frontend`, mobile package `eyeon-mobile`, Android/iOS package + bundle id `com.webinnovation.eyeon`, URL scheme `eyeon`, nginx upstreams `eyeon_backend`/`eyeon_frontend`, deploy path `/opt/eyeon`. Flyway migrations V1-V5 kept their filenames and version numbers but their header comments now say EyeOn; this is safe because EyeOn starts from an empty database. **Never point EyeOn at a PingPath/MotoLink database** - the Flyway checksums will not match and the DB/user names differ.
 
-No inherited `motolink`/`pingpath` identifiers remain in the tree. The one deliberate exception is `wordpress-theme/brands-data.json`, which lists an unrelated third-party electronics brand also called "Motolink".
+No inherited `motolink`/`pingpath` identifiers remain in the tree. (Correction 2026-09-21: `frontend/public/eyeon-logo.png` and `.jpg` were still the MOTOLINK wordmark and were shown in the marketing header/footer; both were deleted and replaced by the inline `components/brand/EyeOnLogo.tsx`.) The one deliberate exception is `wordpress-theme/brands-data.json`, which lists an unrelated third-party electronics brand also called "Motolink".
 
 **Domain placeholders:** `eyeongps.com`, `app.eyeongps.com`, `api.eyeongps.com`, `mobile.eyeongps.app`, `admin@eyeon.local`, SMS sender id `EYEON`. Replace these with the real EyeOn domain/sender before any deploy.
 
-**Product:** Multi-tenant SaaS platform for vehicle GPS fleet tracking, built around the Concox GT06 family of cellular GPS hardware trackers. Targets the Bangladesh market initially: motorbike anti-theft, ride-sharing fleets, delivery riders (Pathao/Foodpanda partners), CNG/taxi operators, school van services, logistics fleets. Native **Android + iOS** apps serve professional and corporate fleet clients (see §16 Phase 5).
+**Primary audience (changed 2026-09-21): family safety.** EyeOn is sold mainly as a tracker for **children and elderly relatives** - a small device in a bag, on a lanyard or on the wrist, and a phone app for the carer (poster tagline: `চোখে চোখে রাখুন, ও যেখানেই থাকুক।`). Headline features: live location, safe-zone (trusted place) alerts, geofence, SOS button, route history, long battery, fully Bengali app. The app user is the carer, never the wearer. The roadmap for this audience is [`docs/FAMILY_SAFETY_PLAN.md`](docs/FAMILY_SAFETY_PLAN.md); it audits each poster feature against the code and takes precedence over §16 Phases 7-14 for prioritisation. The vehicle/fleet capability below is inherited, still works, and remains a secondary market - but no fleet vocabulary (vehicle, driver, fuel, ignition) should appear on a screen a family user can reach.
+
+**Product (inherited platform):** Multi-tenant SaaS platform for vehicle GPS fleet tracking, built around the Concox GT06 family of cellular GPS hardware trackers. Targets the Bangladesh market initially: motorbike anti-theft, ride-sharing fleets, delivery riders (Pathao/Foodpanda partners), CNG/taxi operators, school van services, logistics fleets. Native **Android + iOS** apps serve professional and corporate fleet clients (see §16 Phase 5).
 
 **Owner:** Mahfuz Ahmed — Web Innovation
 **Region:** Bangladesh (primary), with architecture that can serve other South Asian markets without rework.
@@ -1107,14 +1109,21 @@ GET /locations/in-bbox                      ?minLat&minLng&maxLat&maxLng&since=I
 ### 8.5 Geofences
 
 ```
-GET    /geofences                       → Geofence[]
+GET    /geofences                       ?kind=TRUSTED_PLACE|BOUNDARY → Geofence[]
 POST   /geofences                       { name, type: "CIRCLE", center: {lat, lng}, radius_m, notify_on } → Geofence
 POST   /geofences                       { name, type: "POLYGON", points: [{lat, lng}], notify_on } → Geofence
-PATCH  /geofences/:id                   → Geofence
+PATCH  /geofences/:id                   { name, notifyOn, color, kind, placeType, address, center, radiusM, polygon, exitBufferM, minDwellS } → Geofence
+                                        (all optional; implemented 2026-09-21. Sending geometry or exitBufferM deletes that zone's geofence_states rows so the next sample re-seeds silently.)
 DELETE /geofences/:id                   → 204
 POST   /geofences/:id/devices/:imei     → 204  (assign)
 DELETE /geofences/:id/devices/:imei     → 204  (unassign)
 ```
+
+**Trusted places (V19, 2026-09-21).** `POST /geofences` also accepts `kind` (`TRUSTED_PLACE` | `BOUNDARY`, default `BOUNDARY`), `placeType` (`HOME SCHOOL COACHING MOSQUE HOSPITAL RELATIVE OTHER`) and `address`; `notifyOn` gained `NONE`. A trusted place must be a `CIRCLE` of 80-5000 m. Trusted places raise **`PLACE_ARRIVED` / `PLACE_LEFT`** (severity INFO, but pushed - the one exception to "INFO is never pushed" in `AlarmService.raise`); boundaries keep `GEOFENCE_ENTER` / `GEOFENCE_EXIT` (WARNING). Alarm metadata carries `geofenceId`, `geofenceName`, `geofenceKind`, `placeType`.
+
+**Drift guards (`service/GeofenceTransition`, pure + unit-tested).** A crossing is first stored as a candidate in `geofence_states.pending_inside/pending_since` and commits only when a later sample agrees at least `min_dwell_s` (default 60) after it was first seen; leaving also requires being more than `exit_buffer_m` (default 30) beyond the edge (`ST_DWithin`). The alarm is stamped with the crossing time, not the confirmation time. Cost: alerts arrive `min_dwell_s` + one reporting interval late.
+
+**Notification wording (`service/NotificationComposer`, pure + unit-tested).** Push title/body are composed per language - Bengali or English - from `push_tokens.locale` (V19; the language that phone's app is set to, sent by the mobile app on `POST /users/me/push-tokens { token, platform, locale }` and re-sent when the language changes), falling back to `organizations.locale`. There is **no `users.locale` column**, contrary to §12.3. Bengali templates are deliberately verb-free ("রাফি এখন School-এ") because verb endings change with respect and the backend does not know whether the wearer is a child or a grandparent. Place events use Android channel `arrivals` (normal importance); everything else uses `alarms`. SMS bodies are still English and the SOS SMS recipient is still a null stub (plan step F1).
 
 ### 8.6 Trips
 
@@ -1203,32 +1212,28 @@ Server-side `ChannelInterceptor` on STOMP SUBSCRIBE: parse the topic, extract `o
 
 ### 10.1 Design Direction
 
-**Aesthetic:** Mission-control / operations-center. Dark theme by default (less eye strain for fleet dispatchers, better contrast on map). Bangladesh tech feel.
+**Aesthetic (changed 2026-09-21): warm, calm, family safety.** Light theme. Deep teal + warm yellow taken from the product poster; rounded corners; rounded, friendly type; large controls. Carers of elderly relatives are a core audience, so **every text/background pair must be >= 4.5:1 (WCAG AA)** and nothing renders below 12px. The earlier "mission-control dark theme" and the ADL Moto Viewer blue (`#0421bc`) are retired; the ADL *layout* of the monitor screen (§10.3) is kept.
 
-**Color tokens (Tailwind config):**
+**Color tokens** (source of truth: `frontend/tailwind.config.ts`; mobile mirror: `mobile/src/theme.ts`):
 ```js
 colors: {
-  brand: {
-    50:  '#FFF6E6',
-    500: '#E8900A',  // primary orange (EyeOn brand)
-    900: '#7A4A05',
-  },
-  ink: {
-    50:  '#F1F5F9',
-    100: '#CBD5E1',
-    400: '#64748B',
-    900: '#0F2742',  // brand navy
-    950: '#0A1928',  // background
-  },
-  alarm: { red: '#DC2626', amber: '#F59E0B', green: '#16A34A' },
+  brand:   { 50: '#E8F5F2', 500: '#0F6B5C' /* primary teal, 6.4:1 on white */, 600: '#0C5A4D', 900: '#052822' },
+  sun:     { 100: '#FFEEC2', 400: '#FFC857' /* accent; pair with ink-900, never white */, 600: '#D9971F' },
+  surface: { 0: '#ffffff', 100: '#EEF4F2' /* page bg */, 300: '#D2DEDA' /* border */ },
+  ink:     { 400: '#637370' /* lightest text allowed */, 500: '#52625F', 700: '#2B3B38', 900: '#0B2E28' },
+  alarm:   { red: '#D92D20', amber: '#B45309', green: '#15803D' },   // dark enough to use as text
+  status:  { moving: '#16A34A', stopped: '#2563EB', idle: '#D97706', offline: '#6B7A77' },
 }
 ```
 
-**Typography:**
-- Body: `Inter` 14px (weight 400), 13px on mobile
-- Display headings: `Familjen Grotesk` (open source, distinctive)
-- Monospace data (IMEI, plate, coords): `JetBrains Mono`
-- Bengali UI: `Hind Siliguri` (Google Fonts, optimized for Bengali script)
+**Typography** (self-hosted via `@fontsource`, loaded in `app/layout.tsx`):
+- Body: `Nunito` 16px (17px for `lang="bn"`)
+- Headings / `font-display`: `Baloo Da 2` - covers Latin and Bengali, matches the poster
+- Bengali body: `Hind Siliguri`
+- Monospace data (IMEI, coords): `JetBrains Mono`
+- Mobile still uses the system font (no `expo-font` yet); sizes and colours match.
+
+**Controls:** buttons and inputs are 40px tall with a 10px radius (44px under `@media (pointer: coarse)`; 52px `PrimaryButton` on mobile), chips and status pills are fully rounded, panels 12px, modals 16px. Keyboard focus is a 3px teal ring and must never be removed. Brand mark: `components/brand/EyeOnLogo.tsx` (eye with a location-pin pupil).
 
 ### 10.2 `/login`
 
@@ -1648,6 +1653,10 @@ A feature is considered **DONE** when:
 
 ---
 
+### Family-safety track (current priority)
+
+Steps F0-F7 in [`docs/FAMILY_SAFETY_PLAN.md`](docs/FAMILY_SAFETY_PLAN.md): F0 visual restyle (done 2026-09-21) · F1 SOS SMS recipients (**not done** - still a null-recipient stub in `AlarmService.raise`) · F2 trusted places: `V19`, `PATCH /geofences/:id`, drift guards (done 2026-09-21) · F3 bilingual push composer + `arrivals` channel (done for push; SMS wording not done) · F4 Places UI: mobile `app/places.tsx` + `app/place-new.tsx`, web Places/Boundaries tabs with edit mode (done) · F5 person avatars + vocabulary sweep · F6 day timeline / who-is-where-now · F7 marketing rewrite. F2-F4 are covered by unit tests and typecheck/build only: **the V19 migration and the new SQL have not been run against PostgreSQL, and nothing has been tried on a device or a real tracker.** See §8.5.
+
 ### Launch Phases (12-Week Plan)
 
 ### Phase 1 — Foundation (Weeks 1–2)
@@ -1661,7 +1670,7 @@ A feature is considered **DONE** when:
 
 - [x] Bootstrap Spring Boot project with all dependencies
 - [x] Flyway migrations V1–V2 (schema + seed data)  
-      ↳ schema is now at V18
+      ↳ schema is now at V19
 - [x] Netty TCP server + frame decoder (0x78 0x78 and 0x79 0x79 variants)
 - [x] CRC-ITU implementation with unit tests  
       ↳ `ChecksumUtilTest`
