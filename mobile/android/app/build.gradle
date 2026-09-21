@@ -109,9 +109,9 @@ android {
     buildToolsVersion rootProject.ext.buildToolsVersion
     compileSdk rootProject.ext.compileSdkVersion
 
-    namespace 'com.webinnovation.motolink'
+    namespace 'com.webinnovation.eyeon'
     defaultConfig {
-        applicationId 'com.webinnovation.motolink'
+        applicationId 'com.webinnovation.eyeon'
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1

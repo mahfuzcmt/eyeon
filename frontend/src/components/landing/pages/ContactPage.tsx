@@ -5,7 +5,7 @@ import { motion, useInView } from "framer-motion";
 import { useLanguage } from "../LanguageContext";
 
 const PHONE = "+880 1999-036999";
-const EMAIL = "hello@motolink.com.bd";
+const EMAIL = "hello@eyeongps.com";
 
 const fadeInUp = {
   hidden: { opacity: 0, y: 30 },

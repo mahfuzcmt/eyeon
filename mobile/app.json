@@ -1,8 +1,8 @@
 {
   "expo": {
     "name": "EyeOn",
-    "slug": "motolink",
-    "scheme": "motolink",
+    "slug": "eyeon",
+    "scheme": "eyeon",
     "version": "0.1.0",
     "orientation": "portrait",
     "userInterfaceStyle": "light",
@@ -13,13 +13,13 @@
     "assetBundlePatterns": ["**/*"],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.webinnovation.motolink",
+      "bundleIdentifier": "com.webinnovation.eyeon",
       "infoPlist": {
         "NSLocationWhenInUseUsageDescription": "EyeOn uses your location to center the map on where you are."
       }
     },
     "android": {
-      "package": "com.webinnovation.motolink",
+      "package": "com.webinnovation.eyeon",
       "permissions": ["ACCESS_FINE_LOCATION", "ACCESS_COARSE_LOCATION"]
     },
     "plugins": [

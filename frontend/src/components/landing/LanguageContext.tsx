@@ -581,7 +581,7 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     try {
-      const saved = localStorage.getItem("motolink-lang") as Lang | null;
+      const saved = localStorage.getItem("eyeon-lang") as Lang | null;
       if (saved && (saved === "en" || saved === "bn")) {
         setLang(saved);
       }
@@ -593,7 +593,7 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
   const handleSetLang = (newLang: Lang) => {
     setLang(newLang);
     try {
-      localStorage.setItem("motolink-lang", newLang);
+      localStorage.setItem("eyeon-lang", newLang);
     } catch {
       // localStorage access may fail in some browser contexts
     }

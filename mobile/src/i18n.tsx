@@ -8,7 +8,7 @@ import * as SecureStore from "expo-secure-store";
  */
 export type Locale = "en" | "bn";
 
-const STORE_KEY = "motolink.locale";
+const STORE_KEY = "eyeon.locale";
 
 const STRINGS = {
   // ── Common ────────────────────────────────────────────────────────

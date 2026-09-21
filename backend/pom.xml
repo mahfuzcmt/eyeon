@@ -13,7 +13,7 @@
     </parent>
 
     <groupId>com.webinnovation</groupId>
-    <artifactId>motolink</artifactId>
+    <artifactId>eyeon</artifactId>
     <version>0.1.0-SNAPSHOT</version>
     <name>EyeOn Backend</name>
     <description>Vehicle GPS tracking platform — Spring Boot ingest, REST API, WebSocket fanout</description>
@@ -145,7 +145,7 @@
     </dependencies>
 
     <build>
-        <finalName>motolink</finalName>
+        <finalName>eyeon</finalName>
         <plugins>
             <plugin>
                 <groupId>org.springframework.boot</groupId>

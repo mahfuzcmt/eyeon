@@ -37,7 +37,7 @@ type SortKey = "speed" | "name" | "updated" | "status";
 
 const OVERSPEED_COLOR = "#DC2626";
 const UNGROUPED_ID = "__ungrouped";
-const COLLAPSED_STORAGE_KEY = "motolink.dashboard.collapsedGroups";
+const COLLAPSED_STORAGE_KEY = "eyeon.dashboard.collapsedGroups";
 const ONLINE_STATES: ReadonlySet<VehicleState> = new Set(["moving", "idle", "stopped"]);
 const INACTIVE_STATES: ReadonlySet<VehicleState> = new Set(["nodata", "expired"]);
 const STATE_RANK: Record<VehicleState, number> = {

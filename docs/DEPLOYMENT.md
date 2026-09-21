@@ -68,20 +68,20 @@ docker compose -f /opt/eyeon/docker-compose.prod.yml --env-file /opt/eyeon/.env 
 
 ### Logging in for the first time
 
-The deploy script bootstraps a single admin user on first run via Spring's `DataSeeder` (gated by `PINGPATH_SEED_ENABLED`, which the script enables in `.env`). Flyway V2 only seeds the demo org + one demo device — the user comes from `DataSeeder` so the BCrypt hash is computed at runtime.
+The deploy script bootstraps a single admin user on first run via Spring's `DataSeeder` (gated by `EYEON_SEED_ENABLED`, which the script enables in `.env`). Flyway V2 only seeds the demo org + one demo device — the user comes from `DataSeeder` so the BCrypt hash is computed at runtime.
 
 The script prints the email + generated password **once at the end** of the first deploy. Save it. The password also lives in `/opt/eyeon/.env` (chmod 600).
 
 To re-display the credentials later:
 
 ```bash
-grep '^PINGPATH_SEED_ADMIN_' /opt/eyeon/.env
+grep '^EYEON_SEED_ADMIN_' /opt/eyeon/.env
 ```
 
 To verify the user actually exists in the DB:
 
 ```bash
-docker exec -it eyeon-postgres psql -U pingpath -d pingpath -c "SELECT email, role, is_active FROM users;"
+docker exec -it eyeon-postgres psql -U eyeon -d eyeon -c "SELECT email, role, is_active FROM users;"
 ```
 
 `DataSeeder` is idempotent — it short-circuits if any user already exists, so subsequent deploys won't recreate it or change the password. **Change the password from the dashboard immediately after first login.**
@@ -127,7 +127,7 @@ nginx -t && systemctl reload nginx
 certbot --nginx -d <your-hostname> --non-interactive --agree-tos -m <your-email>
 
 # Update CORS + WS origins in /opt/eyeon/.env:
-#   PINGPATH_CORS_ALLOWED_ORIGINS=https://<your-hostname>
+#   EYEON_CORS_ALLOWED_ORIGINS=https://<your-hostname>
 #   NEXT_PUBLIC_WS_BASE=wss://<your-hostname>/ws
 # Then rebuild frontend (Mapbox token + WS_BASE are baked in):
 docker compose -f /opt/eyeon/docker-compose.prod.yml --env-file /opt/eyeon/.env up -d --build frontend backend
@@ -170,7 +170,7 @@ Postgres data lives in the `postgres_data` named volume. Daily dump to local dis
 
 ```bash
 # Add to root's crontab
-0 2 * * * docker exec eyeon-postgres pg_dump -U pingpath pingpath | gzip > /var/backups/eyeon-$(date +\%F).sql.gz
+0 2 * * * docker exec eyeon-postgres pg_dump -U eyeon eyeon | gzip > /var/backups/eyeon-$(date +\%F).sql.gz
 0 3 * * * find /var/backups -name 'eyeon-*.sql.gz' -mtime +14 -delete
 ```
 
@@ -206,6 +206,6 @@ These are documented in CLAUDE.md but not yet implemented. The stack runs withou
 | `docker compose build` fails on `mvn dependency:go-offline` | Build host can't reach Maven Central | Check VPS DNS / outbound 443; retry |
 | Backend healthcheck never goes green | Flyway migration error | `docker logs eyeon-backend` and inspect SQL |
 | Frontend builds but map is blank | Missing/invalid Mapbox token | Edit `.env`, set `NEXT_PUBLIC_MAPBOX_TOKEN`, `up -d --build frontend` |
-| Browser CORS error on login | `PINGPATH_CORS_ALLOWED_ORIGINS` doesn't include the origin in the URL bar | Edit `.env`, restart backend |
+| Browser CORS error on login | `EYEON_CORS_ALLOWED_ORIGINS` doesn't include the origin in the URL bar | Edit `.env`, restart backend |
 | Device connects then disconnects every 5s | Backend not sending login ACK fast enough, or unregistered IMEI flow broken | Check backend logs for the IMEI; CLAUDE.md §6.4 / §18.3 |
 | `502` from nginx in Phase 2 | Backend container not on the same docker network as nginx, or nginx pointing at wrong port | `docker network inspect eyeon_default` |

@@ -1169,7 +1169,7 @@ CREATE TABLE audit_log (
 |-------|------------|---------------|
 | **Frontend** | Next.js 15 (App Router) | SSR for SEO, React ecosystem, matches existing skills |
 | **Styling** | Tailwind CSS 3.4 | Rapid development, Bengali font integration |
-| **Backend Option 1** | Spring Boot 3.3 + Java 21 | Existing team expertise (from EyeOn) |
+| **Backend Option 1** | Spring Boot 3.3 + Java 21 | Existing team expertise (from PingPath) |
 | **Backend Option 2** | Node.js + Express/Fastify | Simpler if team prefers JS/TS full-stack |
 | **Database** | PostgreSQL 16 | Reliability, JSON support, full-text search |
 | **Cache** | Redis 7 | Session storage, rate limiting, caching |

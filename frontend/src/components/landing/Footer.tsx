@@ -7,7 +7,7 @@ import { useLanguage } from "./LanguageContext";
 
 const CONTACT = {
   hotline: "+880 1999-036999",
-  email: "hello@motolink.com.bd",
+  email: "hello@eyeongps.com",
 };
 
 function Logo() {

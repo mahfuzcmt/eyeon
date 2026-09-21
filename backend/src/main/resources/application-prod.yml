@@ -5,12 +5,10 @@ spring:
 logging:
   level:
     root: WARN
-    com.webinnovation.motolink: INFO
+    com.webinnovation.eyeon: INFO
 
-motolink:
+eyeon:
   cors:
-    # Env var name intentionally kept as PINGPATH_* (CLAUDE.md §1); the property
-    # prefix is motolink.*, so bind it explicitly rather than via relaxed binding.
-    allowed-origins: ${PINGPATH_CORS_ALLOWED_ORIGINS:https://app.eyeongps.com}
+    allowed-origins: ${EYEON_CORS_ALLOWED_ORIGINS:https://app.eyeongps.com}
   seed:
     enabled: false

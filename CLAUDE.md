@@ -12,7 +12,9 @@
 
 **Origin:** EyeOn was forked from the MotoLink/PingPath codebase on 2026-09-21 (working tree copy, fresh git history, no shared remote). The two products evolve independently from that point; changes are not synced back.
 
-**Naming (as of the EyeOn fork, 2026-09-21):** The customer-facing brand, all UI copy, the logo component, docs, Docker container names, deploy paths, and the seeded demo data say **EyeOn**. **Deliberately still carrying inherited identifiers** so the fork builds and runs unchanged: Java package `com.webinnovation.motolink` (main class `EyeOnApplication`), Maven `artifactId`/`finalName` `motolink`, `spring.application.name`, config-property prefix `motolink.*`, frontend package `motolink-frontend`, mobile package `motolink-mobile`, Android/iOS package + bundle id `com.webinnovation.motolink` and URL scheme `motolink`, the env-var names `PINGPATH_*` and `MOTOLINK_*`, and the Postgres database name + user (`pingpath`/`pingpath_dev`). Flyway migrations V1–V5 kept their filenames and version numbers; their header comments now say EyeOn, which is safe because EyeOn starts from an empty database (never point EyeOn at a PingPath database — the checksums will not match).
+**Naming (full rename completed 2026-09-21):** Everything says **EyeOn** / `eyeon`. Java package `com.webinnovation.eyeon`, main class `EyeOnApplication`, Maven `artifactId`/`finalName` `eyeon`, `spring.application.name: eyeon`, config-property prefix `eyeon.*`, env vars `EYEON_*`, Postgres database + user `eyeon`/`eyeon_dev`, Docker container names `eyeon-*`, frontend package `eyeon-frontend`, mobile package `eyeon-mobile`, Android/iOS package + bundle id `com.webinnovation.eyeon`, URL scheme `eyeon`, nginx upstreams `eyeon_backend`/`eyeon_frontend`, deploy path `/opt/eyeon`. Flyway migrations V1-V5 kept their filenames and version numbers but their header comments now say EyeOn; this is safe because EyeOn starts from an empty database. **Never point EyeOn at a PingPath/MotoLink database** - the Flyway checksums will not match and the DB/user names differ.
+
+No inherited `motolink`/`pingpath` identifiers remain in the tree. The one deliberate exception is `wordpress-theme/brands-data.json`, which lists an unrelated third-party electronics brand also called "Motolink".
 
 **Domain placeholders:** `eyeongps.com`, `app.eyeongps.com`, `api.eyeongps.com`, `mobile.eyeongps.app`, `admin@eyeon.local`, SMS sender id `EYEON`. Replace these with the real EyeOn domain/sender before any deploy.
 
@@ -147,7 +149,7 @@ eyeon/
 ├── backend/
 │   ├── Dockerfile
 │   ├── pom.xml
-│   ├── src/main/java/com/webinnovation/motolink/
+│   ├── src/main/java/com/webinnovation/eyeon/
 │   │   ├── EyeOnApplication.java
 │   │   │
 │   │   ├── config/
@@ -275,7 +277,7 @@ eyeon/
 │   │       ├── V4__add_trips.sql
 │   │       └── V5__add_subscriptions.sql
 │   │
-│   └── src/test/java/com/webinnovation/motolink/
+│   └── src/test/java/com/webinnovation/eyeon/
 │       ├── netty/
 │       │   ├── Gt06FrameDecoderTest.java
 │       │   └── Gt06HandlerTest.java
@@ -1349,7 +1351,7 @@ BKASH_CALLBACK_URL=https://api.eyeongps.com/api/v1/billing/webhooks/bkash
 ```json
 {
   "api_token": "...",
-  "sid": "PINGPATH",
+  "sid": "EYEON",
   "msisdn": "8801XXXXXXXXX",
   "sms": "Your alarm: SOS triggered at 23.81, 90.41",
   "csms_id": "uuid-per-message"
@@ -1359,7 +1361,7 @@ BKASH_CALLBACK_URL=https://api.eyeongps.com/api/v1/billing/webhooks/bkash
 **Required env:**
 ```
 SSL_SMS_API_TOKEN=
-SSL_SMS_SENDER_ID=PINGPATH
+SSL_SMS_SENDER_ID=EYEON
 ```
 
 **Templates** for all transactional SMS in `bn-BD` and `en-US`, stored in `/sms-templates/` on disk or DB.
@@ -2389,7 +2391,7 @@ async def list_models(admin_key: str = Depends(verify_admin)):
 #### 9.7 Integration with Spring Boot Backend
 
 ```java
-// backend/src/main/java/com/webinnovation/motolink/service/AiService.java
+// backend/src/main/java/com/webinnovation/eyeon/service/AiService.java
 @Service
 @RequiredArgsConstructor
 @Slf4j

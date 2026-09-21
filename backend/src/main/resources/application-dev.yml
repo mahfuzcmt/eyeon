@@ -4,13 +4,13 @@ spring:
 
 logging:
   level:
-    com.webinnovation.motolink: DEBUG
-    com.webinnovation.motolink.netty: DEBUG
-    com.webinnovation.motolink.protocol: DEBUG
+    com.webinnovation.eyeon: DEBUG
+    com.webinnovation.eyeon.netty: DEBUG
+    com.webinnovation.eyeon.protocol: DEBUG
 
-motolink:
+eyeon:
   cors:
-    allowed-origins: ${PINGPATH_CORS_ALLOWED_ORIGINS:http://localhost:3000}
+    allowed-origins: ${EYEON_CORS_ALLOWED_ORIGINS:http://localhost:3000}
   seed:
     enabled: true
     admin-email: admin@eyeon.local

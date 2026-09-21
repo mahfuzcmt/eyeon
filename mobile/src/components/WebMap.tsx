@@ -66,9 +66,9 @@ const DEFAULT = { lat: 23.685, lng: 90.3563, zoom: 10 };
 const GOOGLE_MAPS_API_KEY = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY ?? "";
 
 // The WebView page gets this origin (via `baseUrl`) so a referrer-restricted
-// Google key works: add https://mobile.motolink.app/* to the key's allowed
+// Google key works: add https://mobile.eyeongps.app/* to the key's allowed
 // referrers in Google Cloud Console. Domain doesn't need to exist.
-const MAP_REFERRER = "https://mobile.motolink.app/";
+const MAP_REFERRER = "https://mobile.eyeongps.app/";
 
 // Leaflet in the WebView, mirroring the web dashboard (frontend/src/lib/leaflet.ts):
 // Google Maps base layer via GoogleMutant when a key is configured (OSM misses

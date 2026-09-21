@@ -2,7 +2,7 @@
 
 Multi-tenant SaaS for vehicle GPS fleet tracking, built around the Concox GT06 hardware family. Targets the Bangladesh market: motorbike anti-theft, ride-sharing fleets, delivery riders, CNG/taxi operators, school vans, logistics. Native Android + iOS apps for professional and corporate clients.
 
-> **Branding note:** EyeOn was forked from the MotoLink/PingPath codebase on 2026-09-21 and evolves independently. Brand, UI copy, docs, container names and deploy paths say EyeOn; inherited code identifiers (Java package `com.webinnovation.motolink`, Maven artifact `motolink`, config prefix `motolink.*`, `PINGPATH_*`/`MOTOLINK_*` env-var names, Postgres db/user `pingpath`) are kept so the fork builds unchanged — see `CLAUDE.md` §1.
+> **Origin:** EyeOn was forked from the MotoLink/PingPath codebase on 2026-09-21 - working-tree copy, fresh git history, no shared remote - and was then fully renamed to `eyeon` (package, artifact, config prefix, env vars, database, containers, bundle ids). The two products evolve independently; changes are not synced back. See [`CLAUDE.md`](./CLAUDE.md) section 1.
 
 See [`CLAUDE.md`](./CLAUDE.md) for the canonical product, architecture, and protocol specification. Read it before opening a PR. Competitor teardown: [`docs/COMPETITIVE_ANALYSIS.md`](./docs/COMPETITIVE_ANALYSIS.md).
 

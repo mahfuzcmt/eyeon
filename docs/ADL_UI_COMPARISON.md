@@ -379,7 +379,7 @@ GET /api/v1/export/alarms      ?from=&to=&format=xlsx → file
 
 **New Files:**
 ```
-backend/src/main/java/com/webinnovation/motolink/
+backend/src/main/java/com/webinnovation/eyeon/
 ├── domain/
 │   ├── DeviceGroup.java
 │   ├── Driver.java

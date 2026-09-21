@@ -30,7 +30,7 @@ const AUTO_DISMISS: Record<AlarmSeverity, number | null> = { CRITICAL: null, WAR
 const CRITICAL_REPEAT_MS = 15_000;
 const MAX_VISIBLE = 3;
 /** Settings → Notifications "Preview popup" dispatches this with a sample AlarmView. */
-export const ALARM_PREVIEW_EVENT = "motolink:alarmPreview";
+export const ALARM_PREVIEW_EVENT = "eyeon:alarmPreview";
 
 interface Toast {
   alarm: AlarmView;

@@ -1,15 +1,15 @@
 spring:
   application:
-    name: motolink
+    name: eyeon
   profiles:
     active: ${SPRING_PROFILES_ACTIVE:dev}
   threads:
     virtual:
       enabled: true
   datasource:
-    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/pingpath}
-    username: ${SPRING_DATASOURCE_USERNAME:pingpath}
-    password: ${SPRING_DATASOURCE_PASSWORD:pingpath_dev}
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/eyeon}
+    username: ${SPRING_DATASOURCE_USERNAME:eyeon}
+    password: ${SPRING_DATASOURCE_PASSWORD:eyeon_dev}
     hikari:
       maximum-pool-size: 50
       minimum-idle: 10
@@ -55,10 +55,10 @@ management:
     health:
       show-details: when-authorized
 
-motolink:
+eyeon:
   share:
     # Public host used to build share-location links (/share/{token}).
-    base-url: ${MOTOLINK_SHARE_BASE_URL:https://eyeongps.com}
+    base-url: ${EYEON_SHARE_BASE_URL:https://eyeongps.com}
   jwt:
     secret: ${JWT_SECRET:change-me-in-production-this-is-only-for-local-dev-32bytes}
     access-ttl-minutes: ${JWT_ACCESS_TTL_MINUTES:60}
@@ -69,9 +69,9 @@ motolink:
     worker-threads: 4
     idle-read-seconds: 600
   seed:
-    enabled: ${PINGPATH_SEED_ENABLED:false}
-    admin-email: ${PINGPATH_SEED_ADMIN_EMAIL:admin@eyeon.local}
-    admin-password: ${PINGPATH_SEED_ADMIN_PASSWORD:changeme}
+    enabled: ${EYEON_SEED_ENABLED:false}
+    admin-email: ${EYEON_SEED_ADMIN_EMAIL:admin@eyeon.local}
+    admin-password: ${EYEON_SEED_ADMIN_PASSWORD:changeme}
   sms:
     # SSL Wireless transactional SMS (CLAUDE.md §12.2). Blank token = log-only stub.
     url: https://smsplus.sslwireless.com/api/v3/send-sms
@@ -79,22 +79,22 @@ motolink:
     sender-id: ${SSL_SMS_SENDER_ID:EYEON}
   push:
     # Alarm push notifications via the Expo Push Service (relays to FCM/APNs).
-    enabled: ${PINGPATH_PUSH_ENABLED:true}
+    enabled: ${EYEON_PUSH_ENABLED:true}
     expo-url: https://exp.host/--/api/v2/push/send
     # Optional Expo access token (Expo dashboard → Access tokens); blank = unauthenticated.
-    access-token: ${PINGPATH_EXPO_ACCESS_TOKEN:}
+    access-token: ${EYEON_EXPO_ACCESS_TOKEN:}
   # Cell tower location APIs for GSM-based location when GPS is unavailable.
   # UnwiredLabs: https://unwiredlabs.com (100 free requests/day, better accuracy)
   # OpenCellID: https://opencellid.org (free, unlimited with API key)
   unwiredlabs:
-    api-key: ${MOTOLINK_UNWIREDLABS_API_KEY:}
+    api-key: ${EYEON_UNWIREDLABS_API_KEY:}
   opencellid:
-    api-key: ${MOTOLINK_OPENCELLID_API_KEY:}
+    api-key: ${EYEON_OPENCELLID_API_KEY:}
 
 logging:
   level:
     root: INFO
-    com.webinnovation.motolink: DEBUG
+    com.webinnovation.eyeon: DEBUG
     org.springframework.security: INFO
     org.flywaydb: INFO
   pattern:

@@ -1,5 +1,5 @@
 {
-  "name": "motolink-frontend",
+  "name": "eyeon-frontend",
   "version": "0.1.0",
   "private": true,
   "description": "EyeOn dashboard — Next.js 15 App Router, Tailwind, Leaflet, STOMP WebSocket",

@@ -8,7 +8,7 @@
 ## 0. Navigation shell
 
 Bottom tab bar, 5 tabs (persistent): **Home · Map · Vehicles · Alerts · More**.
-Brand header ("motolink" logo) with a **filter** icon on Map/Alerts.
+Brand header ("eyeon" logo) with a **filter** icon on Map/Alerts.
 
 ---
 

@@ -13,7 +13,7 @@ import { motion, useInView } from "framer-motion";
 const CONTACT = {
   hotline: "+880 1999-036999",
   sales: "+880 1999-036999",
-  email: "hello@motolink.com.bd",
+  email: "hello@eyeongps.com",
   address: "House 12, Road 5, Dhanmondi, Dhaka 1205",
 };
 

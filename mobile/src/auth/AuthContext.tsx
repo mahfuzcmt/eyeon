@@ -7,9 +7,9 @@ import { disconnectWs } from "@/ws/stomp";
 import type { OrgSummary, TokenPair, UserSummary } from "@/types";
 
 // SecureStore caps values (~2KB on Android), so tokens and profile are split.
-const K_ACCESS = "motolink.access";
-const K_REFRESH = "motolink.refresh";
-const K_PROFILE = "motolink.profile";
+const K_ACCESS = "eyeon.access";
+const K_REFRESH = "eyeon.refresh";
+const K_PROFILE = "eyeon.profile";
 
 type Status = "loading" | "authed" | "anon";
 
