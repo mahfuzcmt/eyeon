@@ -1,0 +1,622 @@
+<!DOCTYPE html>
+<html lang="bn" dir="ltr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>মো. রাশেদ খান - মাননীয় প্রধানমন্ত্রীর রাজনৈতিক সহকারী</title>
+    <meta name="description" content="মো. রাশেদ খান - মাননীয় প্রধানমন্ত্রীর রাজনৈতিক সহকারী (সচিব পদমর্যাদা)। নাগরিক সেবা, অভিযোগ দাখিল, সাক্ষাৎকার বুকিং।">
+
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Google Fonts - Bengali -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Heroicons -->
+    <script src="https://unpkg.com/@heroicons/vue@2.0.18/dist/cjs/index.cjs" defer></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: {
+                            50: '#ECFDF5',
+                            100: '#D1FAE5',
+                            200: '#A7F3D0',
+                            300: '#6EE7B7',
+                            400: '#34D399',
+                            500: '#10B981',
+                            600: '#059669',
+                            700: '#047857',
+                            800: '#065F46',
+                            900: '#064E3B',
+                        },
+                        secondary: {
+                            100: '#FEF3C7',
+                            500: '#F59E0B',
+                            700: '#B45309',
+                        }
+                    },
+                    fontFamily: {
+                        bengali: ['Hind Siliguri', 'sans-serif'],
+                        english: ['Inter', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body {
+            font-family: 'Hind Siliguri', sans-serif;
+        }
+        .hero-gradient {
+            background: linear-gradient(135deg, #064E3B 0%, #047857 50%, #059669 100%);
+        }
+        .card-hover {
+            transition: all 0.3s ease;
+        }
+        .card-hover:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 24px -8px rgba(0, 0, 0, 0.15);
+        }
+        .animate-fade-in {
+            animation: fadeIn 0.6s ease-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-900">
+
+    <!-- Header -->
+    <header class="bg-white shadow-sm sticky top-0 z-50">
+        <nav class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <!-- Logo -->
+                <div class="flex items-center">
+                    <a href="index.html" class="flex items-center space-x-2">
+                        <div class="w-10 h-10 rounded-full overflow-hidden border-2 border-primary-600">
+                            <img src="https://www.thedailystar.net/sites/default/files/styles/big_1/public/2026-07/rashed_khan.jpg?h=d1cb525d"
+                                 alt="রাশেদ খান"
+                                 class="w-full h-full object-cover"
+                                 onerror="this.parentElement.innerHTML='<div class=\'w-full h-full bg-primary-600 flex items-center justify-center\'><span class=\'text-white font-bold text-sm\'>রখ</span></div>';">
+                        </div>
+                        <span class="font-semibold text-lg text-gray-900 hidden sm:block">রাশেদ খান</span>
+                    </a>
+                </div>
+
+                <!-- Desktop Navigation -->
+                <div class="hidden md:flex items-center space-x-6">
+                    <a href="index.html" class="text-primary-600 font-medium">হোম</a>
+                    <a href="about.html" class="text-gray-600 hover:text-primary-600 transition">পরিচিতি</a>
+                    <a href="news.html" class="text-gray-600 hover:text-primary-600 transition">সংবাদ</a>
+                    <a href="services.html" class="text-gray-600 hover:text-primary-600 transition">সেবা</a>
+                    <a href="projects.html" class="text-gray-600 hover:text-primary-600 transition">উন্নয়ন</a>
+                    <a href="contact.html" class="text-gray-600 hover:text-primary-600 transition">যোগাযোগ</a>
+                </div>
+
+                <!-- Right side -->
+                <div class="flex items-center space-x-3">
+                    <button class="p-2 text-gray-500 hover:text-primary-600 transition">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                        </svg>
+                    </button>
+                    <select class="text-sm border border-gray-200 rounded-md px-2 py-1 bg-white">
+                        <option value="bn">বাংলা</option>
+                        <option value="en">English</option>
+                    </select>
+                    <!-- Mobile menu button -->
+                    <button class="md:hidden p-2 text-gray-500" onclick="toggleMobileMenu()">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Mobile Navigation -->
+            <div id="mobile-menu" class="hidden md:hidden pb-4">
+                <div class="flex flex-col space-y-2">
+                    <a href="index.html" class="px-3 py-2 text-primary-600 font-medium bg-primary-50 rounded-md">হোম</a>
+                    <a href="about.html" class="px-3 py-2 text-gray-600 hover:bg-gray-100 rounded-md">পরিচিতি</a>
+                    <a href="news.html" class="px-3 py-2 text-gray-600 hover:bg-gray-100 rounded-md">সংবাদ</a>
+                    <a href="services.html" class="px-3 py-2 text-gray-600 hover:bg-gray-100 rounded-md">সেবা</a>
+                    <a href="projects.html" class="px-3 py-2 text-gray-600 hover:bg-gray-100 rounded-md">উন্নয়ন</a>
+                    <a href="contact.html" class="px-3 py-2 text-gray-600 hover:bg-gray-100 rounded-md">যোগাযোগ</a>
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <!-- Hero Section -->
+    <section class="hero-gradient text-white py-16 md:py-24">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex flex-col md:flex-row items-center justify-between gap-8">
+                <div class="text-center md:text-left animate-fade-in">
+                    <h1 class="text-3xl md:text-5xl font-bold mb-4">মো. রাশেদ খান</h1>
+                    <p class="text-xl md:text-2xl text-primary-100 mb-2">মাননীয় প্রধানমন্ত্রীর রাজনৈতিক সহকারী</p>
+                    <p class="text-lg text-primary-200 mb-6">(সচিব পদমর্যাদা)</p>
+                    <p class="text-xl italic text-primary-100 mb-8">"জনগণের সেবায় সর্বদা নিবেদিত"</p>
+
+                    <div class="flex flex-col sm:flex-row gap-4 justify-center md:justify-start">
+                        <a href="complaint.html" class="inline-flex items-center justify-center px-6 py-3 bg-white text-primary-700 font-semibold rounded-lg hover:bg-primary-50 transition shadow-lg">
+                            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                            </svg>
+                            অভিযোগ দাখিল করুন
+                        </a>
+                        <a href="appointment.html" class="inline-flex items-center justify-center px-6 py-3 border-2 border-white text-white font-semibold rounded-lg hover:bg-white hover:text-primary-700 transition">
+                            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                            </svg>
+                            সাক্ষাৎকারের সময় নিন
+                        </a>
+                    </div>
+                </div>
+
+                <div class="animate-fade-in">
+                    <div class="w-48 h-48 md:w-64 md:h-64 rounded-full border-4 border-white shadow-2xl overflow-hidden bg-primary-400">
+                        <img src="https://www.thedailystar.net/sites/default/files/styles/big_1/public/2026-07/rashed_khan.jpg?h=d1cb525d"
+                             alt="মো. রাশেদ খান"
+                             class="w-full h-full object-cover"
+                             onerror="this.style.display='none'; this.parentElement.innerHTML='<div class=\'w-full h-full flex items-center justify-center text-white text-6xl font-bold\'>রখ</div>';">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Quick Services -->
+    <section class="py-12 bg-white">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <h2 class="text-2xl font-bold text-center text-gray-900 mb-8">দ্রুত সেবা</h2>
+
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
+                <!-- Complaint -->
+                <a href="complaint.html" class="card-hover bg-primary-50 rounded-xl p-6 text-center border border-primary-100">
+                    <div class="w-14 h-14 bg-primary-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                        </svg>
+                    </div>
+                    <h3 class="font-semibold text-gray-900 mb-1">অভিযোগ দাখিল</h3>
+                    <p class="text-sm text-gray-600">আপনার সমস্যা জানান</p>
+                </a>
+
+                <!-- Appointment -->
+                <a href="appointment.html" class="card-hover bg-secondary-100 rounded-xl p-6 text-center border border-secondary-500/20">
+                    <div class="w-14 h-14 bg-secondary-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                        </svg>
+                    </div>
+                    <h3 class="font-semibold text-gray-900 mb-1">সাক্ষাৎকার বুকিং</h3>
+                    <p class="text-sm text-gray-600">সময় নির্ধারণ করুন</p>
+                </a>
+
+                <!-- Track -->
+                <a href="track.html" class="card-hover bg-blue-50 rounded-xl p-6 text-center border border-blue-100">
+                    <div class="w-14 h-14 bg-blue-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                        </svg>
+                    </div>
+                    <h3 class="font-semibold text-gray-900 mb-1">অভিযোগ ট্র্যাক</h3>
+                    <p class="text-sm text-gray-600">অবস্থা দেখুন</p>
+                </a>
+
+                <!-- Contact -->
+                <a href="contact.html" class="card-hover bg-purple-50 rounded-xl p-6 text-center border border-purple-100">
+                    <div class="w-14 h-14 bg-purple-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"></path>
+                        </svg>
+                    </div>
+                    <h3 class="font-semibold text-gray-900 mb-1">যোগাযোগ</h3>
+                    <p class="text-sm text-gray-600">অফিসে যোগাযোগ করুন</p>
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Latest News -->
+    <section class="py-12 bg-gray-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center mb-8">
+                <h2 class="text-2xl font-bold text-gray-900">সর্বশেষ সংবাদ</h2>
+                <a href="news.html" class="text-primary-600 hover:text-primary-700 font-medium flex items-center">
+                    সব দেখুন
+                    <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                    </svg>
+                </a>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <!-- News Card 1 -->
+                <article class="card-hover bg-white rounded-xl overflow-hidden shadow-sm border border-gray-100">
+                    <div class="aspect-video bg-gradient-to-br from-primary-700 to-primary-900 overflow-hidden relative">
+                        <img src="https://www.thedailystar.net/sites/default/files/styles/big_1/public/2026-07/rashed_khan.jpg?h=d1cb525d"
+                             alt="প্রধানমন্ত্রীর সাথে বৈঠক"
+                             class="w-full h-full object-cover opacity-90 hover:scale-105 transition-transform duration-300">
+                        <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-3">
+                            <span class="text-white text-xs font-medium bg-primary-600 px-2 py-1 rounded">সরকারি বৈঠক</span>
+                        </div>
+                    </div>
+                    <div class="p-5">
+                        <span class="text-sm text-gray-500">২৯ আগস্ট ২০২৬</span>
+                        <h3 class="font-semibold text-lg mt-1 mb-2 text-gray-900">প্রধানমন্ত্রীর সাথে গুরুত্বপূর্ণ বৈঠক সম্পন্ন</h3>
+                        <p class="text-gray-600 text-sm line-clamp-2">ঝিনাইদহ জেলার উন্নয়ন প্রকল্প নিয়ে মাননীয় প্রধানমন্ত্রীর সাথে আলোচনা...</p>
+                        <a href="#" class="inline-flex items-center text-primary-600 text-sm font-medium mt-3 hover:text-primary-700">
+                            বিস্তারিত পড়ুন
+                            <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                            </svg>
+                        </a>
+                    </div>
+                </article>
+
+                <!-- News Card 2 -->
+                <article class="card-hover bg-white rounded-xl overflow-hidden shadow-sm border border-gray-100">
+                    <div class="aspect-video bg-gradient-to-br from-secondary-500 to-secondary-700 overflow-hidden relative">
+                        <img src="https://www.thedailystar.net/sites/default/files/styles/big_1/public/2026-07/rashed_khan.jpg?h=d1cb525d"
+                             alt="ঝিনাইদহে উন্নয়ন প্রকল্প"
+                             class="w-full h-full object-cover opacity-90 hover:scale-105 transition-transform duration-300">
+                        <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-3">
+                            <span class="text-white text-xs font-medium bg-secondary-500 px-2 py-1 rounded">উন্নয়ন</span>
+                        </div>
+                    </div>
+                    <div class="p-5">
+                        <span class="text-sm text-gray-500">২৮ আগস্ট ২০২৬</span>
+                        <h3 class="font-semibold text-lg mt-1 mb-2 text-gray-900">ঝিনাইদহে উন্নয়ন প্রকল্প পরিদর্শন</h3>
+                        <p class="text-gray-600 text-sm line-clamp-2">শৈলকুপা উপজেলায় চলমান সড়ক নির্মাণ প্রকল্প পরিদর্শন করেন...</p>
+                        <a href="#" class="inline-flex items-center text-primary-600 text-sm font-medium mt-3 hover:text-primary-700">
+                            বিস্তারিত পড়ুন
+                            <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                            </svg>
+                        </a>
+                    </div>
+                </article>
+
+                <!-- News Card 3 -->
+                <article class="card-hover bg-white rounded-xl overflow-hidden shadow-sm border border-gray-100">
+                    <div class="aspect-video bg-gradient-to-br from-blue-600 to-blue-800 overflow-hidden relative">
+                        <img src="https://www.thedailystar.net/sites/default/files/styles/big_1/public/2026-07/rashed_khan.jpg?h=d1cb525d"
+                             alt="যুব কর্মসংস্থান কর্মসূচি"
+                             class="w-full h-full object-cover opacity-90 hover:scale-105 transition-transform duration-300">
+                        <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-3">
+                            <span class="text-white text-xs font-medium bg-blue-600 px-2 py-1 rounded">যুব কার্যক্রম</span>
+                        </div>
+                    </div>
+                    <div class="p-5">
+                        <span class="text-sm text-gray-500">২৭ আগস্ট ২০২৬</span>
+                        <h3 class="font-semibold text-lg mt-1 mb-2 text-gray-900">যুব কর্মসংস্থান কর্মসূচি উদ্বোধন</h3>
+                        <p class="text-gray-600 text-sm line-clamp-2">তরুণ উদ্যোক্তাদের জন্য বিশেষ প্রশিক্ষণ কর্মসূচির আনুষ্ঠানিক উদ্বোধন...</p>
+                        <a href="#" class="inline-flex items-center text-primary-600 text-sm font-medium mt-3 hover:text-primary-700">
+                            বিস্তারিত পড়ুন
+                            <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                            </svg>
+                        </a>
+                    </div>
+                </article>
+            </div>
+        </div>
+    </section>
+
+    <!-- Development Tracker -->
+    <section class="py-12 bg-white">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center mb-8">
+                <h2 class="text-2xl font-bold text-gray-900">উন্নয়ন ট্র্যাকার</h2>
+                <a href="projects.html" class="text-primary-600 hover:text-primary-700 font-medium flex items-center">
+                    সব দেখুন
+                    <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                    </svg>
+                </a>
+            </div>
+
+            <!-- Stats -->
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+                <div class="bg-primary-50 rounded-xl p-5 text-center border border-primary-100">
+                    <span class="text-3xl font-bold text-primary-700">৪৫</span>
+                    <p class="text-gray-600 mt-1">মোট প্রকল্প</p>
+                </div>
+                <div class="bg-yellow-50 rounded-xl p-5 text-center border border-yellow-100">
+                    <span class="text-3xl font-bold text-yellow-700">১২</span>
+                    <p class="text-gray-600 mt-1">চলমান</p>
+                </div>
+                <div class="bg-green-50 rounded-xl p-5 text-center border border-green-100">
+                    <span class="text-3xl font-bold text-green-700">২৮</span>
+                    <p class="text-gray-600 mt-1">সম্পন্ন</p>
+                </div>
+                <div class="bg-blue-50 rounded-xl p-5 text-center border border-blue-100">
+                    <span class="text-3xl font-bold text-blue-700">৳৪৫</span>
+                    <p class="text-gray-600 mt-1">কোটি বাজেট</p>
+                </div>
+            </div>
+
+            <!-- Progress Bar -->
+            <div class="bg-gray-100 rounded-xl p-6">
+                <div class="flex justify-between mb-2">
+                    <span class="text-gray-700 font-medium">সামগ্রিক অগ্রগতি</span>
+                    <span class="text-primary-600 font-semibold">৬২%</span>
+                </div>
+                <div class="w-full bg-gray-200 rounded-full h-4">
+                    <div class="bg-primary-600 h-4 rounded-full" style="width: 62%"></div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Upcoming Events -->
+    <section class="py-12 bg-gray-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <h2 class="text-2xl font-bold text-gray-900 mb-8">আসন্ন অনুষ্ঠান</h2>
+
+            <div class="space-y-4">
+                <!-- Event 1 -->
+                <div class="bg-white rounded-xl p-4 md:p-6 shadow-sm border border-gray-100 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div class="flex items-center gap-4">
+                        <div class="w-16 h-16 bg-primary-100 rounded-xl flex flex-col items-center justify-center">
+                            <span class="text-2xl font-bold text-primary-700">০৫</span>
+                            <span class="text-xs text-primary-600">সেপ্টে</span>
+                        </div>
+                        <div>
+                            <h3 class="font-semibold text-gray-900">জনসভা - ঝিনাইদহ সদর</h3>
+                            <p class="text-gray-500 text-sm">বিকাল ৪:০০ টা | স্টেডিয়াম মাঠ</p>
+                        </div>
+                    </div>
+                    <a href="#" class="inline-flex items-center justify-center px-4 py-2 bg-primary-600 text-white font-medium rounded-lg hover:bg-primary-700 transition text-sm">
+                        নিবন্ধন করুন
+                    </a>
+                </div>
+
+                <!-- Event 2 -->
+                <div class="bg-white rounded-xl p-4 md:p-6 shadow-sm border border-gray-100 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div class="flex items-center gap-4">
+                        <div class="w-16 h-16 bg-secondary-100 rounded-xl flex flex-col items-center justify-center">
+                            <span class="text-2xl font-bold text-secondary-700">১০</span>
+                            <span class="text-xs text-secondary-600">সেপ্টে</span>
+                        </div>
+                        <div>
+                            <h3 class="font-semibold text-gray-900">যুব সমাবেশ - শৈলকুপা</h3>
+                            <p class="text-gray-500 text-sm">সকাল ১০:০০ টা | উপজেলা পরিষদ</p>
+                        </div>
+                    </div>
+                    <a href="#" class="inline-flex items-center justify-center px-4 py-2 bg-primary-600 text-white font-medium rounded-lg hover:bg-primary-700 transition text-sm">
+                        নিবন্ধন করুন
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Video Gallery -->
+    <section class="py-12 bg-white">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center mb-8">
+                <h2 class="text-2xl font-bold text-gray-900">ভিডিও গ্যালারি</h2>
+                <a href="media.html" class="text-primary-600 hover:text-primary-700 font-medium flex items-center">
+                    সব দেখুন
+                    <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                    </svg>
+                </a>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <!-- Video 1 -->
+                <div class="card-hover bg-gray-50 rounded-xl overflow-hidden shadow-sm border border-gray-100">
+                    <div class="aspect-video">
+                        <iframe
+                            class="w-full h-full"
+                            src="https://www.youtube.com/embed/NNDDhmLvtnw"
+                            title="রাশেদ খান ভিডিও ১"
+                            frameborder="0"
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                            allowfullscreen>
+                        </iframe>
+                    </div>
+                    <div class="p-4">
+                        <h3 class="font-semibold text-gray-900 line-clamp-2">রাশেদ খান - রাজনৈতিক যাত্রা</h3>
+                    </div>
+                </div>
+
+                <!-- Video 2 -->
+                <div class="card-hover bg-gray-50 rounded-xl overflow-hidden shadow-sm border border-gray-100">
+                    <div class="aspect-video">
+                        <iframe
+                            class="w-full h-full"
+                            src="https://www.youtube.com/embed/bWqDV2unnxg"
+                            title="রাশেদ খান ভিডিও ২"
+                            frameborder="0"
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                            allowfullscreen>
+                        </iframe>
+                    </div>
+                    <div class="p-4">
+                        <h3 class="font-semibold text-gray-900 line-clamp-2">প্রধানমন্ত্রীর রাজনৈতিক সহকারী</h3>
+                    </div>
+                </div>
+
+                <!-- Video 3 -->
+                <div class="card-hover bg-gray-50 rounded-xl overflow-hidden shadow-sm border border-gray-100">
+                    <div class="aspect-video">
+                        <iframe
+                            class="w-full h-full"
+                            src="https://www.youtube.com/embed/4CiXnwGxZOY"
+                            title="রাশেদ খান ভিডিও ৩"
+                            frameborder="0"
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                            allowfullscreen>
+                        </iframe>
+                    </div>
+                    <div class="p-4">
+                        <h3 class="font-semibold text-gray-900 line-clamp-2">কোটা সংস্কার আন্দোলন</h3>
+                    </div>
+                </div>
+
+                <!-- Video 4 -->
+                <div class="card-hover bg-gray-50 rounded-xl overflow-hidden shadow-sm border border-gray-100">
+                    <div class="aspect-video">
+                        <iframe
+                            class="w-full h-full"
+                            src="https://www.youtube.com/embed/ZkpD87eH2Nw"
+                            title="রাশেদ খান ভিডিও ৪"
+                            frameborder="0"
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                            allowfullscreen>
+                        </iframe>
+                    </div>
+                    <div class="p-4">
+                        <h3 class="font-semibold text-gray-900 line-clamp-2">রাশেদ খানকে কেনো নিয়োগ দেয়া হলো</h3>
+                    </div>
+                </div>
+
+                <!-- Video 5 -->
+                <div class="card-hover bg-gray-50 rounded-xl overflow-hidden shadow-sm border border-gray-100">
+                    <div class="aspect-video">
+                        <iframe
+                            class="w-full h-full"
+                            src="https://www.youtube.com/embed/tENRw7z849A"
+                            title="রাশেদ খান ভিডিও ৫"
+                            frameborder="0"
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                            allowfullscreen>
+                        </iframe>
+                    </div>
+                    <div class="p-4">
+                        <h3 class="font-semibold text-gray-900 line-clamp-2">প্রধানমন্ত্রীর সহকারী রাশেদ খান</h3>
+                    </div>
+                </div>
+
+                <!-- Video 6 -->
+                <div class="card-hover bg-gray-50 rounded-xl overflow-hidden shadow-sm border border-gray-100">
+                    <div class="aspect-video">
+                        <iframe
+                            class="w-full h-full"
+                            src="https://www.youtube.com/embed/bxA9-oiKmWQ"
+                            title="রাশেদ খান ভিডিও ৬"
+                            frameborder="0"
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                            allowfullscreen>
+                        </iframe>
+                    </div>
+                    <div class="p-4">
+                        <h3 class="font-semibold text-gray-900 line-clamp-2">রাশেদ খান সাক্ষাৎকার</h3>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Social Media -->
+    <section class="py-12 bg-gray-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <h2 class="text-2xl font-bold text-gray-900 mb-8 text-center">সোশ্যাল মিডিয়া</h2>
+
+            <div class="flex justify-center gap-6">
+                <a href="https://facebook.com/rashedkhan.com23" target="_blank" class="w-14 h-14 bg-blue-600 rounded-full flex items-center justify-center text-white hover:bg-blue-700 transition card-hover">
+                    <svg class="w-7 h-7" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+                    </svg>
+                </a>
+                <a href="#" class="w-14 h-14 bg-red-600 rounded-full flex items-center justify-center text-white hover:bg-red-700 transition card-hover">
+                    <svg class="w-7 h-7" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
+                    </svg>
+                </a>
+                <a href="#" class="w-14 h-14 bg-gray-800 rounded-full flex items-center justify-center text-white hover:bg-gray-900 transition card-hover">
+                    <svg class="w-7 h-7" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+                    </svg>
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="bg-gray-900 text-white py-12">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
+                <!-- About -->
+                <div>
+                    <div class="flex items-center space-x-2 mb-4">
+                        <div class="w-10 h-10 rounded-full overflow-hidden border-2 border-primary-500">
+                            <img src="https://www.thedailystar.net/sites/default/files/styles/big_1/public/2026-07/rashed_khan.jpg?h=d1cb525d"
+                                 alt="রাশেদ খান"
+                                 class="w-full h-full object-cover"
+                                 onerror="this.parentElement.innerHTML='<div class=\'w-full h-full bg-primary-600 flex items-center justify-center\'><span class=\'text-white font-bold text-sm\'>রখ</span></div>';">
+                        </div>
+                        <span class="font-semibold text-lg">রাশেদ খান</span>
+                    </div>
+                    <p class="text-gray-400 text-sm">মাননীয় প্রধানমন্ত্রীর রাজনৈতিক সহকারী (সচিব পদমর্যাদা)</p>
+                </div>
+
+                <!-- Quick Links -->
+                <div>
+                    <h4 class="font-semibold mb-4">দ্রুত লিংক</h4>
+                    <ul class="space-y-2 text-gray-400">
+                        <li><a href="index.html" class="hover:text-primary-400 transition">হোম</a></li>
+                        <li><a href="about.html" class="hover:text-primary-400 transition">পরিচিতি</a></li>
+                        <li><a href="news.html" class="hover:text-primary-400 transition">সংবাদ</a></li>
+                        <li><a href="projects.html" class="hover:text-primary-400 transition">উন্নয়ন</a></li>
+                    </ul>
+                </div>
+
+                <!-- Services -->
+                <div>
+                    <h4 class="font-semibold mb-4">সেবা</h4>
+                    <ul class="space-y-2 text-gray-400">
+                        <li><a href="complaint.html" class="hover:text-primary-400 transition">অভিযোগ দাখিল</a></li>
+                        <li><a href="appointment.html" class="hover:text-primary-400 transition">সাক্ষাৎকার বুকিং</a></li>
+                        <li><a href="track.html" class="hover:text-primary-400 transition">অভিযোগ ট্র্যাকিং</a></li>
+                        <li><a href="contact.html" class="hover:text-primary-400 transition">যোগাযোগ</a></li>
+                    </ul>
+                </div>
+
+                <!-- Contact -->
+                <div>
+                    <h4 class="font-semibold mb-4">যোগাযোগ</h4>
+                    <ul class="space-y-2 text-gray-400 text-sm">
+                        <li class="flex items-start gap-2">
+                            <svg class="w-5 h-5 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                            </svg>
+                            <span>প্রধানমন্ত্রীর কার্যালয়, তেজগাঁও, ঢাকা-১২১৫</span>
+                        </li>
+                        <li class="flex items-center gap-2">
+                            <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
+                            </svg>
+                            <span>info@rashedkhan.com.bd</span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="border-t border-gray-800 mt-8 pt-8 text-center text-gray-500 text-sm">
+                <p>&copy; ২০২৬ মো. রাশেদ খান। সর্বস্বত্ব সংরক্ষিত।</p>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        function toggleMobileMenu() {
+            const menu = document.getElementById('mobile-menu');
+            menu.classList.toggle('hidden');
+        }
+    </script>
+</body>
+</html>

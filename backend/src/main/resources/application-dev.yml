@@ -1,0 +1,17 @@
+spring:
+  jpa:
+    open-in-view: false
+
+logging:
+  level:
+    com.webinnovation.motolink: DEBUG
+    com.webinnovation.motolink.netty: DEBUG
+    com.webinnovation.motolink.protocol: DEBUG
+
+motolink:
+  cors:
+    allowed-origins: ${PINGPATH_CORS_ALLOWED_ORIGINS:http://localhost:3000}
+  seed:
+    enabled: true
+    admin-email: admin@eyeon.local
+    admin-password: admin1234

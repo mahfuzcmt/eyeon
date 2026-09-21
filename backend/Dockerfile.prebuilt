@@ -1,0 +1,16 @@
+# Runtime-only image for a jar built elsewhere (CI / a dev machine).
+#
+# The VPS's connection to Maven Central stalls for minutes at a time, which
+# makes the two-stage Dockerfile unreliable there. Build the jar where Maven
+# works, copy it to backend/target/motolink.jar on the server, then:
+#   docker build -f backend/Dockerfile.prebuilt -t eyeon-backend:latest backend
+#   docker compose -f docker-compose.prod.yml --env-file .env up -d --no-build --no-deps backend
+# The runtime stage is identical to Dockerfile's.
+FROM eclipse-temurin:21-jre-jammy
+WORKDIR /app
+RUN groupadd --system motolink && useradd --system --gid motolink motolink
+COPY target/motolink.jar app.jar
+USER motolink
+EXPOSE 8080 5023
+ENV JAVA_OPTS="-XX:+UseG1GC -XX:MaxRAMPercentage=75.0"
+ENTRYPOINT ["sh", "-c", "java $JAVA_OPTS -jar /app/app.jar"]

@@ -1,0 +1,136 @@
+# Rashed Khan Website - Apache URL Rewriting Rules
+# Enable mod_rewrite
+RewriteEngine On
+
+# Set the base directory
+RewriteBase /
+
+# Prevent directory listing
+Options -Indexes
+
+# Protect sensitive files
+<FilesMatch "^\.">
+    Order allow,deny
+    Deny from all
+</FilesMatch>
+
+# Block access to certain file types
+<FilesMatch "\.(sql|log|ini|sh|bak|config)$">
+    Order allow,deny
+    Deny from all
+</FilesMatch>
+
+# Security headers
+<IfModule mod_headers.c>
+    Header set X-Content-Type-Options "nosniff"
+    Header set X-Frame-Options "SAMEORIGIN"
+    Header set X-XSS-Protection "1; mode=block"
+    Header set Referrer-Policy "strict-origin-when-cross-origin"
+</IfModule>
+
+# Enable GZIP compression
+<IfModule mod_deflate.c>
+    AddOutputFilterByType DEFLATE text/html text/plain text/css text/javascript
+    AddOutputFilterByType DEFLATE application/javascript application/x-javascript
+    AddOutputFilterByType DEFLATE application/json application/xml
+</IfModule>
+
+# Browser caching
+<IfModule mod_expires.c>
+    ExpiresActive On
+    ExpiresByType image/jpg "access plus 1 month"
+    ExpiresByType image/jpeg "access plus 1 month"
+    ExpiresByType image/gif "access plus 1 month"
+    ExpiresByType image/png "access plus 1 month"
+    ExpiresByType image/webp "access plus 1 month"
+    ExpiresByType image/svg+xml "access plus 1 month"
+    ExpiresByType image/x-icon "access plus 1 year"
+    ExpiresByType text/css "access plus 1 month"
+    ExpiresByType text/javascript "access plus 1 month"
+    ExpiresByType application/javascript "access plus 1 month"
+    ExpiresByType application/pdf "access plus 1 month"
+    ExpiresByType font/woff "access plus 1 year"
+    ExpiresByType font/woff2 "access plus 1 year"
+</IfModule>
+
+# Character encoding
+AddDefaultCharset UTF-8
+
+# Custom error pages (optional - can be created later)
+# ErrorDocument 404 /404.php
+# ErrorDocument 500 /500.php
+
+# -----------------------------------------------------
+# URL Rewriting Rules for Clean URLs
+# -----------------------------------------------------
+
+# If the requested file or directory exists, serve it directly
+RewriteCond %{REQUEST_FILENAME} -f [OR]
+RewriteCond %{REQUEST_FILENAME} -d
+RewriteRule ^ - [L]
+
+# News detail page: /news/slug -> /news-detail.php?slug=slug
+RewriteRule ^news/([a-z0-9\-]+)/?$ news-detail.php?slug=$1 [L,QSA]
+
+# News listing with pagination: /news/page/2 -> /news.php?page=2
+RewriteRule ^news/page/([0-9]+)/?$ news.php?page=$1 [L,QSA]
+
+# News category: /news/category/name -> /news.php?category=name
+RewriteRule ^news/category/([^/]+)/?$ news.php?category=$1 [L,QSA]
+
+# Projects listing with pagination: /projects/page/2 -> /projects.php?page=2
+RewriteRule ^projects/page/([0-9]+)/?$ projects.php?page=$1 [L,QSA]
+
+# Projects by status: /projects/status/name -> /projects.php?status=name
+RewriteRule ^projects/status/([^/]+)/?$ projects.php?status=$1 [L,QSA]
+
+# Track complaint: /track/ticket-number -> /track.php?ticket=ticket-number
+RewriteRule ^track/([A-Z0-9\-]+)/?$ track.php?ticket=$1 [L,QSA]
+
+# Media gallery with filter: /media/category/name -> /media.php?category=name
+RewriteRule ^media/category/([^/]+)/?$ media.php?category=$1 [L,QSA]
+
+# Static pages without .php extension
+RewriteRule ^about/?$ about.php [L]
+RewriteRule ^services/?$ services.php [L]
+RewriteRule ^news/?$ news.php [L]
+RewriteRule ^projects/?$ projects.php [L]
+RewriteRule ^complaint/?$ complaint.php [L]
+RewriteRule ^track/?$ track.php [L]
+RewriteRule ^appointment/?$ appointment.php [L]
+RewriteRule ^media/?$ media.php [L]
+RewriteRule ^contact/?$ contact.php [L]
+
+# Redirect old URLs with .php extension to clean URLs (SEO)
+RewriteCond %{THE_REQUEST} ^[A-Z]{3,}\s/+(about|services|news|projects|complaint|track|appointment|media|contact)\.php[\s?] [NC]
+RewriteRule ^ /%1 [R=301,L]
+
+# Force HTTPS (uncomment in production)
+# RewriteCond %{HTTPS} off
+# RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+
+# Force www (uncomment if needed)
+# RewriteCond %{HTTP_HOST} ^rashedkhan\.com\.bd [NC]
+# RewriteRule ^(.*)$ https://www.rashedkhan.com.bd/$1 [L,R=301]
+
+# Or force non-www (uncomment if needed)
+# RewriteCond %{HTTP_HOST} ^www\.rashedkhan\.com\.bd [NC]
+# RewriteRule ^(.*)$ https://rashedkhan.com.bd/$1 [L,R=301]
+
+# Protect uploads directory from PHP execution
+<Directory "assets/uploads">
+    <FilesMatch "\.php$">
+        Order allow,deny
+        Deny from all
+    </FilesMatch>
+</Directory>
+
+# Limit file upload size (adjust as needed)
+php_value upload_max_filesize 10M
+php_value post_max_size 12M
+php_value max_execution_time 60
+php_value max_input_time 60
+
+# Error reporting (disable in production)
+# php_flag display_errors Off
+# php_value error_reporting 0

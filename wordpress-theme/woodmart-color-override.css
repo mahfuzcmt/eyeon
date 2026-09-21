@@ -1,0 +1,274 @@
+/*
+ * Woodmart Color Override for Tech Solution BD
+ * Matches experttechnologiesbd.com colors
+ *
+ * Primary Blue: #04509f
+ * Secondary Dark: #333333
+ *
+ * HOW TO USE:
+ * 1. Go to Woodmart → Theme Settings → Custom CSS
+ * 2. Paste this entire code
+ * 3. Click Save Options
+ */
+
+/* ============================================
+   PRIMARY COLOR OVERRIDE (#04509f)
+   ============================================ */
+
+/* CSS Variables */
+:root {
+    --wd-primary-color: #04509f !important;
+    --wd-link-color: #04509f !important;
+}
+
+/* Links and Buttons */
+a:hover,
+.wd-entities-title a:hover,
+.color-primary,
+.wd-nav .menu-item-has-children:hover > a,
+.wd-nav-product-cat .menu-item:hover > a {
+    color: #04509f !important;
+}
+
+/* Primary Background Elements */
+.btn-color-primary,
+.button-color-primary,
+.wd-action-btn.wd-style-icon:hover,
+.add_to_cart_button:hover,
+.single_add_to_cart_button,
+.checkout-button,
+.woocommerce-form-login__submit,
+.wd-search-form button,
+input[type="submit"].btn-color-primary,
+.mc4wp-form-fields button,
+.wd-sticky-btn .wd-action-btn:hover,
+.wd-accordion.wd-style-default .wd-accordion-title:hover,
+.wd-header-main-nav .menu > .item-level-0.current-menu-item > a:after,
+.wd-header-main-nav .menu > .item-level-0.current-menu-ancestor > a:after {
+    background-color: #04509f !important;
+}
+
+/* Add to Cart Buttons */
+.single_add_to_cart_button,
+.checkout-button,
+.woocommerce .button.alt,
+.woocommerce button.button.alt,
+.wc-proceed-to-checkout .checkout-button,
+.woocommerce #respond input#submit,
+.woocommerce a.button.alt {
+    background-color: #04509f !important;
+    border-color: #04509f !important;
+}
+
+.single_add_to_cart_button:hover,
+.checkout-button:hover,
+.woocommerce .button.alt:hover,
+.woocommerce button.button.alt:hover {
+    background-color: #033d7a !important;
+    border-color: #033d7a !important;
+}
+
+/* Header & Navigation */
+.wd-header-main-nav .menu > .item-level-0:hover > a,
+.wd-header-main-nav .menu > .item-level-0.current-menu-item > a {
+    color: #04509f !important;
+}
+
+/* Primary color for various elements */
+.price ins,
+.woocommerce .star-rating span:before,
+.woocommerce p.stars a:hover:before,
+.woocommerce p.stars.selected a:before,
+.wd-rating-summary .star-rating span:before {
+    color: #04509f !important;
+}
+
+/* Borders */
+.wd-bordered-btn:hover,
+input:focus,
+select:focus,
+textarea:focus,
+.wd-action-btn.wd-style-icon:hover,
+.wd-tabs.wd-style-default .wd-nav-tabs li.wd-active,
+.wd-accordion.wd-style-default .wd-accordion-item.wd-active .wd-accordion-title {
+    border-color: #04509f !important;
+}
+
+/* Widgets */
+.widget_price_filter .ui-slider .ui-slider-range,
+.widget_price_filter .ui-slider .ui-slider-handle {
+    background-color: #04509f !important;
+}
+
+/* Product Labels - Keep default or customize */
+.product-label.wd-label-new {
+    background-color: #04509f !important;
+}
+
+/* Mobile Bottom Toolbar */
+.wd-toolbar .wd-tools li > a:hover,
+.wd-toolbar .wd-tools li > a.wd-active {
+    color: #04509f !important;
+}
+
+/* Sale Price */
+.price del {
+    color: #999 !important;
+}
+
+/* ============================================
+   SECONDARY COLOR (#333333)
+   ============================================ */
+
+/* Text colors */
+body,
+.site-content,
+h1, h2, h3, h4, h5, h6,
+.wd-entities-title,
+.product-title,
+.entry-title {
+    color: #333333 !important;
+}
+
+/* Footer */
+.footer-container,
+.copyrights-wrapper {
+    background-color: #1a1a1a !important;
+}
+
+/* ============================================
+   HEADER STYLING
+   ============================================ */
+
+/* Top bar with primary color */
+.wd-header-top-bar {
+    background-color: #04509f !important;
+}
+
+.wd-header-top-bar,
+.wd-header-top-bar a,
+.wd-header-top-bar .menu > li > a {
+    color: #ffffff !important;
+}
+
+/* Main navigation bar */
+.wd-header-main-nav {
+    background-color: #04509f !important;
+}
+
+.wd-header-main-nav .menu > .item-level-0 > a {
+    color: #ffffff !important;
+}
+
+.wd-header-main-nav .menu > .item-level-0:hover > a,
+.wd-header-main-nav .menu > .item-level-0.current-menu-item > a {
+    color: #ffffff !important;
+    background-color: rgba(255,255,255,0.1) !important;
+}
+
+/* ============================================
+   PRODUCT STYLING
+   ============================================ */
+
+/* Product hover effects */
+.wd-product:hover .wd-entities-title a {
+    color: #04509f !important;
+}
+
+/* Price styling */
+.price,
+.wd-price,
+.woocommerce .price {
+    color: #04509f !important;
+}
+
+/* Product buttons */
+.wd-product .wd-buttons .wd-action-btn:hover {
+    background-color: #04509f !important;
+    color: #ffffff !important;
+}
+
+/* Category styling */
+.wd-product-cats a:hover {
+    color: #04509f !important;
+}
+
+/* ============================================
+   FORMS & INPUTS
+   ============================================ */
+
+input[type="text"]:focus,
+input[type="email"]:focus,
+input[type="password"]:focus,
+input[type="search"]:focus,
+input[type="tel"]:focus,
+input[type="url"]:focus,
+textarea:focus,
+select:focus {
+    border-color: #04509f !important;
+    box-shadow: 0 0 0 1px #04509f !important;
+}
+
+/* Search form */
+.wd-search-form .searchsubmit,
+.wd-search-full-screen .wd-search-inner button {
+    background-color: #04509f !important;
+}
+
+/* ============================================
+   BREADCRUMBS & PAGE TITLE
+   ============================================ */
+
+.wd-breadcrumbs a:hover {
+    color: #04509f !important;
+}
+
+/* ============================================
+   CART & CHECKOUT
+   ============================================ */
+
+.wd-cart-totals .order-total .woocommerce-Price-amount {
+    color: #04509f !important;
+}
+
+/* ============================================
+   PAGINATION
+   ============================================ */
+
+.wd-pagination .page-numbers.current,
+.wd-pagination .page-numbers:hover {
+    background-color: #04509f !important;
+    border-color: #04509f !important;
+    color: #ffffff !important;
+}
+
+/* ============================================
+   NEWSLETTER / MAILCHIMP
+   ============================================ */
+
+.mc4wp-form-fields input[type="submit"],
+.wd-newsletter-form button {
+    background-color: #04509f !important;
+}
+
+/* ============================================
+   SALE COUNTDOWN
+   ============================================ */
+
+.wd-product-countdown .countdown-value {
+    color: #04509f !important;
+}
+
+/* ============================================
+   MOBILE MENU
+   ============================================ */
+
+.wd-sidebar-menu .menu-item:hover > a,
+.wd-sidebar-menu .current-menu-item > a {
+    color: #04509f !important;
+}
+
+/* Mobile menu button */
+.wd-burger-icon:hover {
+    color: #04509f !important;
+}

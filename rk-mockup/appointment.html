@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="bn" dir="ltr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>সাক্ষাৎকার বুকিং - মো. রাশেদ খান</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: { 50: '#ECFDF5', 100: '#D1FAE5', 500: '#10B981', 600: '#059669', 700: '#047857', 900: '#064E3B' },
+                        secondary: { 100: '#FEF3C7', 500: '#F59E0B', 700: '#B45309' }
+                    },
+                    fontFamily: { bengali: ['Hind Siliguri', 'sans-serif'] }
+                }
+            }
+        }
+    </script>
+    <style>body { font-family: 'Hind Siliguri', sans-serif; }</style>
+</head>
+<body class="bg-gray-50 text-gray-900">
+
+    <!-- Header -->
+    <header class="bg-white shadow-sm sticky top-0 z-50">
+        <nav class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <a href="index.html" class="flex items-center space-x-2">
+                    <div class="w-10 h-10 rounded-full overflow-hidden border-2 border-primary-600">
+                        <img src="https://www.thedailystar.net/sites/default/files/styles/big_1/public/2026-07/rashed_khan.jpg?h=d1cb525d"
+                             alt="রাশেদ খান"
+                             class="w-full h-full object-cover"
+                             onerror="this.parentElement.innerHTML='<div class=\'w-full h-full bg-primary-600 flex items-center justify-center\'><span class=\'text-white font-bold text-sm\'>রখ</span></div>';">
+                    </div>
+                    <span class="font-semibold text-lg text-gray-900 hidden sm:block">রাশেদ খান</span>
+                </a>
+                <!-- Desktop Navigation -->
+                <div class="hidden md:flex items-center space-x-6">
+                    <a href="index.html" class="text-gray-600 hover:text-primary-600">হোম</a>
+                    <a href="about.html" class="text-gray-600 hover:text-primary-600">পরিচিতি</a>
+                    <a href="media.html" class="text-gray-600 hover:text-primary-600">সংবাদ</a>
+                    <a href="services.html" class="text-primary-600 font-medium">সেবা</a>
+                    <a href="projects.html" class="text-gray-600 hover:text-primary-600">উন্নয়ন</a>
+                    <a href="contact.html" class="text-gray-600 hover:text-primary-600">যোগাযোগ</a>
+                </div>
+                <!-- Mobile Menu Button -->
+                <button class="md:hidden p-2 text-gray-500" onclick="toggleMobileMenu()">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+                    </svg>
+                </button>
+            </div>
+            <!-- Mobile Menu -->
+            <div id="mobile-menu" class="hidden md:hidden border-t border-gray-100 py-4">
+                <div class="flex flex-col space-y-3">
+                    <a href="index.html" class="text-gray-600 hover:text-primary-600 px-2 py-1">হোম</a>
+                    <a href="about.html" class="text-gray-600 hover:text-primary-600 px-2 py-1">পরিচিতি</a>
+                    <a href="media.html" class="text-gray-600 hover:text-primary-600 px-2 py-1">সংবাদ</a>
+                    <a href="services.html" class="text-primary-600 font-medium px-2 py-1">সেবা</a>
+                    <a href="projects.html" class="text-gray-600 hover:text-primary-600 px-2 py-1">উন্নয়ন</a>
+                    <a href="contact.html" class="text-gray-600 hover:text-primary-600 px-2 py-1">যোগাযোগ</a>
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <!-- Main Content -->
+    <main class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 md:p-8">
+            <h1 class="text-2xl md:text-3xl font-bold text-gray-900 mb-2">সাক্ষাৎকারের সময় নির্ধারণ</h1>
+            <p class="text-gray-600 mb-8">আপনার সুবিধামত সময়ে সাক্ষাৎকারের সময় নির্ধারণ করুন</p>
+
+            <!-- Appointment Types -->
+            <div class="mb-8">
+                <h2 class="text-lg font-semibold text-gray-900 mb-4">সাক্ষাৎকারের ধরন নির্বাচন করুন</h2>
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <label class="cursor-pointer">
+                        <input type="radio" name="appointment_type" value="general" class="hidden peer" checked>
+                        <div class="p-5 border-2 border-gray-200 rounded-xl text-center peer-checked:border-primary-500 peer-checked:bg-primary-50 transition hover:border-primary-300">
+                            <div class="w-12 h-12 bg-primary-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                                <svg class="w-6 h-6 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+                                </svg>
+                            </div>
+                            <h3 class="font-semibold text-gray-900">সাধারণ সাক্ষাৎ</h3>
+                            <p class="text-sm text-gray-500 mt-1">১৫ মিনিট</p>
+                        </div>
+                    </label>
+                    <label class="cursor-pointer">
+                        <input type="radio" name="appointment_type" value="constituency" class="hidden peer">
+                        <div class="p-5 border-2 border-gray-200 rounded-xl text-center peer-checked:border-primary-500 peer-checked:bg-primary-50 transition hover:border-primary-300">
+                            <div class="w-12 h-12 bg-secondary-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                                <svg class="w-6 h-6 text-secondary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                                </svg>
+                            </div>
+                            <h3 class="font-semibold text-gray-900">এলাকাবাসীর সাক্ষাৎ</h3>
+                            <p class="text-sm text-gray-500 mt-1">২০ মিনিট</p>
+                        </div>
+                    </label>
+                    <label class="cursor-pointer">
+                        <input type="radio" name="appointment_type" value="media" class="hidden peer">
+                        <div class="p-5 border-2 border-gray-200 rounded-xl text-center peer-checked:border-primary-500 peer-checked:bg-primary-50 transition hover:border-primary-300">
+                            <div class="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                                <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
+                                </svg>
+                            </div>
+                            <h3 class="font-semibold text-gray-900">মিডিয়া সাক্ষাৎকার</h3>
+                            <p class="text-sm text-gray-500 mt-1">৩০ মিনিট</p>
+                        </div>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Calendar and Time Slots -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+                <!-- Calendar -->
+                <div>
+                    <h2 class="text-lg font-semibold text-gray-900 mb-4">তারিখ নির্বাচন করুন</h2>
+                    <div class="bg-gray-50 rounded-xl p-4">
+                        <!-- Month Navigation -->
+                        <div class="flex items-center justify-between mb-4">
+                            <button class="p-2 hover:bg-gray-200 rounded-lg">
+                                <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+                                </svg>
+                            </button>
+                            <span class="font-semibold text-gray-900">সেপ্টেম্বর ২০২৬</span>
+                            <button class="p-2 hover:bg-gray-200 rounded-lg">
+                                <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                                </svg>
+                            </button>
+                        </div>
+
+                        <!-- Week Days -->
+                        <div class="grid grid-cols-7 gap-1 text-center text-sm text-gray-500 mb-2">
+                            <span>রবি</span>
+                            <span>সোম</span>
+                            <span>মঙ্গল</span>
+                            <span>বুধ</span>
+                            <span>বৃহ</span>
+                            <span>শুক্র</span>
+                            <span>শনি</span>
+                        </div>
+
+                        <!-- Calendar Days -->
+                        <div class="grid grid-cols-7 gap-1">
+                            <!-- Empty cells for start of month -->
+                            <span></span>
+                            <span></span>
+                            <!-- Days -->
+                            <button class="p-2 text-gray-400 rounded-lg">০১</button>
+                            <button class="p-2 text-gray-400 rounded-lg">০২</button>
+                            <button class="p-2 text-gray-400 rounded-lg">০৩</button>
+                            <button class="p-2 text-gray-300 rounded-lg bg-gray-100">০৪</button>
+                            <button class="p-2 text-gray-300 rounded-lg bg-gray-100">০৫</button>
+
+                            <button class="p-2 text-gray-300 rounded-lg bg-gray-100">০৬</button>
+                            <button class="p-2 hover:bg-primary-100 rounded-lg">০৭</button>
+                            <button class="p-2 hover:bg-primary-100 rounded-lg">০৮</button>
+                            <button class="p-2 hover:bg-primary-100 rounded-lg">০৯</button>
+                            <button class="p-2 bg-primary-600 text-white rounded-lg font-semibold">১০</button>
+                            <button class="p-2 text-gray-300 rounded-lg bg-gray-100">১১</button>
+                            <button class="p-2 text-gray-300 rounded-lg bg-gray-100">১২</button>
+
+                            <button class="p-2 text-gray-300 rounded-lg bg-gray-100">১৩</button>
+                            <button class="p-2 hover:bg-primary-100 rounded-lg">১৪</button>
+                            <button class="p-2 hover:bg-primary-100 rounded-lg">১৫</button>
+                            <button class="p-2 hover:bg-primary-100 rounded-lg">১৬</button>
+                            <button class="p-2 hover:bg-primary-100 rounded-lg">১৭</button>
+                            <button class="p-2 text-gray-300 rounded-lg bg-gray-100">১৮</button>
+                            <button class="p-2 text-gray-300 rounded-lg bg-gray-100">১৯</button>
+
+                            <button class="p-2 text-gray-300 rounded-lg bg-gray-100">২০</button>
+                            <button class="p-2 hover:bg-primary-100 rounded-lg">২১</button>
+                            <button class="p-2 hover:bg-primary-100 rounded-lg">২২</button>
+                            <button class="p-2 hover:bg-primary-100 rounded-lg">২৩</button>
+                            <button class="p-2 hover:bg-primary-100 rounded-lg">২৪</button>
+                            <button class="p-2 text-gray-300 rounded-lg bg-gray-100">২৫</button>
+                            <button class="p-2 text-gray-300 rounded-lg bg-gray-100">২৬</button>
+
+                            <button class="p-2 text-gray-300 rounded-lg bg-gray-100">২৭</button>
+                            <button class="p-2 hover:bg-primary-100 rounded-lg">২৮</button>
+                            <button class="p-2 hover:bg-primary-100 rounded-lg">২৯</button>
+                            <button class="p-2 hover:bg-primary-100 rounded-lg">৩০</button>
+                        </div>
+
+                        <div class="flex items-center gap-4 mt-4 text-sm text-gray-500">
+                            <span class="flex items-center">
+                                <span class="w-3 h-3 bg-gray-100 rounded mr-1"></span>
+                                ছুটির দিন
+                            </span>
+                            <span class="flex items-center">
+                                <span class="w-3 h-3 bg-primary-600 rounded mr-1"></span>
+                                নির্বাচিত
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Time Slots -->
+                <div>
+                    <h2 class="text-lg font-semibold text-gray-900 mb-4">সময় নির্বাচন করুন</h2>
+                    <p class="text-gray-600 mb-4">১০ সেপ্টেম্বর, বৃহস্পতিবার</p>
+
+                    <div class="grid grid-cols-2 gap-3">
+                        <label class="cursor-pointer">
+                            <input type="radio" name="time_slot" value="10:00" class="hidden peer">
+                            <div class="p-3 border-2 border-gray-200 rounded-lg text-center peer-checked:border-primary-500 peer-checked:bg-primary-50 transition hover:border-primary-300">
+                                <span class="font-medium">সকাল ১০:০০</span>
+                            </div>
+                        </label>
+                        <label class="cursor-pointer">
+                            <input type="radio" name="time_slot" value="10:30" class="hidden peer">
+                            <div class="p-3 border-2 border-gray-200 rounded-lg text-center peer-checked:border-primary-500 peer-checked:bg-primary-50 transition hover:border-primary-300">
+                                <span class="font-medium">সকাল ১০:৩০</span>
+                            </div>
+                        </label>
+                        <label class="cursor-pointer">
+                            <input type="radio" name="time_slot" value="11:00" class="hidden peer">
+                            <div class="p-3 border-2 border-gray-200 rounded-lg text-center peer-checked:border-primary-500 peer-checked:bg-primary-50 transition hover:border-primary-300">
+                                <span class="font-medium">সকাল ১১:০০</span>
+                            </div>
+                        </label>
+                        <label class="cursor-pointer">
+                            <input type="radio" name="time_slot" value="11:30" class="hidden peer">
+                            <div class="p-3 border-2 border-gray-200 rounded-lg text-center peer-checked:border-primary-500 peer-checked:bg-primary-50 transition hover:border-primary-300">
+                                <span class="font-medium">সকাল ১১:৩০</span>
+                            </div>
+                        </label>
+                        <label class="cursor-pointer">
+                            <input type="radio" name="time_slot" value="14:00" class="hidden peer" checked>
+                            <div class="p-3 border-2 border-gray-200 rounded-lg text-center peer-checked:border-primary-500 peer-checked:bg-primary-50 transition hover:border-primary-300">
+                                <span class="font-medium">বিকাল ২:০০</span>
+                                <svg class="w-4 h-4 text-primary-600 inline ml-1" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
+                                </svg>
+                            </div>
+                        </label>
+                        <label class="cursor-pointer">
+                            <input type="radio" name="time_slot" value="14:30" class="hidden peer">
+                            <div class="p-3 border-2 border-gray-200 rounded-lg text-center peer-checked:border-primary-500 peer-checked:bg-primary-50 transition hover:border-primary-300">
+                                <span class="font-medium">বিকাল ২:৩০</span>
+                            </div>
+                        </label>
+                        <label class="cursor-pointer">
+                            <input type="radio" name="time_slot" value="15:00" class="hidden peer">
+                            <div class="p-3 border-2 border-gray-200 rounded-lg text-center peer-checked:border-primary-500 peer-checked:bg-primary-50 transition hover:border-primary-300">
+                                <span class="font-medium">বিকাল ৩:০০</span>
+                            </div>
+                        </label>
+                        <div class="p-3 border-2 border-gray-100 rounded-lg text-center bg-gray-50">
+                            <span class="font-medium text-gray-400">বিকাল ৩:৩০</span>
+                            <span class="text-xs text-gray-400 block">বুকড</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Visitor Details Form -->
+            <div class="border-t pt-8">
+                <h2 class="text-lg font-semibold text-gray-900 mb-4">আপনার তথ্য</h2>
+
+                <form class="space-y-5">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">নাম <span class="text-red-500">*</span></label>
+                            <input type="text" required class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500" placeholder="আপনার পূর্ণ নাম">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">মোবাইল নম্বর <span class="text-red-500">*</span></label>
+                            <div class="flex">
+                                <span class="inline-flex items-center px-3 bg-gray-100 border border-r-0 border-gray-300 rounded-l-lg text-gray-600">+880</span>
+                                <input type="tel" required class="flex-1 px-4 py-3 border border-gray-300 rounded-r-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500" placeholder="1XXXXXXXXX">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">প্রতিষ্ঠান (যদি থাকে)</label>
+                            <input type="text" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500" placeholder="প্রতিষ্ঠানের নাম">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">পদবি</label>
+                            <input type="text" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500" placeholder="আপনার পদবি">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">সাক্ষাতের উদ্দেশ্য <span class="text-red-500">*</span></label>
+                        <textarea rows="3" required class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500" placeholder="সংক্ষেপে সাক্ষাতের উদ্দেশ্য লিখুন..."></textarea>
+                    </div>
+
+                    <!-- Summary -->
+                    <div class="bg-primary-50 rounded-xl p-5 border border-primary-100">
+                        <h3 class="font-semibold text-gray-900 mb-3">সাক্ষাৎকারের সারসংক্ষেপ</h3>
+                        <div class="space-y-2 text-sm">
+                            <div class="flex justify-between">
+                                <span class="text-gray-600">ধরন:</span>
+                                <span class="font-medium">সাধারণ সাক্ষাৎ</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-600">তারিখ:</span>
+                                <span class="font-medium">১০ সেপ্টেম্বর ২০২৬, বৃহস্পতিবার</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-600">সময়:</span>
+                                <span class="font-medium">বিকাল ২:০০</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-600">স্থান:</span>
+                                <span class="font-medium">প্রধানমন্ত্রীর কার্যালয়, তেজগাঁও</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="flex justify-end">
+                        <button type="submit" class="inline-flex items-center px-8 py-3 bg-primary-600 text-white font-semibold rounded-lg hover:bg-primary-700 transition shadow-lg shadow-primary-600/30">
+                            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                            </svg>
+                            নিশ্চিত করুন
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-gray-900 text-white py-8 mt-12">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex flex-col md:flex-row justify-between items-center">
+                <div class="flex items-center space-x-3 mb-4 md:mb-0">
+                    <div class="w-10 h-10 rounded-full overflow-hidden border-2 border-primary-500">
+                        <img src="https://www.thedailystar.net/sites/default/files/styles/big_1/public/2026-07/rashed_khan.jpg?h=d1cb525d"
+                             alt="রাশেদ খান"
+                             class="w-full h-full object-cover"
+                             onerror="this.parentElement.innerHTML='<div class=\'w-full h-full bg-primary-600 flex items-center justify-center\'><span class=\'text-white font-bold text-sm\'>রখ</span></div>';">
+                    </div>
+                    <span class="font-semibold">মো. রাশেদ খান</span>
+                </div>
+                <p class="text-gray-400 text-sm">&copy; ২০২৬ সর্বস্বত্ব সংরক্ষিত</p>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        function toggleMobileMenu() {
+            const menu = document.getElementById('mobile-menu');
+            menu.classList.toggle('hidden');
+        }
+    </script>
+</body>
+</html>

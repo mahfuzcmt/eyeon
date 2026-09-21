@@ -1,0 +1,97 @@
+Name,Slug,Parent,Description
+Access Control,access-control,,Biometric access control and time attendance solutions
+Controller,controller,Access Control,Access control panels and controllers
+EM Lock,em-lock,Access Control,Electromagnetic locks for access control
+Exit Button,exit-button,Access Control,Door release and exit buttons
+Face Recognition,face-recognition,Access Control,Facial recognition access terminals
+Fingerprint Scanner,fingerprint-scanner,Access Control,Fingerprint based access devices
+Fingerprint Time Attendance,fingerprint-time-attendance,Access Control,Time and attendance machines
+IRIS Access Control,iris-access-control,Access Control,Iris recognition systems
+Palm Recognition,palm-recognition,Access Control,Palm vein recognition devices
+Readers & Accessories,readers-accessories,Access Control,Card readers and accessories
+RFID Card,rfid-card,Access Control,Proximity and RFID cards
+Software,access-software,Access Control,Access control management software
+CCTV Surveillance,cctv-surveillance,,Complete video surveillance solutions
+Accessories,cctv-accessories,CCTV Surveillance,CCTV cables connectors and accessories
+DVR,dvr,CCTV Surveillance,Digital video recorders
+HD Camera,hd-camera,CCTV Surveillance,Analog HD cameras 1080p and above
+HDD,hdd,CCTV Surveillance,Surveillance grade hard drives
+IP Camera,ip-camera,CCTV Surveillance,Network IP cameras
+NVR,nvr,CCTV Surveillance,Network video recorders
+Power Adapter,power-adapter,CCTV Surveillance,CCTV power supplies and adapters
+Wifi Camera,wifi-camera,CCTV Surveillance,Wireless surveillance cameras
+Conference System,conference-system,,Audio and video conferencing solutions
+Audio Conference,audio-conference,Conference System,Audio conferencing systems
+Video Conference,video-conference,Conference System,Video conferencing equipment
+Wireless Conference,wireless-conference,Conference System,Wireless conference systems
+PA System,pa-system,,Public address and sound systems
+Amplifier,amplifier,PA System,Audio amplifiers all types
+Booster Amplifier,booster-amplifier,Amplifier,Power boosting amplifiers
+Mixer Amplifier,mixer-amplifier,Amplifier,Mixer amplifiers with multiple inputs
+Power Amplifier,power-amplifier,Amplifier,Pure power amplifiers
+Zone Amplifier,zone-amplifier,Amplifier,Multi-zone audio amplifiers
+Analogue PA,analogue-pa,PA System,Traditional analog PA equipment
+Ceiling Speaker,ceiling-speaker,Analogue PA,Ceiling mount speakers
+Clip Microphone,clip-microphone,Analogue PA,Lavalier and clip-on microphones
+Column Speaker,column-speaker,Analogue PA,Column array speakers
+Garden Speaker,garden-speaker,Analogue PA,Outdoor garden speakers
+Handheld Microphone,handheld-microphone,Analogue PA,Wired handheld microphones
+Headworn Microphone,headworn-microphone,Analogue PA,Headset microphones
+Horn Speaker,horn-speaker,Analogue PA,Horn and paging speakers
+Megaphone,megaphone,Analogue PA,Handheld megaphones
+Pendant Speaker,pendant-speaker,Analogue PA,Pendant hanging speakers
+Wall Mount Speaker,wall-mount-speaker,Analogue PA,Wall mounted speakers
+Wireless Microphone,wireless-microphone,Analogue PA,Wireless microphone systems
+IP PA System,ip-pa-system,PA System,Network based PA systems
+IP Network Server,ip-network-server,IP PA System,IP PA system controllers
+POE Ceiling Speaker,poe-ceiling-speaker,IP PA System,POE powered ceiling speakers
+POE Garden Speaker,poe-garden-speaker,IP PA System,POE powered outdoor speakers
+POE Horn Speaker,poe-horn-speaker,IP PA System,POE powered horn speakers
+POE Pendant Speaker,poe-pendant-speaker,IP PA System,POE powered pendant speakers
+POE Wall Speaker,poe-wall-speaker,IP PA System,POE powered wall speakers
+IP Microphone,ip-microphone,IP PA System,Network IP microphones
+Paging Gateway,paging-gateway,IP PA System,SIP paging gateways
+Walkie Talkie,walkie-talkie,,Two-way radio communication devices
+SBR,sbr,Walkie Talkie,Short range business radios
+PMR,pmr,Walkie Talkie,Professional mobile radios
+Satellite Phone,satellite-phone,Walkie Talkie,Global satellite communication
+Repeater,repeater,Walkie Talkie,Radio signal repeaters
+Tower,tower,Walkie Talkie,Radio communication towers
+Base Station,base-station,Walkie Talkie,Mobile and base station radios
+Radio Accessories,radio-accessories,Walkie Talkie,Batteries chargers antennas
+Networking,networking,,Network infrastructure equipment
+Network Accessories,network-accessories,Networking,Networking tools and accessories
+Routers,routers,Networking,Network routers
+Cable Manager,cable-manager,Networking,Cable management products
+Crimping Tools,crimping-tools,Networking,Network cable crimping tools
+Face Plate,face-plate,Networking,Network wall plates
+Patch Cord,patch-cord,Networking,Network patch cables
+POE Switch,poe-switch,Networking,Power over Ethernet switches
+Switch,switch,Networking,Network switches
+UTP Cable,utp-cable,Networking,Category 5e 6 network cables
+PABX & IP Phone,pabx-ip-phone,,Telephone systems and IP phones
+Analog PABX,analog-pabx,PABX & IP Phone,Traditional analog PBX systems
+IP Phone,ip-phone,PABX & IP Phone,VoIP and SIP phones
+Security Solutions,security-solutions,,Physical security equipment
+Archway Gate,archway-gate,Security Solutions,Walk through metal detectors
+Baggage Scanner,baggage-scanner,Security Solutions,X-ray baggage inspection
+Boom Barrier,boom-barrier,Security Solutions,Vehicle barrier gates
+Flap Barrier,flap-barrier,Security Solutions,Flap barrier speed gates
+Guard Tour Control,guard-tour-control,Security Solutions,Security patrol systems
+Hand Metal Detector,hand-metal-detector,Security Solutions,Handheld metal detectors
+Parking Barrier,parking-barrier,Security Solutions,Parking lot barriers
+Speed Gate,speed-gate,Security Solutions,High speed pedestrian gates
+Swing Barrier,swing-barrier,Security Solutions,Swing barrier gates
+Tripod Turnstile,tripod-turnstile,Security Solutions,Tripod turnstile gates
+Dual Lane Gate,dual-lane-gate,Security Solutions,Dual lane access gates
+Turnstile,turnstile,Security Solutions,Full height turnstiles
+Under Vehicle Surveillance,under-vehicle-surveillance,Security Solutions,Vehicle inspection systems
+Office Equipment,office-equipment,,Office machines and equipment
+Attendance Machine,attendance-machine,Office Equipment,Employee attendance systems
+Binding Machine,binding-machine,Office Equipment,Document binding machines
+Currency Counter,currency-counter,Office Equipment,Cash counting machines
+Laminator,laminator,Office Equipment,Document laminators
+Paper Cutter,paper-cutter,Office Equipment,Paper cutting machines
+Paper Shredder,paper-shredder,Office Equipment,Document shredders
+Printer,printer,Office Equipment,Office printers
+Scanner,scanner,Office Equipment,Document scanners

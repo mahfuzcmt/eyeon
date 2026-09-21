@@ -1,0 +1,951 @@
+@import "leaflet/dist/leaflet.css";
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    color-scheme: light;
+    --font-inter: "Inter Variable";
+    --font-open-sans: "Open Sans Variable";
+    --font-jetbrains: "JetBrains Mono Variable";
+    --font-hind-siliguri: "Hind Siliguri";
+  }
+
+  html,
+  body {
+    height: 100%;
+  }
+
+  body {
+    @apply bg-surface-0 text-ink-800 antialiased;
+    /* ADL (Ant Design) stack: crisp system UI fonts — Segoe UI on Windows, SF on Apple, Roboto on Android. */
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif;
+    font-size: 14px;
+    line-height: 20px;
+    /* Fleet data is mostly numbers: keep digits the same width so columns
+       and live speed/duration values don't jitter as they update. */
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: "tnum" 1, "cv11" 1;
+    text-rendering: optimizeLegibility;
+  }
+
+  /* Bengali script — applied via [lang="bn"] on <html> when locale=bn.
+     Hind Siliguri sets visually smaller than Inter at the same px size, so
+     nudge the base size up a notch to keep the two locales equally readable. */
+  html[lang="bn"] body {
+    font-family: var(--font-hind-siliguri), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    font-size: 15px;
+    line-height: 22px;
+    font-feature-settings: normal;
+  }
+
+  /* Machine-readable data: IMEI, plates, coordinates, raw commands. */
+  code, kbd, pre, .font-mono {
+    font-family: var(--font-jetbrains), "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-feature-settings: "tnum" 1;
+  }
+
+  /* Headline text gets slightly tighter tracking; Inter is set loose by default. */
+  .font-display {
+    letter-spacing: -0.012em;
+  }
+
+  h1, h2, h3, h4 {
+    @apply text-ink-900;
+    letter-spacing: -0.012em;
+  }
+
+  ::selection {
+    @apply bg-brand-500/25 text-ink-900;
+  }
+
+  /* Native form elements: lighten default styles to match the design */
+  input,
+  select,
+  textarea,
+  button {
+    font-family: inherit;
+  }
+
+  /* Scrollbars (ADL Moto Viewer Style) */
+  *::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  *::-webkit-scrollbar-track {
+    background: #f5f5f5;
+  }
+  *::-webkit-scrollbar-thumb {
+    background: #cccccc;
+    border-radius: 2px;
+  }
+  *::-webkit-scrollbar-thumb:hover {
+    background: #b3b3b3;
+  }
+}
+
+@layer components {
+  /* ── Type scale helpers ───────────────────────────────────────────
+     Use these instead of ad-hoc text-[Npx] + colour pairs so every screen
+     shares the same hierarchy:
+       t-title    16/22 semibold ink-900   page + panel titles
+       t-heading  14/20 semibold ink-900   section headings, card names
+       t-body     13/18 regular  ink-700   default UI copy
+       t-value    13/18 semibold ink-900   data values (tabular digits)
+       t-caption  12/16 regular  ink-500   secondary / helper text
+       t-label    10/14 medium   ink-500   uppercase field labels
+       t-link     13/18 medium   link      in-app links (vehicle names)
+     10px is the floor — nothing in the app renders smaller. */
+  .t-title   { @apply text-[17px] leading-[22px] font-semibold text-ink-900; }
+  .t-heading { @apply text-[15px] leading-5 font-semibold text-ink-900; }
+  .t-body    { @apply text-[14px] leading-5 text-ink-700; }
+  .t-value   { @apply text-[14px] leading-5 font-semibold text-ink-900 tabular-nums; }
+  .t-caption { @apply text-[13px] leading-[18px] text-ink-500; }
+  .t-label   { @apply text-[11px] leading-4 font-medium uppercase tracking-[0.06em] text-ink-500; }
+  .t-link    { @apply text-[14px] leading-5 font-medium text-link hover:text-link-hover; }
+
+  /* ── Surfaces (ADL palette: white cards on #EAEEF2, #dddddd borders) ── */
+  .modal-overlay {
+    @apply fixed inset-0 z-[1300] flex items-center justify-center bg-ink-950/40 p-4;
+  }
+  .modal {
+    @apply w-full overflow-hidden border border-surface-300 bg-white shadow-xl;
+    border-radius: 4px;
+  }
+  .modal-header {
+    @apply flex items-center justify-between border-b border-surface-300 px-4 py-3;
+  }
+  .modal-footer {
+    @apply flex items-center justify-end gap-2 border-t border-surface-300 bg-surface-50 px-4 py-3;
+  }
+
+  /* Data tables: white header row with muted 13px labels, #262626 cells (ADL grid). */
+  .table {
+    @apply w-full text-[14px] text-ink-800;
+  }
+  .table thead th {
+    @apply sticky top-0 z-10 border-b border-surface-300 bg-white px-4 py-2.5 text-left text-[13px] font-semibold text-ink-500;
+  }
+  .table tbody td {
+    @apply border-b border-surface-200 px-4 py-2 align-top;
+  }
+  .table tbody tr:hover {
+    @apply bg-surface-50;
+  }
+
+  /* ── Buttons (ADL Moto Viewer Style) ─────────────────────────────── */
+  .btn-danger {
+    @apply inline-flex items-center justify-center gap-1 px-3 text-[14px] font-semibold text-white transition focus:outline-none disabled:cursor-not-allowed disabled:opacity-50;
+    background-color: #dc2626;
+    border-radius: 2px;
+    height: 28px;
+  }
+  .btn-danger:hover {
+    background-color: #b91c1c;
+  }
+
+  .btn-primary {
+    @apply inline-flex items-center justify-center gap-1 px-3 py-[5px] text-[14px] font-semibold text-white transition focus:outline-none disabled:cursor-not-allowed disabled:opacity-50;
+    background-color: #0421bc;
+    border-radius: 2px;
+    height: 28px;
+  }
+  .btn-primary:hover {
+    background-color: #031a96;
+  }
+
+  .btn-secondary {
+    @apply inline-flex items-center justify-center gap-1 px-3 text-[14px] font-semibold transition focus:outline-none disabled:cursor-not-allowed disabled:opacity-50;
+    background-color: #ffffff;
+    border: 1px solid #dddddd;
+    border-radius: 2px;
+    color: #3D4353;
+    height: 28px;
+  }
+  .btn-secondary:hover {
+    background-color: #f5f5f5;
+    border-color: #cccccc;
+  }
+
+  .btn-ghost {
+    @apply inline-flex items-center justify-center gap-1 px-2 text-[14px] transition focus:outline-none;
+    background-color: transparent;
+    border-radius: 2px;
+    color: #7E8792;
+    height: 26px;
+  }
+  .btn-ghost:hover {
+    background-color: rgba(0, 0, 0, 0.05);
+    color: #3D4353;
+  }
+
+  .btn-icon {
+    @apply inline-flex items-center justify-center transition focus:outline-none;
+    border-radius: 2px;
+    color: #7E8792;
+    width: 28px;
+    height: 28px;
+  }
+  .btn-icon:hover {
+    background-color: rgba(0, 0, 0, 0.05);
+    color: #3D4353;
+  }
+
+  /* ── Inputs (ADL Moto Viewer Style) ──────────────────────────────── */
+  .input {
+    @apply w-full px-2 text-[14px] transition focus:outline-none disabled:opacity-50;
+    background-color: #ffffff;
+    border: 1px solid #dddddd;
+    border-radius: 2px;
+    color: #262626;
+    height: 28px;
+  }
+  .input::placeholder {
+    color: #888888;
+  }
+  .input:focus {
+    border-color: #0421bc;
+    box-shadow: 0 0 0 1px rgba(4, 33, 188, 0.2);
+  }
+
+  .input-search {
+    @apply input;
+    padding-left: 26px;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23888888' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'><circle cx='11' cy='11' r='7'/><path d='m21 21-4-4'/></svg>");
+    background-repeat: no-repeat;
+    background-position: 8px center;
+    background-color: #ffffff;
+  }
+
+  .select {
+    @apply input;
+    appearance: none;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%23888888' stroke-width='2.5'><path d='m6 9 6 6 6-6'/></svg>");
+    background-repeat: no-repeat;
+    background-position: right 8px center;
+    padding-right: 24px;
+    background-color: #ffffff;
+  }
+
+  /* ── Surfaces (ADL Moto Viewer Style) ────────────────────────────── */
+  .panel {
+    background-color: #ffffff;
+    border: 1px solid #dddddd;
+    border-radius: 2px;
+  }
+
+  .panel-header {
+    @apply flex items-center justify-between px-3;
+    background-color: #f5f5f5;
+    border-bottom: 1px solid #dddddd;
+    height: 32px;
+    font-size: 14px;
+    font-weight: 600;
+    color: #3D4353;
+  }
+
+  .panel-body {
+    @apply p-3;
+    background-color: #ffffff;
+  }
+
+  /* ── Tables (ADL Moto Viewer Style) ──────────────────────────────── */
+  .data-table {
+    @apply w-full border-collapse;
+    font-size: 14px;
+  }
+  .data-table thead th {
+    @apply sticky top-0 z-10 px-2 py-[6px] text-left font-semibold;
+    background-color: #f5f5f5;
+    border-bottom: 1px solid #dddddd;
+    color: #3D4353;
+  }
+  .data-table tbody td {
+    @apply px-2 py-[6px];
+    border-bottom: 1px solid #eeeeee;
+    color: #3D4353;
+  }
+  .data-table tbody tr:hover td {
+    background-color: rgba(4, 33, 188, 0.05);
+  }
+  .data-table tbody tr.is-selected td {
+    background-color: rgba(4, 33, 188, 0.1);
+  }
+
+  /* ── Status pills (ADL Moto Viewer Style) ────────────────────────── */
+  .status-pill {
+    @apply inline-flex h-[18px] items-center px-2 text-[11px] font-semibold uppercase tracking-wide text-white;
+    border-radius: 2px;
+  }
+  .status-pill-moving { background-color: #52c41a; }
+  .status-pill-idle { background-color: #faad14; }
+  .status-pill-stopped { background-color: #1890ff; }
+  .status-pill-offline { background-color: #8c8c8c; }
+  .status-pill-expired { background-color: #ff4d4f; }
+  .status-pill-nodata { background-color: #d9d9d9; color: #3D4353; }
+
+  .status-dot {
+    @apply inline-block h-[8px] w-[8px] rounded-full;
+  }
+  .status-dot-online { background-color: #52c41a; }
+  .status-dot-offline { background-color: #8c8c8c; }
+  .status-dot-idle { background-color: #faad14; }
+  .status-dot-stopped { background-color: #1890ff; }
+
+  /* ── Tabs (ADL Moto Viewer Style) ────────────────────────────────── */
+  .tab-bar {
+    @apply flex items-stretch overflow-x-auto;
+    background-color: #f5f5f5;
+    border-bottom: 1px solid #dddddd;
+    scrollbar-width: none;
+  }
+  .tab-bar::-webkit-scrollbar {
+    display: none;
+  }
+  .tab-item {
+    @apply flex h-[32px] cursor-pointer items-center gap-1.5 px-3 font-semibold transition;
+    font-size: 14px;
+    color: #7E8792;
+    border-bottom: 2px solid transparent;
+  }
+  .tab-item:hover {
+    color: #3D4353;
+    background-color: rgba(0, 0, 0, 0.03);
+  }
+  .tab-item-active {
+    @apply tab-item;
+    color: #0421bc;
+    border-bottom-color: #0421bc;
+    background-color: #ffffff;
+  }
+
+  /* ── Top panel nav (ADL Moto Viewer Style) ───────────────────────── */
+  .topnav-item {
+    @apply inline-flex h-10 items-center gap-1.5 px-3 font-semibold transition;
+    font-size: 14px;
+    color: #7E8792;
+  }
+  .topnav-item:hover {
+    background-color: rgba(0, 0, 0, 0.03);
+    color: #3D4353;
+  }
+  .topnav-item-active {
+    @apply topnav-item;
+    border-bottom: 2px solid #0421bc;
+    color: #0421bc;
+    background-color: #ffffff;
+  }
+
+  /* ── Filter chips (ADL Moto Viewer Style) ────────────────────────── */
+  .filter-chip {
+    @apply inline-flex h-[22px] cursor-pointer items-center gap-1.5 px-2 text-[12px] font-semibold transition;
+    background-color: #f5f5f5;
+    border: 1px solid #dddddd;
+    border-radius: 2px;
+    color: #7E8792;
+  }
+  .filter-chip:hover {
+    background-color: #eeeeee;
+    color: #3D4353;
+  }
+  .filter-chip-active {
+    @apply filter-chip;
+    background-color: #0421bc;
+    border-color: #0421bc;
+    color: #ffffff;
+  }
+
+  /* ── Resize handles (ADL Moto Viewer Style) ──────────────────────── */
+  .resize-handle-x {
+    @apply w-[5px] shrink-0 cursor-col-resize;
+    background-color: #EAEEF2;
+  }
+  .resize-handle-x:hover {
+    background-color: #dddddd;
+  }
+  .resize-handle-y {
+    @apply h-[5px] shrink-0 cursor-row-resize;
+    background-color: #EAEEF2;
+  }
+  .resize-handle-y:hover {
+    background-color: #dddddd;
+  }
+
+  /* ── Datalist row (ADL Moto Viewer Style) ───────────────────────── */
+  .data-row {
+    @apply flex min-h-[24px] items-center px-3;
+    font-size: 14px;
+    border-bottom: 1px solid #eeeeee;
+  }
+  .data-row dt {
+    @apply w-44 shrink-0;
+    color: #7E8792;
+  }
+  .data-row dd {
+    @apply min-w-0 flex-1 truncate;
+    color: #3D4353;
+  }
+}
+
+/* Leaflet attribution and control restyle (ADL Moto Viewer Style) */
+.leaflet-control-attribution {
+  background-color: rgba(255, 255, 255, 0.9) !important;
+  color: #7E8792 !important;
+  font-size: 11px !important;
+  border: none !important;
+  border-radius: 2px 0 0 0 !important;
+}
+.leaflet-control-zoom {
+  border: 1px solid #dddddd !important;
+  border-radius: 2px !important;
+  overflow: hidden !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1) !important;
+}
+.leaflet-control-zoom a {
+  background-color: #ffffff !important;
+  color: #3D4353 !important;
+  border-bottom: 1px solid #dddddd !important;
+}
+.leaflet-control-zoom a:hover {
+  background-color: #f5f5f5 !important;
+}
+.leaflet-control-zoom a:last-child {
+  border-bottom: none !important;
+}
+
+/* Measure tool styles */
+.pp-measure-line {
+  stroke: #2B82D4;
+  stroke-width: 2;
+  stroke-dasharray: 6, 4;
+}
+.pp-measure-label {
+  background: rgba(15, 39, 66, 0.9);
+  color: #fff;
+  font-size: 12px;
+  padding: 2px 6px;
+  border-radius: 3px;
+  white-space: nowrap;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+/* Marker Cluster Styles (ADL-style grouping) */
+.pp-cluster-icon {
+  background: transparent !important;
+}
+.pp-cluster {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  font-family: 'Inter', sans-serif;
+  font-weight: 600;
+  color: #fff;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+  border: 3px solid rgba(255, 255, 255, 0.9);
+}
+.pp-cluster span {
+  display: block;
+  text-align: center;
+  line-height: 1;
+}
+/* ADL clusters: translucent primary-blue disc with a solid core and blue count. */
+.pp-cluster {
+  background: rgba(4, 33, 188, 0.18);
+  border: 3px solid rgba(4, 33, 188, 0.28);
+  color: #0421bc;
+  box-shadow: none;
+}
+.pp-cluster-small {
+  width: 36px;
+  height: 36px;
+  font-size: 13px;
+}
+.pp-cluster-medium {
+  width: 42px;
+  height: 42px;
+  font-size: 14px;
+}
+.pp-cluster-large {
+  width: 50px;
+  height: 50px;
+  background: rgba(4, 33, 188, 0.28);
+  font-size: 15px;
+}
+/* Override default leaflet.markercluster styles */
+.marker-cluster-small,
+.marker-cluster-medium,
+.marker-cluster-large {
+  background-color: transparent !important;
+}
+.marker-cluster-small div,
+.marker-cluster-medium div,
+.marker-cluster-large div {
+  background-color: transparent !important;
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   MARKETING WEBSITE COMPONENTS - Professional Design System
+   ══════════════════════════════════════════════════════════════════ */
+
+@layer components {
+  /* ── Marketing buttons - Modern with gradient and lift effects ─── */
+  .mkt-btn-primary {
+    @apply relative inline-flex items-center justify-center gap-2.5 rounded-mkt bg-gradient-to-r from-brand-500 to-brand-600 px-7 py-3.5 text-[15px] font-semibold text-white shadow-mkt-md transition-all duration-300;
+  }
+  .mkt-btn-primary:hover {
+    @apply shadow-mkt-lg -translate-y-0.5;
+    background: linear-gradient(to right, #1F6AB1, #2B82D4);
+  }
+  .mkt-btn-primary:focus {
+    @apply outline-none ring-2 ring-brand-500/50 ring-offset-2;
+  }
+  .mkt-btn-primary:disabled {
+    @apply cursor-not-allowed opacity-50 transform-none;
+  }
+
+  .mkt-btn-secondary {
+    @apply relative inline-flex items-center justify-center gap-2.5 rounded-mkt border-2 border-brand-500/30 bg-transparent px-7 py-3.5 text-[15px] font-semibold text-brand-500 shadow-mkt-sm transition-all duration-300 backdrop-blur-sm;
+  }
+  .mkt-btn-secondary:hover {
+    @apply border-brand-500 bg-brand-50/50 shadow-mkt-md -translate-y-0.5;
+  }
+  .mkt-btn-secondary:focus {
+    @apply outline-none ring-2 ring-brand-500/30 ring-offset-2;
+  }
+
+  .mkt-btn-white {
+    @apply relative inline-flex items-center justify-center gap-2.5 rounded-mkt bg-white px-7 py-3.5 text-[16px] font-semibold text-ink-900 shadow-mkt-md transition-all duration-300;
+  }
+  .mkt-btn-white:hover {
+    @apply bg-surface-50 shadow-mkt-lg -translate-y-0.5;
+  }
+  .mkt-btn-white:focus {
+    @apply outline-none ring-2 ring-white/50 ring-offset-2 ring-offset-brand-700;
+  }
+
+  .mkt-btn-ghost {
+    @apply inline-flex items-center justify-center gap-2 rounded-mkt bg-transparent px-5 py-2.5 text-sm font-medium text-ink-600 transition-all duration-200;
+  }
+  .mkt-btn-ghost:hover {
+    @apply bg-surface-100 text-ink-900;
+  }
+
+  /* ── Marketing input (modern, refined) ─────────────────────────── */
+  .mkt-input {
+    @apply w-full rounded-mkt border border-surface-300 bg-white px-5 py-3.5 text-[16px] text-ink-900 placeholder:text-ink-400 transition-all duration-200;
+  }
+  .mkt-input:focus {
+    @apply border-brand-500 outline-none ring-4 ring-brand-500/10 bg-white;
+  }
+  .mkt-input:disabled {
+    @apply bg-surface-100 text-ink-500;
+  }
+
+  .mkt-textarea {
+    @apply mkt-input min-h-[140px] resize-y;
+  }
+
+  .mkt-select {
+    @apply mkt-input cursor-pointer appearance-none bg-no-repeat pr-12;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%23808080' stroke-width='2.5'><path d='m6 9 6 6 6-6'/></svg>");
+    background-position: right 16px center;
+  }
+
+  /* ── Marketing headings - Bold, confident typography ───────────── */
+  .mkt-heading-xl {
+    @apply text-4xl font-extrabold leading-[1.1] tracking-tight text-ink-900 md:text-5xl lg:text-6xl;
+    letter-spacing: -0.02em;
+  }
+
+  .mkt-heading-lg {
+    @apply text-3xl font-bold leading-[1.15] tracking-tight text-ink-900 md:text-4xl lg:text-5xl;
+    letter-spacing: -0.02em;
+  }
+
+  .mkt-heading-md {
+    @apply text-2xl font-bold leading-tight tracking-tight text-ink-900 md:text-3xl lg:text-4xl;
+    letter-spacing: -0.01em;
+  }
+
+  .mkt-heading-sm {
+    @apply text-xl font-semibold leading-tight text-ink-900 md:text-2xl;
+  }
+
+  /* ── Marketing body text ───────────────────────────────────────── */
+  .mkt-body {
+    @apply text-base leading-relaxed text-ink-500 md:text-lg;
+    line-height: 1.7;
+  }
+
+  .mkt-body-sm {
+    @apply text-sm leading-relaxed text-ink-500;
+    line-height: 1.65;
+  }
+
+  /* ── Marketing sections - Generous spacing ─────────────────────── */
+  .mkt-section {
+    @apply px-4 py-20 md:px-6 md:py-28 lg:py-32;
+  }
+
+  .mkt-section-dark {
+    @apply mkt-section relative overflow-hidden;
+    background: linear-gradient(135deg, #0A1928 0%, #0E3257 40%, #0A1928 100%);
+  }
+
+  .mkt-section-dark .mkt-heading-xl,
+  .mkt-section-dark .mkt-heading-lg,
+  .mkt-section-dark .mkt-heading-md,
+  .mkt-section-dark .mkt-heading-sm {
+    @apply text-white;
+  }
+
+  .mkt-section-dark .mkt-body,
+  .mkt-section-dark .mkt-body-sm {
+    @apply text-slate-300;
+  }
+
+  .mkt-container {
+    @apply mx-auto max-w-7xl px-4 md:px-6;
+  }
+
+  /* ── Marketing cards - Glass morphism + depth ──────────────────── */
+  .mkt-card {
+    @apply relative rounded-mkt-lg border border-surface-200/80 bg-white p-7 transition-all duration-300 md:p-8;
+    box-shadow: 0 4px 24px -4px rgba(0,0,0,0.06), 0 2px 8px -2px rgba(0,0,0,0.04);
+  }
+  .mkt-card:hover {
+    @apply border-surface-300 -translate-y-1;
+    box-shadow: 0 12px 40px -8px rgba(0,0,0,0.1), 0 4px 16px -4px rgba(0,0,0,0.06);
+  }
+
+  .mkt-card-feature {
+    @apply mkt-card flex flex-col items-start gap-5;
+  }
+
+  .mkt-card-pricing {
+    @apply mkt-card relative flex flex-col;
+  }
+
+  .mkt-card-pricing-popular {
+    @apply mkt-card-pricing border-2 border-brand-500;
+    box-shadow: 0 8px 32px -8px rgba(43,130,212,0.25), 0 4px 16px -4px rgba(0,0,0,0.08);
+  }
+
+  .mkt-card-industry {
+    @apply mkt-card cursor-pointer;
+  }
+  .mkt-card-industry:hover {
+    @apply border-brand-100;
+  }
+
+  /* Dark card variant for dark sections */
+  .mkt-card-dark {
+    @apply rounded-mkt-lg border border-white/10 bg-white/5 p-7 backdrop-blur-md transition-all duration-300 md:p-8;
+  }
+  .mkt-card-dark:hover {
+    @apply border-white/20 bg-white/10;
+  }
+
+  /* ── Feature icon container - More prominent ───────────────────── */
+  .mkt-icon-container {
+    @apply flex h-14 w-14 items-center justify-center rounded-mkt bg-gradient-to-br from-brand-50 to-brand-100 text-brand-500 shadow-mkt-sm transition-transform duration-300;
+  }
+  .mkt-card:hover .mkt-icon-container {
+    @apply scale-110;
+  }
+
+  .mkt-icon-container-dark {
+    @apply flex h-14 w-14 items-center justify-center rounded-mkt bg-gradient-to-br from-brand-500/20 to-brand-600/20 text-brand-400 shadow-lg shadow-brand-500/10;
+  }
+
+  /* ── Badges - Modern pill style ────────────────────────────────── */
+  .mkt-badge {
+    @apply inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-brand-50 to-brand-100 px-4 py-1.5 text-xs font-semibold text-brand-600 shadow-sm;
+  }
+
+  .mkt-badge-popular {
+    @apply absolute -top-4 left-1/2 -translate-x-1/2 rounded-full bg-gradient-to-r from-brand-500 to-brand-600 px-5 py-1.5 text-xs font-bold uppercase tracking-wider text-white shadow-mkt-md;
+  }
+
+  /* ── Navigation (marketing header) - Glass nav ─────────────────── */
+  .mkt-nav-link {
+    @apply text-sm font-medium text-ink-600 transition-all duration-200 hover:text-brand-500;
+  }
+
+  .mkt-nav-link-dark {
+    @apply text-sm font-medium text-slate-300 transition-all duration-200 hover:text-white;
+  }
+
+  /* ── Accordion (FAQ) - Refined styling ─────────────────────────── */
+  .mkt-accordion-item {
+    @apply border-b border-surface-200/80;
+  }
+
+  .mkt-accordion-trigger {
+    @apply flex w-full items-center justify-between py-6 text-left text-base font-semibold text-ink-900 transition-colors duration-200;
+  }
+  .mkt-accordion-trigger:hover {
+    @apply text-brand-500;
+  }
+
+  .mkt-accordion-content {
+    @apply overflow-hidden pb-6 text-ink-500 leading-relaxed;
+  }
+
+  /* ── Stats - Bold, impactful numbers ───────────────────────────── */
+  .mkt-stat {
+    @apply text-center;
+  }
+
+  .mkt-stat-value {
+    @apply text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-brand-500 to-brand-600 md:text-5xl;
+    letter-spacing: -0.02em;
+  }
+
+  .mkt-stat-label {
+    @apply mt-2 text-sm font-medium text-ink-500;
+  }
+
+  /* ── Testimonials - Quote styling ──────────────────────────────── */
+  .mkt-testimonial {
+    @apply mkt-card flex flex-col gap-5;
+  }
+
+  .mkt-testimonial-quote {
+    @apply text-lg text-ink-600 leading-relaxed;
+    font-style: normal;
+  }
+
+  .mkt-testimonial-author {
+    @apply flex items-center gap-4;
+  }
+
+  .mkt-testimonial-avatar {
+    @apply h-12 w-12 rounded-full bg-gradient-to-br from-brand-100 to-brand-200 ring-2 ring-white shadow-sm;
+  }
+
+  /* ── Price display - Prominent ─────────────────────────────────── */
+  .mkt-price {
+    @apply text-5xl font-extrabold text-ink-900;
+    letter-spacing: -0.02em;
+  }
+
+  .mkt-price-period {
+    @apply text-base font-normal text-ink-500;
+  }
+
+  /* ── Check list (pricing features) ─────────────────────────────── */
+  .mkt-checklist {
+    @apply space-y-4;
+  }
+
+  .mkt-checklist-item {
+    @apply flex items-center gap-3 text-[16px] text-ink-600;
+  }
+
+  .mkt-checklist-icon {
+    @apply h-5 w-5 flex-shrink-0 text-status-moving;
+  }
+
+  /* ── Footer - Professional ─────────────────────────────────────── */
+  .mkt-footer-link {
+    @apply text-sm text-slate-400 transition-colors duration-200 hover:text-white;
+  }
+
+  .mkt-footer-heading {
+    @apply mb-5 text-xs font-semibold uppercase tracking-widest text-slate-500;
+  }
+
+  /* ── Utility: Gradient text ────────────────────────────────────── */
+  .mkt-gradient-text {
+    @apply text-transparent bg-clip-text bg-gradient-to-r from-brand-400 to-accent-teal;
+  }
+
+  /* ── Utility: Glass effect ─────────────────────────────────────── */
+  .mkt-glass {
+    @apply bg-white/80 backdrop-blur-xl border border-white/20;
+  }
+
+  .mkt-glass-dark {
+    @apply bg-white/5 backdrop-blur-xl border border-white/10;
+  }
+
+  /* ══════════════════════════════════════════════════════════════════
+     GLASS UI SYSTEM - Frosted glass effects for dashboard
+     ══════════════════════════════════════════════════════════════════ */
+
+  /* Base glass panel - light frosted glass effect */
+  .glass {
+    background: rgba(255, 255, 255, 0.75);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08), inset 0 1px 0 0 rgba(255, 255, 255, 0.5);
+  }
+
+  .glass:hover {
+    background: rgba(255, 255, 255, 0.85);
+    border-color: rgba(255, 255, 255, 0.5);
+  }
+
+  /* Glass panel variant - stronger frosted effect */
+  .glass-panel {
+    background: rgba(255, 255, 255, 0.88);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.6);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1),
+                0 2px 8px rgba(0, 0, 0, 0.05),
+                inset 0 1px 0 0 rgba(255, 255, 255, 0.8);
+  }
+
+  /* Glass sidebar - for left sidebar panels */
+  .glass-sidebar {
+    background: rgba(255, 255, 255, 0.92);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-right: 1px solid rgba(200, 200, 200, 0.3);
+    box-shadow: 4px 0 24px rgba(0, 0, 0, 0.06);
+  }
+
+  /* Dark glass - for dark theme or dark overlays */
+  .glass-dark {
+    background: rgba(15, 39, 66, 0.85);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(100, 116, 139, 0.25);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3), inset 0 1px 0 0 rgba(255, 255, 255, 0.05);
+  }
+
+  .glass-dark:hover {
+    background: rgba(15, 39, 66, 0.92);
+    border-color: rgba(100, 116, 139, 0.35);
+  }
+
+  /* Glass button */
+  .glass-btn {
+    background: rgba(255, 255, 255, 0.8);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08), inset 0 1px 0 0 rgba(255, 255, 255, 0.6);
+    transition: all 0.2s ease;
+  }
+
+  .glass-btn:hover {
+    background: rgba(255, 255, 255, 0.95);
+    border-color: rgba(255, 255, 255, 0.7);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12), inset 0 1px 0 0 rgba(255, 255, 255, 0.8);
+    transform: translateY(-1px);
+  }
+
+  .glass-btn:active {
+    transform: translateY(0);
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+  }
+
+  /* Glass input */
+  .glass-input {
+    background: rgba(255, 255, 255, 0.7);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border: 1px solid rgba(200, 200, 200, 0.4);
+    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.05);
+    transition: all 0.2s ease;
+  }
+
+  .glass-input:focus {
+    background: rgba(255, 255, 255, 0.95);
+    border-color: rgba(2, 132, 199, 0.5);
+    box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.1), inset 0 1px 2px rgba(0, 0, 0, 0.02);
+    outline: none;
+  }
+
+  /* Glass card - elevated card with depth */
+  .glass-card {
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    border-radius: 12px;
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08),
+                0 1px 4px rgba(0, 0, 0, 0.04),
+                inset 0 1px 0 0 rgba(255, 255, 255, 0.6);
+    transition: all 0.3s ease;
+  }
+
+  .glass-card:hover {
+    background: rgba(255, 255, 255, 0.95);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12),
+                0 2px 8px rgba(0, 0, 0, 0.06),
+                inset 0 1px 0 0 rgba(255, 255, 255, 0.8);
+    transform: translateY(-2px);
+  }
+
+  /* Glass tooltip/popup */
+  .glass-tooltip {
+    background: rgba(15, 39, 66, 0.92);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(100, 116, 139, 0.2);
+    border-radius: 8px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25);
+  }
+
+  /* Glass chip/badge */
+  .glass-chip {
+    background: rgba(255, 255, 255, 0.6);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+    transition: all 0.15s ease;
+  }
+
+  .glass-chip:hover {
+    background: rgba(255, 255, 255, 0.85);
+    border-color: rgba(255, 255, 255, 0.6);
+  }
+
+  .glass-chip-active {
+    background: rgba(2, 132, 199, 0.15);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    border: 1px solid rgba(2, 132, 199, 0.3);
+    color: #0284C7;
+  }
+
+  /* Glass divider */
+  .glass-divider {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(200, 200, 200, 0.4), transparent);
+  }
+
+  /* Glass overlay - for modals and overlays */
+  .glass-overlay {
+    background: rgba(15, 39, 66, 0.4);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+  }
+
+  /* ── Utility: Glow effects ─────────────────────────────────────── */
+  .mkt-glow {
+    @apply relative;
+  }
+  .mkt-glow::before {
+    content: "";
+    @apply absolute -inset-4 bg-brand-500/20 blur-3xl -z-10 rounded-full opacity-60;
+  }
+}
+
+/* Unread-alarm bell (ADL-style, bottom-right): a short ring when the count changes. */
+@keyframes pp-bell-ring {
+  0%, 100% { transform: rotate(0); }
+  20% { transform: rotate(14deg); }
+  40% { transform: rotate(-12deg); }
+  60% { transform: rotate(8deg); }
+  80% { transform: rotate(-6deg); }
+}

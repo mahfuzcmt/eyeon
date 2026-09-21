@@ -1,0 +1,39 @@
+{
+  "expo": {
+    "name": "EyeOn",
+    "slug": "motolink",
+    "scheme": "motolink",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "backgroundColor": "#FFFFFF",
+      "resizeMode": "contain"
+    },
+    "assetBundlePatterns": ["**/*"],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.webinnovation.motolink",
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "EyeOn uses your location to center the map on where you are."
+      }
+    },
+    "android": {
+      "package": "com.webinnovation.motolink",
+      "permissions": ["ACCESS_FINE_LOCATION", "ACCESS_COARSE_LOCATION"]
+    },
+    "plugins": [
+      "expo-router",
+      "expo-secure-store",
+      [
+        "expo-location",
+        { "locationWhenInUsePermission": "EyeOn uses your location to center the map on where you are." }
+      ],
+      [
+        "expo-notifications",
+        { "color": "#E8900A" }
+      ]
+    ],
+    "experiments": { "typedRoutes": true }
+  }
+}

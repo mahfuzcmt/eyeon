@@ -1,0 +1,38 @@
+services:
+  postgres:
+    image: postgis/postgis:16-3.4
+    container_name: eyeon-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-pingpath}
+      POSTGRES_USER: ${POSTGRES_USER:-pingpath}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-pingpath_dev}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-pingpath} -d ${POSTGRES_DB:-pingpath}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: eyeon-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # backend and frontend services land here in Phase 1 / Phase 2 — see CLAUDE.md §15.1
+
+volumes:
+  postgres_data:
+  redis_data:

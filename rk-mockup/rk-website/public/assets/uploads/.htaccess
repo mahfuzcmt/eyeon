@@ -1,0 +1,39 @@
+# Protect uploads directory from PHP execution
+# This prevents uploaded files from being executed as PHP scripts
+
+# Disable PHP execution
+<FilesMatch "\.php$">
+    Order allow,deny
+    Deny from all
+</FilesMatch>
+
+# Alternative method using handler
+<IfModule mod_php.c>
+    php_flag engine off
+</IfModule>
+
+# Block potentially dangerous file types
+<FilesMatch "\.(php|phtml|php3|php4|php5|php7|phps|phar|cgi|pl|py|exe|sh|bat)$">
+    Order allow,deny
+    Deny from all
+</FilesMatch>
+
+# Allow only safe file types
+<FilesMatch "\.(jpg|jpeg|png|gif|webp|svg|pdf|doc|docx|xls|xlsx|txt)$">
+    Order deny,allow
+    Allow from all
+</FilesMatch>
+
+# Set proper content types
+AddType image/jpeg .jpg .jpeg
+AddType image/png .png
+AddType image/gif .gif
+AddType image/webp .webp
+AddType image/svg+xml .svg
+AddType application/pdf .pdf
+
+# Prevent directory listing
+Options -Indexes
+
+# Disable script execution
+Options -ExecCGI

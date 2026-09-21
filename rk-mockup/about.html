@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="bn" dir="ltr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>পরিচিতি - মো. রাশেদ খান</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: { 50: '#ECFDF5', 100: '#D1FAE5', 500: '#10B981', 600: '#059669', 700: '#047857', 900: '#064E3B' },
+                    },
+                    fontFamily: { bengali: ['Hind Siliguri', 'sans-serif'] }
+                }
+            }
+        }
+    </script>
+    <style>body { font-family: 'Hind Siliguri', sans-serif; }</style>
+</head>
+<body class="bg-gray-50 text-gray-900">
+
+    <!-- Header -->
+    <header class="bg-white shadow-sm sticky top-0 z-50">
+        <nav class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <a href="index.html" class="flex items-center space-x-2">
+                    <div class="w-10 h-10 rounded-full overflow-hidden border-2 border-primary-600">
+                        <img src="https://www.thedailystar.net/sites/default/files/styles/big_1/public/2026-07/rashed_khan.jpg?h=d1cb525d"
+                             alt="রাশেদ খান"
+                             class="w-full h-full object-cover"
+                             onerror="this.parentElement.innerHTML='<div class=\'w-full h-full bg-primary-600 flex items-center justify-center\'><span class=\'text-white font-bold text-sm\'>রখ</span></div>';">
+                    </div>
+                    <span class="font-semibold text-lg text-gray-900 hidden sm:block">রাশেদ খান</span>
+                </a>
+                <div class="hidden md:flex items-center space-x-6">
+                    <a href="index.html" class="text-gray-600 hover:text-primary-600 transition">হোম</a>
+                    <a href="about.html" class="text-primary-600 font-medium">পরিচিতি</a>
+                    <a href="news.html" class="text-gray-600 hover:text-primary-600 transition">সংবাদ</a>
+                    <a href="services.html" class="text-gray-600 hover:text-primary-600 transition">সেবা</a>
+                    <a href="projects.html" class="text-gray-600 hover:text-primary-600 transition">উন্নয়ন</a>
+                    <a href="contact.html" class="text-gray-600 hover:text-primary-600 transition">যোগাযোগ</a>
+                </div>
+                <button class="md:hidden p-2 text-gray-500" onclick="toggleMobileMenu()">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+                    </svg>
+                </button>
+            </div>
+            <div id="mobile-menu" class="hidden md:hidden pb-4">
+                <div class="flex flex-col space-y-2">
+                    <a href="index.html" class="px-3 py-2 text-gray-600 hover:bg-gray-100 rounded-md">হোম</a>
+                    <a href="about.html" class="px-3 py-2 text-primary-600 font-medium bg-primary-50 rounded-md">পরিচিতি</a>
+                    <a href="news.html" class="px-3 py-2 text-gray-600 hover:bg-gray-100 rounded-md">সংবাদ</a>
+                    <a href="services.html" class="px-3 py-2 text-gray-600 hover:bg-gray-100 rounded-md">সেবা</a>
+                    <a href="projects.html" class="px-3 py-2 text-gray-600 hover:bg-gray-100 rounded-md">উন্নয়ন</a>
+                    <a href="contact.html" class="px-3 py-2 text-gray-600 hover:bg-gray-100 rounded-md">যোগাযোগ</a>
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <!-- Hero Section -->
+    <section class="bg-gradient-to-br from-primary-900 to-primary-700 text-white py-16">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex flex-col md:flex-row items-center gap-8">
+                <div class="w-48 h-48 md:w-64 md:h-64 rounded-full border-4 border-white shadow-2xl overflow-hidden bg-primary-500 flex-shrink-0">
+                    <img src="https://www.thedailystar.net/sites/default/files/styles/big_1/public/2026-07/rashed_khan.jpg?h=d1cb525d"
+                         alt="মো. রাশেদ খান"
+                         class="w-full h-full object-cover"
+                         onerror="this.style.display='none'; this.parentElement.innerHTML='<div class=\'w-full h-full flex items-center justify-center text-white text-6xl font-bold\'>রখ</div>';">
+                </div>
+                <div class="text-center md:text-left">
+                    <h1 class="text-3xl md:text-4xl font-bold mb-2">মো. রাশেদ খান</h1>
+                    <p class="text-xl text-primary-100 mb-1">মাননীয় প্রধানমন্ত্রীর রাজনৈতিক সহকারী</p>
+                    <p class="text-primary-200">(সচিব পদমর্যাদা)</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Main Content -->
+    <main class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <!-- Bio Section -->
+        <section class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 md:p-8 mb-8">
+            <h2 class="text-2xl font-bold text-gray-900 mb-6 flex items-center">
+                <span class="w-1 h-8 bg-primary-600 rounded mr-3"></span>
+                সংক্ষিপ্ত পরিচিতি
+            </h2>
+            <div class="prose prose-lg max-w-none text-gray-600">
+                <p class="mb-4">
+                    মো. রাশেদ খান বাংলাদেশের একজন প্রখ্যাত তরুণ রাজনৈতিক নেতা। তিনি ২০১৮ সালের ঐতিহাসিক কোটা সংস্কার আন্দোলনের অন্যতম নেতা হিসেবে জাতীয় পরিচিতি লাভ করেন।
+                </p>
+                <p class="mb-4">
+                    ঢাকা বিশ্ববিদ্যালয়ের ছাত্র থাকাকালীন তিনি বাংলাদেশ ছাত্র অধিকার পরিষদের যুগ্ম-আহ্বায়ক হিসেবে দায়িত্ব পালন করেন। পরবর্তীতে গণ অধিকার পরিষদের সাধারণ সম্পাদক হিসেবে জনগণের অধিকার আদায়ে কাজ করেন।
+                </p>
+                <p>
+                    বর্তমানে তিনি মাননীয় প্রধানমন্ত্রীর রাজনৈতিক সহকারী (সচিব পদমর্যাদা) হিসেবে দায়িত্ব পালন করছেন।
+                </p>
+            </div>
+        </section>
+
+        <!-- Timeline -->
+        <section class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 md:p-8 mb-8">
+            <h2 class="text-2xl font-bold text-gray-900 mb-6 flex items-center">
+                <span class="w-1 h-8 bg-primary-600 rounded mr-3"></span>
+                রাজনৈতিক জীবন
+            </h2>
+
+            <div class="relative">
+                <!-- Timeline Line -->
+                <div class="absolute left-4 md:left-8 top-0 bottom-0 w-0.5 bg-gray-200"></div>
+
+                <!-- Timeline Items -->
+                <div class="space-y-8">
+                    <!-- 2026 -->
+                    <div class="relative flex gap-4 md:gap-8">
+                        <div class="w-8 h-8 md:w-16 md:h-16 bg-primary-600 rounded-full flex items-center justify-center flex-shrink-0 z-10">
+                            <span class="text-white font-bold text-sm md:text-lg">২০২৬</span>
+                        </div>
+                        <div class="bg-primary-50 rounded-xl p-4 md:p-6 flex-1 border border-primary-100">
+                            <h3 class="font-semibold text-lg text-gray-900 mb-2">মাননীয় প্রধানমন্ত্রীর রাজনৈতিক সহকারী</h3>
+                            <p class="text-gray-600">সচিব পদমর্যাদায় মাননীয় প্রধানমন্ত্রীর রাজনৈতিক সহকারী হিসেবে নিয়োগ পান। প্রধানমন্ত্রীর কার্যালয়ে যোগদান।</p>
+                        </div>
+                    </div>
+
+                    <!-- 2024 -->
+                    <div class="relative flex gap-4 md:gap-8">
+                        <div class="w-8 h-8 md:w-16 md:h-16 bg-gray-400 rounded-full flex items-center justify-center flex-shrink-0 z-10">
+                            <span class="text-white font-bold text-sm md:text-lg">২০২৪</span>
+                        </div>
+                        <div class="bg-gray-50 rounded-xl p-4 md:p-6 flex-1">
+                            <h3 class="font-semibold text-lg text-gray-900 mb-2">জাতীয় নির্বাচনে অংশগ্রহণ</h3>
+                            <p class="text-gray-600">ত্রয়োদশ জাতীয় সংসদ নির্বাচনে বিএনপির টিকেটে ঝিনাইদহ-৪ আসন থেকে প্রতিদ্বন্দ্বিতা করেন।</p>
+                        </div>
+                    </div>
+
+                    <!-- 2023 -->
+                    <div class="relative flex gap-4 md:gap-8">
+                        <div class="w-8 h-8 md:w-16 md:h-16 bg-gray-400 rounded-full flex items-center justify-center flex-shrink-0 z-10">
+                            <span class="text-white font-bold text-sm md:text-lg">২০২৩</span>
+                        </div>
+                        <div class="bg-gray-50 rounded-xl p-4 md:p-6 flex-1">
+                            <h3 class="font-semibold text-lg text-gray-900 mb-2">গণ অধিকার পরিষদের সাধারণ সম্পাদক</h3>
+                            <p class="text-gray-600">জনগণের অধিকার আদায়ে কাজ করতে গণ অধিকার পরিষদের সাধারণ সম্পাদক হিসেবে দায়িত্ব গ্রহণ।</p>
+                        </div>
+                    </div>
+
+                    <!-- 2018 -->
+                    <div class="relative flex gap-4 md:gap-8">
+                        <div class="w-8 h-8 md:w-16 md:h-16 bg-secondary-500 rounded-full flex items-center justify-center flex-shrink-0 z-10">
+                            <span class="text-white font-bold text-sm md:text-lg">২০১৮</span>
+                        </div>
+                        <div class="bg-secondary-50 rounded-xl p-4 md:p-6 flex-1 border border-secondary-100">
+                            <h3 class="font-semibold text-lg text-gray-900 mb-2">কোটা সংস্কার আন্দোলন</h3>
+                            <p class="text-gray-600">বাংলাদেশ ছাত্র অধিকার পরিষদের যুগ্ম-আহ্বায়ক হিসেবে ঐতিহাসিক কোটা সংস্কার আন্দোলনের নেতৃত্ব দেন। এই আন্দোলন জাতীয় ও আন্তর্জাতিক পরিচিতি এনে দেয়।</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Vision -->
+        <section class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 md:p-8 mb-8">
+            <h2 class="text-2xl font-bold text-gray-900 mb-6 flex items-center">
+                <span class="w-1 h-8 bg-primary-600 rounded mr-3"></span>
+                দৃষ্টিভঙ্গি ও লক্ষ্য
+            </h2>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="bg-primary-50 rounded-xl p-6 border border-primary-100">
+                    <div class="w-12 h-12 bg-primary-600 rounded-full flex items-center justify-center mb-4">
+                        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                        </svg>
+                    </div>
+                    <h3 class="font-semibold text-lg text-gray-900 mb-2">জনসেবা</h3>
+                    <p class="text-gray-600">জনগণের দোরগোড়ায় সেবা পৌঁছে দেওয়া এবং তাদের সমস্যা সমাধানে কাজ করা।</p>
+                </div>
+
+                <div class="bg-blue-50 rounded-xl p-6 border border-blue-100">
+                    <div class="w-12 h-12 bg-blue-600 rounded-full flex items-center justify-center mb-4">
+                        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
+                        </svg>
+                    </div>
+                    <h3 class="font-semibold text-lg text-gray-900 mb-2">শিক্ষা উন্নয়ন</h3>
+                    <p class="text-gray-600">মানসম্মত শিক্ষা নিশ্চিত করা এবং তরুণদের দক্ষ জনশক্তি হিসেবে গড়ে তোলা।</p>
+                </div>
+
+                <div class="bg-purple-50 rounded-xl p-6 border border-purple-100">
+                    <div class="w-12 h-12 bg-purple-600 rounded-full flex items-center justify-center mb-4">
+                        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
+                        </svg>
+                    </div>
+                    <h3 class="font-semibold text-lg text-gray-900 mb-2">কর্মসংস্থান সৃষ্টি</h3>
+                    <p class="text-gray-600">যুবকদের জন্য কর্মসংস্থানের সুযোগ তৈরি এবং উদ্যোক্তা উন্নয়ন।</p>
+                </div>
+
+                <div class="bg-green-50 rounded-xl p-6 border border-green-100">
+                    <div class="w-12 h-12 bg-green-600 rounded-full flex items-center justify-center mb-4">
+                        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
+                        </svg>
+                    </div>
+                    <h3 class="font-semibold text-lg text-gray-900 mb-2">অবকাঠামো উন্নয়ন</h3>
+                    <p class="text-gray-600">গ্রামীণ অবকাঠামো উন্নয়ন ও আধুনিক সুযোগ-সুবিধা নিশ্চিতকরণ।</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Contact CTA -->
+        <section class="bg-primary-600 rounded-2xl p-8 text-center text-white">
+            <h2 class="text-2xl font-bold mb-4">যোগাযোগ করুন</h2>
+            <p class="text-primary-100 mb-6">আপনার যেকোনো সমস্যা বা পরামর্শ আমাদের জানান</p>
+            <div class="flex flex-col sm:flex-row gap-4 justify-center">
+                <a href="complaint.html" class="inline-flex items-center justify-center px-6 py-3 bg-white text-primary-700 font-semibold rounded-lg hover:bg-primary-50 transition">
+                    অভিযোগ দাখিল করুন
+                </a>
+                <a href="contact.html" class="inline-flex items-center justify-center px-6 py-3 border-2 border-white text-white font-semibold rounded-lg hover:bg-white hover:text-primary-700 transition">
+                    যোগাযোগ
+                </a>
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-gray-900 text-white py-8 mt-12">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex flex-col md:flex-row justify-between items-center">
+                <div class="flex items-center space-x-3 mb-4 md:mb-0">
+                    <div class="w-10 h-10 rounded-full overflow-hidden border-2 border-primary-500">
+                        <img src="https://www.thedailystar.net/sites/default/files/styles/big_1/public/2026-07/rashed_khan.jpg?h=d1cb525d"
+                             alt="রাশেদ খান"
+                             class="w-full h-full object-cover"
+                             onerror="this.parentElement.innerHTML='<div class=\'w-full h-full bg-primary-600 flex items-center justify-center\'><span class=\'text-white font-bold text-sm\'>রখ</span></div>';">
+                    </div>
+                    <span class="font-semibold">মো. রাশেদ খান</span>
+                </div>
+                <p class="text-gray-400 text-sm">&copy; ২০২৬ সর্বস্বত্ব সংরক্ষিত</p>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        function toggleMobileMenu() {
+            const menu = document.getElementById('mobile-menu');
+            menu.classList.toggle('hidden');
+        }
+    </script>
+</body>
+</html>

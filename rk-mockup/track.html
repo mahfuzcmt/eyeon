@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="bn" dir="ltr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>অভিযোগ ট্র্যাক - মো. রাশেদ খান</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: { 50: '#ECFDF5', 100: '#D1FAE5', 500: '#10B981', 600: '#059669', 700: '#047857', 900: '#064E3B' },
+                    },
+                    fontFamily: { bengali: ['Hind Siliguri', 'sans-serif'] }
+                }
+            }
+        }
+    </script>
+    <style>body { font-family: 'Hind Siliguri', sans-serif; }</style>
+</head>
+<body class="bg-gray-50 text-gray-900">
+
+    <!-- Header -->
+    <header class="bg-white shadow-sm sticky top-0 z-50">
+        <nav class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <a href="index.html" class="flex items-center space-x-2">
+                    <div class="w-10 h-10 rounded-full overflow-hidden border-2 border-primary-600">
+                        <img src="https://www.thedailystar.net/sites/default/files/styles/big_1/public/2026-07/rashed_khan.jpg?h=d1cb525d"
+                             alt="রাশেদ খান"
+                             class="w-full h-full object-cover"
+                             onerror="this.parentElement.innerHTML='<div class=\'w-full h-full bg-primary-600 flex items-center justify-center\'><span class=\'text-white font-bold text-sm\'>রখ</span></div>';">
+                    </div>
+                    <span class="font-semibold text-lg text-gray-900 hidden sm:block">রাশেদ খান</span>
+                </a>
+                <!-- Desktop Navigation -->
+                <div class="hidden md:flex items-center space-x-6">
+                    <a href="index.html" class="text-gray-600 hover:text-primary-600">হোম</a>
+                    <a href="about.html" class="text-gray-600 hover:text-primary-600">পরিচিতি</a>
+                    <a href="media.html" class="text-gray-600 hover:text-primary-600">সংবাদ</a>
+                    <a href="services.html" class="text-primary-600 font-medium">সেবা</a>
+                    <a href="projects.html" class="text-gray-600 hover:text-primary-600">উন্নয়ন</a>
+                    <a href="contact.html" class="text-gray-600 hover:text-primary-600">যোগাযোগ</a>
+                </div>
+                <!-- Mobile Menu Button -->
+                <button class="md:hidden p-2 text-gray-500" onclick="toggleMobileMenu()">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+                    </svg>
+                </button>
+            </div>
+            <!-- Mobile Menu -->
+            <div id="mobile-menu" class="hidden md:hidden border-t border-gray-100 py-4">
+                <div class="flex flex-col space-y-3">
+                    <a href="index.html" class="text-gray-600 hover:text-primary-600 px-2 py-1">হোম</a>
+                    <a href="about.html" class="text-gray-600 hover:text-primary-600 px-2 py-1">পরিচিতি</a>
+                    <a href="media.html" class="text-gray-600 hover:text-primary-600 px-2 py-1">সংবাদ</a>
+                    <a href="services.html" class="text-primary-600 font-medium px-2 py-1">সেবা</a>
+                    <a href="projects.html" class="text-gray-600 hover:text-primary-600 px-2 py-1">উন্নয়ন</a>
+                    <a href="contact.html" class="text-gray-600 hover:text-primary-600 px-2 py-1">যোগাযোগ</a>
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <!-- Main Content -->
+    <main class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <!-- Search Box -->
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 md:p-8 mb-8">
+            <h1 class="text-2xl md:text-3xl font-bold text-gray-900 mb-2">অভিযোগ ট্র্যাক করুন</h1>
+            <p class="text-gray-600 mb-6">আপনার টিকেট নম্বর দিয়ে অভিযোগের বর্তমান অবস্থা দেখুন</p>
+
+            <form class="flex flex-col sm:flex-row gap-3">
+                <div class="flex-1">
+                    <input type="text" placeholder="টিকেট নম্বর লিখুন (যেমন: RK-2026-00234)"
+                           class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-lg"
+                           value="RK-2026-00234">
+                </div>
+                <button type="submit" class="inline-flex items-center justify-center px-6 py-3 bg-primary-600 text-white font-semibold rounded-lg hover:bg-primary-700 transition">
+                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                    </svg>
+                    অনুসন্ধান
+                </button>
+            </form>
+        </div>
+
+        <!-- Complaint Details (Demo) -->
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 md:p-8">
+            <!-- Header -->
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6 pb-6 border-b">
+                <div>
+                    <h2 class="text-xl font-bold text-gray-900">টিকেট: RK-2026-00234</h2>
+                    <p class="text-gray-500 text-sm mt-1">দাখিল: ২৯ আগস্ট ২০২৬, সকাল ১০:৩০</p>
+                </div>
+                <div class="inline-flex items-center px-4 py-2 bg-yellow-100 text-yellow-800 rounded-full font-medium">
+                    <span class="w-2 h-2 bg-yellow-500 rounded-full mr-2 animate-pulse"></span>
+                    পর্যালোচনাধীন
+                </div>
+            </div>
+
+            <!-- Progress Steps -->
+            <div class="mb-8">
+                <div class="flex items-center justify-between relative">
+                    <!-- Step 1 - Complete -->
+                    <div class="flex flex-col items-center z-10">
+                        <div class="w-10 h-10 bg-primary-600 rounded-full flex items-center justify-center">
+                            <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                            </svg>
+                        </div>
+                        <span class="text-xs text-gray-600 mt-2 text-center">দাখিল</span>
+                    </div>
+
+                    <!-- Line 1 -->
+                    <div class="flex-1 h-1 bg-primary-600 mx-2"></div>
+
+                    <!-- Step 2 - Active -->
+                    <div class="flex flex-col items-center z-10">
+                        <div class="w-10 h-10 bg-yellow-500 rounded-full flex items-center justify-center">
+                            <div class="w-3 h-3 bg-white rounded-full"></div>
+                        </div>
+                        <span class="text-xs text-yellow-700 mt-2 text-center font-medium">পর্যালোচনা</span>
+                    </div>
+
+                    <!-- Line 2 -->
+                    <div class="flex-1 h-1 bg-gray-200 mx-2"></div>
+
+                    <!-- Step 3 -->
+                    <div class="flex flex-col items-center z-10">
+                        <div class="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center">
+                            <span class="text-gray-500 font-semibold">৩</span>
+                        </div>
+                        <span class="text-xs text-gray-500 mt-2 text-center">কার্যক্রম</span>
+                    </div>
+
+                    <!-- Line 3 -->
+                    <div class="flex-1 h-1 bg-gray-200 mx-2"></div>
+
+                    <!-- Step 4 -->
+                    <div class="flex flex-col items-center z-10">
+                        <div class="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center">
+                            <span class="text-gray-500 font-semibold">৪</span>
+                        </div>
+                        <span class="text-xs text-gray-500 mt-2 text-center">সমাধান</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Complaint Info -->
+            <div class="bg-gray-50 rounded-xl p-5 mb-8">
+                <h3 class="font-semibold text-gray-900 mb-4">অভিযোগের বিবরণ</h3>
+                <div class="space-y-3">
+                    <div class="flex flex-col sm:flex-row sm:items-center py-2 border-b border-gray-200">
+                        <span class="text-gray-500 sm:w-1/3">বিভাগ:</span>
+                        <span class="text-gray-900 font-medium">অবকাঠামো > সড়ক ও সেতু</span>
+                    </div>
+                    <div class="flex flex-col sm:flex-row sm:items-center py-2 border-b border-gray-200">
+                        <span class="text-gray-500 sm:w-1/3">বিষয়:</span>
+                        <span class="text-gray-900 font-medium">রাস্তার বেহাল দশা</span>
+                    </div>
+                    <div class="flex flex-col sm:flex-row sm:items-center py-2 border-b border-gray-200">
+                        <span class="text-gray-500 sm:w-1/3">অবস্থান:</span>
+                        <span class="text-gray-900 font-medium">XYZ গ্রাম, ABC ইউনিয়ন, ঝিনাইদহ সদর</span>
+                    </div>
+                    <div class="flex flex-col sm:flex-row py-2">
+                        <span class="text-gray-500 sm:w-1/3">বিবরণ:</span>
+                        <span class="text-gray-900">আমাদের গ্রামের প্রধান রাস্তা বর্ষায় একেবারে চলাচলের অনুপযোগী হয়ে পড়ে। রাস্তায় বড় বড় গর্ত আছে যা যানবাহন ও পথচারীদের জন্য বিপজ্জনক।</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Activity Timeline -->
+            <div>
+                <h3 class="font-semibold text-gray-900 mb-4 flex items-center">
+                    <svg class="w-5 h-5 mr-2 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    কার্যক্রম লগ
+                </h3>
+
+                <div class="space-y-4">
+                    <!-- Activity 1 -->
+                    <div class="flex gap-4">
+                        <div class="flex flex-col items-center">
+                            <div class="w-3 h-3 bg-yellow-500 rounded-full"></div>
+                            <div class="w-0.5 h-full bg-gray-200"></div>
+                        </div>
+                        <div class="pb-4">
+                            <div class="flex items-center gap-2 mb-1">
+                                <span class="text-sm text-gray-500">২৯ আগস্ট ২০২৬, ২:৩০ PM</span>
+                                <span class="px-2 py-0.5 bg-yellow-100 text-yellow-700 text-xs rounded-full">পর্যালোচনাধীন</span>
+                            </div>
+                            <p class="text-gray-700">আপনার অভিযোগ সংশ্লিষ্ট বিভাগে পাঠানো হয়েছে।</p>
+                            <p class="text-sm text-gray-500 mt-1">দায়িত্বপ্রাপ্ত: স্থানীয় সরকার বিভাগ</p>
+                        </div>
+                    </div>
+
+                    <!-- Activity 2 -->
+                    <div class="flex gap-4">
+                        <div class="flex flex-col items-center">
+                            <div class="w-3 h-3 bg-primary-600 rounded-full"></div>
+                        </div>
+                        <div>
+                            <div class="flex items-center gap-2 mb-1">
+                                <span class="text-sm text-gray-500">২৯ আগস্ট ২০২৬, ১০:৩০ AM</span>
+                                <span class="px-2 py-0.5 bg-primary-100 text-primary-700 text-xs rounded-full">দাখিল</span>
+                            </div>
+                            <p class="text-gray-700">আপনার অভিযোগ সফলভাবে গৃহীত হয়েছে।</p>
+                            <p class="text-sm text-gray-500 mt-1">SMS পাঠানো হয়েছে: 01XXXXXXXXX</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="flex flex-col sm:flex-row gap-3 mt-8 pt-6 border-t">
+                <button class="flex-1 inline-flex items-center justify-center px-4 py-2 border border-gray-300 text-gray-700 font-medium rounded-lg hover:bg-gray-50 transition">
+                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path>
+                    </svg>
+                    প্রিন্ট করুন
+                </button>
+                <a href="contact.html" class="flex-1 inline-flex items-center justify-center px-4 py-2 bg-primary-600 text-white font-medium rounded-lg hover:bg-primary-700 transition">
+                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path>
+                    </svg>
+                    যোগাযোগ করুন
+                </a>
+            </div>
+        </div>
+
+        <!-- New Complaint Link -->
+        <div class="mt-6 text-center">
+            <p class="text-gray-600">
+                নতুন অভিযোগ দাখিল করতে চান?
+                <a href="complaint.html" class="text-primary-600 font-medium hover:underline">এখানে ক্লিক করুন</a>
+            </p>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-gray-900 text-white py-8 mt-12">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex flex-col md:flex-row justify-between items-center">
+                <div class="flex items-center space-x-3 mb-4 md:mb-0">
+                    <div class="w-10 h-10 rounded-full overflow-hidden border-2 border-primary-500">
+                        <img src="https://www.thedailystar.net/sites/default/files/styles/big_1/public/2026-07/rashed_khan.jpg?h=d1cb525d"
+                             alt="রাশেদ খান"
+                             class="w-full h-full object-cover"
+                             onerror="this.parentElement.innerHTML='<div class=\'w-full h-full bg-primary-600 flex items-center justify-center\'><span class=\'text-white font-bold text-sm\'>রখ</span></div>';">
+                    </div>
+                    <span class="font-semibold">মো. রাশেদ খান</span>
+                </div>
+                <p class="text-gray-400 text-sm">&copy; ২০২৬ সর্বস্বত্ব সংরক্ষিত</p>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        function toggleMobileMenu() {
+            const menu = document.getElementById('mobile-menu');
+            menu.classList.toggle('hidden');
+        }
+    </script>
+</body>
+</html>

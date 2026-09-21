@@ -1,0 +1,67 @@
+# Rashed Khan Admin Panel - Apache Configuration
+# Additional security for admin area
+
+# Enable mod_rewrite
+RewriteEngine On
+RewriteBase /admin/
+
+# Prevent directory listing
+Options -Indexes
+
+# Block access to include files directly
+<FilesMatch "^(header|sidebar|footer)\.php$">
+    Order allow,deny
+    Deny from all
+</FilesMatch>
+
+# Protect sensitive files
+<FilesMatch "^\.">
+    Order allow,deny
+    Deny from all
+</FilesMatch>
+
+# Security headers
+<IfModule mod_headers.c>
+    Header set X-Content-Type-Options "nosniff"
+    Header set X-Frame-Options "DENY"
+    Header set X-XSS-Protection "1; mode=block"
+    Header set Referrer-Policy "strict-origin-when-cross-origin"
+    Header set Content-Security-Policy "frame-ancestors 'none'"
+</IfModule>
+
+# Character encoding
+AddDefaultCharset UTF-8
+
+# Redirect to login if not authenticated (handled by PHP, but extra layer)
+# RewriteCond %{REQUEST_URI} !^/admin/login\.php
+# RewriteCond %{REQUEST_URI} !^/admin/assets/
+# Check session via PHP instead
+
+# Optional: IP restriction (uncomment and add your IP for extra security)
+# <RequireAll>
+#     Require ip 192.168.1.0/24
+#     Require ip 203.0.113.0/24
+# </RequireAll>
+
+# Rate limiting for login page (if mod_evasive is available)
+# <IfModule mod_evasive20.c>
+#     DOSHashTableSize 3097
+#     DOSPageCount 5
+#     DOSSiteCount 100
+#     DOSPageInterval 1
+#     DOSSiteInterval 1
+#     DOSBlockingPeriod 60
+# </IfModule>
+
+# PHP settings for admin area
+php_value session.cookie_httponly 1
+php_value session.cookie_secure 0
+php_value session.use_only_cookies 1
+php_value session.use_strict_mode 1
+
+# Increase limits for admin operations
+php_value upload_max_filesize 20M
+php_value post_max_size 25M
+php_value max_execution_time 120
+php_value max_input_time 120
+php_value memory_limit 256M

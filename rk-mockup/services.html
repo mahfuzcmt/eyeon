@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="bn" dir="ltr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>নাগরিক সেবা - মো. রাশেদ খান</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: { 50: '#ECFDF5', 100: '#D1FAE5', 500: '#10B981', 600: '#059669', 700: '#047857', 900: '#064E3B' },
+                        secondary: { 100: '#FEF3C7', 500: '#F59E0B', 700: '#B45309' }
+                    },
+                    fontFamily: { bengali: ['Hind Siliguri', 'sans-serif'] }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { font-family: 'Hind Siliguri', sans-serif; }
+        .card-hover { transition: all 0.3s ease; }
+        .card-hover:hover { transform: translateY(-4px); box-shadow: 0 12px 24px -8px rgba(0, 0, 0, 0.15); }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-900">
+
+    <!-- Header -->
+    <header class="bg-white shadow-sm sticky top-0 z-50">
+        <nav class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <a href="index.html" class="flex items-center space-x-2">
+                    <div class="w-10 h-10 rounded-full overflow-hidden border-2 border-primary-600">
+                        <img src="https://www.thedailystar.net/sites/default/files/styles/big_1/public/2026-07/rashed_khan.jpg?h=d1cb525d"
+                             alt="রাশেদ খান"
+                             class="w-full h-full object-cover"
+                             onerror="this.parentElement.innerHTML='<div class=\'w-full h-full bg-primary-600 flex items-center justify-center\'><span class=\'text-white font-bold text-sm\'>রখ</span></div>';">
+                    </div>
+                    <span class="font-semibold text-lg text-gray-900 hidden sm:block">রাশেদ খান</span>
+                </a>
+                <!-- Desktop Navigation -->
+                <div class="hidden md:flex items-center space-x-6">
+                    <a href="index.html" class="text-gray-600 hover:text-primary-600">হোম</a>
+                    <a href="about.html" class="text-gray-600 hover:text-primary-600">পরিচিতি</a>
+                    <a href="news.html" class="text-gray-600 hover:text-primary-600">সংবাদ</a>
+                    <a href="services.html" class="text-primary-600 font-medium">সেবা</a>
+                    <a href="projects.html" class="text-gray-600 hover:text-primary-600">উন্নয়ন</a>
+                    <a href="contact.html" class="text-gray-600 hover:text-primary-600">যোগাযোগ</a>
+                </div>
+                <!-- Mobile Menu Button -->
+                <button class="md:hidden p-2 text-gray-500" onclick="toggleMobileMenu()">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+                    </svg>
+                </button>
+            </div>
+            <!-- Mobile Menu -->
+            <div id="mobile-menu" class="hidden md:hidden border-t border-gray-100 py-4">
+                <div class="flex flex-col space-y-3">
+                    <a href="index.html" class="text-gray-600 hover:text-primary-600 px-2 py-1">হোম</a>
+                    <a href="about.html" class="text-gray-600 hover:text-primary-600 px-2 py-1">পরিচিতি</a>
+                    <a href="news.html" class="text-gray-600 hover:text-primary-600 px-2 py-1">সংবাদ</a>
+                    <a href="services.html" class="text-primary-600 font-medium px-2 py-1">সেবা</a>
+                    <a href="projects.html" class="text-gray-600 hover:text-primary-600 px-2 py-1">উন্নয়ন</a>
+                    <a href="contact.html" class="text-gray-600 hover:text-primary-600 px-2 py-1">যোগাযোগ</a>
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <!-- Page Header -->
+    <section class="bg-gradient-to-br from-primary-900 to-primary-700 text-white py-12">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <h1 class="text-3xl md:text-4xl font-bold mb-2">নাগরিক সেবা</h1>
+            <p class="text-primary-100">আপনার সমস্যা সমাধানে আমরা সদা প্রস্তুত</p>
+        </div>
+    </section>
+
+    <!-- Services Content -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+
+        <!-- Main Services -->
+        <section class="mb-12">
+            <h2 class="text-xl font-bold text-gray-900 mb-6 flex items-center">
+                <span class="w-1 h-6 bg-primary-600 rounded mr-3"></span>
+                প্রধান সেবাসমূহ
+            </h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+
+                <!-- Service 1: Complaint -->
+                <a href="complaint.html" class="card-hover bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+                    <div class="w-16 h-16 bg-primary-100 rounded-2xl flex items-center justify-center mb-4">
+                        <svg class="w-8 h-8 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                        </svg>
+                    </div>
+                    <h3 class="text-xl font-semibold text-gray-900 mb-2">অভিযোগ দাখিল</h3>
+                    <p class="text-gray-600 mb-4">যেকোনো সমস্যা বা অভিযোগ সরাসরি আমাদের কাছে জানান। আমরা দ্রুত সমাধানের চেষ্টা করব।</p>
+                    <span class="inline-flex items-center text-primary-600 font-medium">
+                        অভিযোগ করুন
+                        <svg class="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                        </svg>
+                    </span>
+                </a>
+
+                <!-- Service 2: Track Complaint -->
+                <a href="track.html" class="card-hover bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+                    <div class="w-16 h-16 bg-blue-100 rounded-2xl flex items-center justify-center mb-4">
+                        <svg class="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                        </svg>
+                    </div>
+                    <h3 class="text-xl font-semibold text-gray-900 mb-2">অভিযোগ ট্র্যাক</h3>
+                    <p class="text-gray-600 mb-4">আপনার দাখিলকৃত অভিযোগের বর্তমান অবস্থা জানতে টিকেট নম্বর দিয়ে ট্র্যাক করুন।</p>
+                    <span class="inline-flex items-center text-blue-600 font-medium">
+                        ট্র্যাক করুন
+                        <svg class="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                        </svg>
+                    </span>
+                </a>
+
+                <!-- Service 3: Appointment -->
+                <a href="appointment.html" class="card-hover bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+                    <div class="w-16 h-16 bg-secondary-100 rounded-2xl flex items-center justify-center mb-4">
+                        <svg class="w-8 h-8 text-secondary-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                        </svg>
+                    </div>
+                    <h3 class="text-xl font-semibold text-gray-900 mb-2">সাক্ষাৎকার বুকিং</h3>
+                    <p class="text-gray-600 mb-4">সরাসরি সাক্ষাৎকারের জন্য আপনার সুবিধামত সময় নির্ধারণ করুন।</p>
+                    <span class="inline-flex items-center text-secondary-500 font-medium">
+                        সময় নিন
+                        <svg class="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                        </svg>
+                    </span>
+                </a>
+
+                <!-- Service 4: Contact -->
+                <a href="contact.html" class="card-hover bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+                    <div class="w-16 h-16 bg-purple-100 rounded-2xl flex items-center justify-center mb-4">
+                        <svg class="w-8 h-8 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"></path>
+                        </svg>
+                    </div>
+                    <h3 class="text-xl font-semibold text-gray-900 mb-2">যোগাযোগ</h3>
+                    <p class="text-gray-600 mb-4">অফিসে সরাসরি যোগাযোগ করুন বা বার্তা পাঠান।</p>
+                    <span class="inline-flex items-center text-purple-600 font-medium">
+                        যোগাযোগ করুন
+                        <svg class="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                        </svg>
+                    </span>
+                </a>
+
+                <!-- Service 5: Development Projects -->
+                <a href="projects.html" class="card-hover bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+                    <div class="w-16 h-16 bg-green-100 rounded-2xl flex items-center justify-center mb-4">
+                        <svg class="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                        </svg>
+                    </div>
+                    <h3 class="text-xl font-semibold text-gray-900 mb-2">উন্নয়ন ট্র্যাকার</h3>
+                    <p class="text-gray-600 mb-4">এলাকার সকল উন্নয়ন প্রকল্পের অগ্রগতি দেখুন।</p>
+                    <span class="inline-flex items-center text-green-600 font-medium">
+                        দেখুন
+                        <svg class="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                        </svg>
+                    </span>
+                </a>
+
+                <!-- Service 6: Media -->
+                <a href="media.html" class="card-hover bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+                    <div class="w-16 h-16 bg-red-100 rounded-2xl flex items-center justify-center mb-4">
+                        <svg class="w-8 h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                    </div>
+                    <h3 class="text-xl font-semibold text-gray-900 mb-2">মিডিয়া গ্যালারি</h3>
+                    <p class="text-gray-600 mb-4">ভিডিও, সাক্ষাৎকার এবং ছবি দেখুন।</p>
+                    <span class="inline-flex items-center text-red-600 font-medium">
+                        দেখুন
+                        <svg class="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                        </svg>
+                    </span>
+                </a>
+
+            </div>
+        </section>
+
+        <!-- How it works -->
+        <section class="mb-12">
+            <h2 class="text-xl font-bold text-gray-900 mb-6 flex items-center">
+                <span class="w-1 h-6 bg-primary-600 rounded mr-3"></span>
+                কিভাবে কাজ করে
+            </h2>
+            <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 md:p-8">
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+                    <!-- Step 1 -->
+                    <div class="text-center">
+                        <div class="w-12 h-12 bg-primary-600 text-white rounded-full flex items-center justify-center mx-auto mb-4 text-xl font-bold">১</div>
+                        <h3 class="font-semibold text-gray-900 mb-2">অভিযোগ দাখিল</h3>
+                        <p class="text-gray-600 text-sm">আপনার সমস্যার বিস্তারিত লিখে অভিযোগ দাখিল করুন</p>
+                    </div>
+                    <!-- Step 2 -->
+                    <div class="text-center">
+                        <div class="w-12 h-12 bg-primary-600 text-white rounded-full flex items-center justify-center mx-auto mb-4 text-xl font-bold">২</div>
+                        <h3 class="font-semibold text-gray-900 mb-2">টিকেট নম্বর</h3>
+                        <p class="text-gray-600 text-sm">একটি ইউনিক টিকেট নম্বর পাবেন যা দিয়ে ট্র্যাক করতে পারবেন</p>
+                    </div>
+                    <!-- Step 3 -->
+                    <div class="text-center">
+                        <div class="w-12 h-12 bg-primary-600 text-white rounded-full flex items-center justify-center mx-auto mb-4 text-xl font-bold">৩</div>
+                        <h3 class="font-semibold text-gray-900 mb-2">পর্যালোচনা</h3>
+                        <p class="text-gray-600 text-sm">আমাদের টিম অভিযোগ পর্যালোচনা করে প্রয়োজনীয় ব্যবস্থা নেবে</p>
+                    </div>
+                    <!-- Step 4 -->
+                    <div class="text-center">
+                        <div class="w-12 h-12 bg-primary-600 text-white rounded-full flex items-center justify-center mx-auto mb-4 text-xl font-bold">৪</div>
+                        <h3 class="font-semibold text-gray-900 mb-2">সমাধান</h3>
+                        <p class="text-gray-600 text-sm">সমস্যার সমাধান হলে আপনাকে জানানো হবে</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Stats -->
+        <section>
+            <h2 class="text-xl font-bold text-gray-900 mb-6 flex items-center">
+                <span class="w-1 h-6 bg-primary-600 rounded mr-3"></span>
+                আমাদের সেবার পরিসংখ্যান
+            </h2>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div class="bg-white rounded-xl p-6 text-center shadow-sm border border-gray-100">
+                    <span class="text-3xl md:text-4xl font-bold text-primary-600">১২৫০+</span>
+                    <p class="text-gray-600 mt-2">অভিযোগ সমাধান</p>
+                </div>
+                <div class="bg-white rounded-xl p-6 text-center shadow-sm border border-gray-100">
+                    <span class="text-3xl md:text-4xl font-bold text-blue-600">৮৫০+</span>
+                    <p class="text-gray-600 mt-2">সাক্ষাৎকার সম্পন্ন</p>
+                </div>
+                <div class="bg-white rounded-xl p-6 text-center shadow-sm border border-gray-100">
+                    <span class="text-3xl md:text-4xl font-bold text-green-600">৯৫%</span>
+                    <p class="text-gray-600 mt-2">সন্তুষ্টির হার</p>
+                </div>
+                <div class="bg-white rounded-xl p-6 text-center shadow-sm border border-gray-100">
+                    <span class="text-3xl md:text-4xl font-bold text-secondary-500">২৪ ঘন্টা</span>
+                    <p class="text-gray-600 mt-2">গড় সাড়া সময়</p>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-gray-900 text-white py-8 mt-12">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex flex-col md:flex-row justify-between items-center">
+                <div class="flex items-center space-x-3 mb-4 md:mb-0">
+                    <div class="w-10 h-10 rounded-full overflow-hidden border-2 border-primary-500">
+                        <img src="https://www.thedailystar.net/sites/default/files/styles/big_1/public/2026-07/rashed_khan.jpg?h=d1cb525d"
+                             alt="রাশেদ খান"
+                             class="w-full h-full object-cover"
+                             onerror="this.parentElement.innerHTML='<div class=\'w-full h-full bg-primary-600 flex items-center justify-center\'><span class=\'text-white font-bold text-sm\'>রখ</span></div>';">
+                    </div>
+                    <span class="font-semibold">মো. রাশেদ খান</span>
+                </div>
+                <p class="text-gray-400 text-sm">&copy; ২০২৬ সর্বস্বত্ব সংরক্ষিত</p>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        function toggleMobileMenu() {
+            const menu = document.getElementById('mobile-menu');
+            menu.classList.toggle('hidden');
+        }
+    </script>
+</body>
+</html>

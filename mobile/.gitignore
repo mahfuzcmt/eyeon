@@ -1,0 +1,12 @@
+node_modules/
+.expo/
+dist/
+web-build/
+*.log
+.env
+expo-env.d.ts
+*.apk
+*.aab
+android/app/build/
+android/.gradle/
+android/local.properties

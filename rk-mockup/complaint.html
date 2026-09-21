@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="bn" dir="ltr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>অভিযোগ দাখিল - মো. রাশেদ খান</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: { 50: '#ECFDF5', 100: '#D1FAE5', 500: '#10B981', 600: '#059669', 700: '#047857', 900: '#064E3B' },
+                        secondary: { 100: '#FEF3C7', 500: '#F59E0B', 700: '#B45309' }
+                    },
+                    fontFamily: { bengali: ['Hind Siliguri', 'sans-serif'] }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { font-family: 'Hind Siliguri', sans-serif; }
+        .step-active { background: #059669; color: white; }
+        .step-complete { background: #10B981; color: white; }
+        .step-inactive { background: #E5E7EB; color: #6B7280; }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-900">
+
+    <!-- Header -->
+    <header class="bg-white shadow-sm sticky top-0 z-50">
+        <nav class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <a href="index.html" class="flex items-center space-x-2">
+                    <div class="w-10 h-10 rounded-full overflow-hidden border-2 border-primary-600">
+                        <img src="https://www.thedailystar.net/sites/default/files/styles/big_1/public/2026-07/rashed_khan.jpg?h=d1cb525d"
+                             alt="রাশেদ খান"
+                             class="w-full h-full object-cover"
+                             onerror="this.parentElement.innerHTML='<div class=\'w-full h-full bg-primary-600 flex items-center justify-center\'><span class=\'text-white font-bold text-sm\'>রখ</span></div>';">
+                    </div>
+                    <span class="font-semibold text-lg text-gray-900 hidden sm:block">রাশেদ খান</span>
+                </a>
+                <div class="hidden md:flex items-center space-x-6">
+                    <a href="index.html" class="text-gray-600 hover:text-primary-600 transition">হোম</a>
+                    <a href="about.html" class="text-gray-600 hover:text-primary-600 transition">পরিচিতি</a>
+                    <a href="news.html" class="text-gray-600 hover:text-primary-600 transition">সংবাদ</a>
+                    <a href="services.html" class="text-primary-600 font-medium">সেবা</a>
+                    <a href="projects.html" class="text-gray-600 hover:text-primary-600 transition">উন্নয়ন</a>
+                    <a href="contact.html" class="text-gray-600 hover:text-primary-600 transition">যোগাযোগ</a>
+                </div>
+                <button class="md:hidden p-2 text-gray-500" onclick="toggleMobileMenu()">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+                    </svg>
+                </button>
+            </div>
+            <div id="mobile-menu" class="hidden md:hidden pb-4">
+                <div class="flex flex-col space-y-2">
+                    <a href="index.html" class="px-3 py-2 text-gray-600 hover:bg-gray-100 rounded-md">হোম</a>
+                    <a href="about.html" class="px-3 py-2 text-gray-600 hover:bg-gray-100 rounded-md">পরিচিতি</a>
+                    <a href="news.html" class="px-3 py-2 text-gray-600 hover:bg-gray-100 rounded-md">সংবাদ</a>
+                    <a href="services.html" class="px-3 py-2 text-primary-600 font-medium bg-primary-50 rounded-md">সেবা</a>
+                    <a href="projects.html" class="px-3 py-2 text-gray-600 hover:bg-gray-100 rounded-md">উন্নয়ন</a>
+                    <a href="contact.html" class="px-3 py-2 text-gray-600 hover:bg-gray-100 rounded-md">যোগাযোগ</a>
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <!-- Breadcrumb -->
+    <div class="bg-white border-b">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
+            <nav class="flex text-sm text-gray-500">
+                <a href="index.html" class="hover:text-primary-600">হোম</a>
+                <span class="mx-2">/</span>
+                <a href="services.html" class="hover:text-primary-600">নাগরিক সেবা</a>
+                <span class="mx-2">/</span>
+                <span class="text-gray-900">অভিযোগ দাখিল</span>
+            </nav>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <main class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 md:p-8">
+            <h1 class="text-2xl md:text-3xl font-bold text-gray-900 mb-2">অভিযোগ দাখিল করুন</h1>
+            <p class="text-gray-600 mb-8">আপনার সমস্যা আমাদের জানান। আমরা যথাসম্ভব দ্রুত সমাধানের চেষ্টা করব।</p>
+
+            <!-- Step Indicator -->
+            <div class="flex items-center justify-between mb-10">
+                <div class="flex items-center">
+                    <div class="w-10 h-10 rounded-full step-active flex items-center justify-center font-semibold">১</div>
+                    <span class="ml-2 font-medium text-primary-600 hidden sm:block">তথ্য</span>
+                </div>
+                <div class="flex-1 h-1 bg-gray-200 mx-2 sm:mx-4"></div>
+                <div class="flex items-center">
+                    <div class="w-10 h-10 rounded-full step-inactive flex items-center justify-center font-semibold">২</div>
+                    <span class="ml-2 text-gray-500 hidden sm:block">বিবরণ</span>
+                </div>
+                <div class="flex-1 h-1 bg-gray-200 mx-2 sm:mx-4"></div>
+                <div class="flex items-center">
+                    <div class="w-10 h-10 rounded-full step-inactive flex items-center justify-center font-semibold">৩</div>
+                    <span class="ml-2 text-gray-500 hidden sm:block">সংযুক্তি</span>
+                </div>
+                <div class="flex-1 h-1 bg-gray-200 mx-2 sm:mx-4"></div>
+                <div class="flex items-center">
+                    <div class="w-10 h-10 rounded-full step-inactive flex items-center justify-center font-semibold">৪</div>
+                    <span class="ml-2 text-gray-500 hidden sm:block">জমা</span>
+                </div>
+            </div>
+
+            <!-- Form Step 1: Personal Information -->
+            <form id="complaint-form">
+                <div class="mb-8">
+                    <h2 class="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                        <svg class="w-5 h-5 mr-2 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+                        </svg>
+                        ব্যক্তিগত তথ্য
+                    </h2>
+
+                    <div class="space-y-5">
+                        <!-- Full Name -->
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">পূর্ণ নাম <span class="text-red-500">*</span></label>
+                            <input type="text" required class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition" placeholder="আপনার পূর্ণ নাম লিখুন">
+                        </div>
+
+                        <!-- Phone & NID -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">মোবাইল নম্বর <span class="text-red-500">*</span></label>
+                                <div class="flex">
+                                    <span class="inline-flex items-center px-3 bg-gray-100 border border-r-0 border-gray-300 rounded-l-lg text-gray-600">+880</span>
+                                    <input type="tel" required class="flex-1 px-4 py-3 border border-gray-300 rounded-r-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500" placeholder="1XXXXXXXXX">
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">জাতীয় পরিচয়পত্র নম্বর</label>
+                                <input type="text" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500" placeholder="১০/১৩/১৭ ডিজিট">
+                            </div>
+                        </div>
+
+                        <!-- Email -->
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">ইমেইল</label>
+                            <input type="email" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500" placeholder="example@email.com">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mb-8">
+                    <h2 class="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                        <svg class="w-5 h-5 mr-2 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                        </svg>
+                        ঠিকানা
+                    </h2>
+
+                    <div class="space-y-5">
+                        <!-- District & Upazila -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">জেলা <span class="text-red-500">*</span></label>
+                                <select required class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 bg-white">
+                                    <option value="">নির্বাচন করুন</option>
+                                    <option value="jhenaidah" selected>ঝিনাইদহ</option>
+                                    <option value="dhaka">ঢাকা</option>
+                                    <option value="other">অন্যান্য</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">উপজেলা <span class="text-red-500">*</span></label>
+                                <select required class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 bg-white">
+                                    <option value="">নির্বাচন করুন</option>
+                                    <option value="sadar">সদর</option>
+                                    <option value="shailkupa">শৈলকুপা</option>
+                                    <option value="harinakundu">হরিণাকুণ্ডু</option>
+                                    <option value="kaliganj">কালীগঞ্জ</option>
+                                    <option value="kotchandpur">কোটচাঁদপুর</option>
+                                    <option value="moheshpur">মহেশপুর</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Union & Village -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">ইউনিয়ন <span class="text-red-500">*</span></label>
+                                <select required class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 bg-white">
+                                    <option value="">নির্বাচন করুন</option>
+                                    <option value="union1">পৌরসভা</option>
+                                    <option value="union2">নলডাঙ্গা</option>
+                                    <option value="union3">পাগলাকানাই</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">গ্রাম/মহল্লা</label>
+                                <input type="text" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500" placeholder="গ্রামের নাম">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Anonymous Option -->
+                <div class="mb-8 p-4 bg-gray-50 rounded-lg">
+                    <label class="flex items-center cursor-pointer">
+                        <input type="checkbox" class="w-5 h-5 text-primary-600 border-gray-300 rounded focus:ring-primary-500">
+                        <span class="ml-3 text-gray-700">পরিচয় গোপন রাখতে চাই</span>
+                    </label>
+                    <p class="text-sm text-gray-500 mt-1 ml-8">আপনার নাম ও যোগাযোগের তথ্য প্রকাশ করা হবে না</p>
+                </div>
+
+                <!-- Category Selection -->
+                <div class="mb-8">
+                    <h2 class="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                        <svg class="w-5 h-5 mr-2 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
+                        </svg>
+                        বিভাগ নির্বাচন করুন
+                    </h2>
+
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+                        <label class="cursor-pointer">
+                            <input type="radio" name="category" value="infrastructure" class="hidden peer">
+                            <div class="p-4 border-2 border-gray-200 rounded-xl text-center peer-checked:border-primary-500 peer-checked:bg-primary-50 transition hover:border-primary-300">
+                                <div class="text-3xl mb-2">🏗️</div>
+                                <span class="text-sm font-medium">অবকাঠামো</span>
+                            </div>
+                        </label>
+                        <label class="cursor-pointer">
+                            <input type="radio" name="category" value="education" class="hidden peer">
+                            <div class="p-4 border-2 border-gray-200 rounded-xl text-center peer-checked:border-primary-500 peer-checked:bg-primary-50 transition hover:border-primary-300">
+                                <div class="text-3xl mb-2">📚</div>
+                                <span class="text-sm font-medium">শিক্ষা</span>
+                            </div>
+                        </label>
+                        <label class="cursor-pointer">
+                            <input type="radio" name="category" value="health" class="hidden peer">
+                            <div class="p-4 border-2 border-gray-200 rounded-xl text-center peer-checked:border-primary-500 peer-checked:bg-primary-50 transition hover:border-primary-300">
+                                <div class="text-3xl mb-2">🏥</div>
+                                <span class="text-sm font-medium">স্বাস্থ্য</span>
+                            </div>
+                        </label>
+                        <label class="cursor-pointer">
+                            <input type="radio" name="category" value="agriculture" class="hidden peer">
+                            <div class="p-4 border-2 border-gray-200 rounded-xl text-center peer-checked:border-primary-500 peer-checked:bg-primary-50 transition hover:border-primary-300">
+                                <div class="text-3xl mb-2">🌾</div>
+                                <span class="text-sm font-medium">কৃষি</span>
+                            </div>
+                        </label>
+                        <label class="cursor-pointer">
+                            <input type="radio" name="category" value="employment" class="hidden peer">
+                            <div class="p-4 border-2 border-gray-200 rounded-xl text-center peer-checked:border-primary-500 peer-checked:bg-primary-50 transition hover:border-primary-300">
+                                <div class="text-3xl mb-2">💼</div>
+                                <span class="text-sm font-medium">কর্মসংস্থান</span>
+                            </div>
+                        </label>
+                        <label class="cursor-pointer">
+                            <input type="radio" name="category" value="corruption" class="hidden peer">
+                            <div class="p-4 border-2 border-gray-200 rounded-xl text-center peer-checked:border-primary-500 peer-checked:bg-primary-50 transition hover:border-primary-300">
+                                <div class="text-3xl mb-2">⚠️</div>
+                                <span class="text-sm font-medium">দুর্নীতি</span>
+                            </div>
+                        </label>
+                        <label class="cursor-pointer">
+                            <input type="radio" name="category" value="electricity" class="hidden peer">
+                            <div class="p-4 border-2 border-gray-200 rounded-xl text-center peer-checked:border-primary-500 peer-checked:bg-primary-50 transition hover:border-primary-300">
+                                <div class="text-3xl mb-2">⚡</div>
+                                <span class="text-sm font-medium">বিদ্যুৎ</span>
+                            </div>
+                        </label>
+                        <label class="cursor-pointer">
+                            <input type="radio" name="category" value="other" class="hidden peer">
+                            <div class="p-4 border-2 border-gray-200 rounded-xl text-center peer-checked:border-primary-500 peer-checked:bg-primary-50 transition hover:border-primary-300">
+                                <div class="text-3xl mb-2">📋</div>
+                                <span class="text-sm font-medium">অন্যান্য</span>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Subject & Description -->
+                <div class="mb-8 space-y-5">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">বিষয় <span class="text-red-500">*</span></label>
+                        <input type="text" required class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500" placeholder="সংক্ষেপে বিষয় লিখুন (সর্বোচ্চ ২০০ অক্ষর)">
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">বিস্তারিত বিবরণ <span class="text-red-500">*</span></label>
+                        <textarea required rows="5" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500" placeholder="আপনার সমস্যার বিস্তারিত বিবরণ লিখুন..."></textarea>
+                        <p class="text-sm text-gray-500 mt-1 text-right">০/৫০০০</p>
+                    </div>
+                </div>
+
+                <!-- File Upload -->
+                <div class="mb-8">
+                    <h2 class="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                        <svg class="w-5 h-5 mr-2 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"></path>
+                        </svg>
+                        সংযুক্তি (ঐচ্ছিক)
+                    </h2>
+
+                    <div class="border-2 border-dashed border-gray-300 rounded-xl p-8 text-center hover:border-primary-400 transition cursor-pointer">
+                        <svg class="w-12 h-12 text-gray-400 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+                        </svg>
+                        <p class="text-gray-600 mb-1">ছবি বা ডকুমেন্ট আপলোড করুন</p>
+                        <p class="text-sm text-gray-500">JPG, PNG, PDF (সর্বোচ্চ ৫ MB প্রতিটি)</p>
+                        <input type="file" multiple accept="image/*,.pdf" class="hidden">
+                    </div>
+                </div>
+
+                <!-- Consent -->
+                <div class="mb-8 p-4 bg-primary-50 rounded-lg border border-primary-100">
+                    <label class="flex items-start cursor-pointer">
+                        <input type="checkbox" required class="w-5 h-5 text-primary-600 border-gray-300 rounded focus:ring-primary-500 mt-0.5">
+                        <span class="ml-3 text-gray-700 text-sm">আমি নিশ্চিত করছি যে প্রদত্ত তথ্য সত্য এবং সঠিক। আমি এই তথ্য ব্যবহারের অনুমতি দিচ্ছি। <span class="text-red-500">*</span></span>
+                    </label>
+                </div>
+
+                <!-- Submit Button -->
+                <div class="flex justify-end">
+                    <button type="submit" class="inline-flex items-center px-8 py-3 bg-primary-600 text-white font-semibold rounded-lg hover:bg-primary-700 transition shadow-lg shadow-primary-600/30">
+                        জমা দিন
+                        <svg class="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path>
+                        </svg>
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Track Link -->
+        <div class="mt-6 text-center">
+            <p class="text-gray-600">
+                ইতিমধ্যে অভিযোগ দাখিল করেছেন?
+                <a href="track.html" class="text-primary-600 font-medium hover:underline">অভিযোগ ট্র্যাক করুন</a>
+            </p>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-gray-900 text-white py-8 mt-12">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex flex-col md:flex-row justify-between items-center">
+                <div class="flex items-center space-x-3 mb-4 md:mb-0">
+                    <div class="w-10 h-10 rounded-full overflow-hidden border-2 border-primary-500">
+                        <img src="https://www.thedailystar.net/sites/default/files/styles/big_1/public/2026-07/rashed_khan.jpg?h=d1cb525d"
+                             alt="রাশেদ খান"
+                             class="w-full h-full object-cover"
+                             onerror="this.parentElement.innerHTML='<div class=\'w-full h-full bg-primary-600 flex items-center justify-center\'><span class=\'text-white font-bold text-sm\'>রখ</span></div>';">
+                    </div>
+                    <span class="font-semibold">মো. রাশেদ খান</span>
+                </div>
+                <p class="text-gray-400 text-sm">&copy; ২০২৬ সর্বস্বত্ব সংরক্ষিত</p>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        function toggleMobileMenu() {
+            const menu = document.getElementById('mobile-menu');
+            menu.classList.toggle('hidden');
+        }
+    </script>
+</body>
+</html>

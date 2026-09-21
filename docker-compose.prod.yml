@@ -1,0 +1,102 @@
+# EyeOn — production single-VPS stack
+# Run: docker compose -f docker-compose.prod.yml up -d --build
+# All four services on one host. See docs/DEPLOYMENT.md.
+
+services:
+  postgres:
+    image: postgis/postgis:16-3.4
+    container_name: eyeon-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    # Not exposed to host — backend reaches it on the compose network.
+
+  redis:
+    image: redis:7-alpine
+    container_name: eyeon-redis
+    restart: unless-stopped
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    # Not exposed to host — backend reaches it on the compose network.
+
+  backend:
+    build:
+      context: ./backend
+    container_name: eyeon-backend
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB}
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
+      SPRING_REDIS_HOST: redis
+      SPRING_REDIS_PORT: 6379
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_ACCESS_TTL_MINUTES: ${JWT_ACCESS_TTL_MINUTES:-60}
+      JWT_REFRESH_TTL_DAYS: ${JWT_REFRESH_TTL_DAYS:-30}
+      NETTY_TCP_PORT: ${NETTY_TCP_PORT:-5023}
+      PINGPATH_CORS_ALLOWED_ORIGINS: ${PINGPATH_CORS_ALLOWED_ORIGINS}
+      # Public host for share-location links (/share/{token}) — the dashboard domain.
+      MOTOLINK_SHARE_BASE_URL: ${MOTOLINK_SHARE_BASE_URL:-https://eyeongps.com}
+      SSL_SMS_API_TOKEN: ${SSL_SMS_API_TOKEN:-}
+      SSL_SMS_SENDER_ID: ${SSL_SMS_SENDER_ID:-EYEON}
+      MOTOLINK_UNWIREDLABS_API_KEY: ${MOTOLINK_UNWIREDLABS_API_KEY:-}
+      MOTOLINK_OPENCELLID_API_KEY: ${MOTOLINK_OPENCELLID_API_KEY:-}
+      # First-run admin seeding — overrides application-prod.yml's enabled:false.
+      # Idempotent: DataSeeder skips if any user already exists.
+      PINGPATH_SEED_ENABLED: ${PINGPATH_SEED_ENABLED:-true}
+      PINGPATH_SEED_ADMIN_EMAIL: ${PINGPATH_SEED_ADMIN_EMAIL}
+      PINGPATH_SEED_ADMIN_PASSWORD: ${PINGPATH_SEED_ADMIN_PASSWORD}
+    ports:
+      - "8080:8080"           # REST + WebSocket
+      - "5023:5023"           # Netty GT06 TCP ingest (public, no TLS)
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8080/api/v1/actuator/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 60s
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        NEXT_PUBLIC_API_BASE: ${NEXT_PUBLIC_API_BASE:-/api/proxy}
+        NEXT_PUBLIC_WS_BASE: ${NEXT_PUBLIC_WS_BASE}
+        NEXT_PUBLIC_MAPBOX_TOKEN: ${NEXT_PUBLIC_MAPBOX_TOKEN}
+        NEXT_PUBLIC_GOOGLE_MAPS_API_KEY: ${NEXT_PUBLIC_GOOGLE_MAPS_API_KEY:-}
+    container_name: eyeon-frontend
+    restart: unless-stopped
+    depends_on:
+      backend:
+        condition: service_healthy
+    environment:
+      BACKEND_BASE: http://backend:8080
+      SESSION_COOKIE_NAME: ${SESSION_COOKIE_NAME:-pp_session}
+      SESSION_COOKIE_MAX_AGE: ${SESSION_COOKIE_MAX_AGE:-86400}
+      COOKIE_SECURE: "true"
+    ports:
+      - "3000:3000"
+
+volumes:
+  postgres_data:
+  redis_data:
