@@ -2,6 +2,7 @@ package com.webinnovation.eyeon.api;
 
 import com.webinnovation.eyeon.domain.Device;
 import com.webinnovation.eyeon.domain.User;
+import com.webinnovation.eyeon.domain.enums.PersonType;
 import com.webinnovation.eyeon.dto.DeviceDtos.DeviceUpdateRequest;
 import com.webinnovation.eyeon.dto.DeviceDtos.DeviceView;
 import com.webinnovation.eyeon.exception.DomainException;
@@ -26,7 +27,6 @@ import org.springframework.web.bind.annotation.RestController;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.UUID;
 import java.util.regex.Pattern;
 
@@ -103,7 +103,6 @@ public class DeviceController {
                 .orElse(false);
     }
 
-    private static final Set<String> VEHICLE_TYPES = Set.of("MOTORBIKE", "CAR", "TRUCK", "CNG", "BUS");
     private static final Pattern HEX_COLOR = Pattern.compile("#[0-9a-fA-F]{6}");
 
     @PatchMapping("/{imei}")
@@ -117,15 +116,20 @@ public class DeviceController {
             throw new ForbiddenException("You do not have access to this device");
         }
 
-        if (req.vehicleType() != null && !VEHICLE_TYPES.contains(req.vehicleType())) {
-            throw new DomainException("INVALID_VEHICLE_TYPE",
-                    "vehicleType must be one of " + VEHICLE_TYPES);
+        // `vehicleType` is the inherited field name; its values are person types (BOY/GIRL/PERSON).
+        String personType = null;
+        if (req.vehicleType() != null && !req.vehicleType().isBlank()) {
+            personType = PersonType.canonical(req.vehicleType());
+            if (personType == null) {
+                throw new DomainException("INVALID_PERSON_TYPE",
+                        "Type must be one of " + PersonType.NAMES.stream().sorted().toList());
+            }
         }
         if (req.iconColor() != null && !HEX_COLOR.matcher(req.iconColor()).matches()) {
             throw new DomainException("INVALID_ICON_COLOR", "iconColor must be #RRGGBB");
         }
         int updated = deviceRepo.updateProfile(orgId, imei,
-                req.name(), req.simMsisdn(), req.vehiclePlate(), req.vehicleType(), req.iconColor());
+                req.name(), req.simMsisdn(), req.vehiclePlate(), personType, req.iconColor());
         if (updated == 0) throw new NotFoundException("device", imei);
         Device d = deviceRepo.findByOrgAndImei(orgId, imei)
                 .orElseThrow(() -> new NotFoundException("device", imei));

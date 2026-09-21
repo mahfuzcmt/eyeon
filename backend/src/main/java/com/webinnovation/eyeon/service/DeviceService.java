@@ -51,7 +51,7 @@ public class DeviceService {
      * Creates the device with a generated name, the default org, and a 33-day trial subscription.
      */
     public Device autoRegister(String imei) {
-        String name = "New Device " + imei.substring(Math.max(0, imei.length() - 6));
+        String name = "New tracker " + imei.substring(Math.max(0, imei.length() - 6));
         log.info("Auto-registering new device IMEI={} as '{}' in org={}", imei, name, defaultOrgId);
         Device device = deviceRepo.createDevice(defaultOrgId, imei, name);
 

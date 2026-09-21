@@ -74,6 +74,16 @@ try:
     sim(LAT + 0.05, LNG)  # first contact, far from the place: auto-registers the device
     check("tracker auto-registered", psql(f"select count(*) from devices where imei='{IMEI}'") == "1")
 
+    # --- editing a person (the edit form once failed with "vehicleType must be one of [CAR ...]")
+    code, d = call("PATCH", f"/devices/{IMEI}", {"name": "Smoke Jannatun", "vehicleType": "GIRL", "vehiclePlate": "Class 5"})
+    dv = unwrap(d)
+    check("edit person: name + type GIRL + class", code == 200 and isinstance(dv, dict) and dv.get("vehicleType") == "GIRL"
+          and dv.get("name") == "Smoke Jannatun" and dv.get("vehiclePlate") == "Class 5", f"{code} {str(d)[:200]}")
+    code, d = call("PATCH", f"/devices/{IMEI}", {"vehicleType": "boy"})
+    check("person type is case-insensitive", code == 200 and unwrap(d).get("vehicleType") == "BOY", f"{code} {str(d)[:160]}")
+    code, d = call("PATCH", f"/devices/{IMEI}", {"vehicleType": "CAR"})
+    check("vehicle types are rejected with a 400", code == 400, f"{code} {str(d)[:160]}")
+
     code, d = call("POST", "/geofences", {"name": "Smoke Home", "type": "CIRCLE", "notifyOn": "BOTH", "kind": "TRUSTED_PLACE",
                                          "placeType": "HOME", "center": {"lat": LAT, "lng": LNG}, "radiusM": 150, "imeis": [IMEI]})
     g = unwrap(d)
