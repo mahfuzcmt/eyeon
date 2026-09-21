@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Post-deploy smoke test for trusted places. Runs ON the server; cleans up after itself."""
 import json
+import secrets
 import subprocess
 import sys
 import time
@@ -17,7 +18,12 @@ def sh(cmd):
 
 ip = sh("docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' eyeon-backend")
 BASE = f"http://{ip}:8081/api/v1"
-env = dict(l.split("=", 1) for l in open("/opt/eyeon/.env").read().splitlines() if "=" in l and not l.startswith("#"))
+# The test never uses a real person's credentials. It creates a throw-away ORG_ADMIN with a
+# random password (bcrypt via pgcrypto, the same $2a$12 format the app writes) in the demo
+# organization, and deletes it again in the cleanup block even if the run fails.
+DEMO_ORG = "00000000-0000-0000-0000-000000000001"
+SMOKE_EMAIL = f"smoke-{secrets.token_hex(4)}@eyeon.invalid"
+SMOKE_PASSWORD = secrets.token_urlsafe(24)
 TOKEN = None
 failures = []
 gid = None
@@ -61,10 +67,13 @@ def unwrap(d):
 
 
 try:
-    code, d = call("POST", "/auth/login", {"email": env["EYEON_SEED_ADMIN_EMAIL"], "password": env["EYEON_SEED_ADMIN_PASSWORD"]})
+    made = psql(f"insert into users (org_id, email, password_hash, full_name, role, see_all_devices) values "
+                f"('{DEMO_ORG}', '{SMOKE_EMAIL}', crypt('{SMOKE_PASSWORD}', gen_salt('bf', 12)), 'Smoke test', 'ORG_ADMIN', true)")
+    check("temporary admin created", made == "INSERT 0 1", made)
+    code, d = call("POST", "/auth/login", {"email": SMOKE_EMAIL, "password": SMOKE_PASSWORD})
     d = unwrap(d)
     TOKEN = d.get("accessToken") if isinstance(d, dict) else None
-    check("login as seeded admin", code == 200 and bool(TOKEN), f"{code} {str(d)[:120]}")
+    check("login as temporary admin", code == 200 and bool(TOKEN), f"{code} {str(d)[:120]}")
     if not TOKEN:
         sys.exit(1)
 
@@ -157,14 +166,17 @@ finally:
     tables = psql("select table_name || ':' || column_name from information_schema.columns "
                   "where table_schema='public' and column_name in ('device_imei','imei') and table_name <> 'devices' order by 1").split()
     stmts = [f"delete from {t.split(':')[0]} where {t.split(':')[1]}='{IMEI}'" for t in tables]
-    stmts += ["delete from geofences where name like 'Smoke %'", f"delete from devices where imei='{IMEI}'",
+    stmts += ["delete from refresh_tokens where user_id in (select id from users where email like 'smoke-%@eyeon.invalid')",
+              "delete from audit_log where user_id in (select id from users where email like 'smoke-%@eyeon.invalid')",
+              "delete from users where email like 'smoke-%@eyeon.invalid'",
+              "delete from geofences where name like 'Smoke %'", f"delete from devices where imei='{IMEI}'",
               f"delete from audit_log where resource_id in ('{IMEI}', '{gid}')"]
     for sql in stmts:
         r = psql(sql)
         if r and r != "DELETE 0":
             print("        " + sql.split(" where")[0] + " -> " + r)
     sh(f"docker exec eyeon-redis redis-cli del device:last:{IMEI}")
-    rest = psql(f"select (select count(*) from devices where imei='{IMEI}') + (select count(*) from geofences where name like 'Smoke %') + (select count(*) from alarms where device_imei='{IMEI}') + (select count(*) from subscriptions where device_imei='{IMEI}') + (select count(*) from locations where device_imei='{IMEI}')")
+    rest = psql(f"select (select count(*) from devices where imei='{IMEI}') + (select count(*) from geofences where name like 'Smoke %') + (select count(*) from alarms where device_imei='{IMEI}') + (select count(*) from subscriptions where device_imei='{IMEI}') + (select count(*) from locations where device_imei='{IMEI}') + (select count(*) from users where email like 'smoke-%@eyeon.invalid')")
     check("test data removed", rest == "0", f"leftover rows={rest}")
 
 print("\nRESULT:", "ALL PASSED" if not failures else f"{len(failures)} FAILED: {failures}")
