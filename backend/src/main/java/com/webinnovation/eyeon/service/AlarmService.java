@@ -45,6 +45,10 @@ public class AlarmService {
     private final PushService pushService;
     private final DeviceRepository deviceRepo;
 
+    private static boolean isPlaceEvent(AlarmType type) {
+        return type == AlarmType.PLACE_ARRIVED || type == AlarmType.PLACE_LEFT;
+    }
+
     public static final Set<String> PROCESS_RESULTS = Set.of("HANDLED", "FALSE_ALARM", "NO_ACTION");
 
     public Alarm raise(UUID orgId, String imei, AlarmType type, AlarmSeverity severity,
@@ -57,8 +61,9 @@ public class AlarmService {
             // Phase 3: stub log-only — Phase 4 will resolve owner contacts.
             smsService.sendAlarmSms(a, null, severity + " " + type + " on " + imei);
         }
-        if (severity != AlarmSeverity.INFO) {
-            // WARNING/CRITICAL only — pushing every ACC_ON/OFF would spam owners.
+        if (severity != AlarmSeverity.INFO || isPlaceEvent(type)) {
+            // WARNING/CRITICAL only — pushing every ACC_ON/OFF would spam owners. Reaching or
+            // leaving a trusted place is INFO too, but it is the message carers signed up for.
             pushService.sendAlarmPush(a);
         }
         return a;

@@ -7,6 +7,10 @@ public enum AlarmType {
     OVERSPEED,
     GEOFENCE_ENTER,
     GEOFENCE_EXIT,
+    /** Reached a trusted place (geofence kind TRUSTED_PLACE). Always INFO, but pushed. */
+    PLACE_ARRIVED,
+    /** Left a trusted place. Always INFO, but pushed. */
+    PLACE_LEFT,
     COLLISION,
     ACC_ON,
     ACC_OFF,

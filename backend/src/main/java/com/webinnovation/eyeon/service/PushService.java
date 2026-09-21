@@ -10,12 +10,10 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
 
-import java.time.ZoneId;
-import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.EnumMap;
 import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 
 /**
@@ -35,22 +33,22 @@ public class PushService {
     /** Expo caps each push request at 100 messages. */
     private static final int CHUNK_SIZE = 100;
 
-    private static final DateTimeFormatter DHAKA_TIME =
-            DateTimeFormatter.ofPattern("HH:mm").withZone(ZoneId.of("Asia/Dhaka"));
-
     private final PushTokenRepository tokenRepo;
     private final DeviceRepository deviceRepo;
+    private final NotificationComposer composer;
     private final RestClient restClient;
     private final boolean enabled;
 
     public PushService(PushTokenRepository tokenRepo,
                        DeviceRepository deviceRepo,
+                       NotificationComposer composer,
                        RestClient.Builder restClientBuilder,
                        @Value("${eyeon.push.enabled:true}") boolean enabled,
                        @Value("${eyeon.push.expo-url:https://exp.host/--/api/v2/push/send}") String expoUrl,
                        @Value("${eyeon.push.access-token:}") String accessToken) {
         this.tokenRepo = tokenRepo;
         this.deviceRepo = deviceRepo;
+        this.composer = composer;
         this.enabled = enabled;
         restClientBuilder = restClientBuilder.clone()
                 .baseUrl(expoUrl)
@@ -71,18 +69,14 @@ public class PushService {
         if (!enabled) return;
         try {
             // Respect each user's push preferences (Settings → Notifications).
-            List<String> tokens = tokenRepo.listTokensForOrgAndType(alarm.orgId(), alarm.type(), alarm.deviceImei());
-            if (tokens.isEmpty()) return;
+            List<PushTokenRepository.Target> targets =
+                    tokenRepo.listTokensForOrgAndType(alarm.orgId(), alarm.type(), alarm.deviceImei());
+            if (targets.isEmpty()) return;
 
-            String deviceLabel = deviceRepo.findByImei(alarm.deviceImei())
+            String personName = deviceRepo.findByImei(alarm.deviceImei())
                     .map(Device::name)
                     .filter(n -> n != null && !n.isBlank())
                     .orElse(alarm.deviceImei());
-            String typeLabel = alarm.type().replace('_', ' ');
-            boolean critical = "CRITICAL".equals(alarm.severity());
-            String title = (critical ? "🚨 " : "⚠️ ") + typeLabel + " — " + deviceLabel;
-            String body = capitalize(alarm.severity()) + " alarm at "
-                    + DHAKA_TIME.format(alarm.ts()) + ". Tap to view the vehicle.";
 
             Map<String, Object> data = new LinkedHashMap<>();
             data.put("alarmId", alarm.id().toString());
@@ -90,26 +84,36 @@ public class PushService {
             data.put("type", alarm.type());
             data.put("severity", alarm.severity());
 
-            for (int i = 0; i < tokens.size(); i += CHUNK_SIZE) {
-                List<String> chunk = tokens.subList(i, Math.min(i + CHUNK_SIZE, tokens.size()));
-                sendChunk(chunk, title, body, data);
+            // Each install gets the alarm in the language its app is set to.
+            Map<NotificationComposer.Lang, List<String>> byLang = new EnumMap<>(NotificationComposer.Lang.class);
+            for (PushTokenRepository.Target t : targets) {
+                byLang.computeIfAbsent(NotificationComposer.Lang.of(t.locale()), k -> new ArrayList<>())
+                        .add(t.token());
+            }
+            for (var entry : byLang.entrySet()) {
+                NotificationComposer.Message msg = composer.compose(alarm, personName, entry.getKey());
+                List<String> tokens = entry.getValue();
+                for (int i = 0; i < tokens.size(); i += CHUNK_SIZE) {
+                    List<String> chunk = tokens.subList(i, Math.min(i + CHUNK_SIZE, tokens.size()));
+                    sendChunk(chunk, msg, data);
+                }
             }
         } catch (Exception e) {
             log.warn("Push dispatch failed for alarm {}: {}", alarm.id(), e.getMessage());
         }
     }
 
-    private void sendChunk(List<String> tokens, String title, String body, Map<String, Object> data) {
+    private void sendChunk(List<String> tokens, NotificationComposer.Message msg, Map<String, Object> data) {
         List<Map<String, Object>> messages = new ArrayList<>(tokens.size());
         for (String token : tokens) {
             Map<String, Object> m = new LinkedHashMap<>();
             m.put("to", token);
-            m.put("title", title);
-            m.put("body", body);
+            m.put("title", msg.title());
+            m.put("body", msg.body());
             m.put("data", data);
             m.put("sound", "default");
             m.put("priority", "high");
-            m.put("channelId", "alarms");
+            m.put("channelId", msg.channelId());
             messages.add(m);
         }
         try {
@@ -144,11 +148,6 @@ public class PushService {
             tokenRepo.deleteAll(dead);
             log.info("Purged {} unregistered push tokens", dead.size());
         }
-    }
-
-    private static String capitalize(String s) {
-        if (s == null || s.isEmpty()) return "";
-        return s.charAt(0) + s.substring(1).toLowerCase(Locale.ROOT);
     }
 
     private static String tail(String token) {

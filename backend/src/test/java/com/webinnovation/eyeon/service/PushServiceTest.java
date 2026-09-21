@@ -43,7 +43,7 @@ class PushServiceTest {
         deviceRepo = mock(DeviceRepository.class);
         RestClient.Builder builder = RestClient.builder();
         server = MockRestServiceServer.bindTo(builder).build();
-        pushService = new PushService(tokenRepo, deviceRepo, builder, true, EXPO_URL, "");
+        pushService = new PushService(tokenRepo, deviceRepo, new NotificationComposer(), builder, true, EXPO_URL, "");
     }
 
     private static Alarm alarm(UUID orgId) {
@@ -56,7 +56,9 @@ class PushServiceTest {
     void sends_messages_and_purges_unregistered_tokens() {
         UUID orgId = UUID.randomUUID();
         when(tokenRepo.listTokensForOrgAndType(eq(orgId), any(), any()))
-                .thenReturn(List.of("ExponentPushToken[aaa]", "ExponentPushToken[bbb]"));
+                .thenReturn(List.of(
+                        new PushTokenRepository.Target("ExponentPushToken[aaa]", "en"),
+                        new PushTokenRepository.Target("ExponentPushToken[bbb]", "en")));
         when(deviceRepo.findByImei("864290061234567")).thenReturn(Optional.empty());
 
         server.expect(requestTo(EXPO_URL))
@@ -81,6 +83,34 @@ class PushServiceTest {
     }
 
     @Test
+    void each_install_gets_the_place_event_in_its_own_language() {
+        UUID orgId = UUID.randomUUID();
+        when(tokenRepo.listTokensForOrgAndType(eq(orgId), any(), any()))
+                .thenReturn(List.of(
+                        new PushTokenRepository.Target("ExponentPushToken[bangla]", "bn-BD"),
+                        new PushTokenRepository.Target("ExponentPushToken[english]", "en")));
+        when(deviceRepo.findByImei("864290061234567")).thenReturn(Optional.empty());
+
+        String ok = "{\"data\":[{\"status\":\"ok\",\"id\":\"t\"}]}";
+        server.expect(requestTo(EXPO_URL))
+                .andExpect(jsonPath("$[0].to").value("ExponentPushToken[bangla]"))
+                .andExpect(jsonPath("$[0].title").value("📍 864290061234567 এখন School-এ"))
+                .andExpect(jsonPath("$[0].channelId").value("arrivals"))
+                .andRespond(withSuccess(ok, MediaType.APPLICATION_JSON));
+        server.expect(requestTo(EXPO_URL))
+                .andExpect(jsonPath("$[0].to").value("ExponentPushToken[english]"))
+                .andExpect(jsonPath("$[0].title").value("📍 864290061234567 reached School"))
+                .andExpect(jsonPath("$[0].channelId").value("arrivals"))
+                .andRespond(withSuccess(ok, MediaType.APPLICATION_JSON));
+
+        pushService.sendAlarmPush(new Alarm(UUID.randomUUID(), orgId, "864290061234567",
+                "PLACE_ARRIVED", "INFO", Instant.parse("2026-09-21T02:02:00Z"), 23.8103, 90.4125,
+                false, null, null, null, null, Map.of("geofenceName", "School"), Instant.now()));
+
+        server.verify();
+    }
+
+    @Test
     void no_registered_tokens_sends_nothing() {
         UUID orgId = UUID.randomUUID();
         when(tokenRepo.listTokensForOrgAndType(eq(orgId), any(), any())).thenReturn(List.of());
@@ -95,7 +125,7 @@ class PushServiceTest {
     void disabled_flag_short_circuits() {
         RestClient.Builder builder = RestClient.builder();
         MockRestServiceServer disabledServer = MockRestServiceServer.bindTo(builder).build();
-        PushService disabled = new PushService(tokenRepo, deviceRepo, builder, false, EXPO_URL, "");
+        PushService disabled = new PushService(tokenRepo, deviceRepo, new NotificationComposer(), builder, false, EXPO_URL, "");
 
         disabled.sendAlarmPush(alarm(UUID.randomUUID()));
 

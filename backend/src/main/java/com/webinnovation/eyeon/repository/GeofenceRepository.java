@@ -8,6 +8,8 @@ import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Repository;
 
+import java.sql.Timestamp;
+import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -66,6 +68,8 @@ public class GeofenceRepository {
         return new Geofence(
                 id, orgId, name, type, notifyOn, color, active,
                 center, radius, polygon,
+                rs.getString("kind"), rs.getString("place_type"), rs.getString("address"),
+                rs.getInt("exit_buffer_m"), rs.getInt("min_dwell_s"),
                 rs.getObject("created_at", OffsetDateTime.class).toInstant(),
                 rs.getObject("updated_at", OffsetDateTime.class).toInstant()
         );
@@ -77,14 +81,20 @@ public class GeofenceRepository {
                    ST_X(center::geometry) AS center_lng,
                    radius_m,
                    ST_AsText(geom::geometry) AS geom_wkt,
+                   kind, place_type, address, exit_buffer_m, min_dwell_s,
                    created_at, updated_at
             FROM geofences
             """;
 
-    public List<Geofence> listForOrg(UUID orgId) {
+    /** @param kind TRUSTED_PLACE / BOUNDARY, or null for every kind */
+    public List<Geofence> listForOrg(UUID orgId, String kind) {
         return jdbc.query(
-                SELECT_FIELDS + " WHERE org_id = :orgId AND is_active = true ORDER BY created_at DESC",
-                new MapSqlParameterSource("orgId", orgId),
+                SELECT_FIELDS + """
+                         WHERE org_id = :orgId AND is_active = true
+                           AND (CAST(:kind AS VARCHAR) IS NULL OR kind = :kind)
+                         ORDER BY created_at DESC
+                        """,
+                new MapSqlParameterSource("orgId", orgId).addValue("kind", kind),
                 ROW_MAPPER);
     }
 
@@ -101,7 +111,7 @@ public class GeofenceRepository {
     }
 
     public UUID insertCircle(UUID orgId, String name, String notifyOn, String color,
-                             double centerLat, double centerLng, int radiusM) {
+                             double centerLat, double centerLng, int radiusM, Meta meta) {
         UUID id = UUID.randomUUID();
         var params = new MapSqlParameterSource()
                 .addValue("id", id)
@@ -112,23 +122,26 @@ public class GeofenceRepository {
                 .addValue("lat", centerLat)
                 .addValue("lng", centerLng)
                 .addValue("radius", radiusM);
+        meta.addTo(params);
         jdbc.update("""
                 INSERT INTO geofences
-                  (id, org_id, name, type, geom, radius_m, center, color, notify_on, is_active)
+                  (id, org_id, name, type, geom, radius_m, center, color, notify_on, is_active,
+                   kind, place_type, address, created_by)
                 VALUES
                   (:id, :orgId, :name, 'CIRCLE',
                    ST_Buffer(ST_SetSRID(ST_MakePoint(:lng, :lat), 4326)::geography, :radius),
                    :radius,
                    ST_SetSRID(ST_MakePoint(:lng, :lat), 4326)::geography,
-                   COALESCE(:color, '#0F2742'),
+                   COALESCE(:color, '#0F6B5C'),
                    :notifyOn,
-                   true)
+                   true,
+                   :kind, :placeType, :address, :createdBy)
                 """, params);
         return id;
     }
 
     public UUID insertPolygon(UUID orgId, String name, String notifyOn, String color,
-                              List<Geofence.LatLng> vertices) {
+                              List<Geofence.LatLng> vertices, Meta meta) {
         if (vertices == null || vertices.size() < 3) {
             throw new IllegalArgumentException("Polygon needs at least 3 vertices");
         }
@@ -141,17 +154,75 @@ public class GeofenceRepository {
                 .addValue("notifyOn", notifyOn)
                 .addValue("color", color)
                 .addValue("wkt", wkt);
+        meta.addTo(params);
         jdbc.update("""
                 INSERT INTO geofences
-                  (id, org_id, name, type, geom, color, notify_on, is_active)
+                  (id, org_id, name, type, geom, color, notify_on, is_active,
+                   kind, place_type, address, created_by)
                 VALUES
                   (:id, :orgId, :name, 'POLYGON',
                    ST_SetSRID(ST_GeomFromText(:wkt), 4326)::geography,
-                   COALESCE(:color, '#0F2742'),
+                   COALESCE(:color, '#0F6B5C'),
                    :notifyOn,
-                   true)
+                   true,
+                   :kind, :placeType, :address, :createdBy)
                 """, params);
         return id;
+    }
+
+    /** Non-geometry fields. Every value is written as given (the service merges with the current row). */
+    public void updateDetails(UUID orgId, UUID id, String name, String notifyOn, String color,
+                              String kind, String placeType, String address,
+                              int exitBufferM, int minDwellS) {
+        jdbc.update("""
+                UPDATE geofences
+                   SET name = :name, notify_on = :notifyOn, color = :color,
+                       kind = :kind, place_type = :placeType, address = :address,
+                       exit_buffer_m = :exitBufferM, min_dwell_s = :minDwellS,
+                       updated_at = now()
+                 WHERE org_id = :orgId AND id = :id
+                """, new MapSqlParameterSource("orgId", orgId).addValue("id", id)
+                        .addValue("name", name).addValue("notifyOn", notifyOn).addValue("color", color)
+                        .addValue("kind", kind).addValue("placeType", placeType).addValue("address", address)
+                        .addValue("exitBufferM", exitBufferM).addValue("minDwellS", minDwellS));
+    }
+
+    public void updateCircleGeometry(UUID orgId, UUID id, double centerLat, double centerLng, int radiusM) {
+        jdbc.update("""
+                UPDATE geofences
+                   SET type = 'CIRCLE',
+                       geom = ST_Buffer(ST_SetSRID(ST_MakePoint(:lng, :lat), 4326)::geography, :radius),
+                       center = ST_SetSRID(ST_MakePoint(:lng, :lat), 4326)::geography,
+                       radius_m = :radius,
+                       updated_at = now()
+                 WHERE org_id = :orgId AND id = :id
+                """, new MapSqlParameterSource("orgId", orgId).addValue("id", id)
+                        .addValue("lat", centerLat).addValue("lng", centerLng).addValue("radius", radiusM));
+    }
+
+    public void updatePolygonGeometry(UUID orgId, UUID id, List<Geofence.LatLng> vertices) {
+        if (vertices == null || vertices.size() < 3) {
+            throw new IllegalArgumentException("Polygon needs at least 3 vertices");
+        }
+        jdbc.update("""
+                UPDATE geofences
+                   SET type = 'POLYGON',
+                       geom = ST_SetSRID(ST_GeomFromText(:wkt), 4326)::geography,
+                       center = NULL,
+                       radius_m = NULL,
+                       updated_at = now()
+                 WHERE org_id = :orgId AND id = :id
+                """, new MapSqlParameterSource("orgId", orgId).addValue("id", id)
+                        .addValue("wkt", toClosedRingWkt(vertices)));
+    }
+
+    /**
+     * Forget inside/outside state after the shape changed, so the next sample re-seeds
+     * silently instead of reporting a crossing that never happened.
+     */
+    public void resetStates(UUID geofenceId) {
+        jdbc.update("DELETE FROM geofence_states WHERE geofence_id = :gid",
+                new MapSqlParameterSource("gid", geofenceId));
     }
 
     public boolean softDelete(UUID orgId, UUID id) {
@@ -196,9 +267,12 @@ public class GeofenceRepository {
                 .addValue("lat", lat)
                 .addValue("lng", lng);
         return jdbc.query("""
-                SELECT g.id, g.name, g.notify_on,
+                SELECT g.id, g.name, g.notify_on, g.kind, g.place_type, g.min_dwell_s,
                        ST_Covers(g.geom, ST_SetSRID(ST_MakePoint(:lng, :lat), 4326)::geography) AS inside,
-                       gs.is_inside AS prev_inside
+                       ST_DWithin(g.geom, ST_SetSRID(ST_MakePoint(:lng, :lat), 4326)::geography,
+                                  g.exit_buffer_m) AS within_buffer,
+                       gs.is_inside AS prev_inside,
+                       gs.pending_inside, gs.pending_since
                 FROM geofences g
                 JOIN geofence_devices gd
                   ON gd.geofence_id = g.id AND gd.device_imei = :imei
@@ -209,26 +283,64 @@ public class GeofenceRepository {
                         rs.getObject("id", UUID.class),
                         rs.getString("name"),
                         rs.getString("notify_on"),
+                        rs.getString("kind"),
+                        rs.getString("place_type"),
+                        rs.getInt("min_dwell_s"),
                         rs.getBoolean("inside"),
-                        (Boolean) rs.getObject("prev_inside")
+                        rs.getBoolean("within_buffer"),
+                        (Boolean) rs.getObject("prev_inside"),
+                        (Boolean) rs.getObject("pending_inside"),
+                        toInstant(rs.getTimestamp("pending_since"))
                 ));
     }
 
-    public void upsertState(UUID geofenceId, String imei, boolean inside) {
+    /** Commit a state (first sample or confirmed change) and drop any candidate. */
+    public void upsertState(UUID geofenceId, String imei, boolean inside, Instant changedAt) {
         jdbc.update("""
                 INSERT INTO geofence_states (geofence_id, device_imei, is_inside, last_change_at)
-                VALUES (:gid, :imei, :inside, now())
+                VALUES (:gid, :imei, :inside, :changedAt)
                 ON CONFLICT (geofence_id, device_imei) DO UPDATE
                 SET is_inside = EXCLUDED.is_inside,
-                    last_change_at = EXCLUDED.last_change_at
+                    last_change_at = EXCLUDED.last_change_at,
+                    pending_inside = NULL,
+                    pending_since = NULL
                 """, new MapSqlParameterSource("gid", geofenceId)
                         .addValue("imei", imei)
-                        .addValue("inside", inside));
+                        .addValue("inside", inside)
+                        .addValue("changedAt", Timestamp.from(changedAt)));
     }
 
-    /** Per-fence inside/prev-inside snapshot used by {@link com.webinnovation.eyeon.service.GeofenceService}. */
+    /** Store (or, with {@code pendingInside == null}, drop) a candidate change. The row already exists. */
+    public void setPending(UUID geofenceId, String imei, Boolean pendingInside, Instant since) {
+        jdbc.update("""
+                UPDATE geofence_states
+                   SET pending_inside = :pendingInside, pending_since = :since
+                 WHERE geofence_id = :gid AND device_imei = :imei
+                """, new MapSqlParameterSource("gid", geofenceId)
+                        .addValue("imei", imei)
+                        .addValue("pendingInside", pendingInside)
+                        .addValue("since", since == null ? null : Timestamp.from(since)));
+    }
+
+    /** Per-fence snapshot used by {@link com.webinnovation.eyeon.service.GeofenceService#evaluate}. */
     public record EvaluationRow(UUID geofenceId, String name, String notifyOn,
-                                boolean inside, Boolean previousInside) {}
+                                String kind, String placeType, int minDwellS,
+                                boolean inside, boolean withinBuffer, Boolean previousInside,
+                                Boolean pendingInside, Instant pendingSince) {}
+
+    /** Kind / labelling fields shared by both insert methods. */
+    public record Meta(String kind, String placeType, String address, UUID createdBy) {
+        void addTo(MapSqlParameterSource params) {
+            params.addValue("kind", kind)
+                    .addValue("placeType", placeType)
+                    .addValue("address", address)
+                    .addValue("createdBy", createdBy);
+        }
+    }
+
+    private static Instant toInstant(Timestamp ts) {
+        return ts == null ? null : ts.toInstant();
+    }
 
     private static String toClosedRingWkt(List<Geofence.LatLng> vertices) {
         StringBuilder sb = new StringBuilder("POLYGON((");

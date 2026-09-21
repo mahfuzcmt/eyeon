@@ -21,6 +21,13 @@ public record Geofence(
         LatLng center,
         Integer radiusM,
         List<LatLng> polygon,
+        /** TRUSTED_PLACE or BOUNDARY, see {@link com.webinnovation.eyeon.domain.enums.GeofenceKind}. */
+        String kind,
+        /** Only for TRUSTED_PLACE; null otherwise. */
+        String placeType,
+        String address,
+        int exitBufferM,
+        int minDwellS,
         Instant createdAt,
         Instant updatedAt
 ) {

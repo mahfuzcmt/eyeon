@@ -19,21 +19,27 @@ public class PushTokenRepository {
 
     private final NamedParameterJdbcTemplate jdbc;
 
-    public void upsert(UUID orgId, UUID userId, String token, String platform) {
+    /** @param locale the app language on that install ({@code bn} / {@code en}); null = org default */
+    public void upsert(UUID orgId, UUID userId, String token, String platform, String locale) {
         jdbc.update("""
-                INSERT INTO push_tokens (org_id, user_id, token, platform)
-                VALUES (:orgId, :userId, :token, :platform)
+                INSERT INTO push_tokens (org_id, user_id, token, platform, locale)
+                VALUES (:orgId, :userId, :token, :platform, :locale)
                 ON CONFLICT (token) DO UPDATE
                 SET org_id = EXCLUDED.org_id,
                     user_id = EXCLUDED.user_id,
                     platform = EXCLUDED.platform,
+                    locale = EXCLUDED.locale,
                     last_seen_at = now()
                 """, new MapSqlParameterSource()
                         .addValue("orgId", orgId)
                         .addValue("userId", userId)
                         .addValue("token", token)
-                        .addValue("platform", platform));
+                        .addValue("platform", platform)
+                        .addValue("locale", locale));
     }
+
+    /** A push destination and the language its notifications should be written in. */
+    public record Target(String token, String locale) {}
 
     /** Delete a token owned by this user (sign-out). Returns true if a row was removed. */
     public boolean deleteForUser(UUID userId, String token) {
@@ -60,11 +66,12 @@ public class PushTokenRepository {
      * Tokens of org users who opted in to {@code alarmType} pushes AND may see the device:
      * admins, {@code see_all_devices} users, or an explicit {@code user_devices} row.
      */
-    public List<String> listTokensForOrgAndType(UUID orgId, String alarmType, String deviceImei) {
-        return jdbc.queryForList("""
-                SELECT pt.token
+    public List<Target> listTokensForOrgAndType(UUID orgId, String alarmType, String deviceImei) {
+        return jdbc.query("""
+                SELECT pt.token, COALESCE(pt.locale, o.locale) AS locale
                   FROM push_tokens pt
                   JOIN users u ON u.id = pt.user_id
+                  JOIN organizations o ON o.id = pt.org_id
                   LEFT JOIN user_notification_settings s ON s.user_id = pt.user_id
                  WHERE pt.org_id = :orgId
                    AND u.is_active = true
@@ -76,7 +83,7 @@ public class PushTokenRepository {
                 """, new MapSqlParameterSource("orgId", orgId)
                         .addValue("type", alarmType)
                         .addValue("imei", deviceImei),
-                String.class);
+                (rs, rn) -> new Target(rs.getString("token"), rs.getString("locale")));
     }
 
     /** Purge tokens Expo reported as DeviceNotRegistered (app uninstalled). */

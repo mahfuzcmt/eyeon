@@ -30,7 +30,8 @@ public class PushTokenController {
 
     private final PushTokenRepository repo;
 
-    public record RegisterPushTokenRequest(String token, String platform) {}
+    /** {@code locale}: the app's current language, {@code bn} or {@code en}; optional. */
+    public record RegisterPushTokenRequest(String token, String platform, String locale) {}
 
     @PostMapping
     public ResponseEntity<Void> register(@RequestBody RegisterPushTokenRequest req) {
@@ -46,7 +47,13 @@ public class PushTokenController {
             throw new DomainException("INVALID_PUSH_PLATFORM",
                     "platform must be one of " + PLATFORMS);
         }
-        repo.upsert(orgId, userId, req.token().trim(), platform);
+        String locale = req.locale() == null || req.locale().isBlank()
+                ? null
+                : req.locale().trim().toLowerCase(Locale.ROOT);
+        if (locale != null && locale.length() > 10) {
+            throw new DomainException("INVALID_PUSH_LOCALE", "locale must be a short tag such as bn or en");
+        }
+        repo.upsert(orgId, userId, req.token().trim(), platform, locale);
         return ResponseEntity.noContent().build();
     }
 
