@@ -35,6 +35,7 @@ public final class PacketType {
     // Note: 0x22 is shared with GT06 V3 location but Jimi doesn't require ACK
     // ─────────────────────────────────────────────────────────────────────────
     public static final int JIMI_HEARTBEAT = 0x23;     // EG02/EG03 heartbeat (different from GT06)
+    public static final int JIMI_HEARTBEAT_EXT = 0x36; // Battery-powered personal trackers: 0x13 status block + extension modules
     public static final int JIMI_ALARM = 0x26;         // Jimi alarm packet
     public static final int JIMI_ALARM_HVT001 = 0x27;  // HVT001 alarm
     public static final int JIMI_LBS_ALARM = 0x19;     // LBS alarm (cell-tower only)
@@ -56,6 +57,7 @@ public final class PacketType {
     /** Check if protocol number is a Jimi IoT specific packet. */
     public static boolean isJimiProtocol(int proto) {
         return proto == JIMI_HEARTBEAT
+                || proto == JIMI_HEARTBEAT_EXT
                 || proto == JIMI_ALARM
                 || proto == JIMI_ALARM_HVT001
                 || proto == JIMI_LBS_ALARM
@@ -67,7 +69,7 @@ public final class PacketType {
 
     /** Check if protocol number is a heartbeat (GT06 or Jimi). */
     public static boolean isHeartbeat(int proto) {
-        return proto == HEARTBEAT || proto == JIMI_HEARTBEAT;
+        return proto == HEARTBEAT || proto == JIMI_HEARTBEAT || proto == JIMI_HEARTBEAT_EXT;
     }
 
     /** Check if protocol number is an alarm (GT06 or Jimi). */

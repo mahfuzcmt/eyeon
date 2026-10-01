@@ -8,6 +8,7 @@ import com.webinnovation.eyeon.protocol.PacketType;
 import com.webinnovation.eyeon.service.DeviceService;
 import com.webinnovation.eyeon.service.LocationService;
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.ByteBufUtil;
 import io.netty.channel.ChannelHandler.Sharable;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
@@ -114,9 +115,11 @@ public class Gt06Handler extends SimpleChannelInboundHandler<ByteBuf> {
                  PacketType.LOCATION_V4, PacketType.LOCATION_4G ->
                     handleLocation(ctx, proto, serial, content);
 
-            // Heartbeat: GT06 uses 0x13, Jimi EG02/EG03 uses 0x23
+            // Heartbeat: GT06 uses 0x13, Jimi EG02/EG03 uses 0x23, battery-powered personal
+            // trackers use 0x36 (the same status block followed by extension modules)
             case PacketType.HEARTBEAT -> handleHeartbeat(ctx, serial, content);
-            case PacketType.JIMI_HEARTBEAT -> handleJimiHeartbeat(ctx, serial, content);
+            case PacketType.JIMI_HEARTBEAT, PacketType.JIMI_HEARTBEAT_EXT ->
+                    handleJimiHeartbeat(ctx, proto, serial, content);
 
             // Alarms: GT06 uses 0x16, Jimi uses 0x26/0x27/0x19
             case PacketType.ALARM -> handleAlarm(ctx, serial, content);
@@ -132,9 +135,8 @@ public class Gt06Handler extends SimpleChannelInboundHandler<ByteBuf> {
 
             case PacketType.COMMAND_REPLY -> handleCommandReply(ctx, content);
             default -> {
-                log.debug("Unhandled protocol 0x{}, ACKing serial {}",
-                        Integer.toHexString(proto), serial);
                 ctx.writeAndFlush(packetEncoder.buildAck(proto, serial));
+                noteUnstored(ctx, proto, content);
             }
         }
     }
@@ -196,6 +198,30 @@ public class Gt06Handler extends SimpleChannelInboundHandler<ByteBuf> {
                 }
             }
         });
+    }
+
+    /**
+     * A packet that is acknowledged but not stored still proves the tracker is connected, so it
+     * refreshes last-seen; otherwise a tracker whose packets we do not understand yet is shown
+     * OFFLINE five minutes after login while it is talking to us. The payload is logged because
+     * an unknown type from a new tracker model is how its location packets get identified.
+     */
+    private void noteUnstored(ChannelHandlerContext ctx, int proto, ByteBuf content) {
+        LoginGate gate = gateOf(ctx);
+        if (gate == null) {
+            log.debug("Dropping packet on channel id={} that never logged in", ctx.channel().id());
+            return;
+        }
+        String hex = ByteBufUtil.hexDump(content, content.readerIndex(), Math.min(content.readableBytes(), 256));
+        gate.submit(session -> {
+            log.info("Packet 0x{} from imei={} acknowledged but not stored, content={}",
+                    Integer.toHexString(proto), session.imei(), hex);
+            try {
+                deviceService.markOnline(session.imei());
+            } catch (Exception e) {
+                log.warn("Presence refresh failed for imei={}: {}", session.imei(), e.getMessage());
+            }
+        }, ingestExecutor);
     }
 
     /** The connection's login gate; null when no login packet has been seen on this channel. */
@@ -361,11 +387,12 @@ public class Gt06Handler extends SimpleChannelInboundHandler<ByteBuf> {
     // ─────────────────────────────────────────────────────────────────────────
 
     /**
-     * Jimi EG02/EG03 heartbeat (0x23). Same structure as GT06 heartbeat but
-     * different protocol number.
+     * Jimi heartbeat: 0x23 (EG02/EG03) or 0x36 (battery-powered personal trackers). Both start
+     * with the GT06 status block; 0x36 appends extension modules, which are ignored here.
+     * The ACK must echo the protocol number the tracker used.
      */
-    private void handleJimiHeartbeat(ChannelHandlerContext ctx, int serial, ByteBuf content) {
-        ctx.writeAndFlush(packetEncoder.buildAck(PacketType.JIMI_HEARTBEAT, serial));
+    private void handleJimiHeartbeat(ChannelHandlerContext ctx, int proto, int serial, ByteBuf content) {
+        ctx.writeAndFlush(packetEncoder.buildAck(proto, serial));
         LoginGate gate = gateOf(ctx);
         if (gate == null) {
             log.debug("Dropping packet on channel id={} that never logged in", ctx.channel().id());
@@ -521,8 +548,7 @@ public class Gt06Handler extends SimpleChannelInboundHandler<ByteBuf> {
      */
     private void handleJimiLbsExtension(ChannelHandlerContext ctx, int serial, ByteBuf content) {
         ctx.writeAndFlush(packetEncoder.buildAck(PacketType.JIMI_LBS_EXTENSION, serial));
-        String imei = ctx.channel().attr(ChannelKeys.IMEI_KEY).get();
-        log.debug("Jimi LBS extension received for imei={}, {} bytes", imei, content.readableBytes());
+        noteUnstored(ctx, PacketType.JIMI_LBS_EXTENSION, content);
     }
 
     /**
@@ -531,8 +557,7 @@ public class Gt06Handler extends SimpleChannelInboundHandler<ByteBuf> {
      */
     private void handleJimiWifi(ChannelHandlerContext ctx, int serial, ByteBuf content) {
         ctx.writeAndFlush(packetEncoder.buildAck(PacketType.JIMI_WIFI, serial));
-        String imei = ctx.channel().attr(ChannelKeys.IMEI_KEY).get();
-        log.debug("Jimi WiFi positioning received for imei={}, {} bytes", imei, content.readableBytes());
+        noteUnstored(ctx, PacketType.JIMI_WIFI, content);
     }
 
     /**

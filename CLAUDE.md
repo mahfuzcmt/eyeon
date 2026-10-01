@@ -132,6 +132,7 @@ No inherited `motolink`/`pingpath` identifiers remain in the tree. (Correction 2
 5. **WebSocket fanout filters by org_id** at the gateway. Never broadcast to all clients and filter on the browser.
 6. **TCP ACKs are synchronous and immediate** — GT06 devices disconnect after 5 seconds without an ACK, causing reconnect storms.
 7. **`devices.last_seen_at` is the server's receive time, never the packet's own clock** (fixed 2026-10-01). `locations.ts` keeps the tracker's time. A tracker without a GPS fix, or one replaying buffered points, stamps packets with an old time; writing that into `last_seen_at` made `DeviceStatusJob` (OFFLINE after 5 min) flip a connected, newly added tracker to OFFLINE within a minute of every location packet. Test: `LocationServiceTest.lastSeenIsServerReceiveTimeNotThePacketClock`.
+8. **Every CRC-valid packet from a logged-in tracker refreshes `last_seen_at`, including types we do not store** (2026-10-01, `Gt06Handler.noteUnstored`), and those are logged at INFO with their payload (`acknowledged but not stored`). Before that, the first family tracker (IMEI ...079370) sent only `0x36` heartbeats, which were ACKed and ignored, so it showed OFFLINE five minutes after every login. Test: `Gt06HandlerPresenceTest` (uses the frame captured on production).
 
 ### 3.3 Network Topology
 
@@ -683,6 +684,7 @@ All frames end with `0x0D 0x0A`.
 | `0x32` | Location V4 | Device → Server | V3 + 4-byte cell ID, voltage, ACC time |
 | `0xA0` | Location 4G | Device → Server | 4-byte LAC, 8-byte cell ID, 1-or-2 byte MNC |
 | `0x13` | Heartbeat / Status | Device → Server | Sent every ~3 minutes |
+| `0x36` | Heartbeat, extended (Jimi) | Device → Server | Battery-powered personal trackers: the `0x13` status block followed by `[type:2][len:1][data]` modules (e.g. `0x0018` = battery voltage x0.01 V). Handled since 2026-10-01; the modules are not parsed yet |
 | `0x16` | Alarm | Device → Server | Location + status + alarm code |
 | `0x17` | RFID swipe | Device → Server | Driver identification |
 | `0x15` | Command reply | Device → Server | Response to 0x80 server command |
