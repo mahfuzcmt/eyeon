@@ -131,6 +131,7 @@ No inherited `motolink`/`pingpath` identifiers remain in the tree. (Correction 2
 4. **Side effects** (geofence checks, alarm dispatch, trip detection) hang off the same event — never block the ingestion path.
 5. **WebSocket fanout filters by org_id** at the gateway. Never broadcast to all clients and filter on the browser.
 6. **TCP ACKs are synchronous and immediate** — GT06 devices disconnect after 5 seconds without an ACK, causing reconnect storms.
+7. **`devices.last_seen_at` is the server's receive time, never the packet's own clock** (fixed 2026-10-01). `locations.ts` keeps the tracker's time. A tracker without a GPS fix, or one replaying buffered points, stamps packets with an old time; writing that into `last_seen_at` made `DeviceStatusJob` (OFFLINE after 5 min) flip a connected, newly added tracker to OFFLINE within a minute of every location packet. Test: `LocationServiceTest.lastSeenIsServerReceiveTimeNotThePacketClock`.
 
 ### 3.3 Network Topology
 

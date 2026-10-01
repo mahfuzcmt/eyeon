@@ -6,12 +6,14 @@ import com.webinnovation.eyeon.repository.DeviceRepository;
 import com.webinnovation.eyeon.repository.LocationRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
 
 import java.time.Instant;
 import java.util.UUID;
 
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyDouble;
 import static org.mockito.ArgumentMatchers.anyInt;
@@ -88,9 +90,32 @@ class LocationServiceTest {
         // The row is still stored — history and diagnostics need the raw packet.
         verify(locationRepo).insert(any());
         verify(deviceRepo).updateLastTelemetryNoFix(
-                eq("866557085765354"), eq(12340), eq(4), any(), eq(Instant.parse("2026-08-14T11:27:45Z")));
+                eq("866557085765354"), eq(12340), eq(4), any(), any());
         verify(deviceRepo, never()).updateLastPosition(
                 anyString(), anyDouble(), anyDouble(), anyInt(), anyInt(),
                 any(), any(), any(), any());
+    }
+
+    /**
+     * A tracker without a fix (new, indoors) or replaying buffered points stamps its packets
+     * with an old time. last_seen_at must be the server's receive time, otherwise
+     * DeviceStatusJob marks a connected tracker OFFLINE on its next sweep.
+     */
+    @Test
+    void lastSeenIsServerReceiveTimeNotThePacketClock() {
+        Instant before = Instant.now();
+
+        service.saveAndBroadcast(packet(false));
+        service.saveAndBroadcast(packet(true));
+
+        ArgumentCaptor<Instant> noFixSeen = ArgumentCaptor.forClass(Instant.class);
+        verify(deviceRepo).updateLastTelemetryNoFix(anyString(), any(), any(), any(), noFixSeen.capture());
+        ArgumentCaptor<Instant> fixSeen = ArgumentCaptor.forClass(Instant.class);
+        verify(deviceRepo).updateLastPosition(
+                anyString(), anyDouble(), anyDouble(), anyInt(), anyInt(),
+                any(), any(), any(), fixSeen.capture());
+
+        assertFalse(noFixSeen.getValue().isBefore(before));
+        assertFalse(fixSeen.getValue().isBefore(before));
     }
 }

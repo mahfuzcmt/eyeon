@@ -13,6 +13,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Duration;
+import java.time.Instant;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -76,6 +77,12 @@ public class LocationService {
             // reported lat/lng is meaningless (a repeat of the last fix at best, zeros
             // or a cell-tower estimate at worst), so we refresh presence + telemetry
             // and leave last_location/speed/course pinned to the last known-good fix.
+            //
+            // last_seen_at is when the server heard from the tracker, not the tracker's
+            // own clock: without a fix (a new tracker indoors) or while replaying buffered
+            // points the packet time is minutes to years old, and DeviceStatusJob would
+            // flip a connected tracker to OFFLINE on its next sweep.
+            Instant seenAt = Instant.now();
             if (loc.isValid()) {
                 deviceRepo.updateLastPosition(
                         loc.getImei(),
@@ -86,7 +93,7 @@ public class LocationService {
                         loc.getVoltageMv(),
                         loc.getGsmSignal(),
                         engineHoursSeconds,
-                        loc.getTimestamp()
+                        seenAt
                 );
             } else {
                 deviceRepo.updateLastTelemetryNoFix(
@@ -94,7 +101,7 @@ public class LocationService {
                         loc.getVoltageMv(),
                         loc.getGsmSignal(),
                         engineHoursSeconds,
-                        loc.getTimestamp()
+                        seenAt
                 );
             }
 
