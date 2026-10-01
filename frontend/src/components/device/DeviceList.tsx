@@ -10,7 +10,7 @@ import {
   VEHICLE_STATE_COLOR,
   type VehicleState,
 } from "@/lib/format";
-import { buildPersonSvg } from "@/lib/personIcons";
+import { buildPersonAvatar } from "@/lib/personIcons";
 import { useSpeedLimits } from "@/hooks/useSpeedLimits";
 import { useTicker } from "@/hooks/useTicker";
 import type { DeviceGroupView, DeviceView, LocationView } from "@/types/domain";
@@ -57,6 +57,8 @@ interface Row {
   speed: number;
   overspeed: boolean;
   updatedAt: number;
+  /** False while the tracker is connected but has not reported a position yet (no marker). */
+  located: boolean;
 }
 
 interface Section {
@@ -102,8 +104,11 @@ function inTab(state: VehicleState, tab: Tab): boolean {
   }
 }
 
-function rowStatus(row: Row, t: (k: StringKey) => string): { text: string; color: string } {
+function rowStatus(row: Row, t: (k: StringKey) => string): { text: string; color: string; hint?: string } {
   const { device, state, speed, overspeed } = row;
+  if (!row.located && ONLINE_STATES.has(state)) {
+    return { text: t("veh.noGps"), color: VEHICLE_STATE_COLOR.nodata, hint: t("veh.noGpsHint") };
+  }
   switch (state) {
     case "moving":
       return { text: `${speed} km/h`, color: overspeed ? OVERSPEED_COLOR : VEHICLE_STATE_COLOR.moving };
@@ -191,6 +196,7 @@ export function DeviceList({
           speed,
           overspeed: speedLimits.isOverspeed(device.imei, live?.speed ?? device.lastSpeed),
           updatedAt: live?.ts ? Date.parse(live.ts) : device.lastSeenAt ? Date.parse(device.lastSeenAt) : 0,
+          located: live != null,
         };
       }),
     [devices, locations, speedLimits],
@@ -465,7 +471,7 @@ function VehicleRow({ row, selected, visible, onSelect, onToggleVisible, onActio
   const status = rowStatus(row, t);
   const iconColor = overspeed ? OVERSPEED_COLOR : VEHICLE_STATE_COLOR[state];
   const online = ONLINE_STATES.has(state);
-  const icon = useMemo(() => buildPersonSvg(device.vehicleType, iconColor, null, 14), [device.vehicleType, iconColor]);
+  const icon = useMemo(() => buildPersonAvatar(device.vehicleType, iconColor, 26), [device.vehicleType, iconColor]);
 
   return (
     <div
@@ -499,7 +505,7 @@ function VehicleRow({ row, selected, visible, onSelect, onToggleVisible, onActio
       >
         {deviceLabel(device)}
       </span>
-      <span className="shrink-0 text-[14px] font-medium tabular-nums" style={{ color: status.color }}>
+      <span className="shrink-0 text-[14px] font-medium tabular-nums" style={{ color: status.color }} title={status.hint}>
         {status.text}
       </span>
       <span

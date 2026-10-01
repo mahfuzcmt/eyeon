@@ -138,6 +138,11 @@ const STRINGS = {
   "veh.expired": { en: "Expired", bn: "মেয়াদোত্তীর্ণ" },
   "veh.offline": { en: "Offline", bn: "অফলাইন" },
   "veh.nodata": { en: "No Data", bn: "ডেটা নেই" },
+  "veh.noGps": { en: "Waiting for GPS", bn: "জিপিএসের অপেক্ষায়" },
+  "veh.noGpsHint": {
+    en: "The tracker is connected but has not found its position yet. Take it outdoors for a few minutes.",
+    bn: "ট্র্যাকার সংযুক্ত আছে, কিন্তু এখনো অবস্থান পায়নি। কয়েক মিনিটের জন্য খোলা জায়গায় নিন।",
+  },
   "veh.since": { en: "since", bn: "থেকে" },
   "veh.expiresOn": { en: "Expires", bn: "মেয়াদ" },
   "veh.updated": { en: "Updated", bn: "আপডেট" },
@@ -394,6 +399,7 @@ const STRINGS = {
   // ── Person types (stored in devices.vehicle_type) ─────────────────
   "person.type.BOY": { en: "Boy", bn: "ছেলে" },
   "person.type.GIRL": { en: "Girl", bn: "মেয়ে" },
+  "person.type.OLD_MAN": { en: "Old man", bn: "বয়স্ক পুরুষ" },
   "person.type.PERSON": { en: "Person", bn: "সদস্য" },
 
   // ── Person detail: statistics + data rows ─────────────────────────

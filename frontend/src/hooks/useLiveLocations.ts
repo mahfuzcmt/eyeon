@@ -147,6 +147,14 @@ export function advanceWaypointIfNeeded(
 }
 
 /**
+ * A tracker that has never had a GPS fix reports (0,0). That is "no position yet",
+ * not a place: it must not create a marker.
+ */
+function hasPosition(loc: LocationView): boolean {
+  return loc.valid || loc.lastValidTs != null || loc.latitude !== 0 || loc.longitude !== 0;
+}
+
+/**
  * Fold an incoming packet into what we already hold for the device.
  *
  * A packet with no GPS fix still tells us the device is alive and carries fresh
@@ -365,7 +373,7 @@ export function useLiveLocations(orgId: string) {
             });
           }
           changed = true;
-        } else {
+        } else if (hasPosition(loc)) {
           // First time seeing this device
           next.set(imei, {
             ...loc,
@@ -395,6 +403,7 @@ export function useLiveLocations(orgId: string) {
       setLocations((prev) => {
         const next = new Map(prev);
         for (const l of r.data) {
+          if (!hasPosition(l)) continue;
           const existing = next.get(l.imei);
           if (!existing || new Date(l.ts).getTime() >= new Date(existing.ts).getTime()) {
             // Only mark as justUpdated if data actually changed (newer timestamp)

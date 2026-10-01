@@ -14,7 +14,7 @@ export interface MapVehicle {
   color: string;
   /** Name shown above the marker. */
   label: string;
-  /** Avatar: BOY | GIRL | PERSON. Anything else, including legacy CAR/MOTORBIKE, draws PERSON. */
+  /** Avatar: BOY | GIRL | OLD_MAN | PERSON. Anything else, including legacy CAR/MOTORBIKE, draws PERSON. */
   vehicleType?: string | null;
   /** Kept for callers; the badge is tinted by status, not by this. */
   iconColor?: string | null;
@@ -89,13 +89,13 @@ function buildHtml(googleKey: string, language: "en" | "bn"): string {
 ${googleScripts}
 <style>
   html,body,#map{margin:0;height:100%;width:100%;background:${colors.bg}}
-  .vwrap{position:relative;width:40px;height:40px}
+  .vwrap{position:relative;width:48px;height:48px}
   .veh{width:40px;height:40px;cursor:pointer;transform-origin:center}
   .veh svg{display:block;filter:drop-shadow(0 2px 3px rgba(10,25,40,.45))}
   .ava{position:absolute;inset:0;cursor:pointer}
   .ava svg{display:block;filter:drop-shadow(0 2px 3px rgba(10,25,40,.45))}
   .ptr{position:absolute;inset:0;transform-origin:center;pointer-events:none}
-  .lbl{position:absolute;bottom:calc(100% + 5px);left:50%;transform:translateX(-50%);
+  .lbl{position:absolute;bottom:calc(100% + 9px);left:50%;transform:translateX(-50%);
        font:700 12px -apple-system,Roboto,'Noto Sans Bengali',sans-serif;color:#fff;
        padding:2px 8px;border-radius:999px;border:1px solid rgba(255,255,255,.55);
        box-shadow:0 1px 4px rgba(10,25,40,.35);white-space:nowrap}
@@ -154,32 +154,51 @@ ${googleScripts}
 
   function esc(s){ return String(s==null?'':s).replace(/[<>&]/g,''); }
 
-  // Person avatars — same design as the web map (frontend/src/lib/personIcons.ts): an upright
-  // round badge (a face is never rotated) and a heading pointer that orbits it while moving.
-  function darken(hex, pct){
-    const n = parseInt(String(hex).replace('#',''),16), a = Math.round(2.55*pct);
-    const c = function(v){ return Math.max(0, v - a); };
-    return '#' + (0x1000000 + c(n>>16)*0x10000 + c((n>>8)&255)*0x100 + c(n&255)).toString(16).slice(1);
-  }
-  function personType(t){ t = String(t||'').toUpperCase(); return (t==='BOY'||t==='GIRL') ? t : 'PERSON'; }
-  function glyph(type, hair){
-    const body = '<path d="M9.5 36 C9.5 27.5 14 24.5 20 24.5 C26 24.5 30.5 27.5 30.5 36 Z" fill="#fff"/>';
-    const head = '<circle cx="20" cy="16.5" r="5.6" fill="#fff"/>';
-    if(type==='GIRL') return '<circle cx="13" cy="14.5" r="3" fill="#fff"/><circle cx="27" cy="14.5" r="3" fill="#fff"/>' + head
-      + '<path d="M14.6 15.6 Q20 8.6 25.4 15.6 Q20 12.4 14.6 15.6 Z" fill="'+hair+'"/>' + body;
-    if(type==='BOY') return head + '<path d="M14.5 15.2 Q15.5 9.8 20 9.8 Q24.5 9.8 25.5 15.2 Q22.5 12 14.5 15.2 Z" fill="'+hair+'"/>' + body;
-    return head + body;
-  }
-  // Clip ids repeat per marker with a fixed id — identical defs, so duplicates are harmless.
+  // Person avatars — same art as the web map (frontend/src/lib/personIcons.ts; keep the two in
+  // sync): an upright round portrait (a face is never rotated) inside a ring tinted by state,
+  // and a heading pointer that orbits it while moving. No ids in the SVG: it is repeated per marker.
+  function personType(t){ t = String(t||'').toUpperCase(); return (t==='BOY'||t==='GIRL'||t==='OLD_MAN') ? t : 'PERSON'; }
+  var SKIN = '#E9B48C', HAIR = '#2A1B14';
+  var BACKDROP = {BOY:'#D6EBFF', GIRL:'#FFE1EC', OLD_MAN:'#E8F0DC', PERSON:'#E3F3EF'};
+  // Lower edge runs along the ring's centre line, so the ring hides the cut (no clipPath).
+  function shoulders(fill){ return '<path d="M-11.4 9 C-9.6 5 -5 4 0 4 C5 4 9.6 5 11.4 9 A14.5 14.5 0 0 1 -11.4 9 Z" fill="'+fill+'"/>'; }
+  var EARS = '<circle cx="-7.5" cy="-1.5" r="1.6" fill="'+SKIN+'"/><circle cx="7.5" cy="-1.5" r="1.6" fill="'+SKIN+'"/>';
+  var HEAD = '<circle cy="-2.2" r="7.6" fill="'+SKIN+'"/>';
+  var EYES = '<circle cx="-2.8" cy="-1.5" r="1" fill="'+HAIR+'"/><circle cx="2.8" cy="-1.5" r="1" fill="'+HAIR+'"/>';
+  var SMILE = '<path d="M-2.5 1.7 Q0 4 2.5 1.7" fill="none" stroke="#8A3B2E" stroke-width="1" stroke-linecap="round"/>';
+  var CHEEKS = '<circle cx="-4.7" cy="1.3" r="1.4" fill="#F0857A" opacity=".45"/><circle cx="4.7" cy="1.3" r="1.4" fill="#F0857A" opacity=".45"/>';
+  var PORTRAIT = {
+    BOY: shoulders('#2F80ED') + '<path d="M-2.6 4.2 L0 6.6 L2.6 4.2 Z" fill="#fff"/>' + EARS + HEAD
+      + '<path d="M-7.9 -3 C-8.8 -9.6 -4.4 -12.2 0.4 -12 C5.6 -11.8 8.8 -8.6 7.9 -2.8 C7.2 -5.4 5.4 -7 3 -7.4 C0 -6 -4 -5.8 -6.4 -6.6 C-7.2 -5.6 -7.6 -4.4 -7.9 -3 Z" fill="'+HAIR+'"/>'
+      + EYES + SMILE + CHEEKS,
+    GIRL: '<ellipse cx="-9" cy="1.6" rx="2.7" ry="4.6" fill="'+HAIR+'"/><ellipse cx="9" cy="1.6" rx="2.7" ry="4.6" fill="'+HAIR+'"/>'
+      + '<circle cy="-3" r="8.5" fill="'+HAIR+'"/>' + shoulders('#EC4899') + '<path d="M-2.6 4.2 Q0 6.4 2.6 4.2 Z" fill="#fff"/>' + HEAD
+      + '<path d="M-7.6 -2.4 C-7.8 -8.4 -4 -10.4 0 -10.4 C4 -10.4 7.8 -8.4 7.6 -2.4 C6.8 -5.6 4 -7.8 0 -8.6 C-4 -7.8 -6.8 -5.6 -7.6 -2.4 Z" fill="'+HAIR+'"/>'
+      + '<circle cx="-8.4" cy="-3" r="1.5" fill="#FFC857"/><circle cx="8.4" cy="-3" r="1.5" fill="#FFC857"/>'
+      + EYES + SMILE + CHEEKS,
+    OLD_MAN: '<circle cx="-7" cy="-4.6" r="3.1" fill="#DADFE3"/><circle cx="7" cy="-4.6" r="3.1" fill="#DADFE3"/>'
+      + shoulders('#5B7083') + EARS + HEAD
+      + '<path d="M-2.6 -7.4 Q0 -8 2.6 -7.4" fill="none" stroke="#CF9A72" stroke-width=".6" stroke-linecap="round"/>'
+      + '<path d="M-7 0 C-6.8 6.4 -3.4 9.4 0 9.4 C3.4 9.4 6.8 6.4 7 0 C5 2.4 2.6 1.5 0 1.5 C-2.6 1.5 -5 2.4 -7 0 Z" fill="#F7F7F5" stroke="#D5DADE" stroke-width=".4"/>'
+      + '<path d="M-3.4 1.9 Q-1.7 .4 0 1.6 Q1.7 .4 3.4 1.9 Q1.7 3.2 0 2.5 Q-1.7 3.2 -3.4 1.9 Z" fill="#E1E5E8"/>'
+      + '<path d="M-1.3 3.9 Q0 4.7 1.3 3.9" fill="none" stroke="#B56A5A" stroke-width=".7" stroke-linecap="round"/>'
+      + '<path d="M-4.9 -5.3 Q-3 -6.2 -1.3 -5.3 M1.3 -5.3 Q3 -6.2 4.9 -5.3" fill="none" stroke="#C4CACF" stroke-width="1" stroke-linecap="round"/>'
+      + '<circle cx="-2.9" cy="-2" r="2.2" fill="#fff" fill-opacity=".4" stroke="#3B3B3B" stroke-width=".7"/><circle cx="2.9" cy="-2" r="2.2" fill="#fff" fill-opacity=".4" stroke="#3B3B3B" stroke-width=".7"/>'
+      + '<path d="M-.7 -2.2 Q0 -2.7 .7 -2.2 M-5.1 -2.4 L-7.2 -3 M5.1 -2.4 L7.2 -3" fill="none" stroke="#3B3B3B" stroke-width=".7" stroke-linecap="round"/>'
+      + '<circle cx="-2.9" cy="-1.9" r=".85" fill="'+HAIR+'"/><circle cx="2.9" cy="-1.9" r=".85" fill="'+HAIR+'"/>',
+    PERSON: shoulders('#0F6B5C') + '<path d="M-2.6 4.2 L0 6.6 L2.6 4.2 Z" fill="#fff"/>' + EARS + HEAD
+      + '<path d="M-7.8 -2.6 C-8.6 -9 -4.6 -11.8 0 -11.8 C4.8 -11.8 8.6 -9 7.8 -2.6 C7.2 -5 6 -6.8 4.4 -7.8 C1.6 -8.4 -1.8 -8.2 -4.6 -8.6 C-6.2 -7.2 -7.2 -5 -7.8 -2.6 Z" fill="'+HAIR+'"/>'
+      + EYES + SMILE
+  };
   function avatarSvg(type, color){
-    return '<svg width="40" height="40" viewBox="0 0 40 40">'
-      + '<defs><clipPath id="eoclip"><circle cx="20" cy="20" r="12.5"/></clipPath></defs>'
-      + '<circle cx="20" cy="20" r="14" fill="'+color+'" stroke="#fff" stroke-width="3"/>'
-      + '<g clip-path="url(#eoclip)">'+glyph(type, darken(color,22))+'</g></svg>';
+    return '<svg width="48" height="48" viewBox="-18 -18 36 36">'
+      + '<circle r="14.5" fill="'+BACKDROP[type]+'"/>' + PORTRAIT[type]
+      + '<circle r="14.5" fill="none" stroke="'+color+'" stroke-width="3.6"/>'
+      + '<circle r="16.9" fill="none" stroke="#fff" stroke-width="1.4"/></svg>';
   }
   function pointerSvg(color){
-    return '<svg width="40" height="40" viewBox="0 0 40 40" style="overflow:visible">'
-      + '<path d="M20 -5 L26 5 L14 5 Z" fill="'+color+'" stroke="#fff" stroke-width="1.6" stroke-linejoin="round"/></svg>';
+    return '<svg width="48" height="48" viewBox="-24 -24 48 48" style="overflow:visible">'
+      + '<path d="M0 -34 L8 -20 L-8 -20 Z" fill="'+color+'" stroke="#fff" stroke-width="1.6" stroke-linejoin="round"/></svg>';
   }
   function vehHtml(v){
     const color = v.overspeed ? '#D92D20' : (v.color||'#0F6B5C');
@@ -190,7 +209,7 @@ ${googleScripts}
       + '</div>';
   }
   function vehIcon(v){
-    return L.divIcon({className:'', iconSize:[40,40], iconAnchor:[20,20], html: vehHtml(v)});
+    return L.divIcon({className:'', iconSize:[48,48], iconAnchor:[24,24], html: vehHtml(v)});
   }
   function vehSig(v){ return [v.vehicleType,v.color,v.label,v.overspeed?1:0,v.moving?1:0].join('|'); }
 

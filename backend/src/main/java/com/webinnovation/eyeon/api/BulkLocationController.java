@@ -30,6 +30,9 @@ public class BulkLocationController {
      * Coordinates are the last GPS-confirmed fix; `valid` and `ts` describe the
      * newest packet, so the map can flag a device that is still reporting but has
      * lost its fix instead of presenting stale coordinates as live.
+     *
+     * <p>A tracker that has never had a fix and reports (0,0) has no position at all;
+     * it is left out rather than plotted in the Gulf of Guinea.
      */
     @GetMapping("/last")
     public List<LocationView> allLastKnown() {
@@ -38,6 +41,7 @@ public class BulkLocationController {
         return locationRepo.findAllLastKnownWithFixForOrg(orgId).stream()
                 .filter(f -> DeviceAccessService.canSee(visible, f.latest().deviceImei()))
                 .map(f -> LocationView.ofLastKnown(f.latest(), f.lastValid()))
+                .filter(LocationView::hasPosition)
                 .toList();
     }
 }

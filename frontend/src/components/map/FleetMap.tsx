@@ -352,8 +352,8 @@ function createVehicleIcon(
   justUpdated = false,
   speed = 0,
 ): L.DivIcon {
-  // ADL renders its 40×60 marker at roughly 24×36; selected gets a little larger.
-  const baseSize = isSelected ? 28 : 24;
+  // A portrait needs room to read as a face: the badge is ~42px across (48px selected).
+  const baseSize = isSelected ? 56 : 48;
   const { width, height } = getIconDimensions(baseSize);
   const classes = [
     'pp-vehicle-icon',
@@ -368,21 +368,22 @@ function createVehicleIcon(
     speed > 50 && speed <= 80 && !isOverspeed && 'pp-high-speed',
   ].filter(Boolean).join(' ');
 
-  // Add GPS warning badge for nofix or stale (scaled for taller icons)
+  // GPS warning badge for nofix or stale, pinned to the badge's upper-right rim
+  // (the portrait badge fills the middle ~49% of the icon box).
   const warningBadge = (noFix || isStale) ? `
     <div class="pp-gps-badge" style="
       position: absolute;
-      top: -2px;
-      right: -2px;
-      width: 10px;
-      height: 10px;
+      top: 22%;
+      right: 22%;
+      width: 14px;
+      height: 14px;
       background: ${noFix ? '#DC2626' : '#F59E0B'};
-      border: 1px solid #0A1928;
+      border: 1.5px solid #fff;
       border-radius: 50%;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 7px;
+      font-size: 9px;
       font-weight: bold;
       color: white;
       z-index: 10;
@@ -1531,7 +1532,7 @@ export function FleetMap({ devices, locations, selectedImei, onSelect, onRefresh
         .pp-vehicle-icon.pp-nofix::after {
           content: '';
           position: absolute;
-          inset: -4px;
+          inset: 21%;
           border: 2px dashed #DC2626;
           border-radius: 50%;
           pointer-events: none;
@@ -1548,7 +1549,7 @@ export function FleetMap({ devices, locations, selectedImei, onSelect, onRefresh
         .pp-vehicle-icon.pp-stale::after {
           content: '';
           position: absolute;
-          inset: -4px;
+          inset: 21%;
           border: 2px dashed #F59E0B;
           border-radius: 50%;
           pointer-events: none;

@@ -12,6 +12,7 @@ class PersonTypeTest {
     void accepts_person_types_in_any_case() {
         assertEquals("BOY", PersonType.canonical("BOY"));
         assertEquals("GIRL", PersonType.canonical(" girl "));
+        assertEquals("OLD_MAN", PersonType.canonical("old_man"));
         assertEquals("PERSON", PersonType.canonical("Person"));
     }
 

@@ -14,6 +14,7 @@ import java.util.stream.Collectors;
 public enum PersonType {
     BOY,
     GIRL,
+    OLD_MAN,
     PERSON;
 
     public static final Set<String> NAMES =

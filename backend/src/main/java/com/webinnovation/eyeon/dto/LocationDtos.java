@@ -31,6 +31,11 @@ public final class LocationDtos {
             return of(l, l.valid() ? l.ts() : null);
         }
 
+        /** False for a packet without a fix whose coordinates are the (0,0) placeholder. */
+        public boolean hasPosition() {
+            return valid || lastValidTs != null || latitude != 0 || longitude != 0;
+        }
+
         private static LocationView of(Location l, Instant lastValidTs) {
             return new LocationView(
                     l.id(),

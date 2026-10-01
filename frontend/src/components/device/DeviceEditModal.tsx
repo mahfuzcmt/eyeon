@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { api, extractError } from "@/lib/api";
 import { useLocale, type StringKey } from "@/lib/i18n";
-import { buildPersonSvg, PERSON_TYPES, DEFAULT_ICON_COLOR, normalizePersonType, type PersonTypeId } from "@/lib/personIcons";
+import { buildPersonAvatar, PERSON_TYPES, DEFAULT_ICON_COLOR, normalizePersonType, type PersonTypeId } from "@/lib/personIcons";
 import { useDeviceGroups } from "@/hooks/useDeviceGroups";
 import type { DeviceView } from "@/types/domain";
 
@@ -119,14 +119,14 @@ export function DeviceEditModal({ device, onClose, onSaved }: Props) {
 
           <div className="text-[14px]">
             <span className="mb-1 block text-ink-900">{t("veh.icon")}</span>
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-4 gap-2">
               {PERSON_TYPES.map((ty) => (
                 <button
                   key={ty}
                   type="button"
                   onClick={() => setVehicleType(ty)}
                   aria-pressed={vehicleType === ty}
-                  className={`flex flex-col items-center gap-0.5 rounded-md border p-2 transition ${
+                  className={`flex flex-col items-center gap-1 rounded-md border p-2 transition ${
                     vehicleType === ty
                       ? "border-brand-500 bg-brand-50"
                       : "border-surface-300 hover:bg-surface-100"
@@ -134,7 +134,7 @@ export function DeviceEditModal({ device, onClose, onSaved }: Props) {
                 >
                   <span
                     // Trusted static SVG built from our own constants.
-                    dangerouslySetInnerHTML={{ __html: buildPersonSvg(ty, iconColor, null, 30) }}
+                    dangerouslySetInnerHTML={{ __html: buildPersonAvatar(ty, iconColor, 48) }}
                   />
                   <span className="text-[13px] text-ink-700">{t(`person.type.${ty}` as StringKey)}</span>
                 </button>
