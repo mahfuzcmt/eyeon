@@ -34,6 +34,12 @@ public class LocationData {
     private Long accOnTimeSeconds;
     private Integer gsmSignal;
     private byte[] rawPayload;
+    /**
+     * Null for a GPS packet. "WIFI" / "LBS" when the coordinates were resolved from a
+     * network scan by a geolocation service; {@link #accuracyMeters} is then its radius.
+     */
+    private String positionSource;
+    private Integer accuracyMeters;
 
     /**
      * GT06 alarm code from the 0x16 packet — 0 means a normal location packet.

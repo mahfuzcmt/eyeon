@@ -231,6 +231,10 @@ export interface LocationView {
   valid: boolean;
   /** When the coordinates were last confirmed by a fix. Null if never fixed. */
   lastValidTs?: string | null;
+  /** How the coordinates were obtained: null/absent = GPS, WIFI or LBS = estimated indoors. */
+  source?: "WIFI" | "LBS" | null;
+  /** Radius of a WIFI / LBS estimate in metres. */
+  accuracyM?: number | null;
   satellites?: number | null;
   accOn?: boolean | null;
   voltageMv?: number | null;

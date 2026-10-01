@@ -20,5 +20,8 @@ public record Location(
         Integer voltageMv,
         Long mileageM,
         Integer gsmSignal,
-        Integer engineHoursSeconds
+        Integer engineHoursSeconds,
+        /** Null = GPS; "WIFI" / "LBS" = resolved from a network scan. */
+        String source,
+        Integer accuracyM
 ) {}

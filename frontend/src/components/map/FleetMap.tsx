@@ -651,7 +651,13 @@ export function FleetMap({ devices, locations, selectedImei, onSelect, onRefresh
 
     const acc = location?.accOn == null ? "—" : location.accOn ? "ON" : "OFF";
     const accColor = location?.accOn ? "#16a34a" : "#6b7280";
-    const fix = !location ? "—" : location.valid ? "GPS" : t("fleet.cellFallback");
+    const approx = location?.accuracyM != null
+      ? ` (≈${location.accuracyM >= 1000 ? `${(location.accuracyM / 1000).toFixed(1)} km` : `${location.accuracyM} m`})`
+      : "";
+    const fix = !location ? "—"
+      : location.source === "WIFI" ? `Wi-Fi${approx}`
+      : location.source === "LBS" ? `${t("fleet.cellFallback")}${approx}`
+      : location.valid ? "GPS" : t("fleet.cellFallback");
     const voltage = location?.voltageMv ?? device?.lastVoltageMv;
     const power = voltage != null ? `${(voltage / 1000).toFixed(1)} V` : "—";
     const battery = formatBatteryPercent(voltage);

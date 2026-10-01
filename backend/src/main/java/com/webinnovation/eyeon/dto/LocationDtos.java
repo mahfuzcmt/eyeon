@@ -25,7 +25,11 @@ public final class LocationDtos {
             Integer gsmSignal,
             Integer engineHoursSeconds,
             /** When the plotted coordinates were last confirmed by a GPS fix; null if never. */
-            Instant lastValidTs
+            Instant lastValidTs,
+            /** How the plotted coordinates were obtained: null = GPS, "WIFI" or "LBS". */
+            String source,
+            /** Radius of the WIFI / LBS estimate in metres; null for GPS. */
+            Integer accuracyM
     ) {
         public static LocationView of(Location l) {
             return of(l, l.valid() ? l.ts() : null);
@@ -53,7 +57,9 @@ public final class LocationDtos {
                     l.mileageM(),
                     l.gsmSignal(),
                     l.engineHoursSeconds(),
-                    lastValidTs
+                    lastValidTs,
+                    l.source(),
+                    l.accuracyM()
             );
         }
 
@@ -83,7 +89,9 @@ public final class LocationDtos {
                     latest.mileageM(),
                     latest.gsmSignal(),
                     latest.engineHoursSeconds(),
-                    lastValid.ts()
+                    lastValid.ts(),
+                    lastValid.source(),
+                    lastValid.accuracyM()
             );
         }
     }

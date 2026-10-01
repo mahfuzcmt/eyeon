@@ -88,6 +88,15 @@ eyeon:
   # OpenCellID: https://opencellid.org (free, unlimited with API key)
   unwiredlabs:
     api-key: ${EYEON_UNWIREDLABS_API_KEY:}
+  # Indoor positions: personal trackers without a GPS fix report the Wi-Fi access points and
+  # cell towers they can hear (0xA1 / 0xA2). Resolving those needs the Google Geolocation API
+  # (a SERVER key with "Geolocation API" enabled - not the browser Maps key) or, as a fallback,
+  # the UnwiredLabs key above. Without either, such trackers have no position indoors.
+  google-geolocation:
+    api-key: ${EYEON_GOOGLE_GEOLOCATION_API_KEY:}
+  geolocation:
+    # Minimum gap between paid geolocation requests per tracker while its surroundings change.
+    min-interval-seconds: ${EYEON_GEOLOCATION_MIN_INTERVAL_SECONDS:60}
   opencellid:
     api-key: ${EYEON_OPENCELLID_API_KEY:}
 

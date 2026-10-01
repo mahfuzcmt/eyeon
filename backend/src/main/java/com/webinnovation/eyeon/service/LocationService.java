@@ -49,14 +49,17 @@ public class LocationService {
     public void saveAndBroadcast(LocationData loc) {
         // Validate GPS fix based on satellite count (industry standard: ≥4 satellites)
         // Override device-reported validity if satellite count is insufficient
-        if (loc.isValid() && loc.getSatellites() < MIN_SATELLITES_FOR_VALID_FIX) {
+        // A position resolved from a Wi-Fi / cell scan has no satellites by definition and has
+        // already been through a geolocation service: neither GPS rule below applies to it.
+        boolean gps = loc.getPositionSource() == null;
+        if (gps && loc.isValid() && loc.getSatellites() < MIN_SATELLITES_FOR_VALID_FIX) {
             log.debug("Marking GPS fix as invalid due to low satellite count: imei={} satellites={} (min={})",
                     loc.getImei(), loc.getSatellites(), MIN_SATELLITES_FOR_VALID_FIX);
             loc.setValid(false);
         }
         // When GPS is invalid, try to get better coordinates from cell tower lookup
-        Integer cellAccuracy = null;
-        if (!loc.isValid() && loc.getMcc() > 0 && loc.getLac() > 0 && loc.getCellId() > 0) {
+        Integer cellAccuracy = gps ? null : loc.getAccuracyMeters();
+        if (gps && !loc.isValid() && loc.getMcc() > 0 && loc.getLac() > 0 && loc.getCellId() > 0) {
             var cellLoc = cellLocationService.lookup(loc.getMcc(), loc.getMnc(), loc.getLac(), loc.getCellId());
             if (cellLoc.isPresent()) {
                 var cell = cellLoc.get();
@@ -145,6 +148,8 @@ public class LocationService {
         m.put("engineHoursSeconds", d.getAccOnTimeSeconds() == null ? null : d.getAccOnTimeSeconds().intValue());
         // Cell tower accuracy when GPS is invalid and we used OpenCellID/UnwiredLabs
         m.put("cellAccuracyMeters", cellAccuracyMeters);
+        m.put("source", d.getPositionSource());
+        m.put("accuracyM", d.getAccuracyMeters());
         try {
             return objectMapper.writeValueAsString(m);
         } catch (JsonProcessingException e) {

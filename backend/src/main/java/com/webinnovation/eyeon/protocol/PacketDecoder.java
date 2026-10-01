@@ -209,6 +209,52 @@ public class PacketDecoder {
     // Jimi IoT Protocol V3.2 Decoders
     // ─────────────────────────────────────────────────────────────────────────
 
+    /** Cell slots in a 0xA1 / 0xA2 packet: the serving cell and six neighbours. */
+    private static final int NETWORK_SCAN_CELLS = 7;
+
+    /**
+     * Decode a Jimi 4G network scan: 0xA1 (cells only) or 0xA2 (cells + Wi-Fi). The tracker
+     * sends these instead of a location packet while it has no GPS fix.
+     * <pre>
+     *   [date-time:6][mcc:2, bit 15 set = 2-byte mnc][mnc:1|2]
+     *   7 x [lac:4][cell-id:8][signal:1]        (unused slots are all zero)
+     *   [timing-advance:1]
+     *   0xA2: [wifi-count:1] n x [mac:6][signal:1]      0xA1: [language:2]
+     * </pre>
+     * Wi-Fi signal is the magnitude of the dBm value (0x35 = -53 dBm).
+     */
+    public NetworkScan decodeNetworkScan(ByteBuf content, boolean wifi) {
+        java.time.Instant ts = decodeDateTime(content);
+        int mccRaw = content.readUnsignedShort();
+        int mnc = (mccRaw & 0x8000) != 0 ? content.readUnsignedShort() : content.readUnsignedByte();
+
+        java.util.List<NetworkScan.Cell> cells = new java.util.ArrayList<>(NETWORK_SCAN_CELLS);
+        for (int i = 0; i < NETWORK_SCAN_CELLS && content.readableBytes() >= 13; i++) {
+            long lac = content.readUnsignedInt();
+            long cellId = content.readLong();
+            int signal = content.readUnsignedByte();
+            if (cellId > 0) cells.add(new NetworkScan.Cell(lac, cellId, signal));
+        }
+
+        java.util.List<NetworkScan.Wifi> aps = new java.util.ArrayList<>();
+        if (wifi && content.readableBytes() >= 2) {
+            content.readUnsignedByte();  // timing advance
+            int count = content.readUnsignedByte();
+            for (int i = 0; i < count && content.readableBytes() >= 7; i++) {
+                byte[] mac = new byte[6];
+                content.readBytes(mac);
+                int signal = content.readUnsignedByte();
+                StringBuilder sb = new StringBuilder(17);
+                for (int b = 0; b < 6; b++) {
+                    if (b > 0) sb.append(':');
+                    sb.append(String.format("%02x", mac[b] & 0xFF));
+                }
+                aps.add(new NetworkScan.Wifi(sb.toString(), -signal));
+            }
+        }
+        return new NetworkScan(ts, mccRaw & 0x7FFF, mnc, java.util.List.copyOf(cells), java.util.List.copyOf(aps));
+    }
+
     /**
      * Decode a Jimi 0x26 alarm packet. Layout is similar to GT06 alarm but with
      * Jimi-specific alarm codes:

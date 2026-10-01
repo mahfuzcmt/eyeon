@@ -41,6 +41,8 @@ public final class PacketType {
     public static final int JIMI_LBS_ALARM = 0x19;     // LBS alarm (cell-tower only)
     public static final int JIMI_LBS_EXTENSION = 0x28; // LBS extension data
     public static final int JIMI_WIFI = 0x2C;          // WiFi positioning data
+    public static final int JIMI_LBS_4G = 0xA1;        // 4G: serving cell + 6 neighbours, no GPS
+    public static final int JIMI_WIFI_4G = 0xA2;       // 4G: cells + Wi-Fi access points, no GPS
     public static final int JIMI_TIME_CALIBRATION = 0x8A; // Time sync request
     public static final int JIMI_INFO_TRANSMISSION = 0x94; // Device info upload
 
@@ -63,6 +65,8 @@ public final class PacketType {
                 || proto == JIMI_LBS_ALARM
                 || proto == JIMI_LBS_EXTENSION
                 || proto == JIMI_WIFI
+                || proto == JIMI_LBS_4G
+                || proto == JIMI_WIFI_4G
                 || proto == JIMI_TIME_CALIBRATION
                 || proto == JIMI_INFO_TRANSMISSION;
     }

@@ -27,7 +27,7 @@ public class LocationRepository {
     private static final String SELECT_FIELDS = """
             id, device_imei, org_id, ts, received_at, latitude, longitude,
             speed, course, altitude, satellites, valid, acc_on, voltage_mv, mileage_m,
-            gsm_signal, engine_hours_seconds
+            gsm_signal, engine_hours_seconds, source, accuracy_m
             """;
 
     private static final RowMapper<Location> ROW_MAPPER = (rs, rn) -> new Location(
@@ -47,7 +47,9 @@ public class LocationRepository {
             (Integer) rs.getObject("voltage_mv"),
             (Long) rs.getObject("mileage_m"),
             (Integer) rs.getObject("gsm_signal"),
-            (Integer) rs.getObject("engine_hours_seconds")
+            (Integer) rs.getObject("engine_hours_seconds"),
+            rs.getString("source"),
+            (Integer) rs.getObject("accuracy_m")
     );
 
     /**
@@ -75,21 +77,23 @@ public class LocationRepository {
                 .addValue("mcc", d.getMcc() > 0 ? d.getMcc() : null)
                 .addValue("mnc", d.getMnc() > 0 ? d.getMnc() : null)
                 .addValue("lac", d.getLac() > 0 ? d.getLac() : null)
-                .addValue("cellId", d.getCellId() > 0 ? d.getCellId() : null);
+                .addValue("cellId", d.getCellId() > 0 ? d.getCellId() : null)
+                .addValue("source", d.getPositionSource())
+                .addValue("accuracyM", d.getAccuracyMeters());
 
         jdbc.update("""
                 INSERT INTO locations
                   (device_imei, org_id, ts, geom, latitude, longitude,
                    speed, course, satellites, valid, acc_on, voltage_mv, mileage_m,
                    gsm_signal, engine_hours_seconds, raw_payload,
-                   mcc, mnc, lac, cell_id)
+                   mcc, mnc, lac, cell_id, source, accuracy_m)
                 VALUES
                   (:imei, :orgId, :ts,
                    ST_SetSRID(ST_MakePoint(:lng, :lat), 4326)::geography,
                    :lat, :lng, :speed, :course, :satellites, :valid,
                    :accOn, :voltageMv, :mileage,
                    :gsmSignal, :engineHours, :rawPayload,
-                   :mcc, :mnc, :lac, :cellId)
+                   :mcc, :mnc, :lac, :cellId, :source, :accuracyM)
                 """, params);
     }
 

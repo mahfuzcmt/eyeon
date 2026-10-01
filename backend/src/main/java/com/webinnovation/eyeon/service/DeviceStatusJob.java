@@ -12,15 +12,17 @@ import org.springframework.transaction.annotation.Transactional;
  * stopped receiving locations (CLAUDE.md §16 Phase 3).
  *
  * <p>Threshold ({@code STALE_DEVICE_MINUTES}) intentionally tracks the device protocol's
- * heartbeat cadence — most GT06 firmware emits at 30-180s intervals; we mark offline
- * after 5 minutes to avoid flapping on momentary 4G drops.
+ * heartbeat cadence. Vehicle GT06 firmware emits every 30-180 s, but battery-powered
+ * personal trackers send their 0x36 heartbeat only every 7 minutes (measured on production,
+ * 2026-10-01) and were flipped OFFLINE for two minutes out of every seven at the old
+ * 5-minute threshold. 10 minutes matches CLAUDE.md §13 and ShareLocationService.
  */
 @Component
 @RequiredArgsConstructor
 @Slf4j
 public class DeviceStatusJob {
 
-    private static final int STALE_DEVICE_MINUTES = 5;
+    private static final int STALE_DEVICE_MINUTES = 10;
 
     private final DeviceRepository deviceRepo;
     private final TripService tripService;

@@ -231,4 +231,49 @@ class PacketDecoderTest {
             content.release();
         }
     }
+
+    // ---- Jimi 4G network scans, captured from a personal tracker on production (2026-10-01) ----
+
+    private static final String WIFI_SCAN_0XA2 = "1a0a01062e2681d600020000bbef0000000001ff941037"
+            + "0".repeat(156)
+            + "0008105a95ead1d1350c80630a52be3d84fc14919b7e40dc8e8dbaabf8447820514b047e47"
+            + "125a95ab05b54984fc14ca55484bfebabd66fb264b";
+
+    private static final String CELL_SCAN_0XA1 = "1a0a0106341881d600020000bbef0000000001ff941030"
+            + "0000bbef0000000001ffaa470b" + "0000bbef0000000001ffc14a08" + "0000bbef0000000001ffaa4a0e"
+            + "0000bbef0000000001ffc14b0a" + "0000bbef0000000001ff94161e" + "0000bbef0000000001ff940d14"
+            + "000002";
+
+    @Test
+    void wifi_scan_0xa2_decodes_serving_cell_and_access_points() {
+        ByteBuf content = Unpooled.wrappedBuffer(io.netty.buffer.ByteBufUtil.decodeHexDump(WIFI_SCAN_0XA2));
+        try {
+            NetworkScan scan = decoder.decodeNetworkScan(content, true);
+
+            assertThat(scan.ts()).isEqualTo(java.time.Instant.parse("2026-10-01T06:46:38Z"));
+            assertThat(scan.mcc()).isEqualTo(470);   // Bangladesh; bit 15 of the field flags a 2-byte MNC
+            assertThat(scan.mnc()).isEqualTo(2);     // Robi
+            assertThat(scan.cells()).containsExactly(new NetworkScan.Cell(0xBBEF, 0x01FF9410L, 0x37));
+            assertThat(scan.wifi()).hasSize(8);
+            assertThat(scan.wifi().get(0)).isEqualTo(new NetworkScan.Wifi("10:5a:95:ea:d1:d1", -53));
+            assertThat(scan.wifi().get(7)).isEqualTo(new NetworkScan.Wifi("fe:ba:bd:66:fb:26", -75));
+        } finally {
+            content.release();
+        }
+    }
+
+    @Test
+    void cell_scan_0xa1_decodes_seven_cells_and_no_wifi() {
+        ByteBuf content = Unpooled.wrappedBuffer(io.netty.buffer.ByteBufUtil.decodeHexDump(CELL_SCAN_0XA1));
+        try {
+            NetworkScan scan = decoder.decodeNetworkScan(content, false);
+
+            assertThat(scan.cells()).hasSize(7);
+            assertThat(scan.cells().get(0).cellId()).isEqualTo(0x01FF9410L);
+            assertThat(scan.cells().get(6)).isEqualTo(new NetworkScan.Cell(0xBBEF, 0x01FF940DL, 0x14));
+            assertThat(scan.hasWifi()).isFalse();
+        } finally {
+            content.release();
+        }
+    }
 }

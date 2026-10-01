@@ -118,4 +118,22 @@ class LocationServiceTest {
         assertFalse(noFixSeen.getValue().isBefore(before));
         assertFalse(fixSeen.getValue().isBefore(before));
     }
+
+    /**
+     * A position resolved from a Wi-Fi scan has no satellites. The "fewer than 4 satellites is
+     * not a fix" rule is about GPS and must not demote it, or an indoor tracker never gets a marker.
+     */
+    @Test
+    void wifiPositionAdvancesTheDeviceDespiteHavingNoSatellites() {
+        LocationData d = packet(true);
+        d.setSatellites(0);
+        d.setPositionSource("WIFI");
+        d.setAccuracyMeters(35);
+
+        service.saveAndBroadcast(d);
+
+        verify(deviceRepo).updateLastPosition(
+                eq("866557085765354"), anyDouble(), anyDouble(), anyInt(), anyInt(),
+                any(), any(), any(), any());
+    }
 }

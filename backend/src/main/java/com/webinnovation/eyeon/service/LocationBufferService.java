@@ -190,6 +190,8 @@ public class LocationBufferService {
             m.put("gsmSignal", d.getGsmSignal());
             m.put("engineHoursSeconds", d.getAccOnTimeSeconds() == null ? null : d.getAccOnTimeSeconds().intValue());
             m.put("cellAccuracyMeters", cellAccuracyMap.get(d.getImei()));
+            m.put("source", d.getPositionSource());
+            m.put("accuracyM", d.getAccuracyMeters());
             locationList.add(m);
         }
 

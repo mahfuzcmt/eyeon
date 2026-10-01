@@ -41,6 +41,7 @@ public class Gt06Handler extends SimpleChannelInboundHandler<ByteBuf> {
     private final LocationService locationService;
     private final com.webinnovation.eyeon.service.AlarmService alarmService;
     private final com.webinnovation.eyeon.service.DeviceCommandService deviceCommandService;
+    private final com.webinnovation.eyeon.service.NetworkLocationService networkLocationService;
     private final AsyncTaskExecutor ingestExecutor;
 
     public Gt06Handler(PacketDecoder packetDecoder,
@@ -49,6 +50,7 @@ public class Gt06Handler extends SimpleChannelInboundHandler<ByteBuf> {
                        LocationService locationService,
                        com.webinnovation.eyeon.service.AlarmService alarmService,
                        com.webinnovation.eyeon.service.DeviceCommandService deviceCommandService,
+                       com.webinnovation.eyeon.service.NetworkLocationService networkLocationService,
                        @Qualifier("ingestExecutor") AsyncTaskExecutor ingestExecutor) {
         this.packetDecoder = packetDecoder;
         this.packetEncoder = packetEncoder;
@@ -56,6 +58,7 @@ public class Gt06Handler extends SimpleChannelInboundHandler<ByteBuf> {
         this.locationService = locationService;
         this.alarmService = alarmService;
         this.deviceCommandService = deviceCommandService;
+        this.networkLocationService = networkLocationService;
         this.ingestExecutor = ingestExecutor;
     }
 
@@ -130,6 +133,7 @@ public class Gt06Handler extends SimpleChannelInboundHandler<ByteBuf> {
             // Jimi IoT specific packets
             case PacketType.JIMI_LBS_EXTENSION -> handleJimiLbsExtension(ctx, serial, content);
             case PacketType.JIMI_WIFI -> handleJimiWifi(ctx, serial, content);
+            case PacketType.JIMI_LBS_4G, PacketType.JIMI_WIFI_4G -> handleNetworkScan(ctx, proto, serial, content);
             case PacketType.JIMI_TIME_CALIBRATION -> handleJimiTimeCalibration(ctx, serial, content);
             case PacketType.JIMI_INFO_TRANSMISSION -> handleJimiInfoTransmission(ctx, serial, content);
 
@@ -558,6 +562,34 @@ public class Gt06Handler extends SimpleChannelInboundHandler<ByteBuf> {
     private void handleJimiWifi(ChannelHandlerContext ctx, int serial, ByteBuf content) {
         ctx.writeAndFlush(packetEncoder.buildAck(PacketType.JIMI_WIFI, serial));
         noteUnstored(ctx, PacketType.JIMI_WIFI, content);
+    }
+
+    /**
+     * Jimi 4G network scan: 0xA1 (cell towers) / 0xA2 (cell towers + Wi-Fi access points).
+     * A personal tracker sends these every 10 seconds instead of location packets while it has
+     * no GPS fix (indoors). NetworkLocationService turns the scan into a position.
+     */
+    private void handleNetworkScan(ChannelHandlerContext ctx, int proto, int serial, ByteBuf content) {
+        ctx.writeAndFlush(packetEncoder.buildAck(proto, serial));
+        LoginGate gate = gateOf(ctx);
+        if (gate == null) {
+            log.debug("Dropping packet on channel id={} that never logged in", ctx.channel().id());
+            return;
+        }
+
+        byte[] raw = new byte[content.readableBytes()];
+        content.getBytes(content.readerIndex(), raw);
+
+        gate.submit(session -> {
+            String imei = session.imei();
+            try {
+                var scan = packetDecoder.decodeNetworkScan(
+                        io.netty.buffer.Unpooled.wrappedBuffer(raw), proto == PacketType.JIMI_WIFI_4G);
+                networkLocationService.onScan(imei, session.orgId(), proto, scan, raw);
+            } catch (Exception e) {
+                log.error("Network scan decode/persist failed for imei={}: {}", imei, e.getMessage(), e);
+            }
+        }, ingestExecutor);
     }
 
     /**

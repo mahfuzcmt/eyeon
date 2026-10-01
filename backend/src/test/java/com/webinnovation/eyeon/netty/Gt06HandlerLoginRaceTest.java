@@ -69,7 +69,8 @@ class Gt06HandlerLoginRaceTest {
             return Optional.of(device);
         });
         Gt06Handler handler = new Gt06Handler(new PacketDecoder(), new PacketEncoder(), deviceService,
-                locationService, alarmService, mock(DeviceCommandService.class), new SimpleAsyncTaskExecutor("ingest-"));
+                locationService, alarmService, mock(DeviceCommandService.class),
+                mock(com.webinnovation.eyeon.service.NetworkLocationService.class), new SimpleAsyncTaskExecutor("ingest-"));
         channel = new EmbeddedChannel(handler);
     }
 

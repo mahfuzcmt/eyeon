@@ -60,6 +60,7 @@ services:
       SSL_SMS_API_TOKEN: ${SSL_SMS_API_TOKEN:-}
       SSL_SMS_SENDER_ID: ${SSL_SMS_SENDER_ID:-EYEON}
       EYEON_UNWIREDLABS_API_KEY: ${EYEON_UNWIREDLABS_API_KEY:-}
+      EYEON_GOOGLE_GEOLOCATION_API_KEY: ${EYEON_GOOGLE_GEOLOCATION_API_KEY:-}
       EYEON_OPENCELLID_API_KEY: ${EYEON_OPENCELLID_API_KEY:-}
       # First-run admin seeding — overrides application-prod.yml's enabled:false.
       # Idempotent: DataSeeder skips if any user already exists.

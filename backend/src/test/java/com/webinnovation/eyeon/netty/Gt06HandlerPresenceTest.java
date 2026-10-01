@@ -7,6 +7,9 @@ import com.webinnovation.eyeon.service.AlarmService;
 import com.webinnovation.eyeon.service.DeviceCommandService;
 import com.webinnovation.eyeon.service.DeviceService;
 import com.webinnovation.eyeon.service.LocationService;
+import com.webinnovation.eyeon.service.NetworkLocationService;
+import com.webinnovation.eyeon.protocol.NetworkScan;
+import org.mockito.ArgumentCaptor;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufUtil;
 import io.netty.buffer.Unpooled;
@@ -40,20 +43,28 @@ class Gt06HandlerPresenceTest {
     private static final String HEARTBEAT_0X36 =
             "78781e3600030400020041040000090d00320101001802017e006a01320007e6340d0a";
 
+    /** Serving cell only, 8 access points: the tracker lying indoors in Dhaka, 2026-10-01 06:46:38 UTC. */
+    static final String WIFI_SCAN_CONTENT = "1a0a01062e2681d600020000bbef0000000001ff941037"
+            + "0".repeat(156)
+            + "0008105a95ead1d1350c80630a52be3d84fc14919b7e40dc8e8dbaabf8447820514b047e47"
+            + "125a95ab05b54984fc14ca55484bfebabd66fb264b";
+
     private DeviceService deviceService;
     private LocationService locationService;
+    private NetworkLocationService networkLocationService;
     private EmbeddedChannel channel;
 
     @BeforeEach
     void setUp() {
         deviceService = mock(DeviceService.class);
         locationService = mock(LocationService.class);
+        networkLocationService = mock(NetworkLocationService.class);
         Device device = mock(Device.class);
         when(device.orgId()).thenReturn(UUID.randomUUID());
         when(deviceService.findByImei(IMEI)).thenReturn(Optional.of(device));
         Gt06Handler handler = new Gt06Handler(new PacketDecoder(), new PacketEncoder(), deviceService,
                 locationService, mock(AlarmService.class), mock(DeviceCommandService.class),
-                new SimpleAsyncTaskExecutor("ingest-"));
+                networkLocationService, new SimpleAsyncTaskExecutor("ingest-"));
         channel = new EmbeddedChannel(handler);
     }
 
@@ -98,6 +109,23 @@ class Gt06HandlerPresenceTest {
         // status block 00 03 04 00 02: GSM strength 4
         verify(deviceService, timeout(3000)).applyHeartbeatStatus(IMEI, 4);
         verify(locationService, never()).saveAndBroadcast(any());
+    }
+
+    @Test
+    void wifi_scan_0xa2_is_acked_and_handed_to_the_network_locator() {
+        login();
+
+        // Content of the captured 0xA2 packet (see PacketDecoderTest), re-framed with serial 9.
+        channel.writeInbound(frame(0xA2, ByteBufUtil.decodeHexDump(WIFI_SCAN_CONTENT), 9));
+
+        ByteBuf ack = channel.readOutbound();
+        assertEquals("787805a20009", ByteBufUtil.hexDump(ack).substring(0, 12));
+        ack.release();
+        ArgumentCaptor<NetworkScan> scan = ArgumentCaptor.forClass(NetworkScan.class);
+        verify(networkLocationService, timeout(3000)).onScan(
+                org.mockito.ArgumentMatchers.eq(IMEI), any(), org.mockito.ArgumentMatchers.eq(0xA2), scan.capture(), any());
+        assertEquals(8, scan.getValue().wifi().size());
+        assertEquals(470, scan.getValue().mcc());
     }
 
     @Test
