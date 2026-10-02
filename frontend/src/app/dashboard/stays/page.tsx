@@ -277,7 +277,7 @@ export default function Page() {
                       <div className="truncate font-display text-[17px] font-semibold text-ink-900">{d.name || d.vehiclePlate || d.imei}</div>
                       {stays.length > 0 && (
                         <div className="text-[14px] text-ink-500">
-                          {formatNumber(places, locale)} {t("stays.places")} · {formatLength(total, locale, t)} {t("stays.total")}
+                          {formatNumber(places, locale)} {t(places === 1 ? "stays.place" : "stays.places")} · {formatLength(total, locale, t)} {t("stays.total")}
                         </div>
                       )}
                     </div>
@@ -385,7 +385,7 @@ function ByPlace({ stays, locale, t, timeRange }: ListProps) {
             <div className="min-w-0 flex-1">
               <div className="truncate text-[15px] font-semibold text-ink-900">{placeLabel(list[0])}</div>
               <div className="text-[14px] text-ink-500">
-                {formatNumber(list.length, locale)} {t("stays.visits")}
+                {formatNumber(list.length, locale)} {t(list.length === 1 ? "stays.visit" : "stays.visits")}
               </div>
             </div>
             <div className="shrink-0 text-[15px] font-semibold text-ink-900">{formatLength(total, locale, t)}</div>

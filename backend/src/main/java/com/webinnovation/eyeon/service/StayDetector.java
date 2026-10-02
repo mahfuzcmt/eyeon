@@ -20,7 +20,8 @@ import java.util.List;
  *   <li>One or two stray points (indoor GPS jumping across the road and back) are ignored; three
  *       in a row, or {@link #OUTLIER_SPAN} spent outside, mean the person has left.</li>
  *   <li>Anything shorter than {@link #MIN_STAY} is a pause on the way, not a stay.</li>
- *   <li>Two stays within one radius and {@link #MERGE_GAP} of each other are joined.</li>
+ *   <li>Two stays within one radius and {@link #MERGE_GAP} of each other are joined, and so are
+ *       two within two radii that follow each other inside {@link #QUICK_MERGE_GAP}.</li>
  * </ul>
  */
 public final class StayDetector {
@@ -32,6 +33,11 @@ public final class StayDetector {
     static final Duration OUTLIER_SPAN = Duration.ofMinutes(3);
     /** Two stays this close in time and within one radius of each other are one stay. */
     static final Duration MERGE_GAP = Duration.ofMinutes(15);
+    /**
+     * Nobody leaves a place, settles 300 m away and is "staying" there within this time: two
+     * stays that follow each other this quickly are one, out to two radii.
+     */
+    static final Duration QUICK_MERGE_GAP = Duration.ofMinutes(5);
     /** The centre is the mean of the first points of the run, then stays put. */
     static final int CENTRE_POINTS = 5;
 
@@ -100,9 +106,7 @@ public final class StayDetector {
         List<Stay> out = new ArrayList<>(stays.size());
         for (Stay s : stays) {
             Stay prev = out.isEmpty() ? null : out.get(out.size() - 1);
-            if (prev != null
-                    && Duration.between(prev.to(), s.from()).compareTo(MERGE_GAP) <= 0
-                    && meters(prev.lat(), prev.lng(), s.lat(), s.lng()) <= RADIUS_M) {
+            if (prev != null && samePlace(prev, s)) {
                 int n = prev.points() + s.points();
                 out.set(out.size() - 1, new Stay(prev.from(), s.to(),
                         (prev.lat() * prev.points() + s.lat() * s.points()) / n,
@@ -112,6 +116,13 @@ public final class StayDetector {
             }
         }
         return out;
+    }
+
+    private static boolean samePlace(Stay a, Stay b) {
+        Duration gap = Duration.between(a.to(), b.from());
+        double apart = meters(a.lat(), a.lng(), b.lat(), b.lng());
+        return (gap.compareTo(MERGE_GAP) <= 0 && apart <= RADIUS_M)
+                || (gap.compareTo(QUICK_MERGE_GAP) <= 0 && apart <= 2 * RADIUS_M);
     }
 
     /** Great-circle distance in metres (haversine); accurate to well under a metre at these ranges. */

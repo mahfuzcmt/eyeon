@@ -117,6 +117,29 @@ class StayDetectorTest {
     }
 
     @Test
+    void a_second_circle_three_minutes_later_and_250_metres_away_is_still_the_same_place() {
+        // Seen in production: the night's single Wi-Fi position, then GPS fixes at the gate from 13:39.
+        List<Point> pts = new ArrayList<>();
+        pts.add(at(0, 0));
+        pts.add(at(3600, 0));
+        for (int s = 3780; s <= 5400; s += 60) pts.add(at(s, 250));
+
+        List<Stay> stays = StayDetector.detect(pts);
+
+        assertEquals(1, stays.size());
+        assertEquals(5400, stays.get(0).seconds());
+    }
+
+    @Test
+    void a_stop_250_metres_away_ten_minutes_later_is_a_different_place() {
+        List<Point> pts = new ArrayList<>();
+        for (int s = 0; s <= 600; s += 60) pts.add(at(s, 0));
+        for (int s = 1200; s <= 1800; s += 60) pts.add(at(s, 250));
+
+        assertEquals(2, StayDetector.detect(pts).size());
+    }
+
+    @Test
     void distance_is_in_metres() {
         assertEquals(111.2, StayDetector.meters(23.75, 90.39, 23.751, 90.39), 0.5);
     }
