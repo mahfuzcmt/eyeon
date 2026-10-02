@@ -34,6 +34,7 @@ class AlarmRuleStateTest {
     private LocationRepository locationRepo;
     private AlarmRuleService service;
     private DeviceAccessService access;
+    private com.webinnovation.eyeon.repository.TrackerSettingsRepository restRepo;
     private final UUID orgId = UUID.randomUUID();
     private final Instant now = Instant.parse("2026-09-16T10:00:00Z");
 
@@ -45,7 +46,9 @@ class AlarmRuleStateTest {
         locationRepo = mock(LocationRepository.class);
         access = mock(DeviceAccessService.class);
         when(access.visibleImeis(any())).thenReturn(null);
-        service = new AlarmRuleService(ruleRepo, alarmService, deviceRepo, locationRepo, access);
+        restRepo = mock(com.webinnovation.eyeon.repository.TrackerSettingsRepository.class);
+        when(restRepo.restWindows(any())).thenReturn(java.util.Map.of());
+        service = new AlarmRuleService(ruleRepo, alarmService, deviceRepo, locationRepo, access, restRepo);
         when(ruleRepo.tryFire(any(), anyString(), anyInt(), any())).thenReturn(true);
     }
 
@@ -76,6 +79,34 @@ class AlarmRuleStateTest {
                 device("OFFLINE", now.minusSeconds(10 * 60), 0)));
         service.evaluateStateRule(rule("OFFLINE_TIMEOUT", 30), now);
         verify(alarmService, never()).raise(any(), any(), any(), any(), any(), any(), any(), any());
+    }
+
+    private void resting(String from, String to) {
+        when(restRepo.restWindows(orgId)).thenReturn(java.util.Map.of("864290061234567",
+                new com.webinnovation.eyeon.repository.TrackerSettingsRepository.Window(
+                        java.time.LocalTime.parse(from), java.time.LocalTime.parse(to), "Asia/Dhaka")));
+    }
+
+    @Test
+    void aTrackerInItsNightRestIsNotOffline() {
+        // 'now' is 16:00 in Dhaka; the tracker rests 15:00-17:00 and has been silent for 45 minutes.
+        resting("15:00", "17:00");
+        when(deviceRepo.listForOrg(orgId)).thenReturn(List.of(device("OFFLINE", now.minusSeconds(45 * 60), 0)));
+        service.evaluateStateRule(rule("OFFLINE_TIMEOUT", 30), now);
+        verify(alarmService, never()).raise(any(), any(), any(), any(), any(), any(), any(), any());
+    }
+
+    @Test
+    void afterTheRestTheOfflineClockStartsWhenTheRestEnded() {
+        // The rest ended 10 minutes ago (15:50); silent since 13:00 because it was asleep.
+        resting("13:00", "15:50");
+        when(deviceRepo.listForOrg(orgId)).thenReturn(List.of(device("OFFLINE", now.minusSeconds(3 * 3600), 0)));
+        service.evaluateStateRule(rule("OFFLINE_TIMEOUT", 30), now);
+        verify(alarmService, never()).raise(any(), any(), any(), any(), any(), any(), any(), any());
+
+        // Still silent 40 minutes after it should have woken: that is a real problem.
+        service.evaluateStateRule(rule("OFFLINE_TIMEOUT", 30), now.plusSeconds(30 * 60));
+        verify(alarmService).raise(eq(orgId), eq("864290061234567"), eq(AlarmType.OFFLINE_TIMEOUT), any(), any(), any(), any(), any());
     }
 
     @Test

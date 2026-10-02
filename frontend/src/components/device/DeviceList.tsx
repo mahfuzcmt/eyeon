@@ -15,7 +15,8 @@ import {
 import { buildPersonAvatar, personPhotoUrl } from "@/lib/personIcons";
 import { useSpeedLimits } from "@/hooks/useSpeedLimits";
 import { useTicker } from "@/hooks/useTicker";
-import type { DeviceGroupView, DeviceView, LocationView } from "@/types/domain";
+import { restingUntil } from "@/lib/nightRest";
+import type { DeviceGroupView, DeviceView, LocationView, NightRestView } from "@/types/domain";
 import type { LiveLocationView } from "@/hooks/useLiveLocations";
 
 /**
@@ -27,6 +28,7 @@ export type VehicleAction =
   | "playback"
   | "live"
   | "command"
+  | "settings"
   | "share"
   | "edit"
   | "details"
@@ -88,6 +90,8 @@ interface DeviceListProps {
   onDeleteGroup?: (group: DeviceGroupView) => void;
   /** Row menu "Move to group": null = Ungrouped. */
   onMoveToGroup?: (imei: string, groupId: string | null) => void;
+  /** Trackers with a night rest switched on, so an offline row can say "Resting until 07:00". */
+  restByImei?: Map<string, NightRestView>;
 }
 
 function deviceLabel(d: DeviceView): string {
@@ -106,7 +110,7 @@ function inTab(state: VehicleState, tab: Tab): boolean {
   }
 }
 
-function rowStatus(row: Row, t: (k: StringKey) => string): { text: string; color: string; hint?: string } {
+function rowStatus(row: Row, t: (k: StringKey) => string, rest?: NightRestView): { text: string; color: string; hint?: string } {
   const { device, state, speed, overspeed } = row;
   if (!row.located && ONLINE_STATES.has(state)) {
     return { text: t("veh.noGps"), color: VEHICLE_STATE_COLOR.nodata, hint: t("veh.noGpsHint") };
@@ -123,6 +127,9 @@ function rowStatus(row: Row, t: (k: StringKey) => string): { text: string; color
       return { text: d || t("veh.stopped"), color: VEHICLE_STATE_COLOR.stopped };
     }
     case "offline": {
+      // Switched off on purpose for the night: say when it wakes instead of "Offline 6 h".
+      const wakes = restingUntil(rest);
+      if (wakes) return { text: `${t("veh.resting")} ${wakes}`, color: VEHICLE_STATE_COLOR.offline, hint: t("ts.NIGHT_REST.warning") };
       const d = formatCompactDuration(device.lastSeenAt);
       return { text: d ? `${t("veh.offline")} ${d}` : t("veh.offline"), color: VEHICLE_STATE_COLOR.offline };
     }
@@ -174,6 +181,7 @@ export function DeviceList({
   onEditGroup,
   onDeleteGroup,
   onMoveToGroup,
+  restByImei,
 }: DeviceListProps) {
   const { t } = useLocale();
   const [query, setQuery] = useState("");
@@ -443,6 +451,7 @@ export function DeviceList({
                     onAction={(a) => onAction(a, row.device.imei)}
                     groups={groups}
                     onMoveToGroup={onMoveToGroup ? (gid) => onMoveToGroup(row.device.imei, gid) : undefined}
+                    rest={restByImei?.get(row.device.imei)}
                     t={t}
                   />
                 ))}
@@ -466,11 +475,12 @@ interface VehicleRowProps {
   t: (k: StringKey) => string;
   groups: DeviceGroupView[];
   onMoveToGroup?: (groupId: string | null) => void;
+  rest?: NightRestView;
 }
 
-function VehicleRow({ row, selected, visible, onSelect, onToggleVisible, onAction, groups, onMoveToGroup, t }: VehicleRowProps) {
+function VehicleRow({ row, selected, visible, onSelect, onToggleVisible, onAction, groups, onMoveToGroup, rest, t }: VehicleRowProps) {
   const { device, state, overspeed } = row;
-  const status = rowStatus(row, t);
+  const status = rowStatus(row, t, rest);
   const iconColor = overspeed ? OVERSPEED_COLOR : VEHICLE_STATE_COLOR[state];
   const online = ONLINE_STATES.has(state);
   const icon = useMemo(
@@ -549,6 +559,7 @@ const MENU_ITEMS: { action: VehicleAction; label: StringKey }[] = [
   { action: "playback", label: "act.playback" },
   { action: "live", label: "act.live" },
   { action: "command", label: "act.command" },
+  { action: "settings", label: "act.settings" },
   { action: "share", label: "act.share" },
   { action: "details", label: "act.details" },
   { action: "edit", label: "act.edit" },

@@ -52,6 +52,7 @@ public class ExpectedTimeService {
     private final AlarmService alarmService;
     private final DeviceRepository deviceRepo;
     private final DeviceCommandService commands;
+    private final com.webinnovation.eyeon.repository.TrackerSettingsRepository restRepo;
 
     // ---- managing schedules (owner only: getOrThrow is a 404 for anyone else) ----
 
@@ -124,6 +125,10 @@ public class ExpectedTimeService {
         LocalDate day = ExpectedTimeCheck.localDay(zone, now);
         String status = repo.checkStatus(key, row.imei(), day);
         if ("OK".equals(status) || "ALERTED".equals(status)) return;
+
+        // A tracker switched off for its night rest cannot say where it is: no alert on stale data.
+        var window = restRepo.restWindows(row.orgId()).get(row.imei());
+        if (window != null && NightRest.inWindow(window.start(), window.end(), zone, deadline)) return;
 
         Kind kind = Kind.valueOf(row.kind());
         boolean breached = ExpectedTimeCheck.breached(kind, row.inside());

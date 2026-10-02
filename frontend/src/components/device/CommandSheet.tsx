@@ -14,12 +14,14 @@ import type { DeviceView } from "@/types/domain";
 interface Props {
   device: DeviceView;
   onClose: () => void;
+  /** Opens the tracker's settings (SOS numbers, night rest, reporting ...). */
+  onOpenSettings?: () => void;
 }
 
 // No engine cut/restore: EyeOn trackers are worn by people, not wired into a vehicle.
 type Quick = "locate" | "live" | "find";
 
-export function CommandSheet({ device, onClose }: Props) {
+export function CommandSheet({ device, onClose, onOpenSettings }: Props) {
   const { t } = useLocale();
   const [raw, setRaw] = useState("");
   const [busy, setBusy] = useState<Quick | "raw" | null>(null);
@@ -89,6 +91,19 @@ export function CommandSheet({ device, onClose }: Props) {
             </button>
           ))}
         </div>
+
+        {onOpenSettings && (
+          <button
+            type="button"
+            onClick={onOpenSettings}
+            className="mt-2 flex h-10 w-full items-center justify-between rounded-md border border-surface-300 bg-white px-3 text-left text-[14px] font-medium text-ink-700 transition hover:bg-surface-100"
+          >
+            {t("act.settings")}
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
+              <path d="m9 6 6 6-6 6" />
+            </svg>
+          </button>
+        )}
 
         <div className="mt-3 flex gap-1.5">
           <input

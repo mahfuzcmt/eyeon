@@ -35,7 +35,8 @@ import { buildPersonSvg, getIconDimensions, noseOffset, personPhotoUrl } from "@
 import { useSpeedLimits } from "@/hooks/useSpeedLimits";
 import { useLocale } from "@/lib/i18n";
 import { api } from "@/lib/api";
-import type { DeviceView, LocationView, StaysResult } from "@/types/domain";
+import { restingUntil } from "@/lib/nightRest";
+import type { DeviceView, LocationView, NightRestView, StaysResult } from "@/types/domain";
 import { type LiveLocationView, getInterpolatedPosition, isAnimating } from "@/hooks/useLiveLocations";
 
 interface FleetMapProps {
@@ -55,6 +56,8 @@ interface FleetMapProps {
   leftInset?: number;
   /** Unused since 2026-10-02: the popup no longer shows a driver (people, not vehicles). */
   driversById?: Map<string, string>;
+  /** Trackers with a night rest switched on: an offline one shows "Resting until 07:00". */
+  restByImei?: Map<string, NightRestView>;
   /** Extra space (px) reserved above the map's top-edge controls, e.g. for a full-width KPI strip on mobile. */
   topInset?: number;
   /** Extra space (px) reserved under the map's bottom-edge controls, e.g. for the mobile vehicle sheet. */
@@ -621,7 +624,7 @@ function BatchCountdown({ lastRefreshAt }: { lastRefreshAt: Date | null }) {
   );
 }
 
-export function FleetMap({ devices, locations, selectedImei, onSelect, onRefresh, lastRefreshAt, showSearch = false, onAdvanceAnimations, leftInset = 0, topInset = 0, bottomInset = 0, route }: FleetMapProps) {
+export function FleetMap({ devices, locations, selectedImei, onSelect, onRefresh, lastRefreshAt, showSearch = false, onAdvanceAnimations, leftInset = 0, topInset = 0, bottomInset = 0, route, restByImei }: FleetMapProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<L.Map | null>(null);
   const markersRef = useRef<Map<string, L.Marker>>(new Map());
@@ -759,6 +762,7 @@ export function FleetMap({ devices, locations, selectedImei, onSelect, onRefresh
     let statusLine: string;
     if (speed > 0) statusLine = `${speed} km/h (${compassLabel(location?.course)}, ${stateLabel})`;
     else if ((state === "stopped" || state === "idle") && device?.parkedSince) statusLine = `${stateLabel} · ${formatCompactDuration(device.parkedSince)}`;
+    else if (state === "offline" && restingUntil(restByImei?.get(imei))) statusLine = `${t("veh.resting")} ${restingUntil(restByImei?.get(imei))}`;
     else if (state === "offline" && device?.lastSeenAt) statusLine = `${stateLabel} · ${formatCompactDuration(device.lastSeenAt)}`;
     else statusLine = stateLabel;
 
@@ -821,7 +825,7 @@ export function FleetMap({ devices, locations, selectedImei, onSelect, onRefresh
           ${action("details", ICON.doc, t("act.details"))}
         </div>
       </div>`;
-  }, [speedLimits, t]);
+  }, [speedLimits, t, restByImei]);
 
   // Init map once
   useEffect(() => {

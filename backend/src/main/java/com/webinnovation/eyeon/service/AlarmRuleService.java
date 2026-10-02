@@ -60,6 +60,7 @@ public class AlarmRuleService {
     private final DeviceRepository deviceRepo;
     private final LocationRepository locationRepo;
     private final DeviceAccessService access;
+    private final com.webinnovation.eyeon.repository.TrackerSettingsRepository restRepo;
 
     static final List<String> STATE_RULE_TYPES = List.of("PARKING_TIMEOUT", "OFFLINE_TIMEOUT", "IDLE_TIMEOUT");
 
@@ -173,14 +174,33 @@ public class AlarmRuleService {
         Set<String> assigned = r.appliesToAll() ? null : new HashSet<>(repo.listAssignedImeis(r.id()));
         // An "all vehicles" rule covers the vehicles its owner may see (null = unrestricted).
         Set<String> visible = r.appliesToAll() ? access.visibleImeis(r.ownerUserId()) : null;
+        // A tracker in its night rest is switched off on purpose: that is not "offline".
+        Map<String, com.webinnovation.eyeon.repository.TrackerSettingsRepository.Window> resting =
+                "OFFLINE_TIMEOUT".equals(r.ruleType()) ? restRepo.restWindows(r.orgId()) : Map.of();
         for (Device d : devices) {
             if (assigned != null && !assigned.contains(d.imei())) continue;
             if (!DeviceAccessService.canSee(visible, d.imei())) continue;
             if (d.lastSeenAt() == null) continue;  // never connected: nothing to time out
             Instant since = stateSince(r.ruleType(), d);
+            var window = resting.get(d.imei());
+            if (since != null && window != null) {
+                ZoneId zone = zoneOf(window.timezone());
+                if (NightRest.inWindow(window.start(), window.end(), zone, now)) continue;
+                // After the rest the clock starts when it ended, not when the tracker went to sleep.
+                Instant woke = NightRest.lastEnd(window.end(), zone, now);
+                if (since.isBefore(woke)) since = woke;
+            }
             if (since == null || Duration.between(since, now).compareTo(limit) < 0) continue;
             if (!repo.tryFire(r.id(), d.imei(), r.cooldownSeconds(), now)) continue;
             fireState(r, d, since, now);
+        }
+    }
+
+    private static ZoneId zoneOf(String timezone) {
+        try {
+            return timezone == null || timezone.isBlank() ? BD_ZONE : ZoneId.of(timezone);
+        } catch (Exception e) {
+            return BD_ZONE;
         }
     }
 

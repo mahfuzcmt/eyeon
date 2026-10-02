@@ -46,15 +46,18 @@ class ExpectedTimeServiceTest {
     private AlarmService alarms;
     private DeviceCommandService commands;
     private ExpectedTimeService service;
+    private com.webinnovation.eyeon.repository.TrackerSettingsRepository restRepo;
 
     @BeforeEach
     void setUp() {
+        restRepo = mock(com.webinnovation.eyeon.repository.TrackerSettingsRepository.class);
+        when(restRepo.restWindows(any())).thenReturn(Map.of());
         repo = mock(PlaceScheduleRepository.class);
         alarms = mock(AlarmService.class);
         commands = mock(DeviceCommandService.class);
         DeviceRepository devices = mock(DeviceRepository.class);
         when(devices.findByImei(IMEI)).thenReturn(Optional.empty());
-        service = new ExpectedTimeService(repo, mock(GeofenceService.class), alarms, devices, commands);
+        service = new ExpectedTimeService(repo, mock(GeofenceService.class), alarms, devices, commands, restRepo);
     }
 
     private Due row(String kind, Boolean inside) {
@@ -116,6 +119,18 @@ class ExpectedTimeServiceTest {
 
         verify(alarms).raise(eq(orgId), eq(IMEI), eq(AlarmType.NOT_LEFT), eq(AlarmSeverity.WARNING),
                 eq(DEADLINE), any(), any(), any());
+    }
+
+    @Test
+    void a_deadline_inside_the_trackers_night_rest_is_not_checked() {
+        // Resting 00:00-09:00: at 08:15 the tracker is switched off and cannot say where it is.
+        when(restRepo.restWindows(orgId)).thenReturn(Map.of(IMEI,
+                new com.webinnovation.eyeon.repository.TrackerSettingsRepository.Window(LocalTime.MIDNIGHT, LocalTime.of(9, 0), "Asia/Dhaka")));
+
+        service.evaluate(row("ARRIVE_BY", false), DEADLINE.plus(ExpectedTimeCheck.GRACE).plusSeconds(5));
+
+        verify(alarms, never()).raise(any(), anyString(), any(), any(), any(), any(), any(), any());
+        verify(repo, never()).setCheck(anyString(), anyString(), any(), anyString());
     }
 
     @Test

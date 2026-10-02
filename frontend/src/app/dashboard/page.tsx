@@ -14,6 +14,8 @@ import { useLocale } from "@/lib/i18n";
 import { useIsDesktop, useIsWide } from "@/hooks/useMediaQuery";
 import { DeviceList, type VehicleAction } from "@/components/device/DeviceList";
 import { CommandSheet } from "@/components/device/CommandSheet";
+import { TrackerSettingsPanel } from "@/components/device/TrackerSettingsPanel";
+import { useNightRest } from "@/hooks/useNightRest";
 import { DeviceEditModal } from "@/components/device/DeviceEditModal";
 import { DeviceGroupModal } from "@/components/device/DeviceGroupModal";
 import { ShareLinkModal } from "@/components/share/ShareLinkModal";
@@ -42,7 +44,7 @@ const SHEET_BAR = 48;
 /** Height reserved below `lg` for the full-width KPI strip (3-line cells) above the map controls. */
 const NARROW_KPI_INSET = 78;
 
-type Panel = "history" | "live" | "command" | "share" | "edit" | null;
+type Panel = "history" | "live" | "command" | "settings" | "share" | "edit" | null;
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -60,6 +62,8 @@ export default function DashboardPage() {
     return m;
   }, [drivers]);
   const { locations, error, refresh, lastRefreshAt, advanceAnimations } = useLiveLocations(orgId);
+
+  const restByImei = useNightRest();
 
   const [selectedImei, setSelectedImei] = useState<string | null>(null);
   const [panel, setPanel] = useState<Panel>(null);
@@ -88,6 +92,7 @@ export default function DashboardPage() {
         case "playback": setPanel("history"); break;
         case "live": setPanel("live"); break;
         case "command": setPanel("command"); break;
+        case "settings": setPanel("settings"); break;
         case "share": setPanel("share"); break;
         case "edit": setPanel("edit"); break;
         case "details": router.push(`/dashboard/devices/${imei}`); break;
@@ -200,6 +205,7 @@ export default function DashboardPage() {
       onEditGroup={(group) => setGroupModal({ mode: "edit", group })}
       onDeleteGroup={(group) => void onDeleteGroup(group)}
       onMoveToGroup={(imei, groupId) => void onMoveToGroup(imei, groupId)}
+      restByImei={restByImei}
     />
   );
 
@@ -216,6 +222,7 @@ export default function DashboardPage() {
         onAdvanceAnimations={advanceAnimations}
         leftInset={listInset}
         driversById={driversById}
+        restByImei={restByImei}
         topInset={isWide ? 0 : NARROW_KPI_INSET}
         bottomInset={bottomInset}
       />
@@ -289,7 +296,10 @@ export default function DashboardPage() {
         />
       )}
       {selectedDevice && panel === "command" && (
-        <CommandSheet device={selectedDevice} onClose={() => setPanel(null)} />
+        <CommandSheet device={selectedDevice} onClose={() => setPanel(null)} onOpenSettings={() => setPanel("settings")} />
+      )}
+      {selectedDevice && panel === "settings" && (
+        <TrackerSettingsPanel device={selectedDevice} onClose={() => setPanel(null)} />
       )}
       {selectedDevice && panel === "share" && (
         <ShareLinkModal

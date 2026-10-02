@@ -308,6 +308,54 @@ export interface PlaceSchedule {
   active: boolean;
 }
 
+/** Settings of the tracker itself (GET /devices/:imei/settings); shapes per key are in backend TrackerSetting.java. */
+export type TrackerSettingKey =
+  | "SOS_NUMBERS"
+  | "SOS_ALARM"
+  | "CALL_PERMISSION"
+  | "ANSWER_MODE"
+  | "CALL_VOLUME"
+  | "RING_VOLUME"
+  | "REPORTING"
+  | "HEARTBEAT"
+  | "NIGHT_REST"
+  | "QUIET_HOURS"
+  | "LOW_BATTERY_ALARM"
+  | "FALL_ALARM"
+  | "POWER_OFF_LOCK"
+  | "AUTO_POWER_ON";
+
+export type TrackerSettingValue = Record<string, unknown>;
+
+/** UNKNOWN = never read from the tracker; PENDING = waiting for the tracker to connect. */
+export type TrackerSettingStatus = "UNKNOWN" | "SYNCED" | "PENDING" | "FAILED" | "UNSUPPORTED";
+
+export interface TrackerSettingItem {
+  key: TrackerSettingKey;
+  /** What was asked for; absent when the setting was only read. */
+  wanted?: TrackerSettingValue | null;
+  /** What the tracker last reported. */
+  applied?: TrackerSettingValue | null;
+  status: TrackerSettingStatus;
+  trackerReply?: string | null;
+  syncedAt?: string | null;
+}
+
+export interface TrackerSettingsData {
+  imei: string;
+  online: boolean;
+  /** The tracker is being asked for its settings right now. */
+  reading: boolean;
+  settings: TrackerSettingItem[];
+}
+
+/** A tracker whose night rest is switched on (GET /devices/rest); times are HH:mm, Asia/Dhaka. */
+export interface NightRestView {
+  imei: string;
+  from: string;
+  to: string;
+}
+
 /** One stay from GET /devices/:imei/stays. */
 export interface StayView {
   from: string;
