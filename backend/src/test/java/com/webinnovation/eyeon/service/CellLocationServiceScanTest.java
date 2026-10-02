@@ -30,7 +30,7 @@ class CellLocationServiceScanTest {
     private CellLocationService service;
     private MockRestServiceServer google;
 
-    private static final NetworkScan SCAN = new NetworkScan(Instant.parse("2026-10-01T06:46:38Z"), 470, 2,
+    private static final NetworkScan SCAN = new NetworkScan(Instant.parse("2026-10-01T06:46:38Z"), 470, 2, "lte",
             List.of(new NetworkScan.Cell(48111, 33526800L, 55)),
             List.of(new NetworkScan.Wifi("10:5a:95:ea:d1:d1", -53), new NetworkScan.Wifi("0c:80:63:0a:52:be", -61)));
 

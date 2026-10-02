@@ -38,14 +38,19 @@ public class PacketEncoder {
      * Build a server command (0x80) frame.
      * Layout: [0x78 0x78][Length][0x80][CmdLen][ServerFlag:4][Cmd:N][Lang:2][Serial:2][CRC:2][0x0D 0x0A]
      *
-     * @param serverFlag opaque 32-bit identifier echoed back in the 0x15 reply
+     * <p>Length counts everything from the protocol number through the CRC, like every other
+     * frame; CmdLen counts the server flag and the command text only (CLAUDE.md §6.7), not the
+     * language. Until 2026-10-02 Length was three short and CmdLen two long, so a tracker could
+     * not frame the packet and never answered (found on a Jimi PL601).
+     *
+     * @param serverFlag opaque 32-bit identifier echoed back in the 0x15 / 0x21 reply
      * @param command    ASCII command string, e.g. "DYD,123456#"
      * @param serial     16-bit serial echoed in the device reply
      */
     public ByteBuf buildServerCommand(int serverFlag, String command, int serial) {
         byte[] cmd = command.getBytes(java.nio.charset.StandardCharsets.US_ASCII);
-        int cmdLenField = 4 + cmd.length + 2;          // serverFlag + cmd + lang
-        int payloadLen = 1 + cmdLenField + 2;          // CmdLen byte + body + serial(2)
+        int cmdLenField = 4 + cmd.length;                       // serverFlag + cmd
+        int payloadLen = 1 + 1 + cmdLenField + 2 + 2 + 2;       // proto + CmdLen byte + body + lang + serial + crc
 
         ByteBuf buf = Unpooled.buffer(2 + 1 + payloadLen + 2 + 2);
         buf.writeByte(0x78);

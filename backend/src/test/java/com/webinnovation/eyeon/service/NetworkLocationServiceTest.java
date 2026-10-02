@@ -49,7 +49,7 @@ class NetworkLocationServiceTest {
 
     private static NetworkScan scan(String... macs) {
         List<NetworkScan.Wifi> wifi = Arrays.stream(macs).map(m -> new NetworkScan.Wifi(m, -60)).toList();
-        return new NetworkScan(Instant.parse("2026-10-01T06:46:38Z"), 470, 2,
+        return new NetworkScan(Instant.parse("2026-10-01T06:46:38Z"), 470, 2, "lte",
                 List.of(new NetworkScan.Cell(48111, 33526800L, 55)), wifi);
     }
 

@@ -120,7 +120,7 @@ public class CellLocationService {
         try {
             Map<String, Object> body = new java.util.LinkedHashMap<>();
             body.put("considerIp", false);  // never answer with the server's own location
-            body.put("radioType", "lte");
+            body.put("radioType", scan.radio());
             body.put("homeMobileCountryCode", scan.mcc());
             body.put("homeMobileNetworkCode", scan.mnc());
             body.put("cellTowers", scan.cells().stream().map(cell -> Map.<String, Object>of(
@@ -161,7 +161,7 @@ public class CellLocationService {
         try {
             Map<String, Object> body = new java.util.LinkedHashMap<>();
             body.put("token", unwiredLabsApiKey);
-            body.put("radio", "lte");
+            body.put("radio", "wcdma".equals(scan.radio()) ? "umts" : scan.radio());
             body.put("mcc", scan.mcc());
             body.put("mnc", scan.mnc());
             body.put("cells", scan.cells().stream().map(cell -> Map.<String, Object>of(

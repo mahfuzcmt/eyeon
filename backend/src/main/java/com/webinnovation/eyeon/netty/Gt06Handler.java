@@ -131,13 +131,13 @@ public class Gt06Handler extends SimpleChannelInboundHandler<ByteBuf> {
             case PacketType.JIMI_LBS_ALARM -> handleJimiLbsAlarm(ctx, serial, content);
 
             // Jimi IoT specific packets
-            case PacketType.JIMI_LBS_EXTENSION -> handleJimiLbsExtension(ctx, serial, content);
-            case PacketType.JIMI_WIFI -> handleJimiWifi(ctx, serial, content);
-            case PacketType.JIMI_LBS_4G, PacketType.JIMI_WIFI_4G -> handleNetworkScan(ctx, proto, serial, content);
+            case PacketType.JIMI_LBS_EXTENSION, PacketType.JIMI_WIFI,
+                 PacketType.JIMI_LBS_4G, PacketType.JIMI_WIFI_4G -> handleNetworkScan(ctx, proto, serial, content);
             case PacketType.JIMI_TIME_CALIBRATION -> handleJimiTimeCalibration(ctx, serial, content);
             case PacketType.JIMI_INFO_TRANSMISSION -> handleJimiInfoTransmission(ctx, serial, content);
 
-            case PacketType.COMMAND_REPLY -> handleCommandReply(ctx, content);
+            case PacketType.COMMAND_REPLY -> handleCommandReply(content);
+            case PacketType.COMMAND_REPLY_JIMI -> handleJimiCommandReply(content);
             default -> {
                 ctx.writeAndFlush(packetEncoder.buildAck(proto, serial));
                 noteUnstored(ctx, proto, content);
@@ -339,20 +339,24 @@ public class Gt06Handler extends SimpleChannelInboundHandler<ByteBuf> {
         }, ingestExecutor);
     }
 
-    private void handleCommandReply(ChannelHandlerContext ctx, ByteBuf content) {
-        // 0x15 reply layout: [server-flag:4][len:1][content...]
+    /** GT06 reply to a 0x80 command: [cmd-len:1][server-flag:4][text: cmd-len - 4][language:2]. */
+    private void handleCommandReply(ByteBuf content) {
         if (content.readableBytes() < 5) return;
-        byte[] flagBytes = new byte[4];
-        content.readBytes(flagBytes);
-        int serverFlag = ((flagBytes[0] & 0xFF) << 24)
-                | ((flagBytes[1] & 0xFF) << 16)
-                | ((flagBytes[2] & 0xFF) << 8)
-                | (flagBytes[3] & 0xFF);
-        int len = content.readUnsignedByte();
-        len = Math.min(len, content.readableBytes());
-        byte[] reply = new byte[len];
-        content.readBytes(reply);
-        deviceCommandService.completeReply(serverFlag, new String(reply, java.nio.charset.StandardCharsets.US_ASCII));
+        int len = content.readUnsignedByte() - 4;
+        int serverFlag = content.readInt();
+        len = Math.max(0, Math.min(len, content.readableBytes()));
+        String reply = content.readCharSequence(len, java.nio.charset.StandardCharsets.US_ASCII).toString();
+        deviceCommandService.completeReply(serverFlag, reply);
+    }
+
+    /** Jimi reply (0x21, extended frame): [server-flag:4][encoding:1, 1 = ASCII, 2 = UTF-16BE][text]. */
+    private void handleJimiCommandReply(ByteBuf content) {
+        if (content.readableBytes() < 5) return;
+        int serverFlag = content.readInt();
+        java.nio.charset.Charset charset = content.readUnsignedByte() == 2
+                ? java.nio.charset.StandardCharsets.UTF_16BE : java.nio.charset.StandardCharsets.US_ASCII;
+        String reply = content.readCharSequence(content.readableBytes(), charset).toString();
+        deviceCommandService.completeReply(serverFlag, reply);
     }
 
     private void handleHeartbeat(ChannelHandlerContext ctx, int serial, ByteBuf content) {
@@ -547,27 +551,9 @@ public class Gt06Handler extends SimpleChannelInboundHandler<ByteBuf> {
     }
 
     /**
-     * Jimi LBS extension (0x28). Extended cell tower information.
-     * ACK and log only — no location data to persist.
-     */
-    private void handleJimiLbsExtension(ChannelHandlerContext ctx, int serial, ByteBuf content) {
-        ctx.writeAndFlush(packetEncoder.buildAck(PacketType.JIMI_LBS_EXTENSION, serial));
-        noteUnstored(ctx, PacketType.JIMI_LBS_EXTENSION, content);
-    }
-
-    /**
-     * Jimi WiFi positioning (0x2C). Contains nearby WiFi AP info for positioning.
-     * ACK and log only for now — could be used for indoor positioning in future.
-     */
-    private void handleJimiWifi(ChannelHandlerContext ctx, int serial, ByteBuf content) {
-        ctx.writeAndFlush(packetEncoder.buildAck(PacketType.JIMI_WIFI, serial));
-        noteUnstored(ctx, PacketType.JIMI_WIFI, content);
-    }
-
-    /**
-     * Jimi 4G network scan: 0xA1 (cell towers) / 0xA2 (cell towers + Wi-Fi access points).
-     * A personal tracker sends these every 10 seconds instead of location packets while it has
-     * no GPS fix (indoors). NetworkLocationService turns the scan into a position.
+     * Jimi network scan: cell towers (0xA1 on 4G, 0x28 on 2G/3G) or cell towers + Wi-Fi access
+     * points (0xA2 / 0x2C). A personal tracker sends these instead of location packets while it
+     * has no GPS fix (indoors). NetworkLocationService turns the scan into a position.
      */
     private void handleNetworkScan(ChannelHandlerContext ctx, int proto, int serial, ByteBuf content) {
         ctx.writeAndFlush(packetEncoder.buildAck(proto, serial));
@@ -583,8 +569,9 @@ public class Gt06Handler extends SimpleChannelInboundHandler<ByteBuf> {
         gate.submit(session -> {
             String imei = session.imei();
             try {
-                var scan = packetDecoder.decodeNetworkScan(
-                        io.netty.buffer.Unpooled.wrappedBuffer(raw), proto == PacketType.JIMI_WIFI_4G);
+                boolean wifi = proto == PacketType.JIMI_WIFI_4G || proto == PacketType.JIMI_WIFI;
+                boolean lte = proto == PacketType.JIMI_WIFI_4G || proto == PacketType.JIMI_LBS_4G;
+                var scan = packetDecoder.decodeNetworkScan(io.netty.buffer.Unpooled.wrappedBuffer(raw), wifi, lte);
                 networkLocationService.onScan(imei, session.orgId(), proto, scan, raw);
             } catch (Exception e) {
                 log.error("Network scan decode/persist failed for imei={}: {}", imei, e.getMessage(), e);

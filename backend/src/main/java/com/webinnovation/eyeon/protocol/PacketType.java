@@ -27,6 +27,7 @@ public final class PacketType {
     public static final int ALARM = 0x16;              // GT06 alarm packet
     public static final int RFID = 0x17;               // Driver RFID swipe
     public static final int COMMAND_REPLY = 0x15;      // Response to 0x80 server command
+    public static final int COMMAND_REPLY_JIMI = 0x21; // Same, Jimi trackers: 0x7979 frame, [flag:4][encoding:1][text]
     public static final int SERVER_COMMAND = 0x80;     // DYD, HFYD, DWXX, etc.
     public static final int ADDRESS_QUERY = 0x1A;      // Phone-initiated
 

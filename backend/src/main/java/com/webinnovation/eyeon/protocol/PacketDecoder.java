@@ -213,25 +213,30 @@ public class PacketDecoder {
     private static final int NETWORK_SCAN_CELLS = 7;
 
     /**
-     * Decode a Jimi 4G network scan: 0xA1 (cells only) or 0xA2 (cells + Wi-Fi). The tracker
-     * sends these instead of a location packet while it has no GPS fix.
+     * Decode a Jimi network scan. The tracker sends these instead of a location packet while
+     * it has no GPS fix: 0xA1 / 0xA2 on a 4G cell, 0x28 / 0x2C on a 2G or 3G cell (the same
+     * tracker switches between the two families as coverage changes).
      * <pre>
      *   [date-time:6][mcc:2, bit 15 set = 2-byte mnc][mnc:1|2]
-     *   7 x [lac:4][cell-id:8][signal:1]        (unused slots are all zero)
+     *   7 x [lac][cell-id][signal:1]            (unused slots are all zero)
+     *        4G: lac 4 bytes, cell-id 8 bytes       2G/3G: lac 2 bytes, cell-id 3 bytes
      *   [timing-advance:1]
-     *   0xA2: [wifi-count:1] n x [mac:6][signal:1]      0xA1: [language:2]
+     *   0xA2 / 0x2C: [wifi-count:1] n x [mac:6][signal:1]      0xA1 / 0x28: [language:2]
      * </pre>
      * Wi-Fi signal is the magnitude of the dBm value (0x35 = -53 dBm).
+     *
+     * @param lte true for the 4G layout (0xA1 / 0xA2)
      */
-    public NetworkScan decodeNetworkScan(ByteBuf content, boolean wifi) {
+    public NetworkScan decodeNetworkScan(ByteBuf content, boolean wifi, boolean lte) {
         java.time.Instant ts = decodeDateTime(content);
         int mccRaw = content.readUnsignedShort();
         int mnc = (mccRaw & 0x8000) != 0 ? content.readUnsignedShort() : content.readUnsignedByte();
 
         java.util.List<NetworkScan.Cell> cells = new java.util.ArrayList<>(NETWORK_SCAN_CELLS);
-        for (int i = 0; i < NETWORK_SCAN_CELLS && content.readableBytes() >= 13; i++) {
-            long lac = content.readUnsignedInt();
-            long cellId = content.readLong();
+        int slot = lte ? 13 : 6;
+        for (int i = 0; i < NETWORK_SCAN_CELLS && content.readableBytes() >= slot; i++) {
+            long lac = lte ? content.readUnsignedInt() : content.readUnsignedShort();
+            long cellId = lte ? content.readLong() : content.readUnsignedMedium();
             int signal = content.readUnsignedByte();
             if (cellId > 0) cells.add(new NetworkScan.Cell(lac, cellId, signal));
         }
@@ -252,7 +257,9 @@ public class PacketDecoder {
                 aps.add(new NetworkScan.Wifi(sb.toString(), -signal));
             }
         }
-        return new NetworkScan(ts, mccRaw & 0x7FFF, mnc, java.util.List.copyOf(cells), java.util.List.copyOf(aps));
+        // A 3-byte cell id above 65535 can only be a 3G (UTRAN) cell.
+        String radio = lte ? "lte" : cells.stream().anyMatch(c -> c.cellId() > 0xFFFF) ? "wcdma" : "gsm";
+        return new NetworkScan(ts, mccRaw & 0x7FFF, mnc, radio, java.util.List.copyOf(cells), java.util.List.copyOf(aps));
     }
 
     /**

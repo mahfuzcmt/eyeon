@@ -5,14 +5,15 @@ import java.util.List;
 
 /**
  * What a tracker can hear when it has no GPS fix: the serving cell, its neighbours and,
- * for 0xA2 packets, nearby Wi-Fi access points. Decoded from Jimi 0xA1 / 0xA2 packets and
+ * for 0xA2 / 0x2C packets, nearby Wi-Fi access points. Decoded from Jimi scan packets and
  * turned into coordinates by a geolocation service (see NetworkLocationService).
  *
+ * @param radio "lte", "gsm" or "wcdma": the cell family the ids belong to
  * @param cells serving cell first; empty slots in the packet are dropped
  */
-public record NetworkScan(Instant ts, int mcc, int mnc, List<Cell> cells, List<Wifi> wifi) {
+public record NetworkScan(Instant ts, int mcc, int mnc, String radio, List<Cell> cells, List<Wifi> wifi) {
 
-    /** 4G cell: {@code lac} is the tracking area code, {@code cellId} the 28-bit E-UTRAN cell id. */
+    /** On 4G {@code lac} is the tracking area code and {@code cellId} the 28-bit E-UTRAN cell id. */
     public record Cell(long lac, long cellId, int rawSignal) {}
 
     /** @param mac lower-case, colon separated; {@code rssiDbm} is negative */

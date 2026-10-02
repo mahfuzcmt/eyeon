@@ -248,11 +248,12 @@ class PacketDecoderTest {
     void wifi_scan_0xa2_decodes_serving_cell_and_access_points() {
         ByteBuf content = Unpooled.wrappedBuffer(io.netty.buffer.ByteBufUtil.decodeHexDump(WIFI_SCAN_0XA2));
         try {
-            NetworkScan scan = decoder.decodeNetworkScan(content, true);
+            NetworkScan scan = decoder.decodeNetworkScan(content, true, true);
 
             assertThat(scan.ts()).isEqualTo(java.time.Instant.parse("2026-10-01T06:46:38Z"));
             assertThat(scan.mcc()).isEqualTo(470);   // Bangladesh; bit 15 of the field flags a 2-byte MNC
             assertThat(scan.mnc()).isEqualTo(2);     // Robi
+            assertThat(scan.radio()).isEqualTo("lte");
             assertThat(scan.cells()).containsExactly(new NetworkScan.Cell(0xBBEF, 0x01FF9410L, 0x37));
             assertThat(scan.wifi()).hasSize(8);
             assertThat(scan.wifi().get(0)).isEqualTo(new NetworkScan.Wifi("10:5a:95:ea:d1:d1", -53));
@@ -266,12 +267,38 @@ class PacketDecoderTest {
     void cell_scan_0xa1_decodes_seven_cells_and_no_wifi() {
         ByteBuf content = Unpooled.wrappedBuffer(io.netty.buffer.ByteBufUtil.decodeHexDump(CELL_SCAN_0XA1));
         try {
-            NetworkScan scan = decoder.decodeNetworkScan(content, false);
+            NetworkScan scan = decoder.decodeNetworkScan(content, false, true);
 
             assertThat(scan.cells()).hasSize(7);
             assertThat(scan.cells().get(0).cellId()).isEqualTo(0x01FF9410L);
             assertThat(scan.cells().get(6)).isEqualTo(new NetworkScan.Cell(0xBBEF, 0x01FF940DL, 0x14));
             assertThat(scan.hasWifi()).isFalse();
+        } finally {
+            content.release();
+        }
+    }
+
+    /** The same tracker a day later on a 2G cell: 2-byte LAC and 3-byte cell id per slot. */
+    private static final String WIFI_SCAN_0X2C = "1a0a0208320b81d60002759c000377287a60000c0028"
+            + "0".repeat(60)
+            + "00084c49686db7fe447cf17ee782b746bc071df7bb1a487cf17ee2d48a49e8069086f0a54a"
+            + "f2748d5a237f4ac0252f7f30e64bd832143fa5084b";
+
+    @Test
+    void wifi_scan_0x2c_decodes_2g_cells_and_access_points() {
+        ByteBuf content = Unpooled.wrappedBuffer(io.netty.buffer.ByteBufUtil.decodeHexDump(WIFI_SCAN_0X2C));
+        try {
+            NetworkScan scan = decoder.decodeNetworkScan(content, true, false);
+
+            assertThat(scan.ts()).isEqualTo(java.time.Instant.parse("2026-10-02T08:50:11Z"));
+            assertThat(scan.mcc()).isEqualTo(470);
+            assertThat(scan.mnc()).isEqualTo(2);
+            assertThat(scan.radio()).isEqualTo("gsm");
+            assertThat(scan.cells()).containsExactly(
+                    new NetworkScan.Cell(0x759C, 0x000377, 0x28), new NetworkScan.Cell(0x7A60, 0x000C00, 0x28));
+            assertThat(scan.wifi()).hasSize(8);
+            assertThat(scan.wifi().get(0)).isEqualTo(new NetworkScan.Wifi("4c:49:68:6d:b7:fe", -68));
+            assertThat(scan.wifi().get(7)).isEqualTo(new NetworkScan.Wifi("d8:32:14:3f:a5:08", -75));
         } finally {
             content.release();
         }

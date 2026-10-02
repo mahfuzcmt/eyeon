@@ -27,6 +27,7 @@ SMOKE_PASSWORD = secrets.token_urlsafe(24)
 TOKEN = None
 failures = []
 gid = None
+bid = None
 
 
 def call(method, path, body=None, expect=(200, 201, 204)):
@@ -192,6 +193,32 @@ try:
         check("second SOS is recorded but not texted again (cooldown)", n_sms == 1 and n_sos == "2" and "suppressed" in logs2,
               f"sms={n_sms} sos_alarms={n_sos}")
 
+    # --- boundaries: crossing the border raises WARNING alarms (the severity that is pushed to phones)
+    BLAT = LAT + 0.03   # 3 km from the place above, so the two zones never interact
+    code, d = call("POST", "/geofences", {"name": "Smoke border", "type": "CIRCLE", "notifyOn": "BOTH", "kind": "BOUNDARY",
+                                         "center": {"lat": BLAT, "lng": LNG}, "radiusM": 200, "imeis": [IMEI]})
+    b = unwrap(d)
+    bid = b.get("id") if isinstance(b, dict) else None
+    check("create boundary", code == 201 and b.get("kind") == "BOUNDARY", f"{code} {str(d)[:200]}")
+    call("PATCH", f"/geofences/{bid}", {"minDwellS": 0})
+    sim(BLAT, LNG)
+    st = psql(f"select is_inside from geofence_states where geofence_id='{bid}' and device_imei='{IMEI}'")
+    n0 = psql(f"select count(*) from alarms where device_imei='{IMEI}' and type like 'GEOFENCE_%'")
+    check("boundary: first sample seeds state = inside, no alarm", st == "t" and n0 == "0", f"state={st!r} alarms={n0}")
+    sim(BLAT + 0.01, LNG)
+    sim(BLAT, LNG)
+    types = psql(f"select string_agg(type || ':' || severity, ',' order by ts, created_at) from alarms where device_imei='{IMEI}' and type like 'GEOFENCE_%'")
+    check("boundary: out then back in raises EXIT then ENTER as WARNING",
+          types == "GEOFENCE_EXIT:WARNING,GEOFENCE_ENTER:WARNING", f"alarms={types!r}")
+    meta = psql(f"select metadata->>'geofenceName' || '/' || (metadata->>'geofenceKind') from alarms where device_imei='{IMEI}' and type='GEOFENCE_EXIT' limit 1")
+    check("boundary alarm metadata carries its name + kind", meta == "Smoke border/BOUNDARY", f"meta={meta!r}")
+    call("PATCH", f"/geofences/{bid}", {"notifyOn": "EXIT"})
+    sim(BLAT + 0.01, LNG)
+    sim(BLAT, LNG)
+    types = psql(f"select string_agg(type, ',' order by ts, created_at) from alarms where device_imei='{IMEI}' and type like 'GEOFENCE_%'")
+    check("boundary: notifyOn=EXIT alerts on leaving only",
+          types == "GEOFENCE_EXIT,GEOFENCE_ENTER,GEOFENCE_EXIT", f"alarms={types!r}")
+
     code, d = call("PATCH", f"/geofences/{gid}", {"radiusM": 300})
     left = psql(f"select count(*) from geofence_states where geofence_id='{gid}'")
     check("reshaping resets state", code == 200 and left == "0", f"{code} rows={left}")
@@ -208,7 +235,7 @@ finally:
               "delete from audit_log where user_id in (select id from users where email like 'smoke-%@eyeon.invalid')",
               "delete from users where email like 'smoke-%@eyeon.invalid'",
               "delete from geofences where name like 'Smoke %'", f"delete from devices where imei='{IMEI}'",
-              f"delete from audit_log where resource_id in ('{IMEI}', '{gid}')"]
+              f"delete from audit_log where resource_id in ('{IMEI}', '{gid}', '{bid}')"]
     for sql in stmts:
         r = psql(sql)
         if r and r != "DELETE 0":

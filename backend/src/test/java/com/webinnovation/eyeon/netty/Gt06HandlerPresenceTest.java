@@ -52,6 +52,7 @@ class Gt06HandlerPresenceTest {
     private DeviceService deviceService;
     private LocationService locationService;
     private NetworkLocationService networkLocationService;
+    private DeviceCommandService commandService;
     private EmbeddedChannel channel;
 
     @BeforeEach
@@ -59,11 +60,12 @@ class Gt06HandlerPresenceTest {
         deviceService = mock(DeviceService.class);
         locationService = mock(LocationService.class);
         networkLocationService = mock(NetworkLocationService.class);
+        commandService = mock(DeviceCommandService.class);
         Device device = mock(Device.class);
         when(device.orgId()).thenReturn(UUID.randomUUID());
         when(deviceService.findByImei(IMEI)).thenReturn(Optional.of(device));
         Gt06Handler handler = new Gt06Handler(new PacketDecoder(), new PacketEncoder(), deviceService,
-                locationService, mock(AlarmService.class), mock(DeviceCommandService.class),
+                locationService, mock(AlarmService.class), commandService,
                 networkLocationService, new SimpleAsyncTaskExecutor("ingest-"));
         channel = new EmbeddedChannel(handler);
     }
@@ -87,6 +89,14 @@ class Gt06HandlerPresenceTest {
         body[body.length - 1] = (byte) serial;
         int crc = ChecksumUtil.crcItu(body, 0, body.length);
         return Unpooled.buffer().writeShort(0x7878).writeBytes(body).writeShort(crc).writeShort(0x0D0A);
+    }
+
+    /** 0x79 0x79 frame: two-byte length, otherwise the same layout. */
+    private static ByteBuf extendedFrame(int proto, byte[] content, int serial) {
+        ByteBuf body = Unpooled.buffer().writeShort(1 + content.length + 2 + 2).writeByte(proto)
+                .writeBytes(content).writeShort(serial);
+        int crc = ChecksumUtil.crcItu(body, 0, body.readableBytes());
+        return Unpooled.buffer().writeShort(0x7979).writeBytes(body).writeShort(crc).writeShort(0x0D0A);
     }
 
     private void login() {
@@ -126,6 +136,45 @@ class Gt06HandlerPresenceTest {
                 org.mockito.ArgumentMatchers.eq(IMEI), any(), org.mockito.ArgumentMatchers.eq(0xA2), scan.capture(), any());
         assertEquals(8, scan.getValue().wifi().size());
         assertEquals(470, scan.getValue().mcc());
+    }
+
+    @Test
+    void wifi_scan_0x2c_on_a_2g_cell_goes_to_the_network_locator_too() {
+        login();
+
+        channel.writeInbound(frame(0x2C, ByteBufUtil.decodeHexDump(
+                "1a0a0208320b81d60002759c000377287a60000c0028" + "0".repeat(60) + "00024c49686db7fe447cf17ee782b746"), 4));
+
+        ArgumentCaptor<NetworkScan> scan = ArgumentCaptor.forClass(NetworkScan.class);
+        verify(networkLocationService, timeout(3000)).onScan(
+                org.mockito.ArgumentMatchers.eq(IMEI), any(), org.mockito.ArgumentMatchers.eq(0x2C), scan.capture(), any());
+        assertEquals("gsm", scan.getValue().radio());
+        assertEquals(2, scan.getValue().cells().size());
+        assertEquals(2, scan.getValue().wifi().size());
+    }
+
+    // ---- replies to a 0x80 server command ------------------------------------------------
+
+    @Test
+    void gt06_command_reply_0x15_is_matched_by_its_server_flag() {
+        login();
+        byte[] text = "DYD=Success!".getBytes(java.nio.charset.StandardCharsets.US_ASCII);
+        ByteBuf content = Unpooled.buffer().writeByte(4 + text.length).writeInt(0x0001A958).writeBytes(text).writeShort(2);
+
+        channel.writeInbound(frame(0x15, ByteBufUtil.getBytes(content), 5));
+
+        verify(commandService).completeReply(0x0001A958, "DYD=Success!");
+    }
+
+    @Test
+    void jimi_command_reply_0x21_in_an_extended_frame_is_matched_too() {
+        login();
+        byte[] text = "Battery:3.97V,NORMAL; GPRS:Link Up;".getBytes(java.nio.charset.StandardCharsets.US_ASCII);
+        ByteBuf content = Unpooled.buffer().writeInt(7).writeByte(1).writeBytes(text);
+
+        channel.writeInbound(extendedFrame(0x21, ByteBufUtil.getBytes(content), 6));
+
+        verify(commandService).completeReply(7, "Battery:3.97V,NORMAL; GPRS:Link Up;");
     }
 
     @Test
