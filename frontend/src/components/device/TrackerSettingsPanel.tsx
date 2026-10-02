@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 import { api, extractError } from "@/lib/api";
 import { useLocale, type StringKey } from "@/lib/i18n";
 import { formatDateTime } from "@/lib/format";
@@ -321,8 +322,9 @@ export function TrackerSettingsPanel({ device, onClose }: Props) {
   const mode = num(reporting.mode, 4);
   const lastRead = data?.settings.reduce<string | null>((latest, s) => (s.syncedAt && (!latest || s.syncedAt > latest) ? s.syncedAt : latest), null);
 
-  return (
-    <div className="fixed inset-0 z-[1200] flex items-stretch justify-center bg-ink-950/40 sm:items-center sm:p-4" role="dialog" aria-modal="true">
+  // Rendered on <body>: inside the map page it would sit under the top bar and lose its title.
+  return createPortal(
+    <div className="fixed inset-0 z-[5000] flex items-stretch justify-center bg-ink-950/40 sm:items-center sm:p-4" role="dialog" aria-modal="true">
       <div className="flex max-h-full w-full max-w-2xl flex-col overflow-hidden bg-surface-100 shadow-2xl sm:rounded-2xl">
         <div className="flex items-start justify-between gap-3 border-b border-surface-300 bg-white px-4 py-3">
           <div className="min-w-0">
@@ -528,7 +530,8 @@ export function TrackerSettingsPanel({ device, onClose }: Props) {
           </Section>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
 
