@@ -86,6 +86,9 @@ public class LocationService {
             // points the packet time is minutes to years old, and DeviceStatusJob would
             // flip a connected tracker to OFFLINE on its next sweep.
             Instant seenAt = Instant.now();
+            // 0 mV is "no external supply" (a battery tracker), not a reading: it must not wipe
+            // the battery voltage the heartbeat reported.
+            Integer deviceVoltageMv = loc.getVoltageMv() != null && loc.getVoltageMv() > 0 ? loc.getVoltageMv() : null;
             if (loc.isValid()) {
                 deviceRepo.updateLastPosition(
                         loc.getImei(),
@@ -93,7 +96,7 @@ public class LocationService {
                         loc.getLongitude(),
                         loc.getSpeed(),
                         loc.getCourse(),
-                        loc.getVoltageMv(),
+                        deviceVoltageMv,
                         loc.getGsmSignal(),
                         engineHoursSeconds,
                         seenAt
@@ -101,7 +104,7 @@ public class LocationService {
             } else {
                 deviceRepo.updateLastTelemetryNoFix(
                         loc.getImei(),
-                        loc.getVoltageMv(),
+                        deviceVoltageMv,
                         loc.getGsmSignal(),
                         engineHoursSeconds,
                         seenAt

@@ -380,7 +380,7 @@ public class Gt06Handler extends SimpleChannelInboundHandler<ByteBuf> {
                 io.netty.buffer.ByteBuf detached = io.netty.buffer.Unpooled.wrappedBuffer(raw);
                 PacketDecoder.HeartbeatStatus status = packetDecoder.decodeHeartbeat(detached);
                 if (status != null) {
-                    deviceService.applyHeartbeatStatus(imei, status.gsmSignal());
+                    deviceService.applyHeartbeatStatus(imei, status.gsmSignal(), null, null);
                 } else {
                     deviceService.markOnline(imei);
                 }
@@ -416,9 +416,9 @@ public class Gt06Handler extends SimpleChannelInboundHandler<ByteBuf> {
             UUID orgId = session.orgId();
             try {
                 io.netty.buffer.ByteBuf detached = io.netty.buffer.Unpooled.wrappedBuffer(raw);
-                PacketDecoder.HeartbeatStatus status = packetDecoder.decodeHeartbeat(detached);
+                PacketDecoder.HeartbeatStatus status = packetDecoder.decodeHeartbeat(detached, proto == PacketType.JIMI_HEARTBEAT_EXT);
                 if (status != null) {
-                    deviceService.applyHeartbeatStatus(imei, status.gsmSignal());
+                    deviceService.applyHeartbeatStatus(imei, status.gsmSignal(), status.batteryPercent(), status.batteryMv());
                 } else {
                     deviceService.markOnline(imei);
                 }

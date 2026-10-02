@@ -189,6 +189,16 @@ public class PacketDecoder {
      * between location packets.
      */
     public HeartbeatStatus decodeHeartbeat(ByteBuf content) {
+        return decodeHeartbeat(content, false);
+    }
+
+    /**
+     * @param modules true for the Jimi 0x36 heartbeat, whose status block is followed by
+     *                {@code [type:2][len:1][data]} modules. Known ones (PL601, checked against
+     *                the tracker's own BMT# / STATUS# answers): 0x0018 battery voltage in
+     *                0.01 V, 0x006A battery percent. Others are skipped.
+     */
+    public HeartbeatStatus decodeHeartbeat(ByteBuf content, boolean modules) {
         if (content.readableBytes() < 5) return null;
         int status = content.readUnsignedByte();
         int voltageLevel = content.readUnsignedByte();
@@ -196,14 +206,31 @@ public class PacketDecoder {
         int alarm = content.readUnsignedByte();
         content.readUnsignedByte();  // language byte
         boolean accOn = (status & 0x02) != 0;
-        return new HeartbeatStatus(accOn, voltageLevel, gsm, alarm);
+
+        Integer batteryPercent = null;
+        Integer batteryMv = null;
+        while (modules && content.readableBytes() >= 3) {
+            int type = content.readUnsignedShort();
+            int len = content.readUnsignedByte();
+            if (len > content.readableBytes()) break;
+            if (type == 0x006A && len == 1) {
+                int pct = content.readUnsignedByte();
+                if (pct <= 100) batteryPercent = pct;
+            } else if (type == 0x0018 && len == 2) {
+                batteryMv = content.readUnsignedShort() * 10;
+            } else {
+                content.skipBytes(len);
+            }
+        }
+        return new HeartbeatStatus(accOn, voltageLevel, gsm, alarm, batteryPercent, batteryMv);
     }
 
     /**
      * Heartbeat status snapshot. voltageLevel is coarse 0-6, gsmSignal is 0-31
      * (some firmware: 0-4). Both are best-effort indicators, not precise values.
      */
-    public record HeartbeatStatus(boolean accOn, int voltageLevel, int gsmSignal, int alarmCode) {}
+    public record HeartbeatStatus(boolean accOn, int voltageLevel, int gsmSignal, int alarmCode,
+                                  Integer batteryPercent, Integer batteryMv) {}
 
     // ─────────────────────────────────────────────────────────────────────────
     // Jimi IoT Protocol V3.2 Decoders

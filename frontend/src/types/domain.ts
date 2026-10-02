@@ -108,6 +108,8 @@ export interface DeviceView {
   parkedSince: string | null;
   /** Set when a photo was uploaded; it replaces the drawn portrait and versions the image URL. */
   photoUpdatedAt?: string | null;
+  /** 0-100 for battery-powered trackers (reported by the tracker itself), otherwise null. */
+  batteryPercent?: number | null;
 }
 
 // ─────────────────────────────────────────────────────────────

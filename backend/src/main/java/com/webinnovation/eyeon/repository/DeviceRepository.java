@@ -28,7 +28,7 @@ public class DeviceRepository {
                    last_speed, last_course, last_voltage_mv,
                    last_gsm_signal, last_engine_hours_seconds,
                    icon_color, engine_locked,
-                   created_at, updated_at, photo_updated_at
+                   created_at, updated_at, photo_updated_at, battery_percent
             """;
 
     private static final RowMapper<Device> ROW_MAPPER = (rs, rn) -> new Device(
@@ -57,7 +57,8 @@ public class DeviceRepository {
             rs.getBoolean("engine_locked"),
             rs.getObject("created_at", OffsetDateTime.class).toInstant(),
             rs.getObject("updated_at", OffsetDateTime.class).toInstant(),
-            toInstant(rs.getObject("photo_updated_at", OffsetDateTime.class))
+            toInstant(rs.getObject("photo_updated_at", OffsetDateTime.class)),
+            rs.getObject("battery_percent") == null ? null : rs.getInt("battery_percent")
     );
 
     private static Instant toInstant(OffsetDateTime odt) {
@@ -213,16 +214,20 @@ public class DeviceRepository {
      * GSM strength independently of location packets, so we refresh the signal
      * indicator for parked vehicles between position fixes.
      */
-    public void updateLastStatus(String imei, Integer gsmSignal, Instant ts) {
+    public void updateLastStatus(String imei, Integer gsmSignal, Integer batteryPercent, Integer batteryMv, Instant ts) {
         var params = new MapSqlParameterSource()
                 .addValue("imei", imei)
                 .addValue("gsmSignal", gsmSignal)
+                .addValue("batteryPercent", batteryPercent)
+                .addValue("batteryMv", batteryMv)
                 .addValue("ts", java.sql.Timestamp.from(ts));
         jdbc.update("""
                 UPDATE devices SET
                   status = 'ONLINE',
                   last_seen_at = :ts,
                   last_gsm_signal = COALESCE(:gsmSignal, last_gsm_signal),
+                  battery_percent = COALESCE(:batteryPercent, battery_percent),
+                  last_voltage_mv = COALESCE(:batteryMv, last_voltage_mv),
                   updated_at = now()
                 WHERE imei = :imei
                 """, params);

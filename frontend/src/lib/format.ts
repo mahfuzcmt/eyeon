@@ -313,3 +313,24 @@ export function gsmToPercent(value: number | null | undefined): number | null {
   if (value == null) return null;
   return Math.round(Math.min(100, (value / 31) * 100));
 }
+
+/**
+ * Colour for a tracker's own battery percentage (personal trackers): red when it needs
+ * charging now, amber when it will soon, green otherwise. All three are dark enough as text.
+ */
+export function batteryLevelColor(percent: number): string {
+  if (percent <= 15) return "#D92D20";
+  if (percent <= 30) return "#B45309";
+  return "#15803D";
+}
+
+/**
+ * Small battery glyph with the fill drawn to scale, as an inline SVG string (no ids), for
+ * both React (dangerouslySetInnerHTML) and the Leaflet marker HTML.
+ */
+export function batteryGlyphSvg(percent: number, color: string, width = 16): string {
+  const p = Math.max(0, Math.min(100, percent));
+  const fill = Math.max(1.2, (p / 100) * 13);
+  const h = Math.round((width * 10) / 20);
+  return `<svg width="${width}" height="${h}" viewBox="0 0 20 10" style="display:block" aria-hidden="true"><rect x=".75" y=".75" width="16" height="8.5" rx="2" fill="#fff" stroke="${color}" stroke-width="1.5"/><rect x="2.25" y="2.25" width="${fill.toFixed(1)}" height="5.5" rx=".8" fill="${color}"/><rect x="17.6" y="3" width="1.8" height="4" rx=".8" fill="${color}"/></svg>`;
+}

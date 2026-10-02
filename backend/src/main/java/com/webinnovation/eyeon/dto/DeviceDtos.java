@@ -51,7 +51,9 @@ public final class DeviceDtos {
             /** End of the latest completed trip — null while driving or if unknown. */
             Instant parkedSince,
             /** Non-null when a photo was uploaded: fetch GET /devices/{imei}/photo?v={this}. */
-            Instant photoUpdatedAt
+            Instant photoUpdatedAt,
+            /** 0-100 for battery-powered trackers, otherwise null. */
+            Integer batteryPercent
     ) {
         public static DeviceView of(Device d) {
             return of(d, null, null);
@@ -93,7 +95,8 @@ public final class DeviceDtos {
                     sub == null ? null : sub.status(),
                     sub == null ? null : sub.nextDueAt(),
                     parkedSince,
-                    d.photoUpdatedAt()
+                    d.photoUpdatedAt(),
+                    d.batteryPercent()
             );
         }
     }

@@ -8,6 +8,8 @@ import {
   formatCompactDuration,
   vehicleState,
   VEHICLE_STATE_COLOR,
+  batteryGlyphSvg,
+  batteryLevelColor,
   type VehicleState,
 } from "@/lib/format";
 import { buildPersonAvatar, personPhotoUrl } from "@/lib/personIcons";
@@ -509,6 +511,19 @@ function VehicleRow({ row, selected, visible, onSelect, onToggleVisible, onActio
       >
         {deviceLabel(device)}
       </span>
+      {device.batteryPercent != null && (
+        <span
+          className="inline-flex shrink-0 items-center gap-1 text-[13px] font-semibold tabular-nums"
+          style={{ color: batteryLevelColor(device.batteryPercent) }}
+          title={`${t("popup.battery")} ${Math.round(device.batteryPercent)}%`}
+        >
+          <span
+            // Trusted static SVG built from a number and one of our own colours.
+            dangerouslySetInnerHTML={{ __html: batteryGlyphSvg(device.batteryPercent, batteryLevelColor(device.batteryPercent), 18) }}
+          />
+          {Math.round(device.batteryPercent)}%
+        </span>
+      )}
       <span className="shrink-0 text-[14px] font-medium tabular-nums" style={{ color: status.color }} title={status.hint}>
         {status.text}
       </span>

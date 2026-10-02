@@ -42,8 +42,8 @@ public class DeviceService {
      * the last position's ACC, which is more authoritative than the heartbeat's
      * coarse status byte.
      */
-    public void applyHeartbeatStatus(String imei, Integer gsmSignal) {
-        deviceRepo.updateLastStatus(imei, gsmSignal, Instant.now());
+    public void applyHeartbeatStatus(String imei, Integer gsmSignal, Integer batteryPercent, Integer batteryMv) {
+        deviceRepo.updateLastStatus(imei, gsmSignal, batteryPercent, batteryMv, Instant.now());
     }
 
     /**

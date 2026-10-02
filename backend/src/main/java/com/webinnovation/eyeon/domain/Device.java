@@ -30,5 +30,7 @@ public record Device(
         Instant createdAt,
         Instant updatedAt,
         /** When the uploaded photo last changed; null = no photo, the drawn portrait is used. */
-        Instant photoUpdatedAt
+        Instant photoUpdatedAt,
+        /** 0-100 as reported by a battery-powered tracker; null when it reports none. */
+        Integer batteryPercent
 ) {}

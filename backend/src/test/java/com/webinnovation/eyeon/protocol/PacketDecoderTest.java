@@ -341,4 +341,36 @@ class PacketDecoderTest {
             content.release();
         }
     }
+
+    /**
+     * 0x36 heartbeat of the PL601 when its battery was nearly empty (production, 2026-10-02):
+     * the tracker's own BMT# answer at the time was "vBat=3.64, Percent:5".
+     */
+    @Test
+    void extended_heartbeat_modules_carry_battery_percent_and_voltage() {
+        ByteBuf content = Unpooled.wrappedBuffer(io.netty.buffer.ByteBufUtil.decodeHexDump(
+                "0201040002" + "00410400001b04" + "00320101" + "001802016d" + "006a0105"));
+        try {
+            PacketDecoder.HeartbeatStatus status = decoder.decodeHeartbeat(content, true);
+
+            assertThat(status.gsmSignal()).isEqualTo(4);
+            assertThat(status.batteryPercent()).isEqualTo(5);
+            assertThat(status.batteryMv()).isEqualTo(3650);
+        } finally {
+            content.release();
+        }
+    }
+
+    @Test
+    void plain_heartbeat_reports_no_battery() {
+        ByteBuf content = Unpooled.wrappedBuffer(new byte[] {0x02, 0x04, 0x03, 0x00, 0x02});
+        try {
+            PacketDecoder.HeartbeatStatus status = decoder.decodeHeartbeat(content);
+
+            assertThat(status.batteryPercent()).isNull();
+            assertThat(status.batteryMv()).isNull();
+        } finally {
+            content.release();
+        }
+    }
 }

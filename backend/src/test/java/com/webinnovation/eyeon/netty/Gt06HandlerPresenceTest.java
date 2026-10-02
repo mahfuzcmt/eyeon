@@ -118,8 +118,8 @@ class Gt06HandlerPresenceTest {
         // [78 78][len 05][proto 36][serial 00 07][crc][0d 0a]
         assertEquals("787805360007", ByteBufUtil.hexDump(ack).substring(0, 12));
         ack.release();
-        // status block 00 03 04 00 02: GSM strength 4
-        verify(deviceService, timeout(3000)).applyHeartbeatStatus(IMEI, 4);
+        // status block 00 03 04 00 02: GSM strength 4; modules 0x006A = 0x32 (50 %), 0x0018 = 0x017E (3.82 V)
+        verify(deviceService, timeout(3000)).applyHeartbeatStatus(IMEI, 4, 50, 3820);
         verify(locationService, never()).saveAndBroadcast(any());
     }
 
