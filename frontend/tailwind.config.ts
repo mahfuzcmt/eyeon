@@ -109,6 +109,8 @@ const config: Config = {
         sans: [
           '"Nunito Variable"',
           "Nunito",
+          // Bengali digits only (see globals.css): Hind Siliguri's digit one is hard to read.
+          '"EyeOn Bengali Digits"',
           '"Hind Siliguri"',
           "-apple-system",
           "BlinkMacSystemFont",
@@ -118,7 +120,7 @@ const config: Config = {
         ],
         display: ['"Baloo Da 2 Variable"', '"Baloo Da 2"', '"Nunito Variable"', '"Hind Siliguri"', "sans-serif"],
         mono: ['"JetBrains Mono Variable"', '"JetBrains Mono"', "ui-monospace", "SFMono-Regular", "Menlo", "monospace"],
-        bengali: ['"Hind Siliguri"', '"Nunito Variable"', "sans-serif"],
+        bengali: ['"EyeOn Bengali Digits"', '"Hind Siliguri"', '"Nunito Variable"', "sans-serif"],
       },
       fontSize: {
         // One step larger than the old fleet scale; 12px is the floor.

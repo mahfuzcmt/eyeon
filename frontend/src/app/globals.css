@@ -4,6 +4,19 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Bengali digits come from Baloo Da 2, everything else Bengali from Hind Siliguri.
+   Hind Siliguri draws the digit one as a small low hook; at text sizes "১১ মিনিট" read
+   like "৷৷ মিনিট" (reported by the owner, 2026-10-02). This face covers only U+09E6-09EF
+   and sits in front of Hind Siliguri in every stack through --font-hind-siliguri. */
+@font-face {
+  font-family: "EyeOn Bengali Digits";
+  font-style: normal;
+  font-display: swap;
+  font-weight: 400 800;
+  src: url("../../node_modules/@fontsource-variable/baloo-da-2/files/baloo-da-2-bengali-wght-normal.woff2") format("woff2-variations");
+  unicode-range: U+09E6-09EF;
+}
+
 @layer base {
   :root {
     color-scheme: light;
@@ -12,7 +25,7 @@
     --font-baloo: "Baloo Da 2 Variable";
     --font-open-sans: "Open Sans Variable";
     --font-jetbrains: "JetBrains Mono Variable";
-    --font-hind-siliguri: "Hind Siliguri";
+    --font-hind-siliguri: "EyeOn Bengali Digits", "Hind Siliguri";
   }
 
   html,

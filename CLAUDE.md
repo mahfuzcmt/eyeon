@@ -1314,7 +1314,7 @@ colors: {
 **Typography** (self-hosted via `@fontsource`, loaded in `app/layout.tsx`):
 - Body: `Nunito` 16px (17px for `lang="bn"`)
 - Headings / `font-display`: `Baloo Da 2` - covers Latin and Bengali, matches the poster
-- Bengali body: `Hind Siliguri`
+- Bengali body: `Hind Siliguri`, **except the Bengali digits (U+09E6-09EF), which come from Baloo Da 2** through the `EyeOn Bengali Digits` face in `globals.css` (2026-10-02). Hind Siliguri draws the digit one as a small low hook, so "১১ মিনিট" read like "৷৷ মিনিট" at text sizes. The face is in front of Hind Siliguri in every stack via `--font-hind-siliguri` and the Tailwind `sans` / `bengali` families; do not list Hind Siliguri in a new stack without it.
 - Monospace data (IMEI, coords): `JetBrains Mono`
 - Mobile still uses the system font (no `expo-font` yet); sizes and colours match.
 
