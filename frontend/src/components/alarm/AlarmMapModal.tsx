@@ -22,7 +22,7 @@ export function AlarmMapModal({ alarm, deviceName, onClose }: { alarm: AlarmView
     const map = L.map(containerRef.current, { center, zoom: 16, zoomControl: true });
     // The base layer loads async; React StrictMode may have torn the map down by then.
     let disposed = false;
-    createBaseLayer("google-street").then((layer) => {
+    createBaseLayer().then((layer) => {
       if (!disposed) layer.addTo(map);
     });
     const color = SEV_COLOR[alarm.severity] ?? SEV_COLOR.INFO;

@@ -22,8 +22,6 @@ export interface MapVehicle {
   overspeed?: boolean;
   /** Draw the heading pointer. Only set while the person is actually moving. */
   moving?: boolean;
-  /** Tracker's own battery percentage; drawn as a small pill under the avatar. */
-  battery?: number | null;
 }
 
 export interface MapPoint {
@@ -50,8 +48,11 @@ interface Props {
   center?: { lat: number; lng: number; zoom?: number; nonce?: number } | null;
   /** Zoom step command (+1 / -1); bump `nonce` to re-issue. */
   zoomStep?: { dir: 1 | -1; nonce: number } | null;
-  /** Base layer kind — Normal (street) or Satellite. Default street. */
-  baseLayer?: "street" | "satellite";
+  /**
+   * Base layer. "street" (OpenStreetMap, the default) and "satellite" (Esri imagery) are free;
+   * "google" is billed per map load and its JS API is only downloaded when it is chosen.
+   */
+  baseLayer?: "street" | "satellite" | "google";
   /** Circle overlay (geofence preview); null clears it. */
   circle?: MapCircle | null;
   fitRoute?: boolean;
@@ -61,6 +62,8 @@ interface Props {
   showTraffic?: boolean;
   /** Reports whether the traffic overlay is available (Google base active). */
   onTrafficAvailable?: (available: boolean) => void;
+  /** Reports whether a Google key is configured, i.e. whether "google" can be offered. */
+  onGoogleAvailable?: (available: boolean) => void;
   onSelect?: (imei: string) => void;
   /** Fires when the user taps empty map (not a marker). */
   onMapPress?: (p: { lat: number; lng: number }) => void;
@@ -76,15 +79,13 @@ const GOOGLE_MAPS_API_KEY = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY ?? "";
 // referrers in Google Cloud Console. Domain doesn't need to exist.
 const MAP_REFERRER = "https://mobile.eyeongps.app/";
 
-// Leaflet in the WebView, mirroring the web dashboard (frontend/src/lib/leaflet.ts):
-// Google Maps base layer via GoogleMutant when a key is configured (OSM misses
-// Bangladesh roads/POIs), free OSM tiles otherwise or when Google fails to load.
+// Leaflet in the WebView, mirroring the web dashboard (frontend/src/lib/leaflet.ts): free
+// OpenStreetMap tiles by default. Every Google map shown is a billed map load, so since
+// 2026-10-02 the Google JS API (and the GoogleMutant plugin) is only downloaded when the user
+// picks "Google" in the view menu, and only if a key is configured.
 function buildHtml(googleKey: string, language: "en" | "bn"): string {
-  // language → Bengali place names when the app is in Bengali; region=BD biases labels to Bangladesh.
-  const googleScripts = googleKey
-    ? `<script src="https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(googleKey)}&language=${language}&region=BD"></script>
-<script src="https://unpkg.com/leaflet.gridlayer.googlemutant@0.14.1/dist/Leaflet.GoogleMutant.js"></script>`
-    : "";
+  // Injected as JSON string literals; language → Bengali place names when the app is in Bengali.
+  const googleScripts = `<script>var GKEY = ${JSON.stringify(googleKey)}, GLANG = ${JSON.stringify(language)};</script>`;
   return `<!doctype html><html><head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
@@ -101,9 +102,6 @@ ${googleScripts}
   .ptr{position:absolute;inset:0;transform-origin:center;pointer-events:none}
   .pho{position:absolute;left:50%;top:50%;width:39px;height:39px;margin:-19.5px 0 0 -19.5px;border-radius:50%;object-fit:cover}
   .ava svg.ring{position:absolute;left:0;top:0;filter:none}
-  .bat{position:absolute;top:calc(100% - 3px);left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:2px;
-       padding:1px 4px;background:#fff;border:1px solid;border-radius:999px;white-space:nowrap;pointer-events:none;
-       font:700 10px -apple-system,Roboto,sans-serif;box-shadow:0 1px 3px rgba(10,25,40,.3)}
   .lbl{position:absolute;bottom:calc(100% + 9px);left:50%;transform:translateX(-50%);
        font:700 12px -apple-system,Roboto,'Noto Sans Bengali',sans-serif;color:#fff;
        padding:2px 8px;border-radius:999px;border:1px solid rgba(255,255,255,.55);
@@ -121,16 +119,36 @@ ${googleScripts}
   });
   map.attributionControl.setPrefix(false);
 
-  // Base layer factory — Google (roadmap/hybrid) when the JS API loaded,
-  // free OSM / Esri satellite tiles otherwise. Mirrors the web dashboard's
-  // createBaseLayer in frontend/src/lib/leaflet.ts.
+  // Base layers. 'street' (OpenStreetMap) and 'satellite' (Esri imagery) are free tiles;
+  // 'google' is the Google roadmap through GoogleMutant, loaded on demand.
   let googleOk = false;
-  try { googleOk = !!(window.google && window.google.maps && L.gridLayer.googleMutant); } catch(e){}
+  let googleWaiters = null;
+  function loadGoogle(cb){
+    if(googleOk) return cb(true);
+    if(!GKEY) return cb(false);
+    if(googleWaiters){ googleWaiters.push(cb); return; }
+    googleWaiters = [cb];
+    function done(ok){
+      googleOk = ok;
+      const q = googleWaiters; googleWaiters = null;
+      q.forEach(function(f){ f(ok); });
+    }
+    window.__mlGoogleReady = function(){
+      const plugin = document.createElement('script');
+      plugin.src = 'https://unpkg.com/leaflet.gridlayer.googlemutant@0.14.1/dist/Leaflet.GoogleMutant.js';
+      plugin.onload = function(){ done(!!(window.google && window.google.maps && L.gridLayer.googleMutant)); };
+      plugin.onerror = function(){ done(false); };
+      document.head.appendChild(plugin);
+    };
+    const api = document.createElement('script');
+    api.src = 'https://maps.googleapis.com/maps/api/js?key=' + encodeURIComponent(GKEY)
+      + '&language=' + GLANG + '&region=BD&callback=__mlGoogleReady';
+    api.onerror = function(){ done(false); };
+    document.head.appendChild(api);
+  }
   function makeBase(kind){
-    if(googleOk){
-      try {
-        return L.gridLayer.googleMutant({type: kind==='satellite'?'hybrid':'roadmap', maxZoom:21});
-      } catch(e){}
+    if(kind==='google' && googleOk){
+      try { return L.gridLayer.googleMutant({type:'roadmap', maxZoom:21}); } catch(e){}
     }
     return kind==='satellite'
       ? L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
@@ -141,6 +159,12 @@ ${googleScripts}
   let baseKind = 'street';
   let base = makeBase(baseKind);
   base.addTo(map);
+  function swapBase(){
+    map.removeLayer(base);
+    base = makeBase(baseKind).addTo(map);
+    applyTraffic();
+    post({type:'traffic', available: !!(base && base.addGoogleLayer)});
+  }
 
   // Google live-traffic overlay — only exists on the GoogleMutant base layer.
   let traffic = false;
@@ -152,8 +176,7 @@ ${googleScripts}
   // Google key rejected (bad key / referrer) — swap to free tiles so the map still works.
   window.gm_authFailure = function(){
     googleOk = false;
-    map.removeLayer(base); base = makeBase(baseKind).addTo(map);
-    post({type:'traffic', available:false});
+    swapBase();
   };
 
   const markers = {};       // imei -> L.Marker
@@ -217,16 +240,6 @@ ${googleScripts}
       + '<circle r="14.5" fill="none" stroke="'+color+'" stroke-width="3.6"/>'
       + '<circle r="16.9" fill="none" stroke="#fff" stroke-width="1.4"/></svg>';
   }
-  // Battery of a personal tracker: same thresholds and look as the web map.
-  function batColor(p){ return p <= 15 ? '#D92D20' : p <= 30 ? '#B45309' : '#15803D'; }
-  function batHtml(p){
-    if(p == null) return '';
-    var c = batColor(p), w = Math.max(1.2, Math.max(0, Math.min(100, p)) / 100 * 13).toFixed(1);
-    return '<div class="bat" style="border-color:'+c+';color:'+c+'">'
-      + '<svg width="14" height="7" viewBox="0 0 20 10"><rect x=".75" y=".75" width="16" height="8.5" rx="2" fill="#fff" stroke="'+c+'" stroke-width="1.5"/>'
-      + '<rect x="2.25" y="2.25" width="'+w+'" height="5.5" rx=".8" fill="'+c+'"/><rect x="17.6" y="3" width="1.8" height="4" rx=".8" fill="'+c+'"/></svg>'
-      + Math.round(p) + '%</div>';
-  }
   function vehHtml(v){
     const color = v.overspeed ? '#D92D20' : (v.color||'#0F6B5C');
     const photo = photos[v.imei];
@@ -236,13 +249,12 @@ ${googleScripts}
       + '<div class="ava">'+avatarSvg(personType(v.vehicleType), color)
       + (photo ? '<img class="pho" alt="" src="'+photo+'" onerror="this.remove()"/>'+ringSvg(color) : '')
       + '</div>'
-      + batHtml(v.battery)
       + '</div>';
   }
   function vehIcon(v){
     return L.divIcon({className:'', iconSize:[48,48], iconAnchor:[24,24], html: vehHtml(v)});
   }
-  function vehSig(v){ return [v.vehicleType,v.color,v.label,v.overspeed?1:0,v.moving?1:0,v.battery==null?'':Math.round(v.battery),(photos[v.imei]||'').length].join('|'); }
+  function vehSig(v){ return [v.vehicleType,v.color,v.label,v.overspeed?1:0,v.moving?1:0,(photos[v.imei]||'').length].join('|'); }
 
   // Playback marker keeps the plain arrow (it marks a position on the route, not a person).
   function arrowIcon(color, course){
@@ -317,10 +329,12 @@ ${googleScripts}
     setBase(kind){
       if(kind === baseKind) return;
       baseKind = kind;
-      map.removeLayer(base);
-      base = makeBase(kind).addTo(map);
-      applyTraffic();
-      post({type:'traffic', available: !!(base && base.addGoogleLayer)});
+      if(kind === 'google'){
+        // Stay on the current tiles until Google has loaded; if it cannot, the free map remains.
+        loadGoogle(function(){ if(baseKind === 'google') swapBase(); });
+      } else {
+        swapBase();
+      }
     },
     fit(coords){
       if(!coords.length) return;
@@ -356,7 +370,7 @@ ${googleScripts}
     }
   };
   map.on('click', (e) => post({type:'mapclick', lat:e.latlng.lat, lng:e.latlng.lng}));
-  map.whenReady(() => post({type:'ready', google: !!(base && base.addGoogleLayer)}));
+  map.whenReady(() => post({type:'ready', google: !!GKEY}));
 </script></body></html>`;
 }
 
@@ -373,6 +387,7 @@ export default function WebMap({
   fitVehicles,
   showTraffic,
   onTrafficAvailable,
+  onGoogleAvailable,
   onSelect,
   onMapPress,
 }: Props) {
@@ -459,7 +474,9 @@ export default function WebMap({
         };
         if (msg.type === "ready") {
           setReady(true);
-          onTrafficAvailable?.(msg.google === true);
+          // The map opens on free tiles: Google can be offered if a key exists, traffic only once it is shown.
+          onGoogleAvailable?.(msg.google === true);
+          onTrafficAvailable?.(false);
         } else if (msg.type === "traffic") {
           onTrafficAvailable?.(msg.available === true);
         } else if (msg.type === "select" && msg.imei) onSelect?.(msg.imei);
@@ -470,7 +487,7 @@ export default function WebMap({
         /* ignore */
       }
     },
-    [onSelect, onMapPress, onTrafficAvailable],
+    [onSelect, onMapPress, onTrafficAvailable, onGoogleAvailable],
   );
 
   return (

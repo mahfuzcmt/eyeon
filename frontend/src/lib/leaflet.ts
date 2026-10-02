@@ -20,21 +20,26 @@ export const SATELLITE_ATTRIBUTION =
   "Tiles &copy; Esri — Source: Esri, Maxar, Earthstar Geographics, and the GIS User Community";
 
 // ---------------------------------------------------------------------------
-// Base layer factory — Google Maps when a key is configured, OSM/Esri fallback.
+// Base layer factory — free OpenStreetMap tiles by default, Google on request.
 //
-// OSM's Bangladesh coverage misses roads/buildings/POIs, so production uses the
-// official Google Maps JS API rendered as a Leaflet layer via the GoogleMutant
-// plugin (ToS-compliant: it embeds the real Google map, billed as Dynamic Map
-// loads). Without NEXT_PUBLIC_GOOGLE_MAPS_API_KEY (e.g. local dev) we fall
-// back to the previous free OSM + Esri satellite tiles so maps still render.
+// Every map that shows a Google layer is billed as a Dynamic Map load, and the
+// dashboard opens many maps (live map, history, geofence editor, alarm popups,
+// shared links). Since 2026-10-02 they all start on OSM; the Google JS API is
+// only downloaded when someone picks a Google layer in the live map's layer
+// menu (GoogleMutant plugin: it embeds the real Google map, ToS-compliant).
+// Trade-off: OSM shows fewer Bangladesh roads, buildings and POIs than Google.
 // ---------------------------------------------------------------------------
 
 // Key state lives in lib/googleMapsKey.ts (no Leaflet import, safe for SSR); re-exported here.
 import { getGoogleMapsApiKey } from "./googleMapsKey";
 export { GOOGLE_MAPS_API_KEY, getGoogleMapsApiKey, setGoogleMapsApiKey } from "./googleMapsKey";
 
+/** What every map opens with. Change this one constant to make Google the default again. */
+export const DEFAULT_BASE_LAYER: BaseLayerKind = "osm";
+
 export type BaseLayerKind =
   | "osm"              // OSM Standard (free, always available)
+  | "esri-satellite"   // Esri World Imagery (free satellite view)
   | "google-street"    // Google roadmap
   | "google-satellite" // Google satellite imagery
   | "google-hybrid"    // Google satellite + labels
@@ -129,6 +134,7 @@ function googleMapType(kind: BaseLayerKind): string | null {
     case "google-hybrid": return "hybrid";
     case "google-terrain": return "terrain";
     case "osm": return null;
+    case "esri-satellite": return null;
     default: return null;
   }
 }
@@ -143,10 +149,13 @@ export function preloadGoogleMaps(): void {
   if (getGoogleMapsApiKey()) loadGoogleMaps();
 }
 
-export async function createBaseLayer(kind: BaseLayerKind = "google-street"): Promise<L.GridLayer> {
+export async function createBaseLayer(kind: BaseLayerKind = DEFAULT_BASE_LAYER): Promise<L.GridLayer> {
   const gmapType = googleMapType(kind);
 
-  // OSM: always use OSM tiles, no Google API needed
+  // Free layers: plain tiles, no Google API needed
+  if (kind === "esri-satellite") {
+    return L.tileLayer(TILE_URL_SATELLITE, { attribution: SATELLITE_ATTRIBUTION, maxZoom: 19 });
+  }
   if (kind === "osm" || !gmapType) {
     return L.tileLayer(TILE_URL, { attribution: TILE_ATTRIBUTION, maxZoom: 19 });
   }

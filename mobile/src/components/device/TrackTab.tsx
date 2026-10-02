@@ -50,7 +50,6 @@ export default function TrackTab({ imei, orgId }: { imei: string; orgId: string 
         iconColor: device.iconColor,
         overspeed,
         moving: motionOf(device, loc) === "MOVING",
-        battery: device.batteryPercent ?? null,
       },
     ];
   }, [loc, device, imei, speedLimits]);

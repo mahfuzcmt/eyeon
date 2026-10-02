@@ -322,6 +322,7 @@ const STRINGS = {
   "map.view": { en: "Map View", bn: "মানচিত্র ভিউ" },
   "map.normal": { en: "Normal", bn: "সাধারণ" },
   "map.satellite": { en: "Satellite", bn: "স্যাটেলাইট" },
+  "map.google": { en: "Google Maps", bn: "গুগল ম্যাপ" },
 
   // ── Statistics tab ────────────────────────────────────────────────
   "stats.loading": { en: "Loading statistics…", bn: "পরিসংখ্যান লোড হচ্ছে…" },

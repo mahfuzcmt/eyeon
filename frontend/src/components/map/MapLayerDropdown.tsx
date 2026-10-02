@@ -12,8 +12,32 @@ interface LayerOption {
 
 const LAYER_OPTIONS: LayerOption[] = [
   {
+    kind: "osm",
+    label: "Standard",
+    requiresGoogle: false,
+    icon: (
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6" />
+        <line x1="8" y1="2" x2="8" y2="18" />
+        <line x1="16" y1="6" x2="16" y2="22" />
+      </svg>
+    ),
+  },
+  {
+    kind: "esri-satellite",
+    label: "Satellite",
+    requiresGoogle: false,
+    icon: (
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <circle cx="12" cy="12" r="10" />
+        <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
+        <path d="M2 12h20" />
+      </svg>
+    ),
+  },
+  {
     kind: "google-street",
-    label: "Street",
+    label: "Google street",
     requiresGoogle: true,
     icon: (
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -24,7 +48,7 @@ const LAYER_OPTIONS: LayerOption[] = [
   },
   {
     kind: "google-satellite",
-    label: "Satellite",
+    label: "Google satellite",
     requiresGoogle: true,
     icon: (
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -36,7 +60,7 @@ const LAYER_OPTIONS: LayerOption[] = [
   },
   {
     kind: "google-hybrid",
-    label: "Hybrid",
+    label: "Google hybrid",
     requiresGoogle: true,
     icon: (
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -48,23 +72,11 @@ const LAYER_OPTIONS: LayerOption[] = [
   },
   {
     kind: "google-terrain",
-    label: "Terrain",
+    label: "Google terrain",
     requiresGoogle: true,
     icon: (
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <path d="m8 3 4 8 5-5 5 15H2L8 3z" />
-      </svg>
-    ),
-  },
-  {
-    kind: "osm",
-    label: "OpenStreetMap",
-    requiresGoogle: false,
-    icon: (
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6" />
-        <line x1="8" y1="2" x2="8" y2="18" />
-        <line x1="16" y1="6" x2="16" y2="22" />
       </svg>
     ),
   },

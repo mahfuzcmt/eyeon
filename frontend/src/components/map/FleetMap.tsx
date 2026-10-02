@@ -9,6 +9,7 @@ import "leaflet.markercluster";
 import {
   DEFAULT_ZOOM,
   DHAKA_CENTER,
+  DEFAULT_BASE_LAYER,
   createBaseLayer,
   expandBounds,
   calculateFitZoom,
@@ -29,8 +30,6 @@ import {
   MARKER_BODY_COLOR,
   type VehicleState,
   formatBatteryPercent,
-  batteryLevelColor,
-  batteryGlyphSvg,
 } from "@/lib/format";
 import { buildPersonSvg, getIconDimensions, noseOffset, personPhotoUrl } from "@/lib/personIcons";
 import { useSpeedLimits } from "@/hooks/useSpeedLimits";
@@ -259,8 +258,9 @@ async function reverseGeocode(lat: number, lng: number): Promise<string> {
   return requestPromise;
 }
 
-// Default to google-street if Google API key is available, otherwise OSM
-const getDefaultLayer = (): BaseLayerKind => hasGoogleMapsKey() ? "google-street" : "osm";
+// Free OpenStreetMap tiles by default: every Google map shown is a billed map load. Google
+// street / satellite stay one tap away in the layer menu when a key is configured.
+const getDefaultLayer = (): BaseLayerKind => DEFAULT_BASE_LAYER;
 
 const STATE_TEXT: Record<VehicleState, string> = {
   moving: "Moving",
@@ -396,7 +396,6 @@ function createVehicleIcon(
   justUpdated = false,
   speed = 0,
   photoUrl: string | null = null,
-  batteryPercent: number | null = null,
 ): L.DivIcon {
   // A portrait needs room to read as a face: the badge is ~42px across (48px selected).
   const baseSize = isSelected ? 56 : 48;
@@ -436,14 +435,8 @@ function createVehicleIcon(
     ">${noFix ? '?' : '!'}</div>
   ` : '';
 
-  // Battery of a personal tracker: a small pill hanging under the badge, coloured by level.
-  const batteryColor = batteryPercent == null ? "" : batteryLevelColor(batteryPercent);
-  const batteryBadge = batteryPercent == null ? "" : `
-    <div class="pp-battery-badge" style="position:absolute;left:50%;top:73%;transform:translateX(-50%);display:flex;align-items:center;gap:2px;padding:1px 4px;background:#fff;border:1px solid ${batteryColor};border-radius:999px;font:700 10px/1.2 var(--font-nunito),'Nunito',sans-serif;color:${batteryColor};white-space:nowrap;z-index:11;box-shadow:0 1px 3px rgba(0,0,0,.25)">${batteryGlyphSvg(batteryPercent, batteryColor, 14)}<span>${Math.round(batteryPercent)}%</span></div>
-  `;
-
   return L.divIcon({
-    html: `<div style="position: relative;">${buildPersonSvg(vehicleType, isOverspeed ? OVERSPEED_COLOR : bodyColor, isMoving ? rotation : null, baseSize, photoUrl)}${warningBadge}${batteryBadge}</div>`,
+    html: `<div style="position: relative;">${buildPersonSvg(vehicleType, isOverspeed ? OVERSPEED_COLOR : bodyColor, isMoving ? rotation : null, baseSize, photoUrl)}${warningBadge}</div>`,
     className: classes,
     iconSize: [width, height],
     iconAnchor: [width / 2, height / 2], // Center anchor for top-down view
@@ -1043,11 +1036,11 @@ export function FleetMap({ devices, locations, selectedImei, onSelect, onRefresh
       const justUpdated = isJustUpdated(loc);
 
       // Create a key for icon state to detect changes (skip justUpdated as it's transient)
-      const iconStateKey = `${device?.vehicleType || ''}|${device.photoUpdatedAt || ''}|${device.batteryPercent ?? ''}|${bodyColor}|${Math.round(course / 10)}|${isSelected}|${isOverspeed}|${noFix}|${isMoving}|${isStale}`;
+      const iconStateKey = `${device?.vehicleType || ''}|${device.photoUpdatedAt || ''}|${bodyColor}|${Math.round(course / 10)}|${isSelected}|${isOverspeed}|${noFix}|${isMoving}|${isStale}`;
 
       if (!marker) {
         // Create new marker
-        const icon = createVehicleIcon(device?.vehicleType, bodyColor, course, isSelected, isOverspeed, noFix, isMoving, isStale, justUpdated, filterSpeed(loc.speed, loc.valid), personPhotoUrl(device), device.batteryPercent ?? null);
+        const icon = createVehicleIcon(device?.vehicleType, bodyColor, course, isSelected, isOverspeed, noFix, isMoving, isStale, justUpdated, filterSpeed(loc.speed, loc.valid), personPhotoUrl(device));
         marker = L.marker([loc.latitude, loc.longitude], { icon })
           .bindPopup(createPopupContent(device, loc), {
             maxWidth: 380,
@@ -1095,7 +1088,7 @@ export function FleetMap({ devices, locations, selectedImei, onSelect, onRefresh
         // ONLY update icon if state actually changed (prevents DOM replacement that breaks CSS transitions)
         const prevIconState = iconStateRef.current.get(imei);
         if (prevIconState !== iconStateKey) {
-          marker.setIcon(createVehicleIcon(device?.vehicleType, bodyColor, course, isSelected, isOverspeed, noFix, isMoving, isStale, justUpdated, filterSpeed(loc.speed, loc.valid), personPhotoUrl(device), device.batteryPercent ?? null));
+          marker.setIcon(createVehicleIcon(device?.vehicleType, bodyColor, course, isSelected, isOverspeed, noFix, isMoving, isStale, justUpdated, filterSpeed(loc.speed, loc.valid), personPhotoUrl(device)));
           iconStateRef.current.set(imei, iconStateKey);
         }
         marker.setPopupContent(createPopupContent(device, loc));

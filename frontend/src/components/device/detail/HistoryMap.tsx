@@ -18,7 +18,7 @@ export function HistoryMap({ points, movingIndex }: { points: LocationView[]; mo
   useEffect(() => {
     if (mapRef.current || !containerRef.current) return;
     const map = L.map(containerRef.current, { center: DHAKA_CENTER, zoom: DEFAULT_ZOOM, zoomControl: true });
-    createBaseLayer("google-street").then((layer) => {
+    createBaseLayer().then((layer) => {
       if (mapRef.current === map) layer.addTo(map);
     });
     map.zoomControl.setPosition("bottomright");

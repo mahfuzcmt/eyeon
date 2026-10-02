@@ -60,7 +60,7 @@ export function RouteHistoryPanel({ device, onClose }: Props) {
       zoomControl: true,
     });
 
-    createBaseLayer("google-street").then((layer) => {
+    createBaseLayer().then((layer) => {
       if (mapRef.current === map) layer.addTo(map);
     });
 

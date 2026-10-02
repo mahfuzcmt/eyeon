@@ -11,7 +11,13 @@ import WebMap, { MapVehicle } from "@/components/WebMap";
 import { motionColor, motionOf } from "@/format";
 import { useSpeedLimits } from "@/hooks/useSpeedLimits";
 import { useDevicePhotos } from "@/photos";
-import { useI18n } from "@/i18n";
+import { useI18n, type StringKey } from "@/i18n";
+
+const VIEW_LABEL: Record<"street" | "satellite" | "google", StringKey> = {
+  street: "map.normal",
+  satellite: "map.satellite",
+  google: "map.google",
+};
 import { colors, space } from "@/theme";
 
 export default function MapScreen() {
@@ -23,7 +29,8 @@ export default function MapScreen() {
   const { devices } = useDevices();
   const [center, setCenter] = useState<{ lat: number; lng: number; zoom: number; nonce: number } | null>(null);
   const [zoomStep, setZoomStep] = useState<{ dir: 1 | -1; nonce: number } | null>(null);
-  const [baseLayer, setBaseLayer] = useState<"street" | "satellite">("street");
+  const [baseLayer, setBaseLayer] = useState<"street" | "satellite" | "google">("street");
+  const [googleAvailable, setGoogleAvailable] = useState(false);
   const [viewMenuOpen, setViewMenuOpen] = useState(false);
   const [showTraffic, setShowTraffic] = useState(false);
   const [trafficAvailable, setTrafficAvailable] = useState(false);
@@ -64,7 +71,6 @@ export default function MapScreen() {
         iconColor: d?.iconColor,
         overspeed,
         moving: motion === "MOVING",
-        battery: d?.batteryPercent ?? null,
       });
     }
     return out;
@@ -96,6 +102,7 @@ export default function MapScreen() {
         showTraffic={showTraffic}
         fitVehicles={fitVehicles}
         onTrafficAvailable={setTrafficAvailable}
+        onGoogleAvailable={setGoogleAvailable}
         onSelect={(imei) => router.push({ pathname: "/device/[imei]", params: { imei } })}
       />
 
@@ -106,13 +113,13 @@ export default function MapScreen() {
             style={({ pressed }) => [styles.pill, pressed && { opacity: 0.7 }]}
           >
             <Text style={styles.pillLabel}>
-              {t("map.view")}: {baseLayer === "street" ? t("map.normal") : t("map.satellite")}
+              {t("map.view")}: {t(VIEW_LABEL[baseLayer])}
             </Text>
             <Ionicons name={viewMenuOpen ? "chevron-up" : "chevron-down"} size={14} color={colors.text} />
           </Pressable>
           {viewMenuOpen && (
             <View style={styles.viewMenu}>
-              {(["street", "satellite"] as const).map((k) => (
+              {(googleAvailable ? (["street", "satellite", "google"] as const) : (["street", "satellite"] as const)).map((k) => (
                 <Pressable
                   key={k}
                   onPress={() => {
@@ -122,7 +129,7 @@ export default function MapScreen() {
                   style={({ pressed }) => [styles.viewMenuItem, pressed && { opacity: 0.7 }]}
                 >
                   <Text style={[styles.pillLabel, baseLayer === k && { color: colors.brand }]}>
-                    {k === "street" ? t("map.normal") : t("map.satellite")}
+                    {t(VIEW_LABEL[k])}
                   </Text>
                   {baseLayer === k && <Ionicons name="checkmark" size={16} color={colors.brand} />}
                 </Pressable>

@@ -72,7 +72,7 @@ export default function SharedMap({
     // (loads the JS API itself), free OSM tiles otherwise. The layer resolves
     // async, so guard against the map having been torn down meanwhile.
     let disposed = false;
-    createBaseLayer("google-street").then((layer) => {
+    createBaseLayer().then((layer) => {
       if (!disposed) layer.addTo(map);
     });
 
