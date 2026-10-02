@@ -15,6 +15,7 @@ import {
   type VehicleState,
 } from "@/lib/format";
 import { useSpeedLimits, type SpeedLimits } from "@/hooks/useSpeedLimits";
+import { buildPersonAvatar, personPhotoUrl } from "@/lib/personIcons";
 import type { DeviceView, LocationView } from "@/types/domain";
 
 const OVERSPEED_COLOR = "#DC2626";
@@ -196,9 +197,11 @@ function VehicleCard({
       }`}
     >
       <div className="flex items-start gap-2">
-        <span className={overspeed ? "animate-pulse" : undefined}>
-          <VehicleIcon color={color} />
-        </span>
+        <span
+          className={`shrink-0 ${overspeed ? "animate-pulse" : ""}`}
+          // Trusted markup: our own portrait SVG, or this person's own photo URL.
+          dangerouslySetInnerHTML={{ __html: buildPersonAvatar(d.vehicleType, color, 40, personPhotoUrl(d)) }}
+        />
         <div className="min-w-0 flex-1">
           <div
             className={`truncate text-[14px] font-semibold ${overspeed ? "animate-pulse" : "text-ink-900"}`}
@@ -246,18 +249,6 @@ function VehicleCard({
         )}
       </div>
     </Link>
-  );
-}
-
-function VehicleIcon({ color }: { color: string }) {
-  return (
-    <svg width="28" height="18" viewBox="0 0 24 16" fill="none" className="shrink-0">
-      <rect x="1" y="4" width="16" height="8" rx="1" fill={color} />
-      <rect x="17" y="6" width="6" height="6" rx="1" fill={color} />
-      <circle cx="5" cy="13" r="2" fill="#333" />
-      <circle cx="14" cy="13" r="2" fill="#333" />
-      <circle cx="20" cy="13" r="1.5" fill="#333" />
-    </svg>
   );
 }
 

@@ -45,8 +45,9 @@ public class AlarmService {
     private final PushService pushService;
     private final DeviceRepository deviceRepo;
 
+    /** INFO alarms a carer still wants on their phone: arrivals, departures, back in the safe area. */
     private static boolean isPlaceEvent(AlarmType type) {
-        return type == AlarmType.PLACE_ARRIVED || type == AlarmType.PLACE_LEFT;
+        return type == AlarmType.PLACE_ARRIVED || type == AlarmType.PLACE_LEFT || type == AlarmType.GEOFENCE_ENTER;
     }
 
     public static final Set<String> PROCESS_RESULTS = Set.of("HANDLED", "FALSE_ALARM", "NO_ACTION");
@@ -63,7 +64,8 @@ public class AlarmService {
         }
         if (severity != AlarmSeverity.INFO || isPlaceEvent(type)) {
             // WARNING/CRITICAL only — pushing every ACC_ON/OFF would spam owners. Reaching or
-            // leaving a trusted place is INFO too, but it is the message carers signed up for.
+            // leaving a trusted place and coming back inside a boundary are INFO too, but they
+            // are the messages carers signed up for.
             pushService.sendAlarmPush(a);
         }
         return a;

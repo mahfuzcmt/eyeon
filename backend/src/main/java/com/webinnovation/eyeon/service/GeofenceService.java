@@ -254,8 +254,9 @@ public class GeofenceService {
         AlarmType type = trustedPlace
                 ? (inside ? AlarmType.PLACE_ARRIVED : AlarmType.PLACE_LEFT)
                 : (inside ? AlarmType.GEOFENCE_ENTER : AlarmType.GEOFENCE_EXIT);
-        // Being where you're supposed to be is news, not a warning.
-        AlarmSeverity severity = trustedPlace ? AlarmSeverity.INFO : AlarmSeverity.WARNING;
+        // Being where you're supposed to be is news, not a warning: only leaving a boundary
+        // warns. Coming back inside is INFO, like reaching or leaving a trusted place.
+        AlarmSeverity severity = trustedPlace || inside ? AlarmSeverity.INFO : AlarmSeverity.WARNING;
 
         Map<String, Object> meta = new HashMap<>();
         meta.put("geofenceId", row.geofenceId().toString());

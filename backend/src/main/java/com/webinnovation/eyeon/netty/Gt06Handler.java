@@ -710,7 +710,7 @@ public class Gt06Handler extends SimpleChannelInboundHandler<ByteBuf> {
             case SOS, POWER_CUT, COLLISION, REMOVE ->
                 com.webinnovation.eyeon.domain.enums.AlarmSeverity.CRITICAL;
             case SHOCK, OVERSPEED, URGENT_ACCELERATION, URGENT_DECELERATION,
-                 GEOFENCE_EXIT, GEOFENCE_ENTER, EXTERNAL_LOW_VOLTAGE, LOW_BATTERY ->
+                 GEOFENCE_EXIT, EXTERNAL_LOW_VOLTAGE, LOW_BATTERY ->
                 com.webinnovation.eyeon.domain.enums.AlarmSeverity.WARNING;
             default -> com.webinnovation.eyeon.domain.enums.AlarmSeverity.INFO;
         };

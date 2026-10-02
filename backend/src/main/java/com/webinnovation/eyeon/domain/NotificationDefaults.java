@@ -11,8 +11,9 @@ import java.util.stream.Collectors;
 /**
  * What a user gets before they touch their notification settings. Ignition
  * on/off is informational and would nag all day, so it never pops up by
- * default; only the "someone is stealing / crashing the vehicle" class of
- * alarm makes noise; push keeps the pre-V15 behaviour (every non-INFO alarm).
+ * default; emergencies, safe-area and place events and low battery make a
+ * sound; push keeps the pre-V15 behaviour (every non-INFO alarm, plus the
+ * place and back-in-safe-area events).
  */
 public final class NotificationDefaults {
 
@@ -27,7 +28,11 @@ public final class NotificationDefaults {
 
     public static final Set<String> SOUND = names(EnumSet.of(
             AlarmType.SOS, AlarmType.COLLISION, AlarmType.POWER_CUT,
-            AlarmType.REMOVE, AlarmType.SHOCK));
+            AlarmType.REMOVE, AlarmType.SHOCK,
+            // Family safety (2026-10-02): what a carer listens for. Each severity has its own
+            // tone on the dashboard: leaving the safe area warns, the rest is a soft chime.
+            AlarmType.GEOFENCE_EXIT, AlarmType.GEOFENCE_ENTER,
+            AlarmType.PLACE_ARRIVED, AlarmType.PLACE_LEFT, AlarmType.LOW_BATTERY));
 
     public static final Set<String> PUSH = ALL_TYPES;
 

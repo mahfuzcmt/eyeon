@@ -409,13 +409,14 @@ function HomeIcon() {
   );
 }
 
+/** People, not vehicles: two figures (this used to be a truck). */
 function DeviceIcon() {
   return (
     <svg {...ICON_PROPS} width="16" height="16">
-      <rect x="3" y="6" width="13" height="12" rx="1" />
-      <path d="M16 10h3l2 2v4h-5" />
-      <circle cx="7" cy="18" r="1.5" />
-      <circle cx="17" cy="18" r="1.5" />
+      <circle cx="9" cy="8" r="3.2" />
+      <path d="M3 20c0-3.3 2.7-5.5 6-5.5s6 2.2 6 5.5" />
+      <circle cx="17.5" cy="9" r="2.4" />
+      <path d="M16.5 14.6c2.6.2 4.5 2 4.5 4.9" />
     </svg>
   );
 }

@@ -66,6 +66,15 @@ class NotificationComposerTest {
         assertEquals(NotificationComposer.CHANNEL_ALARMS, m.channelId());
     }
 
+    /** Coming back inside is good news: INFO, on the calm channel, not the alarm one. */
+    @Test
+    void boundary_return_is_calm_news() {
+        Message m = composer.compose(
+                alarm("GEOFENCE_ENTER", "INFO", MORNING, Map.of("geofenceName", "Dhanmondi")), "Dadu", Lang.EN);
+        assertEquals("✅ Dadu is back in the safe area", m.title());
+        assertEquals(NotificationComposer.CHANNEL_ARRIVALS, m.channelId());
+    }
+
     @Test
     void missing_place_name_still_reads_as_a_sentence() {
         Message m = composer.compose(alarm("PLACE_ARRIVED", "INFO", MORNING, Map.of()), "Rafi", Lang.EN);

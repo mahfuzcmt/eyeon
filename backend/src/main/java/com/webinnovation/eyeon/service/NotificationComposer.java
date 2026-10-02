@@ -65,7 +65,7 @@ public class NotificationComposer {
                     bn ? "✅ " + personName + " আবার নিরাপদ এলাকায়"
                        : "✅ " + personName + " is back in the safe area",
                     joinDot(place, time),
-                    CHANNEL_ALARMS);
+                    CHANNEL_ARRIVALS);   // good news: the calm channel, not the alarm one
             case "SOS" -> new Message(
                     bn ? "🚨 SOS! " + personName + "-এর জরুরি সাহায্য দরকার"
                        : "🚨 SOS! " + personName + " needs help",

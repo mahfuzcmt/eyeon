@@ -208,8 +208,8 @@ try:
     sim(BLAT + 0.01, LNG)
     sim(BLAT, LNG)
     types = psql(f"select string_agg(type || ':' || severity, ',' order by ts, created_at) from alarms where device_imei='{IMEI}' and type like 'GEOFENCE_%'")
-    check("boundary: out then back in raises EXIT then ENTER as WARNING",
-          types == "GEOFENCE_EXIT:WARNING,GEOFENCE_ENTER:WARNING", f"alarms={types!r}")
+    check("boundary: leaving is a WARNING, coming back is INFO",
+          types == "GEOFENCE_EXIT:WARNING,GEOFENCE_ENTER:INFO", f"alarms={types!r}")
     meta = psql(f"select metadata->>'geofenceName' || '/' || (metadata->>'geofenceKind') from alarms where device_imei='{IMEI}' and type='GEOFENCE_EXIT' limit 1")
     check("boundary alarm metadata carries its name + kind", meta == "Smoke border/BOUNDARY", f"meta={meta!r}")
     call("PATCH", f"/geofences/{bid}", {"notifyOn": "EXIT"})
