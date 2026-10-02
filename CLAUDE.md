@@ -686,6 +686,9 @@ All frames end with `0x0D 0x0A`.
 | `0xA0` | Location 4G | Device → Server | 4-byte LAC, 8-byte cell ID, 1-or-2 byte MNC |
 | `0x13` | Heartbeat / Status | Device → Server | Sent every ~3 minutes |
 | `0xA1` / `0xA2` | Network scan, 4G (Jimi) | Device → Server | Sent every ~10 s **instead of** a location packet while the tracker has no GPS fix: 7 cell slots, and for `0xA2` the Wi-Fi access points in range. Resolved to coordinates by `NetworkLocationService` (see §3.2 rule 9) |
+| `0x28` / `0x2C` | Network scan, 2G/3G (Jimi) | Device → Server | The same tracker on a 2G/3G cell: 2-byte LAC and 3-byte cell id per slot (`0x2C` adds Wi-Fi). Same resolver (since 2026-10-02) |
+| `0xA9` | Alarm without a GPS fix (Jimi) | Device → Server | `[date][mcc][mnc][?][cell count] cells [TA][wifi count] access points [alarm code][language]`. Indoors this is how a PL601 reports **SOS (`0x01`) and low battery (`0x19`)**; unknown codes are logged at WARN and not raised. Decoded since 2026-10-02 (`PacketDecoder.decodeScanAlarm`) |
+| `0x21` | Command reply (Jimi) | Device → Server | `[server flag:4][encoding:1][text]`; the PL601 answers `0x80` commands with this, not `0x15` |
 | `0x36` | Heartbeat, extended (Jimi) | Device → Server | Battery-powered personal trackers: the `0x13` status block followed by `[type:2][len:1][data]` modules (e.g. `0x0018` = battery voltage x0.01 V). Handled since 2026-10-01; the modules are not parsed yet |
 | `0x16` | Alarm | Device → Server | Location + status + alarm code |
 | `0x17` | RFID swipe | Device → Server | Driver identification |
@@ -885,7 +888,11 @@ Used to send commands like cut fuel (`DYD`), restore fuel (`HFYD`), query addres
 [0x78 0x78] [Length] [0x80] [CmdLen:1] [ServerFlag:4] [CmdContent:M ASCII] [Serial:2] [CRC:2] [0x0D 0x0A]
 ```
 
-**Important:** Command content is ASCII (e.g., `"DYD,000000#"`), CmdLen = 4 (server flag) + length of ASCII string.
+**Important:** Command content is ASCII (e.g., `"DYD,000000#"`), CmdLen = 4 (server flag) + length of ASCII string. `Length` counts everything from the protocol number through the CRC. EyeOn appends a 2-byte language (`0x0002`) after the command text, which is not counted in CmdLen.
+
+**Commands were broken until 2026-10-02:** `PacketEncoder.buildServerCommand` wrote Length three short and CmdLen two long, and the `0x15` reply parser had the flag and length swapped, so no tracker could ever answer. Verified on the production PL601 after the fix: `STATUS#` is answered in about a second. A tracker only receives a command while its TCP connection is alive; `GET /devices/:imei/commands/online` reports the server's view, which can be stale for a few minutes after a network drop.
+
+**Jimi PL601 commands** (manual: PL601 Command List V1.4; the family tracker in production): `LT,ON,<interval>,<duration>,1,1,1#` real-time tracking, `FD,ON,<sec>#` buzzer + lights, `BMT#` battery (`Percent:5`), `STATUS#`, `MODE#`, `HBT#`, `VERSION#`. `POSITION#` did not answer within 15 s indoors. It runs `MODE,4` (step-based): it reports after 100 steps or every 300 s while riding and little when still - irregular updates are the tracker's setting, not the server.
 
 ### 6.8 Alarm Codes (from Concox doc, latter byte of Alarm/Language field)
 
@@ -1117,7 +1124,16 @@ POST   /devices/:imei/commands/cut-fuel       → { reply: "DYD=Success!" }
 POST   /devices/:imei/commands/restore-fuel   → { reply: "HFYD=Success!" }
 POST   /devices/:imei/commands/query-address  → { reply: "DWXX=Lat:..." }
 POST   /devices/:imei/commands/raw            { command: "SPDADD,ON,10,2#" } → { reply }
+POST   /devices/:imei/commands/live           { seconds? = 300, 30-1800 } → { reply }   10 s updates for that long (PL601 `LT`)
+POST   /devices/:imei/commands/locate         → { reply }   30 s burst of live tracking: about three fresh positions
+POST   /devices/:imei/commands/find           { seconds? = 20, 5-60 } → { reply }       buzzer + lights (PL601 `FD`)
+
+PUT    /devices/:imei/photo     body = JPEG/PNG bytes (max 2 MB) → { photoUpdatedAt }
+GET    /devices/:imei/photo     → image/jpeg (256x256), Cache-Control: private; use ?v={photoUpdatedAt}
+DELETE /devices/:imei/photo     → 204
 ```
+
+**Photo of the person (V23, 2026-10-02).** A carer can upload a picture that replaces the drawn portrait on the marker, in lists and in the edit form. The server always decodes and re-encodes the upload (`DevicePhotoService`: centre-crop, 256x256 JPEG) so the size is bounded, the bytes are really an image and all metadata is dropped - a phone photo of a child carries the GPS position where it was taken. Stored in `device_photos` (bytea; there is no object storage); `devices.photo_updated_at` is exposed as `DeviceView.photoUpdatedAt` and versions the URL. Read and write both call `requireVisible`, and share links never expose it. Web: `personPhotoUrl()` + the optional `photoUrl` argument of `buildPersonSvg` / `buildPersonAvatar` (an `<img>` between the portrait and the ring; if it fails to load the portrait shows). **Not on mobile yet**: the WebView map has no session cookie, so it would need the image passed in as data.
 
 ### 8.4 Locations
 
@@ -1298,6 +1314,8 @@ Reworked 2026-09-15 to match (and tidy up) the ADL Moto Viewer live-monitoring s
 - Top bar: global vehicle search (name / plate / IMEI / SIM → focuses the vehicle, or deep-links `/dashboard?focus={imei}` from other pages), brand + Live pill, notifications, language, user menu. No fake refresh counter — the real countdown sits bottom-right beside the freshness indicator.
 - KPI strip floats top-centre of the map area (z ≥ 1000, above Leaflet panes).
 - Real-time updates via WebSocket batches; marker moves animate with CSS transitions.
+- **Day route line (2026-10-02):** selecting a person draws today's stored positions (`useLocationHistory` from the start of the Asia/Dhaka day) as a thin teal line with a white casing, about a dozen direction arrows and a dot labelled with the start time; live positions extend it. Points within 15 m of the previous one are dropped so indoor Wi-Fi jitter is not drawn as a scribble (`routePath` in `FleetMap.tsx`).
+- **Command sheet:** Locate now / Follow live for 5 minutes / Ring the tracker (asks first) plus a raw command box; see §6.7.
 - **Alarm notifications (2026-09-16, V15):** every alarm that arrives live pops up as a toast on any dashboard page (`components/alarm/AlarmToast.tsx`, mounted in `DashboardShell`), optionally with a synthesized tone (`lib/alarmSound.ts`; CRITICAL repeats until acknowledged). Which types pop up / sound / push to the phone is per user: `user_notification_settings` (V15), `GET/PUT /users/me/notification-settings`, edited under Settings → Notifications (matrix + "Test sound" + "Preview popup"). `PushService` filters Expo pushes by each user's `push_types`. The alarm center (`/dashboard/alarms`) filters by type/severity/vehicle/date/unacked (`GET /alarms?type&severity&imei&from&to&unacked`), opens a map modal per alarm and exports Excel. Live STOMP alarm payloads use `imei`, not `deviceImei`; `useAlarms` normalises them. **ADL parity (V17):** `/dashboard/alarms` has *Alarm overview* (device × type counts, `GET /alarms/overview`, `/exports/alarm-overview.xlsx`) and *Alarm details* tabs; acknowledging opens a *Process* dialog (`POST /alarms/{id}/acknowledge {result: HANDLED|FALSE_ALARM|NO_ACTION, notes}`). Rules gained `PARKING_TIMEOUT` / `OFFLINE_TIMEOUT` / `IDLE_TIMEOUT` (threshold = minutes) evaluated by `AlarmRuleService.sweepStateRules()` every minute, raising `PARKING_TIMEOUT` / `OFFLINE_TIMEOUT` / `ENGINE_IDLE`. ADL's screens are documented in `docs/ADL_ALARM_SYSTEM.md`.
 - Initial load: REST `/devices/locations/last`, then subscribe WS; the map fits the whole fleet once per map instance (flag reset on unmount so StrictMode/remount refits).
 

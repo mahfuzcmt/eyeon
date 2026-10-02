@@ -209,6 +209,64 @@ public class PacketDecoder {
     // Jimi IoT Protocol V3.2 Decoders
     // ─────────────────────────────────────────────────────────────────────────
 
+    /** An alarm that arrived as a network scan: what the tracker heard, and the alarm code. */
+    public record ScanAlarm(NetworkScan scan, int alarmCode) {}
+
+    /**
+     * Decode a Jimi 0xA9 packet: an alarm raised while the tracker has no GPS fix (indoors),
+     * e.g. low battery or SOS. Captured from a PL601 on production, 2026-10-02:
+     * <pre>
+     *   [date-time:6][mcc:2, bit 15 set = 2-byte mnc][mnc:1|2][?:1][cell-count:1]
+     *   n x [lac:4][cell-id:8][signal:1]
+     *   [timing-advance:1][wifi-count:1] m x [mac:6][signal:1]
+     *   [alarm-code:1][language:1]
+     * </pre>
+     * The alarm code is read from the end of the packet, so it survives even if the variable
+     * part is laid out differently on other firmware; the scan is then simply left empty.
+     */
+    public ScanAlarm decodeScanAlarm(ByteBuf content) {
+        int end = content.writerIndex();
+        int alarmCode = content.readableBytes() >= 2 ? content.getUnsignedByte(end - 2) : 0;
+        java.time.Instant ts = decodeDateTime(content);
+        int mccRaw = content.readUnsignedShort();
+        int mnc = (mccRaw & 0x8000) != 0 ? content.readUnsignedShort() : content.readUnsignedByte();
+        java.util.List<NetworkScan.Cell> cells = new java.util.ArrayList<>();
+        java.util.List<NetworkScan.Wifi> aps = new java.util.ArrayList<>();
+        try {
+            content.readUnsignedByte();
+            int cellCount = content.readUnsignedByte();
+            for (int i = 0; i < cellCount && i < NETWORK_SCAN_CELLS; i++) {
+                long lac = content.readUnsignedInt();
+                long cellId = content.readLong();
+                int signal = content.readUnsignedByte();
+                if (cellId > 0) cells.add(new NetworkScan.Cell(lac, cellId, signal));
+            }
+            content.readUnsignedByte();  // timing advance
+            int wifiCount = content.readUnsignedByte();
+            // Everything between here and the trailing [alarm][language] must be whole access points.
+            if (content.readableBytes() - 2 == wifiCount * 7) {
+                for (int i = 0; i < wifiCount; i++) {
+                    byte[] mac = new byte[6];
+                    content.readBytes(mac);
+                    int signal = content.readUnsignedByte();
+                    StringBuilder sb = new StringBuilder(17);
+                    for (int b = 0; b < 6; b++) {
+                        if (b > 0) sb.append(':');
+                        sb.append(String.format("%02x", mac[b] & 0xFF));
+                    }
+                    aps.add(new NetworkScan.Wifi(sb.toString(), -signal));
+                }
+            } else {
+                cells.clear();   // layout is not the one we know: trust nothing but the alarm code
+            }
+        } catch (IndexOutOfBoundsException e) {
+            cells.clear();
+            aps.clear();
+        }
+        return new ScanAlarm(new NetworkScan(ts, mccRaw & 0x7FFF, mnc, "lte",
+                java.util.List.copyOf(cells), java.util.List.copyOf(aps)), alarmCode);
+    }
+
     /** Cell slots in a 0xA1 / 0xA2 packet: the serving cell and six neighbours. */
     private static final int NETWORK_SCAN_CELLS = 7;
 

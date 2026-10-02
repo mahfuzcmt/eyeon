@@ -2,6 +2,7 @@ package com.webinnovation.eyeon.api;
 
 import com.webinnovation.eyeon.dto.CommandDtos.CommandRequest;
 import com.webinnovation.eyeon.dto.CommandDtos.CommandResponse;
+import com.webinnovation.eyeon.dto.CommandDtos.TrackerActionRequest;
 import com.webinnovation.eyeon.repository.DeviceRepository;
 import com.webinnovation.eyeon.security.SubscriptionGuard;
 import com.webinnovation.eyeon.security.TenantContext;
@@ -113,6 +114,47 @@ public class DeviceCommandController {
         return await(commandService.sendRaw(orgId, imei, req.rawCommand()));
     }
 
+    /**
+     * "Follow live": 10-second updates for a limited time (default 5 min, at most 30). The
+     * tracker goes back to its battery-saving mode by itself when the time is up.
+     */
+    @PostMapping("/live")
+    public ResponseEntity<CommandResponse> live(@PathVariable String imei,
+                                                @RequestBody(required = false) TrackerActionRequest req) {
+        UUID orgId = TenantContext.requireOrgId();
+        access.requireVisible(imei);
+        subscriptionGuard.requireActiveSubscription(imei);
+        int seconds = clamp(req == null ? null : req.seconds(), 300, 30, 1800);
+        audit.record("DEVICE_CMD_LIVE", "device", imei, Map.of("seconds", seconds));
+        return await(commandService.liveTracking(orgId, imei, seconds));
+    }
+
+    /** "Locate now": a 30-second burst of real-time tracking, i.e. about three fresh positions. */
+    @PostMapping("/locate")
+    public ResponseEntity<CommandResponse> locate(@PathVariable String imei) {
+        UUID orgId = TenantContext.requireOrgId();
+        access.requireVisible(imei);
+        subscriptionGuard.requireActiveSubscription(imei);
+        audit.record("DEVICE_CMD_LOCATE", "device", imei, null);
+        return await(commandService.liveTracking(orgId, imei, 30));
+    }
+
+    /** "Find tracker": buzzer and lights (default 20 s, at most 60). */
+    @PostMapping("/find")
+    public ResponseEntity<CommandResponse> find(@PathVariable String imei,
+                                                @RequestBody(required = false) TrackerActionRequest req) {
+        UUID orgId = TenantContext.requireOrgId();
+        access.requireVisible(imei);
+        subscriptionGuard.requireActiveSubscription(imei);
+        int seconds = clamp(req == null ? null : req.seconds(), 20, 5, 60);
+        audit.record("DEVICE_CMD_FIND", "device", imei, Map.of("seconds", seconds));
+        return await(commandService.findDevice(orgId, imei, seconds));
+    }
+
+    private static int clamp(Integer value, int fallback, int min, int max) {
+        return value == null ? fallback : Math.max(min, Math.min(max, value));
+    }
+
     private ResponseEntity<CommandResponse> await(CompletableFuture<String> future) {
         try {
             String reply = future.get(REPLY_WAIT_MS, TimeUnit.MILLISECONDS);
@@ -126,6 +168,11 @@ public class DeviceCommandController {
                     .body(CommandResponse.failure("Command cancelled"));
         } catch (ExecutionException e) {
             Throwable cause = e.getCause() != null ? e.getCause() : e;
+            if (cause instanceof TimeoutException) {
+                // DeviceCommandService gives up first (15 s); it used to surface as a bare 500.
+                return ResponseEntity.status(504)
+                        .body(CommandResponse.failure("Device did not reply within timeout"));
+            }
             int status = cause instanceof SecurityException ? 403
                     : cause instanceof IllegalStateException ? 409
                     : 500;

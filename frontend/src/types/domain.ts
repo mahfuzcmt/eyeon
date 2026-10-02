@@ -106,6 +106,8 @@ export interface DeviceView {
   subscriptionExpiresAt: string | null;
   /** End of the latest completed trip (ISO) — null while driving or if unknown. */
   parkedSince: string | null;
+  /** Set when a photo was uploaded; it replaces the drawn portrait and versions the image URL. */
+  photoUpdatedAt?: string | null;
 }
 
 // ─────────────────────────────────────────────────────────────

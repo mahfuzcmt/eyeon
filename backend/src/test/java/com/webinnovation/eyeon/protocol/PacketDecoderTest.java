@@ -303,4 +303,42 @@ class PacketDecoderTest {
             content.release();
         }
     }
+
+    /** Low-battery alarm sent indoors by the PL601 (production, 2026-10-02 09:39:35 UTC). */
+    private static final String SCAN_ALARM_0XA9 = "1a0a0209272381d6000201010000bd2f000000000202060e430008"
+            + "b01921688f9545906a94ad105f48105a95afe5464e789a1884cf764e926a94ad105f4f9eba5f67968e4f"
+            + "32169dad27b64f8c86dd0fb02d4f" + "1902";
+
+    @Test
+    void scan_alarm_0xa9_decodes_the_alarm_code_and_the_scan() {
+        ByteBuf content = Unpooled.wrappedBuffer(io.netty.buffer.ByteBufUtil.decodeHexDump(SCAN_ALARM_0XA9));
+        try {
+            PacketDecoder.ScanAlarm alarm = decoder.decodeScanAlarm(content);
+
+            assertThat(alarm.alarmCode()).isEqualTo(0x19);   // internal battery low
+            assertThat(alarm.scan().ts()).isEqualTo(java.time.Instant.parse("2026-10-02T09:39:35Z"));
+            assertThat(alarm.scan().mcc()).isEqualTo(470);
+            assertThat(alarm.scan().cells()).containsExactly(new NetworkScan.Cell(0xBD2F, 0x0202060EL, 0x43));
+            assertThat(alarm.scan().wifi()).hasSize(8);
+            assertThat(alarm.scan().wifi().get(0)).isEqualTo(new NetworkScan.Wifi("b0:19:21:68:8f:95", -69));
+        } finally {
+            content.release();
+        }
+    }
+
+    @Test
+    void scan_alarm_with_an_unknown_layout_still_yields_the_alarm_code() {
+        // Same header, but the middle is not whole access points: SOS (0x01) must still be read.
+        ByteBuf content = Unpooled.wrappedBuffer(io.netty.buffer.ByteBufUtil.decodeHexDump(
+                "1a0a0209272381d600020101" + "0000bd2f000000000202060e43" + "0003aabbcc" + "0102"));
+        try {
+            PacketDecoder.ScanAlarm alarm = decoder.decodeScanAlarm(content);
+
+            assertThat(alarm.alarmCode()).isEqualTo(0x01);
+            assertThat(alarm.scan().cells()).isEmpty();
+            assertThat(alarm.scan().wifi()).isEmpty();
+        } finally {
+            content.release();
+        }
+    }
 }

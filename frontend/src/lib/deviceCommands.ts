@@ -47,3 +47,23 @@ export async function sendRawCommand(imei: string, rawCommand: string): Promise<
   });
   return r.data;
 }
+
+// ---- Jimi PL601 personal tracker (PL601 command list V1.4) ----
+
+/** "Follow live": the tracker reports every 10 s for `seconds`, then returns to battery saving. */
+export async function followLive(imei: string, seconds = 300): Promise<CommandResponse> {
+  const r = await api.post<CommandResponse>(`/devices/${encodeURIComponent(imei)}/commands/live`, { seconds }, { timeout: 25_000 });
+  return r.data;
+}
+
+/** "Locate now": a 30-second burst, i.e. about three fresh positions. */
+export async function locateNow(imei: string): Promise<CommandResponse> {
+  const r = await api.post<CommandResponse>(`/devices/${encodeURIComponent(imei)}/commands/locate`, {}, { timeout: 25_000 });
+  return r.data;
+}
+
+/** "Find tracker": buzzer at full volume and flashing lights for `seconds`. */
+export async function findTracker(imei: string, seconds = 20): Promise<CommandResponse> {
+  const r = await api.post<CommandResponse>(`/devices/${encodeURIComponent(imei)}/commands/find`, { seconds }, { timeout: 25_000 });
+  return r.data;
+}

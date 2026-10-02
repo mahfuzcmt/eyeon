@@ -10,7 +10,7 @@ import {
   VEHICLE_STATE_COLOR,
   type VehicleState,
 } from "@/lib/format";
-import { buildPersonAvatar } from "@/lib/personIcons";
+import { buildPersonAvatar, personPhotoUrl } from "@/lib/personIcons";
 import { useSpeedLimits } from "@/hooks/useSpeedLimits";
 import { useTicker } from "@/hooks/useTicker";
 import type { DeviceGroupView, DeviceView, LocationView } from "@/types/domain";
@@ -471,7 +471,11 @@ function VehicleRow({ row, selected, visible, onSelect, onToggleVisible, onActio
   const status = rowStatus(row, t);
   const iconColor = overspeed ? OVERSPEED_COLOR : VEHICLE_STATE_COLOR[state];
   const online = ONLINE_STATES.has(state);
-  const icon = useMemo(() => buildPersonAvatar(device.vehicleType, iconColor, 26), [device.vehicleType, iconColor]);
+  const icon = useMemo(
+    () => buildPersonAvatar(device.vehicleType, iconColor, 26, personPhotoUrl(device)),
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- only these fields shape the avatar
+    [device.vehicleType, device.imei, device.photoUpdatedAt, iconColor],
+  );
 
   return (
     <div

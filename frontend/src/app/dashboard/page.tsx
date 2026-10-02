@@ -7,6 +7,8 @@ import { useDevices } from "@/hooks/useDevices";
 import { useDeviceGroups } from "@/hooks/useDeviceGroups";
 import { useDrivers } from "@/hooks/useDrivers";
 import { useLiveLocations } from "@/hooks/useLiveLocations";
+import { useLocationHistory } from "@/hooks/useLocationHistory";
+import { dhakaTodayStartIso } from "@/lib/format";
 import { useSession } from "@/lib/session-context";
 import { useLocale } from "@/lib/i18n";
 import { useIsDesktop, useIsWide } from "@/hooks/useMediaQuery";
@@ -131,6 +133,10 @@ export default function DashboardPage() {
 
   const selectedDevice = selectedImei ? devices.find((d) => d.imei === selectedImei) ?? null : null;
 
+  // Today's route of whoever is selected, drawn on the map as a thin line with arrows.
+  const todayStartIso = useMemo(() => dhakaTodayStartIso(), []);
+  const { locations: routeToday } = useLocationHistory(selectedImei, todayStartIso);
+
   const visibleLocations = useMemo(() => {
     if (hiddenImeis.size === 0) return locations;
     const m = new Map<string, LocationView | LiveLocationView>();
@@ -203,6 +209,7 @@ export default function DashboardPage() {
         devices={devices}
         locations={visibleLocations}
         selectedImei={selectedImei}
+        route={routeToday}
         onSelect={setSelectedImei}
         onRefresh={refresh}
         lastRefreshAt={lastRefreshAt}
@@ -292,7 +299,12 @@ export default function DashboardPage() {
         />
       )}
       {selectedDevice && panel === "edit" && (
-        <DeviceEditModal device={selectedDevice} onClose={() => setPanel(null)} onSaved={onDeviceSaved} />
+        <DeviceEditModal
+          device={selectedDevice}
+          onClose={() => setPanel(null)}
+          onSaved={onDeviceSaved}
+          onPhotoChanged={(d) => setDevices((prev) => prev.map((x) => (x.imei === d.imei ? { ...x, photoUpdatedAt: d.photoUpdatedAt } : x)))}
+        />
       )}
       {groupModal && (
         <DeviceGroupModal

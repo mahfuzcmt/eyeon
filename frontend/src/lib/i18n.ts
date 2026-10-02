@@ -210,10 +210,35 @@ const STRINGS = {
   // ── Command sheet ─────────────────────────────────────────────────
   "cmd.title": { en: "Send command", bn: "কমান্ড পাঠান" },
   "cmd.quick": { en: "Quick actions", bn: "দ্রুত কাজ" },
-  "cmd.customHint": { en: "Raw GT06 command, e.g. SPDADD,ON,10,2#", bn: "GT06 কমান্ড, যেমন SPDADD,ON,10,2#" },
+  "cmd.customHint": { en: "Tracker command, e.g. STATUS#", bn: "ট্র্যাকার কমান্ড, যেমন STATUS#" },
   "cmd.send": { en: "Send", bn: "পাঠান" },
   "cmd.reply": { en: "Device reply", bn: "ডিভাইসের উত্তর" },
   "cmd.sending": { en: "Sending…", bn: "পাঠানো হচ্ছে…" },
+  "cmd.locate": { en: "Locate now", bn: "এখনই অবস্থান জানুন" },
+  "cmd.live": { en: "Follow live for 5 minutes", bn: "৫ মিনিট লাইভ দেখুন" },
+  "cmd.find": { en: "Ring the tracker", bn: "ট্র্যাকারে রিং দিন" },
+  "cmd.confirmFind": {
+    en: "The tracker will ring loudly and flash for 20 seconds. Continue?",
+    bn: "ট্র্যাকারটি ২০ সেকেন্ড জোরে বাজবে ও আলো জ্বলবে। চালিয়ে যাবেন?",
+  },
+  "cmd.locateStarted": {
+    en: "Asked the tracker for its position. A fresh location should appear within about 30 seconds.",
+    bn: "ট্র্যাকারের কাছে অবস্থান চাওয়া হয়েছে। প্রায় ৩০ সেকেন্ডের মধ্যে নতুন অবস্থান দেখা যাবে।",
+  },
+  "cmd.liveStarted": {
+    en: "Live tracking is on: updates every 10 seconds for 5 minutes, then it returns to battery saving.",
+    bn: "লাইভ ট্র্যাকিং চালু: ৫ মিনিট ধরে প্রতি ১০ সেকেন্ডে আপডেট, তারপর আবার ব্যাটারি সাশ্রয় মোড।",
+  },
+  "cmd.findStarted": { en: "The tracker is ringing now.", bn: "ট্র্যাকারটি এখন বাজছে।" },
+  "photo.title": { en: "Photo", bn: "ছবি" },
+  "photo.upload": { en: "Upload photo", bn: "ছবি আপলোড করুন" },
+  "photo.change": { en: "Change photo", bn: "ছবি বদলান" },
+  "photo.remove": { en: "Remove", bn: "মুছুন" },
+  "photo.hint": {
+    en: "Shown on the map instead of the drawn face. Only people who can see this person can see it.",
+    bn: "ম্যাপে আঁকা মুখের বদলে এই ছবি দেখাবে। যারা এই সদস্যকে দেখতে পারেন শুধু তারাই ছবিটি দেখবেন।",
+  },
+  "photo.failed": { en: "Could not use that picture. Try a JPEG or PNG photo.", bn: "ছবিটি ব্যবহার করা যায়নি। JPEG বা PNG ছবি দিয়ে চেষ্টা করুন।" },
 
   "veh.edit": { en: "Edit person", bn: "সদস্যের তথ্য সম্পাদনা" },
   "veh.name": { en: "Name", bn: "নাম" },

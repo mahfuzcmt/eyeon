@@ -50,23 +50,35 @@ public class NetworkLocationService {
     private final ConcurrentHashMap<String, Instant> lastRequestAt = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<String, Instant> lastWifiScanAt = new ConcurrentHashMap<>();
 
-    /** Called on the ingest executor for every decoded 0xA1 / 0xA2 packet. */
+    /** Called on the ingest executor for every decoded scan packet. */
     public void onScan(String imei, UUID orgId, int protocolNumber, NetworkScan scan, byte[] raw) {
+        onScan(imei, orgId, protocolNumber, scan, raw, false);
+    }
+
+    /**
+     * @param urgent the scan came with an alarm (SOS, low battery): resolve it even if the
+     *               tracker was asked about less than the minimum interval ago
+     * @return the stored position, or empty when the scan could not be resolved
+     */
+    public Optional<LocationData> onScan(String imei, UUID orgId, int protocolNumber, NetworkScan scan,
+                                         byte[] raw, boolean urgent) {
         Instant now = Instant.now();
-        if (scan.hasWifi()) {
+        if (urgent) {
+            lastRequestAt.remove(imei);
+        } else if (scan.hasWifi()) {
             lastWifiScanAt.put(imei, now);
         } else {
             Instant wifiAt = lastWifiScanAt.get(imei);
             if (wifiAt != null && wifiAt.isAfter(now.minus(WIFI_SCAN_RECENT))) {
                 deviceService.markOnline(imei);  // its Wi-Fi twin, sent in the same second, carries the position
-                return;
+                return Optional.empty();
             }
         }
 
         Optional<CellLocation> where = resolve(imei, scan, now);
         if (where.isEmpty()) {
             deviceService.markOnline(imei);
-            return;
+            return Optional.empty();
         }
 
         CellLocation w = where.get();
@@ -89,6 +101,7 @@ public class NetworkLocationService {
         }
         loc.setRawPayload(raw);
         locationService.saveAndBroadcast(loc);
+        return Optional.of(loc);
     }
 
     private Optional<CellLocation> resolve(String imei, NetworkScan scan, Instant now) {

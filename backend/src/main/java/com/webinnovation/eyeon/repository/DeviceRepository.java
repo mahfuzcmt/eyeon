@@ -28,7 +28,7 @@ public class DeviceRepository {
                    last_speed, last_course, last_voltage_mv,
                    last_gsm_signal, last_engine_hours_seconds,
                    icon_color, engine_locked,
-                   created_at, updated_at
+                   created_at, updated_at, photo_updated_at
             """;
 
     private static final RowMapper<Device> ROW_MAPPER = (rs, rn) -> new Device(
@@ -56,7 +56,8 @@ public class DeviceRepository {
             rs.getString("icon_color"),
             rs.getBoolean("engine_locked"),
             rs.getObject("created_at", OffsetDateTime.class).toInstant(),
-            rs.getObject("updated_at", OffsetDateTime.class).toInstant()
+            rs.getObject("updated_at", OffsetDateTime.class).toInstant(),
+            toInstant(rs.getObject("photo_updated_at", OffsetDateTime.class))
     );
 
     private static Instant toInstant(OffsetDateTime odt) {
@@ -263,6 +264,40 @@ public class DeviceRepository {
                 .addValue("plate", vehiclePlate)
                 .addValue("type", vehicleType)
                 .addValue("color", iconColor));
+    }
+
+    /** Stores (or replaces) the uploaded photo and stamps the device with its new version. */
+    public Instant savePhoto(UUID orgId, String imei, String contentType, byte[] data) {
+        var params = new MapSqlParameterSource("orgId", orgId).addValue("imei", imei)
+                .addValue("contentType", contentType).addValue("data", data);
+        jdbc.update("""
+                INSERT INTO device_photos (device_imei, org_id, content_type, data, updated_at)
+                VALUES (:imei, :orgId, :contentType, :data, now())
+                ON CONFLICT (device_imei) DO UPDATE
+                  SET org_id = EXCLUDED.org_id, content_type = EXCLUDED.content_type,
+                      data = EXCLUDED.data, updated_at = now()
+                """, params);
+        return jdbc.queryForObject("""
+                UPDATE devices SET photo_updated_at = now(), updated_at = now()
+                WHERE org_id = :orgId AND imei = :imei
+                RETURNING photo_updated_at
+                """, params, (rs, rn) -> rs.getObject(1, OffsetDateTime.class).toInstant());
+    }
+
+    public record Photo(String contentType, byte[] data) {}
+
+    public Optional<Photo> findPhoto(UUID orgId, String imei) {
+        return jdbc.query(
+                "SELECT content_type, data FROM device_photos WHERE org_id = :orgId AND device_imei = :imei",
+                new MapSqlParameterSource("orgId", orgId).addValue("imei", imei),
+                (rs, rn) -> new Photo(rs.getString("content_type"), rs.getBytes("data")))
+                .stream().findFirst();
+    }
+
+    public void deletePhoto(UUID orgId, String imei) {
+        var params = new MapSqlParameterSource("orgId", orgId).addValue("imei", imei);
+        jdbc.update("DELETE FROM device_photos WHERE org_id = :orgId AND device_imei = :imei", params);
+        jdbc.update("UPDATE devices SET photo_updated_at = NULL, updated_at = now() WHERE org_id = :orgId AND imei = :imei", params);
     }
 
     /** Records the engine cut/restore state after a successful command (scoped by org). */

@@ -30,7 +30,7 @@ import {
   type VehicleState,
   formatBatteryPercent,
 } from "@/lib/format";
-import { buildPersonSvg, getIconDimensions, noseOffset } from "@/lib/personIcons";
+import { buildPersonSvg, getIconDimensions, noseOffset, personPhotoUrl } from "@/lib/personIcons";
 import { useSpeedLimits } from "@/hooks/useSpeedLimits";
 import { useLocale } from "@/lib/i18n";
 import type { DeviceView, LocationView } from "@/types/domain";
@@ -57,6 +57,48 @@ interface FleetMapProps {
   topInset?: number;
   /** Extra space (px) reserved under the map's bottom-edge controls, e.g. for the mobile vehicle sheet. */
   bottomInset?: number;
+  /** Today's stored positions of the selected person; drawn as a thin route line with arrows. */
+  route?: LocationView[];
+}
+
+const ROUTE_COLOR = "#0F6B5C";
+/** Points closer than this to the previous kept point are dropped (indoor Wi-Fi jitter). */
+const ROUTE_MIN_STEP_M = 15;
+
+function metersBetween(a: [number, number], b: [number, number]): number {
+  const R = 6371000;
+  const dLat = ((b[0] - a[0]) * Math.PI) / 180;
+  const dLng = ((b[1] - a[1]) * Math.PI) / 180;
+  const h = Math.sin(dLat / 2) ** 2
+    + Math.cos((a[0] * Math.PI) / 180) * Math.cos((b[0] * Math.PI) / 180) * Math.sin(dLng / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(h), Math.sqrt(1 - h));
+}
+
+/** Compass bearing from a to b in degrees (0 = north), for the direction arrows. */
+function bearingDeg(a: [number, number], b: [number, number]): number {
+  const p1 = (a[0] * Math.PI) / 180;
+  const p2 = (b[0] * Math.PI) / 180;
+  const dl = ((b[1] - a[1]) * Math.PI) / 180;
+  const y = Math.sin(dl) * Math.cos(p2);
+  const x = Math.cos(p1) * Math.sin(p2) - Math.sin(p1) * Math.cos(p2) * Math.cos(dl);
+  return ((Math.atan2(y, x) * 180) / Math.PI + 360) % 360;
+}
+
+/**
+ * The day's positions as a drawable path: usable positions only, oldest first, with points
+ * that barely moved removed so a morning spent in one room is a dot, not a scribble.
+ */
+function routePath(route: LocationView[]): Array<{ at: [number, number]; ts: string }> {
+  const usable = route
+    .filter((l) => l.valid && (l.latitude !== 0 || l.longitude !== 0))
+    .sort((a, b) => Date.parse(a.ts) - Date.parse(b.ts));
+  const path: Array<{ at: [number, number]; ts: string }> = [];
+  for (const l of usable) {
+    const at: [number, number] = [l.latitude, l.longitude];
+    const prev = path[path.length - 1];
+    if (!prev || metersBetween(prev.at, at) >= ROUTE_MIN_STEP_M) path.push({ at, ts: l.ts });
+  }
+  return path;
 }
 
 const OVERSPEED_COLOR = "#DC2626";
@@ -351,6 +393,7 @@ function createVehicleIcon(
   isStale = false,
   justUpdated = false,
   speed = 0,
+  photoUrl: string | null = null,
 ): L.DivIcon {
   // A portrait needs room to read as a face: the badge is ~42px across (48px selected).
   const baseSize = isSelected ? 56 : 48;
@@ -391,7 +434,7 @@ function createVehicleIcon(
   ` : '';
 
   return L.divIcon({
-    html: `<div style="position: relative;">${buildPersonSvg(vehicleType, isOverspeed ? OVERSPEED_COLOR : bodyColor, isMoving ? rotation : null, baseSize)}${warningBadge}</div>`,
+    html: `<div style="position: relative;">${buildPersonSvg(vehicleType, isOverspeed ? OVERSPEED_COLOR : bodyColor, isMoving ? rotation : null, baseSize, photoUrl)}${warningBadge}</div>`,
     className: classes,
     iconSize: [width, height],
     iconAnchor: [width / 2, height / 2], // Center anchor for top-down view
@@ -523,7 +566,7 @@ function BatchCountdown({ lastRefreshAt }: { lastRefreshAt: Date | null }) {
   );
 }
 
-export function FleetMap({ devices, locations, selectedImei, onSelect, onRefresh, lastRefreshAt, showSearch = false, onAdvanceAnimations, leftInset = 0, topInset = 0, bottomInset = 0, driversById }: FleetMapProps) {
+export function FleetMap({ devices, locations, selectedImei, onSelect, onRefresh, lastRefreshAt, showSearch = false, onAdvanceAnimations, leftInset = 0, topInset = 0, bottomInset = 0, driversById, route }: FleetMapProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<L.Map | null>(null);
   const markersRef = useRef<Map<string, L.Marker>>(new Map());
@@ -539,6 +582,9 @@ export function FleetMap({ devices, locations, selectedImei, onSelect, onRefresh
   const trailsRef = useRef<Map<string, L.Polyline>>(new Map());
   const trailPointsRef = useRef<Map<string, Array<[number, number]>>>(new Map());
   const predictiveMarkersRef = useRef<Map<string, L.CircleMarker>>(new Map());
+  const routeLayerRef = useRef<L.LayerGroup | null>(null);
+  /** Live positions received since the day's route was loaded, so the line keeps growing. */
+  const routeTailRef = useRef<{ key: string; points: Array<{ at: [number, number]; ts: string }> }>({ key: "", points: [] });
 
   const [baseLayer, setBaseLayer] = useState<BaseLayerKind>(getDefaultLayer);
   const [googleAvailable, setGoogleAvailable] = useState(hasGoogleMapsKey);
@@ -877,6 +923,77 @@ export function FleetMap({ devices, locations, selectedImei, onSelect, onRefresh
     }
   }, [locations]);
 
+  // Today's route of the selected person: a thin line from where the day started to where
+  // they are now, with small arrows so "went from A to B" reads at a glance.
+  const selectedLive = selectedImei ? locations.get(selectedImei) : undefined;
+  const selLat = selectedLive?.valid ? selectedLive.latitude : undefined;
+  const selLng = selectedLive?.valid ? selectedLive.longitude : undefined;
+  const selTs = selectedLive?.ts;
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    routeLayerRef.current?.remove();
+    routeLayerRef.current = null;
+    if (!selectedImei || !route || route.length === 0) return;
+
+    const path = routePath(route);
+    // Append what arrived live after the route was fetched.
+    const key = `${selectedImei}|${route.length}|${route[0]?.ts ?? ""}`;
+    if (routeTailRef.current.key !== key) routeTailRef.current = { key, points: [] };
+    const tail = routeTailRef.current.points;
+    if (selLat != null && selLng != null && selTs) {
+      const last = tail[tail.length - 1] ?? path[path.length - 1];
+      const at: [number, number] = [selLat, selLng];
+      if (!last || (Date.parse(selTs) > Date.parse(last.ts) && metersBetween(last.at, at) >= ROUTE_MIN_STEP_M)) {
+        tail.push({ at, ts: selTs });
+      }
+    }
+    const full = [...path, ...tail.filter((p) => path.length === 0 || Date.parse(p.ts) > Date.parse(path[path.length - 1].ts))];
+    if (full.length === 0) return;
+
+    const group = L.layerGroup();
+    const line = full.map((p) => p.at);
+    if (line.length >= 2) {
+      // White casing under a thin teal line keeps it readable on both roads and satellite.
+      L.polyline(line, { color: "#fff", weight: 5, opacity: 0.85, interactive: false, lineJoin: "round", lineCap: "round" }).addTo(group);
+      L.polyline(line, { color: ROUTE_COLOR, weight: 2.5, opacity: 0.95, interactive: false, lineJoin: "round", lineCap: "round" }).addTo(group);
+
+      let total = 0;
+      for (let i = 1; i < line.length; i++) total += metersBetween(line[i - 1], line[i]);
+      const spacing = Math.max(60, total / 14);   // about a dozen arrows however long the day was
+      let since = spacing / 2;
+      for (let i = 1; i < line.length; i++) {
+        const seg = metersBetween(line[i - 1], line[i]);
+        since += seg;
+        if (since < spacing || seg < 20) continue;
+        since = 0;
+        const mid: [number, number] = [(line[i - 1][0] + line[i][0]) / 2, (line[i - 1][1] + line[i][1]) / 2];
+        L.marker(mid, {
+          interactive: false,
+          keyboard: false,
+          icon: L.divIcon({
+            className: "pp-route-arrow",
+            iconSize: [12, 12],
+            iconAnchor: [6, 6],
+            html: `<svg width="12" height="12" viewBox="0 0 12 12" style="display:block;transform:rotate(${Math.round(bearingDeg(line[i - 1], line[i]))}deg)"><path d="M6 1 L10.5 10.5 L6 8 L1.5 10.5 Z" fill="${ROUTE_COLOR}" stroke="#fff" stroke-width="1" stroke-linejoin="round"/></svg>`,
+          }),
+        }).addTo(group);
+      }
+    }
+    // Where the day started.
+    const startTime = new Date(full[0].ts).toLocaleTimeString("en-GB", { timeZone: "Asia/Dhaka", hour: "2-digit", minute: "2-digit" });
+    L.circleMarker(full[0].at, { radius: 5, color: ROUTE_COLOR, weight: 2, fillColor: "#fff", fillOpacity: 1, interactive: line.length >= 2 })
+      .bindTooltip(startTime, { direction: "top", offset: [0, -4] })
+      .addTo(group);
+
+    group.addTo(map);
+    routeLayerRef.current = group;
+    return () => {
+      group.remove();
+      if (routeLayerRef.current === group) routeLayerRef.current = null;
+    };
+  }, [route, selectedImei, selLat, selLng, selTs]);
+
   // Sync markers with locations
   useEffect(() => {
     const map = mapRef.current;
@@ -916,11 +1033,11 @@ export function FleetMap({ devices, locations, selectedImei, onSelect, onRefresh
       const justUpdated = isJustUpdated(loc);
 
       // Create a key for icon state to detect changes (skip justUpdated as it's transient)
-      const iconStateKey = `${device?.vehicleType || ''}|${bodyColor}|${Math.round(course / 10)}|${isSelected}|${isOverspeed}|${noFix}|${isMoving}|${isStale}`;
+      const iconStateKey = `${device?.vehicleType || ''}|${device.photoUpdatedAt || ''}|${bodyColor}|${Math.round(course / 10)}|${isSelected}|${isOverspeed}|${noFix}|${isMoving}|${isStale}`;
 
       if (!marker) {
         // Create new marker
-        const icon = createVehicleIcon(device?.vehicleType, bodyColor, course, isSelected, isOverspeed, noFix, isMoving, isStale, justUpdated, filterSpeed(loc.speed, loc.valid));
+        const icon = createVehicleIcon(device?.vehicleType, bodyColor, course, isSelected, isOverspeed, noFix, isMoving, isStale, justUpdated, filterSpeed(loc.speed, loc.valid), personPhotoUrl(device));
         marker = L.marker([loc.latitude, loc.longitude], { icon })
           .bindPopup(createPopupContent(device, loc), {
             maxWidth: 380,
@@ -968,7 +1085,7 @@ export function FleetMap({ devices, locations, selectedImei, onSelect, onRefresh
         // ONLY update icon if state actually changed (prevents DOM replacement that breaks CSS transitions)
         const prevIconState = iconStateRef.current.get(imei);
         if (prevIconState !== iconStateKey) {
-          marker.setIcon(createVehicleIcon(device?.vehicleType, bodyColor, course, isSelected, isOverspeed, noFix, isMoving, isStale, justUpdated, filterSpeed(loc.speed, loc.valid)));
+          marker.setIcon(createVehicleIcon(device?.vehicleType, bodyColor, course, isSelected, isOverspeed, noFix, isMoving, isStale, justUpdated, filterSpeed(loc.speed, loc.valid), personPhotoUrl(device)));
           iconStateRef.current.set(imei, iconStateKey);
         }
         marker.setPopupContent(createPopupContent(device, loc));
@@ -1490,6 +1607,12 @@ export function FleetMap({ devices, locations, selectedImei, onSelect, onRefresh
         }
         .leaflet-marker-pane .leaflet-marker-icon {
           will-change: transform;
+        }
+        /* Route arrows sit at fixed points: they must not glide like the person markers do. */
+        .leaflet-marker-icon.pp-route-arrow {
+          transition: none !important;
+          background: transparent;
+          border: none;
         }
         .pp-vehicle-icon.pp-selected {
           filter: drop-shadow(0 0 6px #0F6B5C);

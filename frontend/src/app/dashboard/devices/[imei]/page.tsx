@@ -84,6 +84,9 @@ export default function DeviceDetailPage() {
           onSaved={(updated) =>
             setDevices((prev) => prev.map((d) => (d.imei === updated.imei ? updated : d)))
           }
+          onPhotoChanged={(updated) =>
+            setDevices((prev) => prev.map((d) => (d.imei === updated.imei ? { ...d, photoUpdatedAt: updated.photoUpdatedAt } : d)))
+          }
         />
       )}
 

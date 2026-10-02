@@ -28,5 +28,7 @@ public record Device(
         String iconColor,
         boolean engineLocked,
         Instant createdAt,
-        Instant updatedAt
+        Instant updatedAt,
+        /** When the uploaded photo last changed; null = no photo, the drawn portrait is used. */
+        Instant photoUpdatedAt
 ) {}

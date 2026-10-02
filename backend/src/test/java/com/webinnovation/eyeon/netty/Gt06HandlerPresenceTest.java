@@ -53,6 +53,7 @@ class Gt06HandlerPresenceTest {
     private LocationService locationService;
     private NetworkLocationService networkLocationService;
     private DeviceCommandService commandService;
+    private AlarmService alarmService;
     private EmbeddedChannel channel;
 
     @BeforeEach
@@ -61,11 +62,12 @@ class Gt06HandlerPresenceTest {
         locationService = mock(LocationService.class);
         networkLocationService = mock(NetworkLocationService.class);
         commandService = mock(DeviceCommandService.class);
+        alarmService = mock(AlarmService.class);
         Device device = mock(Device.class);
         when(device.orgId()).thenReturn(UUID.randomUUID());
         when(deviceService.findByImei(IMEI)).thenReturn(Optional.of(device));
         Gt06Handler handler = new Gt06Handler(new PacketDecoder(), new PacketEncoder(), deviceService,
-                locationService, mock(AlarmService.class), commandService,
+                locationService, alarmService, commandService,
                 networkLocationService, new SimpleAsyncTaskExecutor("ingest-"));
         channel = new EmbeddedChannel(handler);
     }
@@ -151,6 +153,33 @@ class Gt06HandlerPresenceTest {
         assertEquals("gsm", scan.getValue().radio());
         assertEquals(2, scan.getValue().cells().size());
         assertEquals(2, scan.getValue().wifi().size());
+    }
+
+    /** Indoors the PL601 reports low battery (and SOS) as a 0xA9 scan, not as a location alarm. */
+    @Test
+    void scan_alarm_0xa9_raises_the_alarm_at_the_resolved_position() {
+        com.webinnovation.eyeon.protocol.LocationData where = new com.webinnovation.eyeon.protocol.LocationData();
+        where.setLatitude(23.7523);
+        where.setLongitude(90.3813);
+        when(networkLocationService.onScan(org.mockito.ArgumentMatchers.eq(IMEI), any(),
+                org.mockito.ArgumentMatchers.eq(0xA9), any(), any(), org.mockito.ArgumentMatchers.eq(true)))
+                .thenReturn(Optional.of(where));
+        login();
+
+        channel.writeInbound(frame(0xA9, ByteBufUtil.decodeHexDump(
+                "1a0a0209272381d6000201010000bd2f000000000202060e430008"
+                + "b01921688f9545906a94ad105f48105a95afe5464e789a1884cf764e926a94ad105f4f9eba5f67968e4f"
+                + "32169dad27b64f8c86dd0fb02d4f" + "1902"), 6));
+
+        ByteBuf ack = channel.readOutbound();
+        assertEquals("787805a90006", ByteBufUtil.hexDump(ack).substring(0, 12));
+        ack.release();
+        verify(alarmService, timeout(3000)).raise(any(), org.mockito.ArgumentMatchers.eq(IMEI),
+                org.mockito.ArgumentMatchers.eq(com.webinnovation.eyeon.domain.enums.AlarmType.LOW_BATTERY),
+                org.mockito.ArgumentMatchers.eq(com.webinnovation.eyeon.domain.enums.AlarmSeverity.WARNING),
+                org.mockito.ArgumentMatchers.eq(java.time.Instant.parse("2026-10-02T09:39:35Z")),
+                org.mockito.ArgumentMatchers.eq(23.7523), org.mockito.ArgumentMatchers.eq(90.3813),
+                org.mockito.ArgumentMatchers.anyMap());
     }
 
     // ---- replies to a 0x80 server command ------------------------------------------------

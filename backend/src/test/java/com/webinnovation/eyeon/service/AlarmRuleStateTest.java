@@ -57,7 +57,7 @@ class AlarmRuleStateTest {
     private Device device(String status, Instant lastSeen, Integer speed) {
         return new Device(UUID.randomUUID(), orgId, null, "864290061234567", "Bike", null, null, "DHK-1",
                 "MOTORBIKE", "GT06", null, null, status, lastSeen, 23.8, 90.4, speed, 0, 12000, 4, 0,
-                null, false, now, now);
+                null, false, now, now, null);
     }
 
     @Test

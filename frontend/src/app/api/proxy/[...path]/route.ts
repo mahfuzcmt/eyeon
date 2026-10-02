@@ -38,6 +38,9 @@ async function forward(req: NextRequest, path: string[]): Promise<NextResponse> 
   if (respCt) respHeaders.set("content-type", respCt);
   const respCd = upstream.headers.get("content-disposition");
   if (respCd) respHeaders.set("content-disposition", respCd);
+  // Only images: a person's photo is versioned by its URL and may be kept by the browser.
+  const respCc = upstream.headers.get("cache-control");
+  if (respCc && respCt?.startsWith("image/")) respHeaders.set("cache-control", respCc);
   // 204/205/304 must have a null body: passing even an empty buffer makes the
   // Fetch Response constructor throw, which surfaced as a 500 on every DELETE
   // and on group assign/unassign.

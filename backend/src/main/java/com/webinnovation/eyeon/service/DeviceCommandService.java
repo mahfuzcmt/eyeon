@@ -115,6 +115,24 @@ public class DeviceCommandService {
         return sendRaw(orgId, imei, "WHERE," + devicePassword + "#");
     }
 
+    // ---- Jimi PL601 personal tracker (PL601 command list V1.4) ----
+
+    /** Tracker's own interval while real-time tracking is on. */
+    public static final int LIVE_INTERVAL_SECONDS = 10;
+
+    /**
+     * Real-time tracking: the tracker reports every 10 s for {@code seconds}, then returns to its
+     * normal (battery-saving) mode by itself. GPS, Wi-Fi and cell data are all included.
+     */
+    public CompletableFuture<String> liveTracking(UUID orgId, String imei, int seconds) {
+        return sendRaw(orgId, imei, "LT,ON," + LIVE_INTERVAL_SECONDS + "," + seconds + ",1,1,1#");
+    }
+
+    /** Buzzer at full volume and flashing lights for {@code seconds}; ignores do-not-disturb. */
+    public CompletableFuture<String> findDevice(UUID orgId, String imei, int seconds) {
+        return sendRaw(orgId, imei, "FD,ON," + seconds + "#");
+    }
+
     /** Called by Gt06Handler when a 0x15 packet arrives from any device. */
     public void completeReply(int serverFlag, String reply) {
         CompletableFuture<String> f = pending.remove(serverFlag);

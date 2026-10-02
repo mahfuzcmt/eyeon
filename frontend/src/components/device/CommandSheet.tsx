@@ -2,13 +2,13 @@
 
 import { useState } from "react";
 import { useLocale } from "@/lib/i18n";
-import { queryAddress, rebootDevice, sendRawCommand } from "@/lib/deviceCommands";
+import { findTracker, followLive, locateNow, sendRawCommand } from "@/lib/deviceCommands";
 import { extractError } from "@/lib/api";
 import type { DeviceView } from "@/types/domain";
 
 /**
- * Compact floating command panel opened from the vehicle popup / row menu.
- * Quick actions map to the GT06 commands the backend already exposes.
+ * Compact floating command panel opened from the person's popup / row menu.
+ * Quick actions are the carer-facing commands of the Jimi PL601 personal tracker.
  */
 
 interface Props {
@@ -17,7 +17,7 @@ interface Props {
 }
 
 // No engine cut/restore: EyeOn trackers are worn by people, not wired into a vehicle.
-type Quick = "address" | "reboot";
+type Quick = "locate" | "live" | "find";
 
 export function CommandSheet({ device, onClose }: Props) {
   const { t } = useLocale();
@@ -27,19 +27,23 @@ export function CommandSheet({ device, onClose }: Props) {
 
   async function run(kind: Quick | "raw") {
     if (busy) return;
-    if (kind === "reboot" && !window.confirm(t("panel.confirmReboot"))) return;
+    // The buzzer is loud and the tracker may be on a child in a classroom: ask first.
+    if (kind === "find" && !window.confirm(t("cmd.confirmFind"))) return;
     if (kind === "raw" && !raw.trim()) return;
     setBusy(kind);
     setReply(null);
     try {
       const res =
-        kind === "address" ? await queryAddress(device.imei)
-        : kind === "reboot" ? await rebootDevice(device.imei)
+        kind === "locate" ? await locateNow(device.imei)
+        : kind === "live" ? await followLive(device.imei, 300)
+        : kind === "find" ? await findTracker(device.imei, 20)
         : await sendRawCommand(device.imei, raw.trim());
-      setReply({
-        ok: res.ok,
-        text: res.ok ? res.reply ?? t("panel.commandSent") : res.error ?? t("panel.commandFailed"),
-      });
+      const done =
+        kind === "locate" ? t("cmd.locateStarted")
+        : kind === "live" ? t("cmd.liveStarted")
+        : kind === "find" ? t("cmd.findStarted")
+        : res.reply ?? t("panel.commandSent");
+      setReply({ ok: res.ok, text: res.ok ? done : res.error ?? t("panel.commandFailed") });
     } catch (e) {
       setReply({ ok: false, text: extractError(e).message });
     } finally {
@@ -48,8 +52,9 @@ export function CommandSheet({ device, onClose }: Props) {
   }
 
   const quick: { id: Quick; label: string; tone: string }[] = [
-    { id: "address", label: t("panel.queryAddress"), tone: "border-surface-300 bg-white text-ink-700 hover:bg-surface-100" },
-    { id: "reboot", label: t("panel.rebootDevice"), tone: "border-surface-300 bg-white text-ink-700 hover:bg-surface-100" },
+    { id: "locate", label: t("cmd.locate"), tone: "border-brand-500 bg-brand-500 text-white hover:bg-brand-600" },
+    { id: "live", label: t("cmd.live"), tone: "border-surface-300 bg-white text-ink-700 hover:bg-surface-100" },
+    { id: "find", label: t("cmd.find"), tone: "border-surface-300 bg-white text-ink-700 hover:bg-surface-100" },
   ];
 
   return (
@@ -71,14 +76,14 @@ export function CommandSheet({ device, onClose }: Props) {
 
       <div className="p-3">
         <div className="mb-1.5 text-[13px] font-medium uppercase tracking-wide text-ink-500">{t("cmd.quick")}</div>
-        <div className="grid grid-cols-2 gap-2">
+        <div className="grid grid-cols-1 gap-2">
           {quick.map((q) => (
             <button
               key={q.id}
               type="button"
               disabled={busy !== null}
               onClick={() => void run(q.id)}
-              className={`h-8 rounded-md border text-[14px] font-medium transition disabled:opacity-50 ${q.tone}`}
+              className={`h-10 rounded-md border px-3 text-left text-[14px] font-medium transition disabled:opacity-50 ${q.tone}`}
             >
               {busy === q.id ? t("cmd.sending") : q.label}
             </button>
@@ -111,7 +116,7 @@ export function CommandSheet({ device, onClose }: Props) {
             }`}
           >
             <div className="text-[12px] font-medium uppercase tracking-wide opacity-70">{t("cmd.reply")}</div>
-            <div className="break-words font-mono">{reply.text}</div>
+            <div className="break-words">{reply.text}</div>
           </div>
         )}
       </div>

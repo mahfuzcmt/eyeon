@@ -50,6 +50,33 @@ export function normalizePersonType(type: string | null | undefined): PersonType
 
 const SHADOW = "filter:drop-shadow(0 1.5px 1.8px rgba(0,0,0,.35))";
 
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE ?? "/api/proxy";
+
+/**
+ * URL of the uploaded photo, or null when the drawn portrait applies. It goes through the
+ * session proxy (the picture is private to people who may see this person) and carries the
+ * photo's version, so a new upload is never served from the browser cache.
+ */
+export function personPhotoUrl(d: { imei: string; photoUpdatedAt?: string | null }): string | null {
+  return d.photoUpdatedAt
+    ? `${API_BASE}/devices/${encodeURIComponent(d.imei)}/photo?v=${encodeURIComponent(d.photoUpdatedAt)}`
+    : null;
+}
+
+/**
+ * The photo as a round <img> over the drawn portrait, under the state ring. If it fails to
+ * load it hides itself and the portrait shows through. `diameter` is in px.
+ */
+function photoLayer(photoUrl: string, diameter: number): string {
+  const d = Math.round(diameter);
+  return `<img src="${photoUrl.replace(/"/g, "&quot;")}" alt="" draggable="false" onerror="this.style.display='none'" style="position:absolute;left:50%;top:50%;width:${d}px;height:${d}px;margin:-${d / 2}px 0 0 -${d / 2}px;border-radius:50%;object-fit:cover;pointer-events:none"/>`;
+}
+
+/** State ring + white rim only (transparent centre), drawn above a photo. */
+function ringOnly(ring: string): string {
+  return `<circle r="14.5" fill="none" stroke="${ring}" stroke-width="3.6"/><circle r="16.9" fill="none" stroke="#fff" stroke-width="1.4"/>`;
+}
+
 /**
  * Map marker: portrait badge on the 72-unit canvas, optionally with a heading pointer.
  *
@@ -61,6 +88,7 @@ export function buildPersonSvg(
   badgeColor: string | null | undefined,
   rotation: number | null = null,
   size = 24,
+  photoUrl: string | null = null,
 ): string {
   const color = badgeColor || DEFAULT_ICON_COLOR;
   const { width, height } = getIconDimensions(size);
@@ -70,7 +98,11 @@ export function buildPersonSvg(
       ? ""
       : `<path d="M0 -26 L6.5 -15 L-6.5 -15 Z" fill="${color}" stroke="#fff" stroke-width="1.6" stroke-linejoin="round" transform="rotate(${Math.round(((rotation % 360) + 360) % 360)})"/>`;
 
-  return `<svg width="${width}" height="${height}" viewBox="-16 -6 72 72" xmlns="http://www.w3.org/2000/svg" style="display:block;${SHADOW}"><g transform="translate(20 30)">${pointer}${badge(normalizePersonType(personType), color)}</g></svg>`;
+  const base = `<svg width="${width}" height="${height}" viewBox="-16 -6 72 72" xmlns="http://www.w3.org/2000/svg" style="display:block;${SHADOW}"><g transform="translate(20 30)">${pointer}${badge(normalizePersonType(personType), color)}</g></svg>`;
+  if (!photoUrl) return base;
+  // The inner disc is 29 of the 72 canvas units across; the ring is repainted over the photo's edge.
+  const ring = `<svg width="${width}" height="${height}" viewBox="-16 -6 72 72" xmlns="http://www.w3.org/2000/svg" style="position:absolute;left:0;top:0;display:block"><g transform="translate(20 30)">${ringOnly(color)}</g></svg>`;
+  return `<div style="position:relative;width:${width}px;height:${height}px">${base}${photoLayer(photoUrl, (29 / 72) * width)}${ring}</div>`;
 }
 
 /** Portrait badge alone, cropped tight: `size` is the rendered width. For lists and pickers. */
@@ -78,8 +110,13 @@ export function buildPersonAvatar(
   personType: string | null | undefined,
   ringColor: string | null | undefined,
   size = 28,
+  photoUrl: string | null = null,
 ): string {
-  return `<svg width="${size}" height="${size}" viewBox="-18 -18 36 36" xmlns="http://www.w3.org/2000/svg" style="display:block">${badge(normalizePersonType(personType), ringColor || DEFAULT_ICON_COLOR)}</svg>`;
+  const color = ringColor || DEFAULT_ICON_COLOR;
+  const base = `<svg width="${size}" height="${size}" viewBox="-18 -18 36 36" xmlns="http://www.w3.org/2000/svg" style="display:block">${badge(normalizePersonType(personType), color)}</svg>`;
+  if (!photoUrl) return base;
+  const ring = `<svg width="${size}" height="${size}" viewBox="-18 -18 36 36" xmlns="http://www.w3.org/2000/svg" style="position:absolute;left:0;top:0;display:block">${ringOnly(color)}</svg>`;
+  return `<div style="position:relative;width:${size}px;height:${size}px">${base}${photoLayer(photoUrl, (29 / 36) * size)}${ring}</div>`;
 }
 
 /**

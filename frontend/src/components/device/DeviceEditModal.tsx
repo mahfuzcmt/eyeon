@@ -1,9 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { api, extractError } from "@/lib/api";
 import { useLocale, type StringKey } from "@/lib/i18n";
-import { buildPersonAvatar, PERSON_TYPES, DEFAULT_ICON_COLOR, normalizePersonType, type PersonTypeId } from "@/lib/personIcons";
+import { buildPersonAvatar, personPhotoUrl, PERSON_TYPES, DEFAULT_ICON_COLOR, normalizePersonType, type PersonTypeId } from "@/lib/personIcons";
 import { useDeviceGroups } from "@/hooks/useDeviceGroups";
 import type { DeviceView } from "@/types/domain";
 
@@ -12,6 +12,36 @@ interface Props {
   onClose: () => void;
   /** Called with the updated device returned by the backend. */
   onSaved: (device: DeviceView) => void;
+  /** Called as soon as a photo is uploaded or removed (the form stays open). */
+  onPhotoChanged?: (device: DeviceView) => void;
+}
+
+/** Upload size: the server stores 256 px; 512 keeps the re-encode sharp on dense screens. */
+const PHOTO_UPLOAD_PX = 512;
+
+/**
+ * Centre-crop to a square and re-encode as JPEG in the browser. A phone photo is several
+ * megabytes; this sends ~60 kB, applies the EXIF rotation and drops the metadata (the
+ * server re-encodes again regardless).
+ */
+async function toSquareJpeg(file: File): Promise<Blob> {
+  const bitmap = await createImageBitmap(file, { imageOrientation: "from-image" });
+  try {
+    const side = Math.min(bitmap.width, bitmap.height);
+    const canvas = document.createElement("canvas");
+    canvas.width = PHOTO_UPLOAD_PX;
+    canvas.height = PHOTO_UPLOAD_PX;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) throw new Error("canvas unavailable");
+    ctx.fillStyle = "#fff";
+    ctx.fillRect(0, 0, PHOTO_UPLOAD_PX, PHOTO_UPLOAD_PX);
+    ctx.drawImage(bitmap, (bitmap.width - side) / 2, (bitmap.height - side) / 2, side, side, 0, 0, PHOTO_UPLOAD_PX, PHOTO_UPLOAD_PX);
+    return await new Promise<Blob>((resolve, reject) =>
+      canvas.toBlob((b) => (b ? resolve(b) : reject(new Error("encode failed"))), "image/jpeg", 0.9),
+    );
+  } finally {
+    bitmap.close();
+  }
 }
 
 const COLOR_SWATCHES = [
@@ -25,7 +55,7 @@ const COLOR_SWATCHES = [
   "#DB2777", // pink
 ];
 
-export function DeviceEditModal({ device, onClose, onSaved }: Props) {
+export function DeviceEditModal({ device, onClose, onSaved, onPhotoChanged }: Props) {
   const { t } = useLocale();
   const [name, setName] = useState(device.name ?? "");
   const [simMsisdn, setSimMsisdn] = useState(device.simMsisdn ?? "");
@@ -37,6 +67,47 @@ export function DeviceEditModal({ device, onClose, onSaved }: Props) {
   const [groupId, setGroupId] = useState<string>(device.groupId ?? "");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [photoAt, setPhotoAt] = useState<string | null>(device.photoUpdatedAt ?? null);
+  const [photoBusy, setPhotoBusy] = useState(false);
+  const fileRef = useRef<HTMLInputElement>(null);
+  const photoPath = `/devices/${encodeURIComponent(device.imei)}/photo`;
+
+  const applyPhoto = (version: string | null) => {
+    setPhotoAt(version);
+    onPhotoChanged?.({ ...device, photoUpdatedAt: version });
+  };
+
+  const uploadPhoto = async (file: File | undefined) => {
+    if (!file) return;
+    setPhotoBusy(true);
+    setError(null);
+    try {
+      const jpeg = await toSquareJpeg(file);
+      const r = await api.put<{ photoUpdatedAt: string }>(photoPath, jpeg, {
+        headers: { "Content-Type": "image/jpeg" },
+        timeout: 30_000,
+      });
+      applyPhoto(r.data.photoUpdatedAt);
+    } catch {
+      setError(t("photo.failed"));
+    } finally {
+      setPhotoBusy(false);
+      if (fileRef.current) fileRef.current.value = "";
+    }
+  };
+
+  const removePhoto = async () => {
+    setPhotoBusy(true);
+    setError(null);
+    try {
+      await api.delete(photoPath);
+      applyPhoto(null);
+    } catch (err) {
+      setError(extractError(err).message);
+    } finally {
+      setPhotoBusy(false);
+    }
+  };
 
   const save = async () => {
     setBusy(true);
@@ -80,6 +151,39 @@ export function DeviceEditModal({ device, onClose, onSaved }: Props) {
         </div>
 
         <div className="panel-body flex flex-col gap-3">
+          <div className="text-[14px]">
+            <span className="mb-1 block text-ink-900">{t("photo.title")}</span>
+            <div className="flex items-center gap-3">
+              <span
+                className="shrink-0"
+                // Trusted markup built from our own constants and the device's own photo URL.
+                dangerouslySetInnerHTML={{
+                  __html: buildPersonAvatar(vehicleType, iconColor, 72, personPhotoUrl({ imei: device.imei, photoUpdatedAt: photoAt })),
+                }}
+              />
+              <div className="flex min-w-0 flex-col gap-1.5">
+                <div className="flex flex-wrap gap-2">
+                  <button type="button" className="btn-ghost" disabled={photoBusy} onClick={() => fileRef.current?.click()}>
+                    {photoBusy ? t("common.loading") : photoAt ? t("photo.change") : t("photo.upload")}
+                  </button>
+                  {photoAt && (
+                    <button type="button" className="btn-ghost text-alarm-red" disabled={photoBusy} onClick={() => void removePhoto()}>
+                      {t("photo.remove")}
+                    </button>
+                  )}
+                </div>
+                <span className="text-[13px] text-ink-500">{t("photo.hint")}</span>
+              </div>
+              <input
+                ref={fileRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={(e) => void uploadPhoto(e.target.files?.[0])}
+              />
+            </div>
+          </div>
+
           <label className="text-[14px]">
             <span className="mb-1 block text-ink-9000">{t("veh.name")}</span>
             <input type="text" className="input" value={name} onChange={(e) => setName(e.target.value)} />

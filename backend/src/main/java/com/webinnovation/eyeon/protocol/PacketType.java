@@ -44,6 +44,7 @@ public final class PacketType {
     public static final int JIMI_WIFI = 0x2C;          // WiFi positioning data
     public static final int JIMI_LBS_4G = 0xA1;        // 4G: serving cell + 6 neighbours, no GPS
     public static final int JIMI_WIFI_4G = 0xA2;       // 4G: cells + Wi-Fi access points, no GPS
+    public static final int JIMI_SCAN_ALARM_4G = 0xA9; // 4G: an alarm raised without a GPS fix (cells + Wi-Fi + alarm code)
     public static final int JIMI_TIME_CALIBRATION = 0x8A; // Time sync request
     public static final int JIMI_INFO_TRANSMISSION = 0x94; // Device info upload
 
@@ -82,6 +83,7 @@ public final class PacketType {
         return proto == ALARM
                 || proto == JIMI_ALARM
                 || proto == JIMI_ALARM_HVT001
-                || proto == JIMI_LBS_ALARM;
+                || proto == JIMI_LBS_ALARM
+                || proto == JIMI_SCAN_ALARM_4G;
     }
 }
