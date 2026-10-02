@@ -32,7 +32,8 @@ public final class NotificationDefaults {
             // Family safety (2026-10-02): what a carer listens for. Each severity has its own
             // tone on the dashboard: leaving the safe area warns, the rest is a soft chime.
             AlarmType.GEOFENCE_EXIT, AlarmType.GEOFENCE_ENTER,
-            AlarmType.PLACE_ARRIVED, AlarmType.PLACE_LEFT, AlarmType.LOW_BATTERY));
+            AlarmType.PLACE_ARRIVED, AlarmType.PLACE_LEFT, AlarmType.LOW_BATTERY,
+            AlarmType.NOT_ARRIVED, AlarmType.NOT_LEFT, AlarmType.CHARGE_REMINDER));
 
     public static final Set<String> PUSH = ALL_TYPES;
 

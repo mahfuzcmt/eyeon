@@ -97,6 +97,18 @@ eyeon:
   geolocation:
     # Minimum gap between paid geolocation requests per tracker while its surroundings change.
     min-interval-seconds: ${EYEON_GEOLOCATION_MIN_INTERVAL_SECONDS:60}
+  # Area names for the Stays report (PlaceNameService): cached for good in place_names, looked up
+  # in the background at most once per min-interval-ms. A blank reverse-url turns lookups off.
+  geocoding:
+    reverse-url: ${EYEON_GEOCODING_REVERSE_URL:https://nominatim.openstreetmap.org/reverse}
+    min-interval-ms: ${EYEON_GEOCODING_MIN_INTERVAL_MS:1200}
+  # Battery reminders for battery-powered trackers (BatteryReminderService). Times are local to
+  # the organization; each goes out at most once a day per tracker and never while it is charging.
+  battery:
+    evening-time: ${EYEON_BATTERY_EVENING_TIME:21:00}
+    evening-threshold: ${EYEON_BATTERY_EVENING_THRESHOLD:40}
+    morning-time: ${EYEON_BATTERY_MORNING_TIME:07:00}
+    morning-threshold: ${EYEON_BATTERY_MORNING_THRESHOLD:30}
   opencellid:
     api-key: ${EYEON_OPENCELLID_API_KEY:}
 

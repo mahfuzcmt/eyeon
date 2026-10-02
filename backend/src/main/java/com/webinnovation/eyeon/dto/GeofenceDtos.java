@@ -76,4 +76,14 @@ public final class GeofenceDtos {
             );
         }
     }
+
+    /** An expected time on a trusted place: "be here by 08:15" / "have left by 21:00". */
+    public record ScheduleView(java.util.UUID id, String kind, String time, java.util.List<Integer> weekdays, boolean active) {
+        public static ScheduleView of(com.webinnovation.eyeon.repository.PlaceScheduleRepository.Schedule s) {
+            return new ScheduleView(s.id(), s.kind(), s.localTime().toString().substring(0, 5), s.weekdays(), s.active());
+        }
+    }
+
+    /** @param kind ARRIVE_BY | LEAVE_BY; @param time HH:mm in the organization's timezone; @param weekdays ISO 1 (Mon) - 7 (Sun) */
+    public record ScheduleCreate(String kind, String time, java.util.List<Integer> weekdays) {}
 }

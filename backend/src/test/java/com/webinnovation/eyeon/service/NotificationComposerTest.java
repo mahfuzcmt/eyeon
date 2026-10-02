@@ -76,6 +76,33 @@ class NotificationComposerTest {
     }
 
     @Test
+    void not_arrived_names_the_place_and_the_expected_time() {
+        Message en = composer.compose(
+                alarm("NOT_ARRIVED", "WARNING", MORNING, Map.of("geofenceName", "School")), "Rafi", Lang.EN);
+        assertEquals("⏰ Rafi has not reached School", en.title());
+        assertTrue(en.body().startsWith("Expected by 8:02 AM"));
+        assertEquals(NotificationComposer.CHANNEL_ALARMS, en.channelId());
+
+        Message bn = composer.compose(
+                alarm("NOT_ARRIVED", "WARNING", MORNING, Map.of("geofenceName", "School")), "রাফি", Lang.BN);
+        assertEquals("⏰ রাফি এখনো School-এ পৌঁছায়নি", bn.title());
+    }
+
+    @Test
+    void charge_reminder_is_calm_in_the_evening_and_urgent_in_the_morning() {
+        Message evening = composer.compose(
+                alarm("CHARGE_REMINDER", "INFO", MORNING, Map.of("reason", "EVENING", "batteryPercent", 30)), "Rafi", Lang.EN);
+        assertEquals("🔋 Charge Rafi's tracker tonight", evening.title());
+        assertEquals("Battery at 30%", evening.body());
+        assertEquals(NotificationComposer.CHANNEL_ARRIVALS, evening.channelId());
+
+        Message morning = composer.compose(
+                alarm("CHARGE_REMINDER", "WARNING", MORNING, Map.of("reason", "MORNING", "batteryPercent", 20)), "Rafi", Lang.EN);
+        assertEquals("🔋 Rafi's tracker may not last the day", morning.title());
+        assertEquals(NotificationComposer.CHANNEL_ALARMS, morning.channelId());
+    }
+
+    @Test
     void missing_place_name_still_reads_as_a_sentence() {
         Message m = composer.compose(alarm("PLACE_ARRIVED", "INFO", MORNING, Map.of()), "Rafi", Lang.EN);
         assertEquals("📍 Rafi reached a saved place", m.title());

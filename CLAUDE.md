@@ -1163,12 +1163,37 @@ DELETE /geofences/:id/devices/:imei     → 204  (unassign)
 
 **Notification wording (`service/NotificationComposer`, pure + unit-tested).** Push title/body are composed per language - Bengali or English - from `push_tokens.locale` (V19; the language that phone's app is set to, sent by the mobile app on `POST /users/me/push-tokens { token, platform, locale }` and re-sent when the language changes), falling back to `organizations.locale`. There is **no `users.locale` column**, contrary to §12.3. Bengali templates are deliberately verb-free ("রাফি এখন School-এ") because verb endings change with respect and the backend does not know whether the wearer is a child or a grandparent. Place events use Android channel `arrivals` (normal importance); everything else uses `alarms`. Critical-alarm SMS is described in §7.7.
 
+**Expected times (V25, 2026-10-02).** A trusted place can carry up to 10 schedules: "be here by 08:15" (`ARRIVE_BY`) or "have left by 21:00" (`LEAVE_BY`), each with ISO weekdays (1 = Monday ... 7 = Sunday; the web dialog defaults to Sunday-Thursday). They apply to everyone the place is assigned to and belong to the place's owner.
+
+```
+GET    /geofences/:id/schedules               → [{ id, kind, time: "HH:mm", weekdays: [7,1,2,3,4], active }]
+POST   /geofences/:id/schedules               { kind, time, weekdays } → 201 schedule   (trusted places only, owner only)
+DELETE /geofences/:id/schedules/:scheduleId   → 204
+```
+
+`ExpectedTimeService.sweep()` runs every minute; the timing rules are in the pure `ExpectedTimeCheck`. At the deadline (local time of `organizations.timezone`) a person who is not where expected (`geofence_states.is_inside`) is first **probed**: the tracker is asked to report for 2 minutes (`liveTracking`), because a tracker lying still may not have reported for a while. After `GRACE` (4 min) the state is read again and, if still wrong, a WARNING **`NOT_ARRIVED`** / **`NOT_LEFT`** alarm is raised, stamped with the deadline and carrying `geofenceOwnerId` (so only the owner is told, like the other place alarms), `geofenceName`, `scheduleId`, `expectedTime`. One alert per schedule, person and day (`daily_checks`); a deadline older than 40 minutes (server was down) is skipped rather than alerted late. "Never seen at the place" counts as not arrived.
+
+**Battery reminders (V25, 2026-10-02).** `BatteryReminderService` sweeps every 5 minutes over trackers that report a battery percentage and were heard from in the last 6 hours, and raises **`CHARGE_REMINDER`** at most once per slot per day (`daily_checks` keys `battery:evening` / `battery:morning`): in the evening (`eyeon.battery.evening-time` 21:00, at or below `evening-threshold` 40 %) as INFO "Charge Rafi's tracker tonight" on the calm `arrivals` channel, and in the morning (07:00, at or below 30 %) as WARNING "Rafi's tracker may not last the day". Both are pushed (`AlarmService.isPlaceEvent` lets this INFO through). A tracker that answers `BMT#` with "charger in" is skipped. These go to everyone who can see the tracker, not only to a place owner. The tracker's own `LOW_BATTERY` alarm is unchanged. *Not built:* a "night rest" mode that changes the tracker's reporting overnight.
+
 ### 8.6 Activity (replaces Trips)
 
 ```
 GET /devices/:imei/activity          ?from=ISO&to=ISO → { distanceM, movingS, stillS, maxSpeed, points, firstTs, lastTs }   (default: last 24 h)
 GET /devices/:imei/activity/daily    ?from=ISO&to=ISO → [{ date: "YYYY-MM-DD" (Asia/Dhaka), distanceM, movingS, points }]   (max 93 days)
 ```
+
+**Stays (2026-10-02).** "Where did they stay, and for how long":
+
+```
+GET /devices/:imei/stays    ?from=ISO&to=ISO&names=true&lang=bn|en
+    → { stays: [{ from, to, seconds, latitude, longitude, name, placeId, placeType, openStart, ongoing }], namesPending }   (default last 24 h, max 31 days)
+```
+
+Computed on request from `locations` (nothing stored) by the pure `service/StayDetector`, whose rules come from how the PL601 really reports: a stay is a run of valid points within 150 m of where the run began (the centre is fixed after 5 points, so a slow walk is not a stay) lasting at least 5 minutes; **silence does not end a stay** (a tracker lying still goes quiet - 6 h and 9 h gaps overnight are normal) unless it lasts over 24 h; one or two stray points are ignored; neighbouring stays within 150 m and 15 minutes are merged. `StayService` borrows the last position before the period and the first after it, so a day's report starts at midnight rather than at the first packet of the morning (`openStart`), and marks the last stay `ongoing` (ending "now") only while the tracker is ONLINE. Time inside a silence is assumed spent there; that is an inference, not a measurement.
+
+A stay is named after the caller's **own** trusted place when it lies inside one (radius + 30 m; places are per user, so two parents can see different names), otherwise after the street / area from `PlaceNameService`: OpenStreetMap Nominatim, cached for good in `place_names` (V26, one row per ~110 m cell and language, shared by all organizations - it holds only map names), looked up by one background worker at most once per 1.2 s and never inside a request. Until a name arrives `name` is null and `namesPending` is true; the web page re-asks every 4 s (max 6 times). `eyeon.geocoding.reverse-url` blank turns lookups off. `names=false` skips naming.
+
+Web: **Statistics → Stays** (`/dashboard/stays`, visible to parents as well as admins): pick a person (or "All people" up to 12) and Today / Yesterday / Last 7 days / a date; "By time" lists each stay as place · 2:40 PM – 2:45 PM · 5 min, "By place" groups them with the number of visits and the total. The map popup shows "Here for 2 h 15 min · since 14:40" from the same endpoint (`names=false`, last 72 h, cached one minute per person). Not on mobile yet.
 
 The `/trips` endpoints below still exist in the backend but nothing in EyeOn calls them and no trips are created while `eyeon.trips.enabled=false`.
 
@@ -1309,7 +1334,7 @@ Reworked 2026-09-15 to match (and tidy up) the ADL Moto Viewer live-monitoring s
 
 - Full-bleed map; the 52px icon rail is the only fixed chrome on Monitor (the secondary nav panel only appears for sections with sub-pages)
 - **Floating vehicle panel** (340px card over the map, collapsible via edge handle): search → `All / Online / Offline / Inactive` tabs with counts → sort (`Speed / Name / Last update / Status`) + "Show all on map" → **group accordion** (Ungrouped first, then the user's own groups — groups and alarm rules are per user since V18 (`device_groups.owner_user_id`, `device_group_members`, `alarm_rules.owner_user_id`); collapse state in localStorage). Row = visibility checkbox, small vehicle icon, name, status text (`58 km/h` moving · `Idle 4 h 55 min` · stop duration for parked · `Offline 1 d 14 h` · `Expired` · `No Data`), online dot, `⋮` menu. **Unticking a row hides that vehicle from the map** (ADL behaviour).
-- **Popup card** opens on row click / marker click / top-bar search (`FleetMap.createPopupContent`): name + edit pencil, IMEI, `speed (heading, state)` line, 2-column grid (driver, ignition, GPS time, positioning, power, battery, mileage, satellites), coordinates, reverse-geocoded address, and an action bar: Playback · Live · Navigate (Google Maps directions) · Geofence · Street view · Command · Share · Details. Buttons dispatch a `vehicleAction` window event handled by `dashboard/page.tsx`; auto-pan runs only on open, not on the periodic content refresh.
+- **Popup card** opens on row click / marker click / top-bar search (`FleetMap.createPopupContent`): name + edit pencil, IMEI, `speed (heading, state)` line, 2-column grid (GPS time, positioning, power, battery, mileage, satellites; Driver and Ignition were removed 2026-10-02), a "Here for 2 h 15 min" line while the person is staying put (§8.6 Stays), coordinates, reverse-geocoded address, and an action bar: Playback · Live · Navigate (Google Maps directions) · Geofence · Street view · Command · Share · Details. Buttons dispatch a `vehicleAction` window event handled by `dashboard/page.tsx`; auto-pan runs only on open, not on the periodic content refresh.
 - Plate labels are hidden below zoom 13 except for the selected vehicle (`LABEL_MIN_ZOOM`); markers cluster below zoom 16.
 - Top bar: global vehicle search (name / plate / IMEI / SIM → focuses the vehicle, or deep-links `/dashboard?focus={imei}` from other pages), brand + Live pill, notifications, language, user menu. No fake refresh counter — the real countdown sits bottom-right beside the freshness indicator.
 - KPI strip floats top-centre of the map area (z ≥ 1000, above Leaflet panes).
@@ -3036,4 +3061,4 @@ Full teardown lives in [`docs/COMPETITIVE_ANALYSIS.md`](docs/COMPETITIVE_ANALYSI
 
 ---
 
-*Last updated: 2026-09-21. Update the date when you change anything substantive.*
+*Last updated: 2026-10-02. Update the date when you change anything substantive.*

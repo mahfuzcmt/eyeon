@@ -35,6 +35,7 @@ public class GeofenceController {
     private final GeofenceService service;
     private final AuditService audit;
     private final DeviceAccessService access;
+    private final com.webinnovation.eyeon.service.ExpectedTimeService expectedTimes;
 
     /** The caller's own geofences and trusted places (per user since V21). @param kind TRUSTED_PLACE or BOUNDARY */
     @GetMapping
@@ -149,6 +150,33 @@ public class GeofenceController {
         service.unassignDevice(orgId, TenantContext.requireUserId(), id, imei);
         audit.record("GEOFENCE_UNASSIGN", "geofence", id.toString(),
                 java.util.Map.of("imei", imei));
+        return ResponseEntity.noContent().build();
+    }
+
+    // ---- expected times on a trusted place (owner only, like the place itself) ----
+
+    @GetMapping("/{id}/schedules")
+    public List<com.webinnovation.eyeon.dto.GeofenceDtos.ScheduleView> schedules(@PathVariable UUID id) {
+        UUID orgId = TenantContext.requireOrgId();
+        return expectedTimes.list(orgId, TenantContext.requireUserId(), id).stream()
+                .map(com.webinnovation.eyeon.dto.GeofenceDtos.ScheduleView::of).toList();
+    }
+
+    @PostMapping("/{id}/schedules")
+    public ResponseEntity<com.webinnovation.eyeon.dto.GeofenceDtos.ScheduleView> addSchedule(
+            @PathVariable UUID id, @RequestBody com.webinnovation.eyeon.dto.GeofenceDtos.ScheduleCreate req) {
+        UUID orgId = TenantContext.requireOrgId();
+        var created = expectedTimes.create(orgId, TenantContext.requireUserId(), id, req.kind(), req.time(), req.weekdays());
+        audit.record("PLACE_SCHEDULE_ADD", "geofence", id.toString(),
+                java.util.Map.of("kind", created.kind(), "time", created.localTime().toString()));
+        return ResponseEntity.status(201).body(com.webinnovation.eyeon.dto.GeofenceDtos.ScheduleView.of(created));
+    }
+
+    @DeleteMapping("/{id}/schedules/{scheduleId}")
+    public ResponseEntity<Void> deleteSchedule(@PathVariable UUID id, @PathVariable UUID scheduleId) {
+        UUID orgId = TenantContext.requireOrgId();
+        expectedTimes.delete(orgId, TenantContext.requireUserId(), id, scheduleId);
+        audit.record("PLACE_SCHEDULE_DELETE", "geofence", id.toString(), java.util.Map.of("scheduleId", scheduleId.toString()));
         return ResponseEntity.noContent().build();
     }
 }

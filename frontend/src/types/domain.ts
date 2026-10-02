@@ -295,6 +295,41 @@ export interface GeofenceView {
   updatedAt: string;
 }
 
+/** "Be at School by 08:15": an alert when the person is not there (or has not left) by then. */
+export type PlaceScheduleKind = "ARRIVE_BY" | "LEAVE_BY";
+
+export interface PlaceSchedule {
+  id: string;
+  kind: PlaceScheduleKind;
+  /** HH:mm in the organization's timezone. */
+  time: string;
+  /** ISO weekdays: 1 = Monday ... 7 = Sunday. */
+  weekdays: number[];
+  active: boolean;
+}
+
+/** One stay from GET /devices/:imei/stays. */
+export interface StayView {
+  from: string;
+  to: string;
+  seconds: number;
+  latitude: number;
+  longitude: number;
+  /** The caller's own trusted place, else the street / area; null while it is being looked up. */
+  name: string | null;
+  placeId: string | null;
+  placeType: PlaceType | null;
+  /** Already there when the requested period began. */
+  openStart: boolean;
+  /** Still there now; `to` is the time of the request. */
+  ongoing: boolean;
+}
+
+export interface StaysResult {
+  stays: StayView[];
+  namesPending: boolean;
+}
+
 /** PATCH /geofences/:id - omitted fields keep their value; sending geometry resets arrived/left state. */
 export interface GeofenceUpdate {
   name?: string;
@@ -331,6 +366,9 @@ export type AlarmType =
   | "GEOFENCE_EXIT"
   | "PLACE_ARRIVED"
   | "PLACE_LEFT"
+  | "NOT_ARRIVED"
+  | "NOT_LEFT"
+  | "CHARGE_REMINDER"
   | "COLLISION"
   | "ACC_ON"
   | "ACC_OFF"

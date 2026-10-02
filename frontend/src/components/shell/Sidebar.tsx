@@ -50,6 +50,7 @@ const NAV_SECTIONS: NavSection[] = [
     activeColor: "#0C5A4D",
     children: [
       { href: "/dashboard/home", label: "nav.home", icon: <HomeIcon /> },
+      { href: "/dashboard/stays", label: "nav.stays", icon: <StaysIcon /> },
       // Organization-wide reports need an admin (server: DeviceAccessService.requireSeesAll).
       { href: "/dashboard/reports", label: "nav.reports", icon: <ReportIcon />, adminOnly: true },
     ],
@@ -444,6 +445,15 @@ function ReportIcon() {
     <svg {...ICON_PROPS} width="16" height="16">
       <path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9l-6-6Z" />
       <path d="M14 3v6h6M8 13h8M8 17h6" />
+    </svg>
+  );
+}
+
+function StaysIcon() {
+  return (
+    <svg {...ICON_PROPS} width="16" height="16">
+      <path d="M12 21s-6-5.2-6-10a6 6 0 1 1 12 0c0 4.8-6 10-6 10Z" />
+      <path d="M12 8v3l2 1.5" />
     </svg>
   );
 }

@@ -109,7 +109,7 @@ public class AlarmRepository {
     public static final String GEOFENCE_OWNER_KEY = "geofenceOwnerId";
 
     private static final java.util.Set<String> GEOFENCE_TYPES =
-            java.util.Set.of("PLACE_ARRIVED", "PLACE_LEFT", "GEOFENCE_ENTER", "GEOFENCE_EXIT");
+            java.util.Set.of("PLACE_ARRIVED", "PLACE_LEFT", "GEOFENCE_ENTER", "GEOFENCE_EXIT", "NOT_ARRIVED", "NOT_LEFT");
 
     /**
      * Geofences and trusted places belong to one user, so the alarms they raise are that user's
@@ -118,7 +118,7 @@ public class AlarmRepository {
      * before owners existed) stay visible to everyone who can see the child.
      */
     private static final String OWNER_FILTER =
-            " AND (type NOT IN ('PLACE_ARRIVED','PLACE_LEFT','GEOFENCE_ENTER','GEOFENCE_EXIT')"
+            " AND (type NOT IN ('PLACE_ARRIVED','PLACE_LEFT','GEOFENCE_ENTER','GEOFENCE_EXIT','NOT_ARRIVED','NOT_LEFT')"
             + " OR metadata->>'" + GEOFENCE_OWNER_KEY + "' IS NULL"
             + " OR metadata->>'" + GEOFENCE_OWNER_KEY + "' = :viewer)";
 

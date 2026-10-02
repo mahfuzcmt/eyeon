@@ -71,6 +71,34 @@ public class NotificationComposer {
                        : "🚨 SOS! " + personName + " needs help",
                     joinDot(time, bn ? "এখনই লোকেশন দেখুন" : "See their location now"),
                     CHANNEL_ALARMS);
+            case "NOT_ARRIVED" -> new Message(
+                    bn ? "⏰ " + personName + " এখনো " + at(place, bn) + " পৌঁছায়নি"
+                       : "⏰ " + personName + " has not reached " + orPlace(place, bn),
+                    joinDot(bn ? "নির্ধারিত সময়: " + time : "Expected by " + time,
+                            bn ? "কোথায় আছে দেখতে ট্যাপ করুন" : "Tap to see where they are"),
+                    CHANNEL_ALARMS);
+            case "NOT_LEFT" -> new Message(
+                    bn ? "⏰ " + personName + " এখনো " + at(place, bn) + " আছে"
+                       : "⏰ " + personName + " is still at " + orPlace(place, bn),
+                    bn ? "বের হওয়ার নির্ধারিত সময়: " + time : "Expected to leave by " + time,
+                    CHANNEL_ALARMS);
+            case "CHARGE_REMINDER" -> {
+                String pct = metaString(alarm.metadata(), "batteryPercent");
+                String level = pct == null ? null
+                        : (bn ? "ব্যাটারি " + toBengaliDigits(pct) + "%" : "Battery at " + pct + "%");
+                boolean morning = "MORNING".equals(metaString(alarm.metadata(), "reason"));
+                yield morning
+                        ? new Message(
+                                bn ? "🔋 " + personName + "-এর ট্র্যাকার আজ সারাদিন নাও চলতে পারে"
+                                   : "🔋 " + personName + "'s tracker may not last the day",
+                                joinDot(level, bn ? "বের হওয়ার আগে চার্জ দিন" : "Charge it before they leave"),
+                                CHANNEL_ALARMS)
+                        : new Message(
+                                bn ? "🔋 আজ রাতে " + personName + "-এর ট্র্যাকার চার্জ দিন"
+                                   : "🔋 Charge " + personName + "'s tracker tonight",
+                                level == null ? "" : level,
+                                CHANNEL_ARRIVALS);
+            }
             case "LOW_BATTERY" -> new Message(
                     bn ? "🔋 " + personName + "-এর ডিভাইসে চার্জ কম"
                        : "🔋 " + personName + "'s tracker battery is low",

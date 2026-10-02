@@ -34,7 +34,8 @@ import {
 import { buildPersonSvg, getIconDimensions, noseOffset, personPhotoUrl } from "@/lib/personIcons";
 import { useSpeedLimits } from "@/hooks/useSpeedLimits";
 import { useLocale } from "@/lib/i18n";
-import type { DeviceView, LocationView } from "@/types/domain";
+import { api } from "@/lib/api";
+import type { DeviceView, LocationView, StaysResult } from "@/types/domain";
 import { type LiveLocationView, getInterpolatedPosition, isAnimating } from "@/hooks/useLiveLocations";
 
 interface FleetMapProps {
@@ -52,7 +53,7 @@ interface FleetMapProps {
   onAdvanceAnimations?: () => boolean;
   /** Pixels covered on the left by the floating vehicle panel (for auto-pan / fit padding). */
   leftInset?: number;
-  /** Driver id → display name, so the popup can show who is assigned to the vehicle. */
+  /** Unused since 2026-10-02: the popup no longer shows a driver (people, not vehicles). */
   driversById?: Map<string, string>;
   /** Extra space (px) reserved above the map's top-edge controls, e.g. for a full-width KPI strip on mobile. */
   topInset?: number;
@@ -158,6 +159,58 @@ const pendingRequests = new Map<string, Promise<string>>();
 /** Rate limiter: minimum time between API calls (1 second for Nominatim's policy) */
 let lastRequestTime = 0;
 const MIN_REQUEST_INTERVAL = 1000;
+
+/** The stay a person is in right now, for the popup's "Here for 2 h 15 min" line. */
+interface CurrentStay {
+  from: string;
+  /** The stay began before the period we looked at, so its real length is longer. */
+  openStart: boolean;
+}
+
+const STAY_TTL_MS = 60_000;
+const STAY_LOOKBACK_MS = 72 * 3600 * 1000;
+const currentStayCache = new Map<string, { at: number; stay: CurrentStay | null }>();
+const currentStayPending = new Map<string, Promise<CurrentStay | null>>();
+
+/** Asks the server at most once a minute per person; failures simply leave the line out. */
+function loadCurrentStay(imei: string): Promise<CurrentStay | null> {
+  const hit = currentStayCache.get(imei);
+  if (hit && Date.now() - hit.at < STAY_TTL_MS) return Promise.resolve(hit.stay);
+  const running = currentStayPending.get(imei);
+  if (running) return running;
+  const request = api
+    .get<StaysResult>(`/devices/${imei}/stays`, {
+      params: { from: new Date(Date.now() - STAY_LOOKBACK_MS).toISOString(), names: false },
+    })
+    .then((r): CurrentStay | null => {
+      const last = r.data.stays[r.data.stays.length - 1];
+      return last?.ongoing ? { from: last.from, openStart: last.openStart } : null;
+    })
+    .catch(() => null)
+    .then((stay) => {
+      currentStayCache.set(imei, { at: Date.now(), stay });
+      currentStayPending.delete(imei);
+      return stay;
+    });
+  currentStayPending.set(imei, request);
+  return request;
+}
+
+/** "14:40" for today, "01/10 22:29" for an earlier day (Asia/Dhaka, 24 h like the rest of the card). */
+function staySince(iso: string): string {
+  const date = new Date(iso);
+  const day = (d: Date) => d.toLocaleDateString("en-GB", { timeZone: "Asia/Dhaka", day: "2-digit", month: "2-digit" });
+  const time = date.toLocaleTimeString("en-GB", { timeZone: "Asia/Dhaka", hour: "2-digit", minute: "2-digit", hour12: false });
+  return day(date) === day(new Date()) ? time : `${day(date)} ${time}`;
+}
+
+function stayLine(stay: CurrentStay | null | undefined, t: (k: "popup.hereFor" | "popup.hereForMore" | "popup.since") => string): string {
+  if (!stay) return "";
+  const length = formatCompactDuration(stay.from);
+  return stay.openStart
+    ? `${t("popup.hereForMore")} ${length}`
+    : `${t("popup.hereFor")} ${length} · ${t("popup.since")} ${staySince(stay.from)}`;
+}
 
 /** Reverse geocode coordinates to address using Nominatim */
 async function reverseGeocode(lat: number, lng: number): Promise<string> {
@@ -568,7 +621,7 @@ function BatchCountdown({ lastRefreshAt }: { lastRefreshAt: Date | null }) {
   );
 }
 
-export function FleetMap({ devices, locations, selectedImei, onSelect, onRefresh, lastRefreshAt, showSearch = false, onAdvanceAnimations, leftInset = 0, topInset = 0, bottomInset = 0, driversById, route }: FleetMapProps) {
+export function FleetMap({ devices, locations, selectedImei, onSelect, onRefresh, lastRefreshAt, showSearch = false, onAdvanceAnimations, leftInset = 0, topInset = 0, bottomInset = 0, route }: FleetMapProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<L.Map | null>(null);
   const markersRef = useRef<Map<string, L.Marker>>(new Map());
@@ -656,6 +709,18 @@ export function FleetMap({ devices, locations, selectedImei, onSelect, onRefresh
       }
     }
 
+    const stayEl = container.querySelector<HTMLElement>(".pp-card-stay");
+    if (stayEl && imei) {
+      void loadCurrentStay(imei).then((stay) => {
+        const row = container.querySelector<HTMLElement>(".pp-card-stay");
+        const text = row?.querySelector<HTMLElement>(".pp-card-stay-text");
+        if (!row || !text || row.dataset.imei !== imei) return;
+        const line = stayLine(stay, t);
+        text.textContent = line;
+        row.style.display = line ? "" : "none";
+      });
+    }
+
     container.querySelectorAll<HTMLElement>("[data-action]").forEach((btn) => {
       btn.onclick = (ev) => {
         ev.preventDefault();
@@ -663,7 +728,7 @@ export function FleetMap({ devices, locations, selectedImei, onSelect, onRefresh
         window.dispatchEvent(new CustomEvent("vehicleAction", { detail: { action: btn.dataset.action, imei } }));
       };
     });
-  }, []);
+  }, [t]);
 
   // Tick every second to update the "X sec ago" freshness display
   useEffect(() => {
@@ -697,8 +762,6 @@ export function FleetMap({ devices, locations, selectedImei, onSelect, onRefresh
     else if (state === "offline" && device?.lastSeenAt) statusLine = `${stateLabel} · ${formatCompactDuration(device.lastSeenAt)}`;
     else statusLine = stateLabel;
 
-    const acc = location?.accOn == null ? "—" : location.accOn ? "ON" : "OFF";
-    const accColor = location?.accOn ? "#16a34a" : "#6b7280";
     const approx = location?.accuracyM != null
       ? ` (≈${location.accuracyM >= 1000 ? `${(location.accuracyM / 1000).toFixed(1)} km` : `${location.accuracyM} m`})`
       : "";
@@ -717,6 +780,8 @@ export function FleetMap({ devices, locations, selectedImei, onSelect, onRefresh
     const hasPos = lat != null && lng != null;
     const coords = hasPos ? `${lat.toFixed(6)}, ${lng.toFixed(6)}` : "—";
     const address = hasPos ? addressCache.get(addressCacheKey(lat, lng)) ?? t("popup.loadingAddress") : "—";
+    // Whatever we last learned; refreshPopupDom() asks the server and fills it in.
+    const stay = stayLine(currentStayCache.get(imei)?.stay, t);
 
     const cell = (icon: string, label: string, value: string, color?: string) =>
       `<div class="pp-card-cell">${icon}<div class="pp-card-cell-body"><div class="pp-card-cell-label">${label}</div><div class="pp-card-cell-value"${color ? ` style="color:${color}"` : ""}>${value}</div></div></div>`;
@@ -735,8 +800,6 @@ export function FleetMap({ devices, locations, selectedImei, onSelect, onRefresh
           <span class="pp-card-dot" style="background:${stateColor}"></span>
         </div>
         <div class="pp-card-grid">
-          ${cell(ICON.user, t("popup.driver"), esc((device?.driverId && driversById?.get(device.driverId)) || "—"))}
-          ${cell(ICON.key, t("popup.acc"), acc, accColor)}
           ${cell(ICON.clock, t("popup.gpsTime"), formatDateTime(location?.ts))}
           ${cell(ICON.signal, t("popup.fix"), fix)}
           ${cell(ICON.plug, t("popup.power"), power)}
@@ -744,6 +807,7 @@ export function FleetMap({ devices, locations, selectedImei, onSelect, onRefresh
           ${cell(ICON.road, t("popup.mileage"), mileage)}
           ${cell(ICON.sat, t("popup.satellites"), sats)}
         </div>
+        <div class="pp-card-row pp-card-stay" data-imei="${imei}"${stay ? "" : ' style="display:none"'}>${ICON.clock}<span class="pp-card-stay-text">${esc(stay)}</span></div>
         <div class="pp-card-row">${ICON.globe}<span class="pp-card-coords">${coords}</span></div>
         <div class="pp-card-row pp-card-addr">${ICON.pin}<span class="pp-card-address-text" data-lat="${hasPos ? lat : ""}" data-lng="${hasPos ? lng : ""}">${esc(address)}</span></div>
         <div class="pp-card-actions">
@@ -757,7 +821,7 @@ export function FleetMap({ devices, locations, selectedImei, onSelect, onRefresh
           ${action("details", ICON.doc, t("act.details"))}
         </div>
       </div>`;
-  }, [speedLimits, t, driversById]);
+  }, [speedLimits, t]);
 
   // Init map once
   useEffect(() => {
@@ -1926,6 +1990,14 @@ export function FleetMap({ devices, locations, selectedImei, onSelect, onRefresh
         .pp-card-coords {
           font-family: var(--font-jetbrains), 'JetBrains Mono', monospace;
           font-size: 12px;
+        }
+        .pp-card-stay {
+          font-size: 13px;
+          font-weight: 600;
+          color: #0F6B5C;
+        }
+        .pp-card-stay > svg {
+          color: #0F6B5C;
         }
         .pp-card-addr {
           padding-bottom: 8px;

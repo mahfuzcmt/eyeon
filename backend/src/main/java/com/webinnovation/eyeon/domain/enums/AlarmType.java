@@ -11,6 +11,12 @@ public enum AlarmType {
     PLACE_ARRIVED,
     /** Left a trusted place. Always INFO, but pushed. */
     PLACE_LEFT,
+    /** Not at a trusted place by its expected time ("at School by 08:15"). See ExpectedTimeService. */
+    NOT_ARRIVED,
+    /** Still at a trusted place after its expected leaving time ("left Coaching by 21:00"). */
+    NOT_LEFT,
+    /** Battery assurance: charge tonight (INFO) / may not last the day (WARNING). See BatteryReminderService. */
+    CHARGE_REMINDER,
     COLLISION,
     ACC_ON,
     ACC_OFF,

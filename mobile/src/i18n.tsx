@@ -311,6 +311,9 @@ const STRINGS = {
   // ── Alert labels for zone events ──────────────────────────────────
   "alarm.PLACE_ARRIVED": { en: "Arrived", bn: "পৌঁছানো" },
   "alarm.PLACE_LEFT": { en: "Left", bn: "বের হওয়া" },
+  "alarm.NOT_ARRIVED": { en: "Not arrived on time", bn: "সময়মতো পৌঁছায়নি" },
+  "alarm.NOT_LEFT": { en: "Still there after time", bn: "সময়ের পরেও আছে" },
+  "alarm.CHARGE_REMINDER": { en: "Charge reminder", bn: "চার্জ দিন" },
   "alarm.GEOFENCE_EXIT": { en: "Outside safe area", bn: "নিরাপদ এলাকার বাইরে" },
   "alarm.GEOFENCE_ENTER": { en: "Back in safe area", bn: "আবার নিরাপদ এলাকায়" },
 
