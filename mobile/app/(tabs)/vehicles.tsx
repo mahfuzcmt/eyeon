@@ -1,12 +1,13 @@
 import { useMemo, useState } from "react";
-import { FlatList, Pressable, RefreshControl, StyleSheet, Text, TextInput, View } from "react-native";
+import { FlatList, Image, Pressable, RefreshControl, StyleSheet, Text, TextInput, View } from "react-native";
 import { useRouter } from "expo-router";
 import { useAuth } from "@/auth/AuthContext";
 import { useDevices } from "@/hooks/useDevices";
 import { useLiveLocations } from "@/hooks/useLiveLocations";
 import { useTicker } from "@/hooks/useTicker";
 import { Chip, EmptyState, Loading, Pill } from "@/ui";
-import { fmtAgo, fmtSince, motionColor, motionOf, subscriptionDaysLeft, subscriptionExpired } from "@/format";
+import { batteryColor, fmtAgo, fmtSince, motionColor, motionOf, subscriptionDaysLeft, subscriptionExpired } from "@/format";
+import { useDevicePhotos } from "@/photos";
 import { useSpeedLimits } from "@/hooks/useSpeedLimits";
 import { useI18n, type StringKey } from "@/i18n";
 import { colors, radius, space } from "@/theme";
@@ -29,6 +30,7 @@ export default function VehiclesScreen() {
   const { devices, loading, reload } = useDevices();
   const { locations } = useLiveLocations(org?.id ?? null);
   const speedLimits = useSpeedLimits();
+  const photos = useDevicePhotos(devices);
   const [q, setQ] = useState("");
   const [filter, setFilter] = useState<Filter>("ALL");
   // Force re-render every second to keep "since" times fresh
@@ -90,6 +92,7 @@ export default function VehiclesScreen() {
             loc={item.loc}
             motion={item.motion}
             overspeed={item.overspeed}
+            photo={photos[item.d.imei] ?? null}
             onPress={() => router.push({ pathname: "/device/[imei]", params: { imei: item.d.imei } })}
           />
         )}
@@ -103,12 +106,15 @@ function VehicleCard({
   loc,
   motion,
   overspeed,
+  photo,
   onPress,
 }: {
   device: DeviceView;
   loc: LocationView | null;
   motion: MotionStatus;
   overspeed: boolean;
+  /** data: URI of the uploaded photo, or null. */
+  photo: string | null;
   onPress: () => void;
 }) {
   const { t } = useI18n();
@@ -124,7 +130,14 @@ function VehicleCard({
       style={({ pressed }) => [styles.card, overspeed && styles.cardOverspeed, pressed && { opacity: 0.85 }]}
     >
       <View style={styles.cardTop}>
-        <Text style={[styles.plate, overspeed && styles.plateOverspeed]}>
+        {photo ? (
+          <Image
+            source={{ uri: photo }}
+            style={[styles.avatar, { borderColor: overspeed ? colors.danger : motionColor(motion) }]}
+            accessibilityIgnoresInvertColors
+          />
+        ) : null}
+        <Text style={[styles.plate, styles.plateGrow, overspeed && styles.plateOverspeed]} numberOfLines={1}>
           {device.name ?? device.vehiclePlate ?? device.imei}
         </Text>
         <Text style={[styles.speed, overspeed && styles.plateOverspeed]}>
@@ -142,6 +155,12 @@ function VehicleCard({
           <Pill
             label={accOn ? t("veh.ignitionOn") : t("veh.ignitionOff")}
             color={accOn ? colors.ok : colors.textFaint}
+          />
+        ) : null}
+        {device.batteryPercent != null ? (
+          <Pill
+            label={`${t("veh.battery")} ${Math.round(device.batteryPercent)}%`}
+            color={batteryColor(device.batteryPercent)}
           />
         ) : null}
         {expired ? <Pill label={t("sub.expired")} color={colors.danger} /> : null}
@@ -179,7 +198,9 @@ const styles = StyleSheet.create({
     padding: space.md,
     gap: 6,
   },
-  cardTop: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
+  cardTop: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", gap: space.sm },
+  avatar: { width: 44, height: 44, borderRadius: 22, borderWidth: 3, backgroundColor: colors.surfaceAlt },
+  plateGrow: { flex: 1 },
   cardOverspeed: { borderColor: colors.danger },
   plateOverspeed: { color: colors.danger },
   plate: { color: colors.text, fontSize: 16, fontWeight: "700", fontVariant: ["tabular-nums"] },

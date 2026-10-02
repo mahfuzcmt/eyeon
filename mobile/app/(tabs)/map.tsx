@@ -10,6 +10,7 @@ import { useDevices } from "@/hooks/useDevices";
 import WebMap, { MapVehicle } from "@/components/WebMap";
 import { motionColor, motionOf } from "@/format";
 import { useSpeedLimits } from "@/hooks/useSpeedLimits";
+import { useDevicePhotos } from "@/photos";
 import { useI18n } from "@/i18n";
 import { colors, space } from "@/theme";
 
@@ -31,6 +32,7 @@ export default function MapScreen() {
 
   const byImei = useMemo(() => new Map(devices.map((d) => [d.imei, d])), [devices]);
   const speedLimits = useSpeedLimits();
+  const photos = useDevicePhotos(devices);
 
   // Auto-fit map to show all vehicles on initial load
   useEffect(() => {
@@ -62,6 +64,7 @@ export default function MapScreen() {
         iconColor: d?.iconColor,
         overspeed,
         moving: motion === "MOVING",
+        battery: d?.batteryPercent ?? null,
       });
     }
     return out;
@@ -86,6 +89,7 @@ export default function MapScreen() {
     <View style={styles.fill}>
       <WebMap
         vehicles={vehicles}
+        photos={photos}
         center={center}
         zoomStep={zoomStep}
         baseLayer={baseLayer}

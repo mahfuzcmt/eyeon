@@ -164,3 +164,10 @@ export function fmtAgo(iso: string | null | undefined): string {
   if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
   return `${Math.floor(diff / 86400)}d ago`;
 }
+
+/** Same thresholds as the web: red needs charging now, amber soon, green fine. */
+export function batteryColor(percent: number): string {
+  if (percent <= 15) return "#D92D20";
+  if (percent <= 30) return "#B45309";
+  return "#15803D";
+}

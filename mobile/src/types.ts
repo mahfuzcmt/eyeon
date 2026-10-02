@@ -91,6 +91,10 @@ export interface DeviceView {
   subscriptionExpiresAt: string | null;
   /** End of the latest completed trip (ISO) — null while driving or if unknown. */
   parkedSince: string | null;
+  /** Set when a photo was uploaded; it replaces the drawn portrait (see src/photos.ts). */
+  photoUpdatedAt?: string | null;
+  /** 0-100 for battery-powered trackers (reported by the tracker itself), otherwise null. */
+  batteryPercent?: number | null;
 }
 
 export type AlarmRuleType = "SPEED_OVER" | "VOLTAGE_UNDER" | "ACC_ON_DURING_WINDOW";

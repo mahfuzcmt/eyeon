@@ -22,6 +22,8 @@ export interface MapVehicle {
   overspeed?: boolean;
   /** Draw the heading pointer. Only set while the person is actually moving. */
   moving?: boolean;
+  /** Tracker's own battery percentage; drawn as a small pill under the avatar. */
+  battery?: number | null;
 }
 
 export interface MapPoint {
@@ -38,6 +40,8 @@ export interface MapCircle {
 
 interface Props {
   vehicles?: MapVehicle[];
+  /** imei -> data: URI of the person's uploaded photo (see src/photos.ts). */
+  photos?: Record<string, string>;
   /** Route polyline as [lng, lat] pairs (trip playback). */
   route?: [number, number][];
   /** Animated marker position during playback. */
@@ -95,6 +99,11 @@ ${googleScripts}
   .ava{position:absolute;inset:0;cursor:pointer}
   .ava svg{display:block;filter:drop-shadow(0 2px 3px rgba(10,25,40,.45))}
   .ptr{position:absolute;inset:0;transform-origin:center;pointer-events:none}
+  .pho{position:absolute;left:50%;top:50%;width:39px;height:39px;margin:-19.5px 0 0 -19.5px;border-radius:50%;object-fit:cover}
+  .ava svg.ring{position:absolute;left:0;top:0;filter:none}
+  .bat{position:absolute;top:calc(100% - 3px);left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:2px;
+       padding:1px 4px;background:#fff;border:1px solid;border-radius:999px;white-space:nowrap;pointer-events:none;
+       font:700 10px -apple-system,Roboto,sans-serif;box-shadow:0 1px 3px rgba(10,25,40,.3)}
   .lbl{position:absolute;bottom:calc(100% + 9px);left:50%;transform:translateX(-50%);
        font:700 12px -apple-system,Roboto,'Noto Sans Bengali',sans-serif;color:#fff;
        padding:2px 8px;border-radius:999px;border:1px solid rgba(255,255,255,.55);
@@ -200,18 +209,40 @@ ${googleScripts}
     return '<svg width="48" height="48" viewBox="-24 -24 48 48" style="overflow:visible">'
       + '<path d="M0 -34 L8 -20 L-8 -20 Z" fill="'+color+'" stroke="#fff" stroke-width="1.6" stroke-linejoin="round"/></svg>';
   }
+  // Uploaded photos, imei -> data URI. The photo sits over the drawn portrait and under a
+  // repainted ring; if it cannot be shown it removes itself and the portrait is visible again.
+  var photos = {};
+  function ringSvg(color){
+    return '<svg class="ring" width="48" height="48" viewBox="-18 -18 36 36">'
+      + '<circle r="14.5" fill="none" stroke="'+color+'" stroke-width="3.6"/>'
+      + '<circle r="16.9" fill="none" stroke="#fff" stroke-width="1.4"/></svg>';
+  }
+  // Battery of a personal tracker: same thresholds and look as the web map.
+  function batColor(p){ return p <= 15 ? '#D92D20' : p <= 30 ? '#B45309' : '#15803D'; }
+  function batHtml(p){
+    if(p == null) return '';
+    var c = batColor(p), w = Math.max(1.2, Math.max(0, Math.min(100, p)) / 100 * 13).toFixed(1);
+    return '<div class="bat" style="border-color:'+c+';color:'+c+'">'
+      + '<svg width="14" height="7" viewBox="0 0 20 10"><rect x=".75" y=".75" width="16" height="8.5" rx="2" fill="#fff" stroke="'+c+'" stroke-width="1.5"/>'
+      + '<rect x="2.25" y="2.25" width="'+w+'" height="5.5" rx=".8" fill="'+c+'"/><rect x="17.6" y="3" width="1.8" height="4" rx=".8" fill="'+c+'"/></svg>'
+      + Math.round(p) + '%</div>';
+  }
   function vehHtml(v){
     const color = v.overspeed ? '#D92D20' : (v.color||'#0F6B5C');
+    const photo = photos[v.imei];
     return '<div class="vwrap'+(v.overspeed?' ovs':'')+'">'
       + (v.label ? '<div class="lbl" style="background:'+color+'">'+esc(v.label)+'</div>' : '')
       + (v.moving ? '<div class="ptr" style="transform:rotate('+(v.course||0)+'deg)">'+pointerSvg(color)+'</div>' : '')
-      + '<div class="ava">'+avatarSvg(personType(v.vehicleType), color)+'</div>'
+      + '<div class="ava">'+avatarSvg(personType(v.vehicleType), color)
+      + (photo ? '<img class="pho" alt="" src="'+photo+'" onerror="this.remove()"/>'+ringSvg(color) : '')
+      + '</div>'
+      + batHtml(v.battery)
       + '</div>';
   }
   function vehIcon(v){
     return L.divIcon({className:'', iconSize:[48,48], iconAnchor:[24,24], html: vehHtml(v)});
   }
-  function vehSig(v){ return [v.vehicleType,v.color,v.label,v.overspeed?1:0,v.moving?1:0].join('|'); }
+  function vehSig(v){ return [v.vehicleType,v.color,v.label,v.overspeed?1:0,v.moving?1:0,v.battery==null?'':Math.round(v.battery),(photos[v.imei]||'').length].join('|'); }
 
   // Playback marker keeps the plain arrow (it marks a position on the route, not a person).
   function arrowIcon(color, course){
@@ -235,10 +266,12 @@ ${googleScripts}
         const m = markers[v.imei];
         if(m){
           m.setLatLng([v.lat,v.lng]);
+          m._mlV = v;
           if(m._mlSig !== vehSig(v)){ m.setIcon(vehIcon(v)); m._mlSig = vehSig(v); }
           rotate(m, v.course);
         } else {
           const nm = L.marker([v.lat,v.lng], {icon: vehIcon(v)});
+          nm._mlV = v;
           nm._mlSig = vehSig(v);
           nm.on('click', () => post({type:'select', imei:v.imei}));
           nm.addTo(map);
@@ -247,6 +280,16 @@ ${googleScripts}
       });
       Object.keys(markers).forEach(imei => {
         if(!seen[imei]){ markers[imei].remove(); delete markers[imei]; }
+      });
+    },
+    // Photos arrive after the markers (each is fetched with the user's token): redraw those affected.
+    setPhotos(map){
+      photos = map || {};
+      Object.keys(markers).forEach(imei => {
+        const m = markers[imei];
+        if(m._mlV && m._mlSig !== vehSig(m._mlV)){
+          m.setIcon(vehIcon(m._mlV)); m._mlSig = vehSig(m._mlV); rotate(m, m._mlV.course);
+        }
       });
     },
     setTraffic(on){ traffic = !!on; applyTraffic(); },
@@ -319,6 +362,7 @@ ${googleScripts}
 
 export default function WebMap({
   vehicles,
+  photos,
   route,
   moving,
   center,
@@ -362,6 +406,10 @@ export default function WebMap({
   useEffect(() => {
     if (vehicles) run(`window.MLMap.setVehicles(${JSON.stringify(vehicles)})`);
   }, [vehicles, run]);
+
+  useEffect(() => {
+    if (photos) run(`window.MLMap.setPhotos(${JSON.stringify(photos)})`);
+  }, [photos, run]);
 
   useEffect(() => {
     if (route) {

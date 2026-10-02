@@ -42,6 +42,9 @@ export default function StatisticsTab({ imei, orgId }: { imei: string; orgId: st
       </Section>
 
       <Section title={t("stats.deviceHealth")}>
+        {device?.batteryPercent != null ? (
+          <Metric label={t("veh.battery")} value={`${Math.round(device.batteryPercent)}%`} />
+        ) : null}
         <Metric label={t("track.voltage")} value={fmtVoltage(loc?.voltageMv ?? device?.lastVoltageMv)} />
         <Metric label="GSM" value={device?.lastGsmSignal != null ? String(device.lastGsmSignal) : "—"} />
         <Metric label={t("track.gpsSats")} value={loc?.satellites != null ? String(loc.satellites) : "—"} />

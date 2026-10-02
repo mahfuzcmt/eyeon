@@ -82,6 +82,7 @@ const STRINGS = {
   "veh.lastSeen": { en: "Last seen", bn: "সর্বশেষ দেখা" },
   "veh.parkedFor": { en: "In one place for", bn: "এক জায়গায় আছে" },
   "veh.kmh": { en: "km/h", bn: "কিমি/ঘ" },
+  "veh.battery": { en: "Battery", bn: "ব্যাটারি" },
   "veh.noneInAccount": { en: "No one added yet.", bn: "এখনও কাউকে যোগ করা হয়নি।" },
 
   // ── Subscription ──────────────────────────────────────────────────

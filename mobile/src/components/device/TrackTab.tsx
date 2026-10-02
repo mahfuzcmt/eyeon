@@ -13,6 +13,7 @@ import {
   subscriptionExpired,
 } from "@/format";
 import { useSpeedLimits } from "@/hooks/useSpeedLimits";
+import { useDevicePhotos } from "@/photos";
 import { useI18n } from "@/i18n";
 import { colors, radius, space } from "@/theme";
 
@@ -30,6 +31,10 @@ export default function TrackTab({ imei, orgId }: { imei: string; orgId: string 
     }
   }, [loc]);
 
+  // The hook wants a stable list: one person here, or nobody while the device is loading.
+  const photoOf = useMemo(() => (device ? [{ imei: device.imei, photoUpdatedAt: device.photoUpdatedAt }] : []), [device?.imei, device?.photoUpdatedAt]);
+  const photos = useDevicePhotos(photoOf);
+
   const vehicles = useMemo<MapVehicle[]>(() => {
     if (!loc || !device) return [];
     const overspeed = speedLimits.isOverspeed(imei, loc.speed);
@@ -45,6 +50,7 @@ export default function TrackTab({ imei, orgId }: { imei: string; orgId: string 
         iconColor: device.iconColor,
         overspeed,
         moving: motionOf(device, loc) === "MOVING",
+        battery: device.batteryPercent ?? null,
       },
     ];
   }, [loc, device, imei, speedLimits]);
@@ -73,7 +79,7 @@ export default function TrackTab({ imei, orgId }: { imei: string; orgId: string 
       )}
 
       <View style={styles.mapBox}>
-        <WebMap vehicles={vehicles} center={center} />
+        <WebMap vehicles={vehicles} photos={photos} center={center} />
         <View style={[styles.speedo, overspeeding && { borderColor: colors.danger }]}>
           <Text style={[styles.speedoVal, overspeeding && { color: colors.danger }]}>{speed}</Text>
           <Text style={styles.speedoUnit}>{t("veh.kmh")}</Text>
