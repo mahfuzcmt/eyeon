@@ -21,7 +21,10 @@ COPY package.json package-lock.json ./
 RUN npm ci --no-audit --no-fund
 
 COPY . .
-RUN NODE_OPTIONS="$BUILD_NODE_OPTIONS" npm run build
+# .next/cache is the compiler's own cache (hundreds of MB of webpack packs). It is useless at
+# runtime and, copied into the image, filled the shared server's disk until an image could no
+# longer be unpacked (2026-10-02). Next recreates the small runtime cache it needs on demand.
+RUN NODE_OPTIONS="$BUILD_NODE_OPTIONS" npm run build && rm -rf .next/cache
 
 # --- Runtime stage --------------------------------------------------------
 FROM node:22-alpine AS runtime
