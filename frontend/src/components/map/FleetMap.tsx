@@ -328,6 +328,12 @@ const STATE_TEXT: Record<VehicleState, string> = {
   nodata: "No Data",
 };
 
+/** Screen distance between direction arrows on the route line. */
+const ARROW_SPACING_PX = 90;
+/** A step at least this long between positions counts as moving and sets the arrow's direction. */
+const HEADING_MIN_STEP_M = 8;
+/** The arrow stays this long after the last such step (the tracker reports every 10 s). */
+const HEADING_HOLD_MS = 25_000;
 /** Zoom used when the map starts following a person: the streets and buildings around them. */
 const FOLLOW_ZOOM = 19;
 /** A marker glides for a step up to this far; anything larger is a jump in the data, not a walk. */
@@ -644,6 +650,14 @@ export function FleetMap({ devices, locations, selectedImei, onSelect, onRefresh
   const userMarkerRef = useRef<L.Marker | null>(null);
   const searchMarkerRef = useRef<L.Marker | null>(null);
   const animationFrameRef = useRef<number | null>(null);
+  /** Last position that set each person's heading, and until when the arrow stays shown. */
+  const motionRef = useRef<Map<string, { lat: number; lng: number; heading: number | null; until: number }>>(new Map());
+  /** Re-runs the marker pass every few seconds so an arrow disappears once its hold runs out. */
+  const [arrowClock, setArrowClock] = useState(0);
+  useEffect(() => {
+    const id = window.setInterval(() => setArrowClock((n) => n + 1), 5_000);
+    return () => window.clearInterval(id);
+  }, []);
   // A person's marker glides from where it is drawn to the new position over about one
   // reporting interval, driven frame by frame. (A CSS transition cannot do it: the clustering
   // layer re-creates the marker element on every setLatLng, which is why markers used to jump.)
@@ -1091,7 +1105,7 @@ export function FleetMap({ devices, locations, selectedImei, onSelect, onRefresh
     const fracAt = (ms: number) => (ms - t0) / (t1 - t0);
 
     const group = L.layerGroup();
-    const arrowsAt: Array<{ a: [number, number]; b: [number, number]; frac: number }> = [];
+    const arrowsAt: Array<{ a: [number, number]; b: [number, number]; frac: number; estimate?: boolean }> = [];
     const drawTrack = (coords: [number, number][], fromMs: number, toMs: number) => {
       if (coords.length < 2) return;
       // Time along the piece follows distance along it (the snapped line has no timestamps).
@@ -1124,6 +1138,9 @@ export function FleetMap({ devices, locations, selectedImei, onSelect, onRefresh
         L.polyline(piece.coords, { color: "#fff", weight: 5, opacity: 0.8, interactive: false }).addTo(group);
         L.polyline(piece.coords, { color: ROUTE_ESTIMATE, weight: 2.5, opacity: 0.9, dashArray: "2 7", lineCap: "round", interactive: false })
           .addTo(group);
+        for (let i = 1; i < piece.coords.length; i++) {
+          arrowsAt.push({ a: piece.coords[i - 1], b: piece.coords[i], frac: 0, estimate: true });
+        }
       }
     }
     if (tail.length) {
@@ -1132,28 +1149,40 @@ export function FleetMap({ devices, locations, selectedImei, onSelect, onRefresh
       drawTrack([from, ...tail.map((p) => p.at)], Date.parse(lastTo), Date.parse(tail[tail.length - 1].ts));
     }
 
-    // About a dozen direction arrows along the GPS parts, in the colour of the line under them.
-    let total = 0;
-    for (const s2 of arrowsAt) total += metersBetween(s2.a, s2.b);
-    const spacing = Math.max(60, total / 14);
-    let since = spacing / 2;
-    for (const s2 of arrowsAt) {
-      const seg = metersBetween(s2.a, s2.b);
-      since += seg;
-      if (since < spacing || seg < 8) continue;
-      since = 0;
-      const mid: [number, number] = [(s2.a[0] + s2.b[0]) / 2, (s2.a[1] + s2.b[1]) / 2];
-      L.marker(mid, {
-        interactive: false,
-        keyboard: false,
-        icon: L.divIcon({
-          className: "pp-route-arrow",
-          iconSize: [14, 14],
-          iconAnchor: [7, 7],
-          html: `<svg width="14" height="14" viewBox="0 0 12 12" style="display:block;transform:rotate(${Math.round(bearingDeg(s2.a, s2.b))}deg)"><path d="M6 1 L10.5 10.5 L6 8 L1.5 10.5 Z" fill="${routeColor(s2.frac)}" stroke="#fff" stroke-width="1" stroke-linejoin="round"/></svg>`,
-        }),
-      }).addTo(group);
-    }
+    // Direction arrows every ~ARROW_SPACING_PX on screen (re-laid out on zoom so they never
+    // vanish or pile up), in the colour of the line under them; grey on the dashed parts.
+    const arrowLayer = L.layerGroup().addTo(group);
+    const layoutArrows = () => {
+      arrowLayer.clearLayers();
+      let since = ARROW_SPACING_PX / 2;
+      for (const s2 of arrowsAt) {
+        const pa = map.latLngToLayerPoint(s2.a);
+        const pb = map.latLngToLayerPoint(s2.b);
+        const segPx = pa.distanceTo(pb);
+        if (segPx < 1) continue;
+        let pos = ARROW_SPACING_PX - since;
+        since += segPx;
+        while (pos <= segPx) {
+          const f = pos / segPx;
+          const at: [number, number] = [s2.a[0] + (s2.b[0] - s2.a[0]) * f, s2.a[1] + (s2.b[1] - s2.a[1]) * f];
+          const fill = s2.estimate ? ROUTE_ESTIMATE : routeColor(s2.frac);
+          L.marker(at, {
+            interactive: false,
+            keyboard: false,
+            icon: L.divIcon({
+              className: "pp-route-arrow",
+              iconSize: [18, 18],
+              iconAnchor: [9, 9],
+              html: `<svg width="18" height="18" viewBox="0 0 12 12" style="display:block;transform:rotate(${Math.round(bearingDeg(s2.a, s2.b))}deg)"><path d="M6 0.8 L11 11 L6 8.2 L1 11 Z" fill="${fill}" stroke="#fff" stroke-width="1.1" stroke-linejoin="round"/></svg>`,
+            }),
+          }).addTo(arrowLayer);
+          pos += ARROW_SPACING_PX;
+          since = segPx - (pos - ARROW_SPACING_PX);
+        }
+      }
+    };
+    layoutArrows();
+    map.on("zoomend", layoutArrows);
 
     // Stays: a pill with the time spent, a house for one of your own places.
     for (const st of stays ?? []) {
@@ -1190,6 +1219,7 @@ export function FleetMap({ devices, locations, selectedImei, onSelect, onRefresh
     group.addTo(map);
     routeLayerRef.current = group;
     return () => {
+      map.off("zoomend", layoutArrows);
       group.remove();
       if (routeLayerRef.current === group) routeLayerRef.current = null;
     };
@@ -1224,13 +1254,35 @@ export function FleetMap({ devices, locations, selectedImei, onSelect, onRefresh
       const isSelected = imei === selectedImei;
       let marker = markersRef.current.get(imei);
 
-      const course = loc.course ?? 0;
+      // Heading arrow. A person walks at 2-6 km/h, under the speed noise threshold, and GPS
+      // course is unreliable at that pace, so the arrow follows how the position actually moved:
+      // shown while the person moved at least HEADING_MIN_STEP_M since the last position (and
+      // for HEADING_HOLD_MS afterwards), pointing along that step. Vehicle speed uses GPS course.
+      const nowMs = Date.now();
+      const motion = motionRef.current.get(imei);
+      if (loc.valid && !loc.source) {
+        if (!motion) {
+          motionRef.current.set(imei, { lat: loc.latitude, lng: loc.longitude, heading: null, until: 0 });
+        } else {
+          const step = metersBetween([motion.lat, motion.lng], [loc.latitude, loc.longitude]);
+          if (step >= HEADING_MIN_STEP_M) {
+            motion.heading = bearingDeg([motion.lat, motion.lng], [loc.latitude, loc.longitude]);
+            motion.until = nowMs + HEADING_HOLD_MS;
+            motion.lat = loc.latitude;
+            motion.lng = loc.longitude;
+          }
+        }
+      }
+      const m2 = motionRef.current.get(imei);
+      const fastGps = filterSpeed(loc.speed, loc.valid) > 0;
+      const walking = !!m2 && m2.heading != null && nowMs < m2.until;
+      const course = fastGps ? (loc.course ?? 0) : walking ? m2!.heading! : (loc.course ?? 0);
       // ADL-style: the marker body is tinted by state (green / blue / grey),
       // not by a per-device colour, so the map reads at a glance.
       const bodyColor = MARKER_BODY_COLOR[vehicleState(device, loc)];
       const noFix = hasNoFix(loc);
       const isStale = isStaleData(loc, device);
-      const isMoving = filterSpeed(loc.speed, loc.valid) > 0; // Moving if speed above noise threshold
+      const isMoving = fastGps || walking;
       const justUpdated = isJustUpdated(loc);
 
       // Create a key for icon state to detect changes (skip justUpdated as it's transient)
@@ -1384,7 +1436,7 @@ export function FleetMap({ devices, locations, selectedImei, onSelect, onRefresh
       }
       initialFitDoneRef.current = true;
     }
-  }, [locations, deviceByImei, selectedImei, onSelect, createPopupContent, speedLimits, autoFollow, applyLabelVisibility, refreshPopupDom, moveMarker, glidePosition, drawAt, finishGlides]);
+  }, [locations, deviceByImei, selectedImei, onSelect, createPopupContent, speedLimits, autoFollow, applyLabelVisibility, refreshPopupDom, moveMarker, glidePosition, drawAt, finishGlides, arrowClock]);
 
   // Keep locationsRef in sync with state (doesn't trigger animation restart)
   useEffect(() => {
