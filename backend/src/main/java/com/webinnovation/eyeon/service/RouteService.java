@@ -18,15 +18,16 @@ import java.util.UUID;
 
 /**
  * A person's route for the map: {@link RoutePlanner} pieces, the moving GPS pieces snapped to the
- * road ({@link RoadMatcher}, cached in {@code route_matches}). At most {@link #MATCH_BUDGET}
- * matching calls per request; pieces not yet matched are returned raw with
- * {@code snapPending = true}, and the next refresh picks them up.
+ * road ({@link RoadMatcher}, cached in {@code route_matches}). A request never waits for the
+ * matching service (a call to the public one takes several seconds from our server): pieces not
+ * matched yet are returned raw with {@code snapPending = true} and queued for one background
+ * worker; the page asks again a few seconds later.
  */
 @Service
 @RequiredArgsConstructor
 public class RouteService {
 
-    static final int MATCH_BUDGET = 4;
+    static final int QUEUE_LIMIT = 500;
     /** Pieces slower than this are a person standing or wandering indoors: drawn raw, never snapped. */
     static final int SNAP_MIN_KMH = 4;
     /** A piece still growing is re-matched at most this often. */
@@ -48,13 +49,55 @@ public class RouteService {
 
     private record Cached(Instant endTs, int points, List<double[]> geometry, Instant createdAt) {}
 
+    private record Job(String imei, RoutePlanner.Piece piece) {}
+
+    private final java.util.concurrent.BlockingQueue<Job> queue = new java.util.concurrent.LinkedBlockingQueue<>(QUEUE_LIMIT);
+    private final java.util.Set<String> queued = java.util.concurrent.ConcurrentHashMap.newKeySet();
+    private Thread worker;
+
+    @jakarta.annotation.PostConstruct
+    void start() {
+        worker = Thread.ofVirtual().name("road-matcher").start(() -> {
+            while (!Thread.currentThread().isInterrupted()) {
+                try {
+                    Job j = queue.take();
+                    try {
+                        String profile = RoadMatcher.profileFor(j.piece().medianSpeedKmh());
+                        var m = matcher.match(j.piece().points(), profile);
+                        store(j.imei(), j.piece(), profile, m.map(RoadMatcher.Match::coords).orElse(null),
+                                m.map(RoadMatcher.Match::confidence).orElse(null));
+                    } catch (Exception e) {
+                        org.slf4j.LoggerFactory.getLogger(RouteService.class).warn("Road matching job failed: {}", e.getMessage());
+                    } finally {
+                        queued.remove(key(j.imei(), j.piece()));
+                    }
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                }
+            }
+        });
+    }
+
+    @jakarta.annotation.PreDestroy
+    void stop() {
+        if (worker != null) worker.interrupt();
+    }
+
+    private static String key(String imei, RoutePlanner.Piece p) {
+        return imei + "|" + p.from() + "|" + p.points().size();
+    }
+
+    private void enqueue(String imei, RoutePlanner.Piece p) {
+        String k = key(imei, p);
+        if (queued.add(k) && !queue.offer(new Job(imei, p))) queued.remove(k);
+    }
+
     public RouteView route(UUID orgId, String imei, Instant from, Instant to) {
         List<RoutePlanner.Pt> pts = new ArrayList<>();
         for (Location l : locations.findHistory(orgId, imei, from, to, 20_000)) {
             if (!l.valid() || (l.latitude() == 0 && l.longitude() == 0)) continue;
             pts.add(new RoutePlanner.Pt(l.ts(), l.latitude(), l.longitude(), l.speed(), l.source() == null));
         }
-        int budget = MATCH_BUDGET;
         boolean pending = false;
         List<PieceView> out = new ArrayList<>();
         for (RoutePlanner.Piece p : RoutePlanner.plan(pts)) {
@@ -68,15 +111,8 @@ public class RouteService {
             boolean fresh = c != null && (c.points() == p.points().size()
                     || c.createdAt().isAfter(Instant.now().minus(REMATCH_AFTER)));
             if (!fresh) {
-                if (budget > 0) {
-                    budget--;
-                    String profile = RoadMatcher.profileFor(speed);
-                    var m = matcher.match(p.points(), profile);
-                    store(imei, p, profile, m.map(RoadMatcher.Match::coords).orElse(null), m.map(RoadMatcher.Match::confidence).orElse(null));
-                    c = new Cached(p.to(), p.points().size(), m.map(RoadMatcher.Match::coords).orElse(null), Instant.now());
-                } else {
-                    pending = true;
-                }
+                enqueue(imei, p);
+                pending = true;
             }
             boolean snapped = c != null && c.geometry() != null;
             out.add(new PieceView(p.kind().name(), p.from(), p.to(), speed, snapped, snapped ? c.geometry() : raw));

@@ -83,7 +83,10 @@ public class RoadMatcher {
             }
             lastCallAt = System.currentTimeMillis();
             try {
-                body = restClientBuilder.build().get().uri(java.net.URI.create(url))
+                var factory = new org.springframework.http.client.SimpleClientHttpRequestFactory();
+                factory.setConnectTimeout(5_000);
+                factory.setReadTimeout(15_000);
+                body = restClientBuilder.requestFactory(factory).build().get().uri(java.net.URI.create(url))
                         .header("User-Agent", userAgent).retrieve().body(JsonNode.class);
             } catch (Exception e) {
                 log.info("Road matching failed ({} points, {}): {}", pts.size(), profile, e.getMessage());
