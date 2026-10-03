@@ -38,7 +38,7 @@ import { useLocale } from "@/lib/i18n";
 import { api } from "@/lib/api";
 import { restingUntil } from "@/lib/nightRest";
 import { SEARCH_DEBOUNCE_MS, SEARCH_MIN_CHARS, searchAddress, type GeocodeResult } from "@/lib/geocode";
-import type { DeviceView, LocationView, NightRestView, StaysResult } from "@/types/domain";
+import type { DeviceView, LocationView, NightRestView, RoutePiece, StaysResult, StayView } from "@/types/domain";
 import { type LiveLocationView, getInterpolatedPosition, isAnimating } from "@/hooks/useLiveLocations";
 
 interface FleetMapProps {
@@ -64,11 +64,12 @@ interface FleetMapProps {
   topInset?: number;
   /** Extra space (px) reserved under the map's bottom-edge controls, e.g. for the mobile vehicle sheet. */
   bottomInset?: number;
-  /** Today's stored positions of the selected person; drawn as a thin route line with arrows. */
-  route?: LocationView[];
+  /** Today's route of the selected person (road-snapped pieces); drawn light-to-deep by time, dashed where estimated. */
+  route?: RoutePiece[];
+  /** Today's stays of the selected person, drawn as labelled markers on the route. */
+  stays?: StayView[];
 }
 
-const ROUTE_COLOR = "#0F6B5C";
 /** Points closer than this to the previous kept point are dropped (indoor Wi-Fi jitter). */
 const ROUTE_MIN_STEP_M = 15;
 
@@ -91,21 +92,24 @@ function bearingDeg(a: [number, number], b: [number, number]): number {
   return ((Math.atan2(y, x) * 180) / Math.PI + 360) % 360;
 }
 
-/**
- * The day's positions as a drawable path: usable positions only, oldest first, with points
- * that barely moved removed so a morning spent in one room is a dot, not a scribble.
- */
-function routePath(route: LocationView[]): Array<{ at: [number, number]; ts: string }> {
-  const usable = route
-    .filter((l) => l.valid && (l.latitude !== 0 || l.longitude !== 0))
-    .sort((a, b) => Date.parse(a.ts) - Date.parse(b.ts));
-  const path: Array<{ at: [number, number]; ts: string }> = [];
-  for (const l of usable) {
-    const at: [number, number] = [l.latitude, l.longitude];
-    const prev = path[path.length - 1];
-    if (!prev || metersBetween(prev.at, at) >= ROUTE_MIN_STEP_M) path.push({ at, ts: l.ts });
-  }
-  return path;
+/** Route colour by time of day: light teal at the start, deep teal now. */
+const ROUTE_LIGHT: [number, number, number] = [0x9b, 0xe0, 0xd0];
+const ROUTE_DEEP: [number, number, number] = [0x06, 0x4b, 0x40];
+const ROUTE_ESTIMATE = "#6B7A77";
+
+function routeColor(frac: number): string {
+  const f = Math.min(1, Math.max(0, frac));
+  const c = ROUTE_LIGHT.map((a, i) => Math.round(a + (ROUTE_DEEP[i] - a) * f));
+  return `rgb(${c[0]},${c[1]},${c[2]})`;
+}
+
+function hhmm(iso: string): string {
+  return new Date(iso).toLocaleTimeString("en-US", { timeZone: "Asia/Dhaka", hour: "numeric", minute: "2-digit" });
+}
+
+function stayLength(seconds: number): string {
+  const m = Math.round(seconds / 60);
+  return m >= 60 ? `${Math.floor(m / 60)} h ${m % 60 ? `${m % 60} m` : ""}`.trim() : `${m} min`;
 }
 
 const OVERSPEED_COLOR = "#DC2626";
@@ -628,7 +632,7 @@ function BatchCountdown({ lastRefreshAt }: { lastRefreshAt: Date | null }) {
   );
 }
 
-export function FleetMap({ devices, locations, selectedImei, onSelect, onRefresh, lastRefreshAt, showSearch = false, onAdvanceAnimations, leftInset = 0, topInset = 0, bottomInset = 0, route, restByImei }: FleetMapProps) {
+export function FleetMap({ devices, locations, selectedImei, onSelect, onRefresh, lastRefreshAt, showSearch = false, onAdvanceAnimations, leftInset = 0, topInset = 0, bottomInset = 0, route, stays, restByImei }: FleetMapProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<L.Map | null>(null);
   const markersRef = useRef<Map<string, L.Marker>>(new Map());
@@ -1056,11 +1060,13 @@ export function FleetMap({ devices, locations, selectedImei, onSelect, onRefresh
     }
   }, [locations]);
 
-  // Today's route of the selected person: a thin line from where the day started to where
-  // they are now, with small arrows so "went from A to B" reads at a glance.
+  // Today's route of the selected person: light teal at the start of the day deepening to dark
+  // teal now, solid where GPS tracked it (snapped to the road by the server while moving),
+  // dashed grey where the position was estimated or the tracker was silent, a flag where the day
+  // started, and a labelled marker for every stay.
   const selectedLive = selectedImei ? locations.get(selectedImei) : undefined;
-  const selLat = selectedLive?.valid ? selectedLive.latitude : undefined;
-  const selLng = selectedLive?.valid ? selectedLive.longitude : undefined;
+  const selLat = selectedLive?.valid && !selectedLive.source ? selectedLive.latitude : undefined;
+  const selLng = selectedLive?.valid && !selectedLive.source ? selectedLive.longitude : undefined;
   const selTs = selectedLive?.ts;
   useEffect(() => {
     const map = mapRef.current;
@@ -1069,54 +1075,116 @@ export function FleetMap({ devices, locations, selectedImei, onSelect, onRefresh
     routeLayerRef.current = null;
     if (!selectedImei || !route || route.length === 0) return;
 
-    const path = routePath(route);
-    // Append what arrived live after the route was fetched.
-    const key = `${selectedImei}|${route.length}|${route[0]?.ts ?? ""}`;
+    // Live positions after the last piece the server returned, so the line keeps growing.
+    const lastTo = route[route.length - 1].to;
+    const key = `${selectedImei}|${route[0].from}|${lastTo}`;
     if (routeTailRef.current.key !== key) routeTailRef.current = { key, points: [] };
     const tail = routeTailRef.current.points;
-    if (selLat != null && selLng != null && selTs) {
-      const last = tail[tail.length - 1] ?? path[path.length - 1];
+    if (selLat != null && selLng != null && selTs && Date.parse(selTs) > Date.parse(lastTo)) {
+      const prev = tail[tail.length - 1]?.at ?? route[route.length - 1].coords[route[route.length - 1].coords.length - 1];
       const at: [number, number] = [selLat, selLng];
-      if (!last || (Date.parse(selTs) > Date.parse(last.ts) && metersBetween(last.at, at) >= ROUTE_MIN_STEP_M)) {
-        tail.push({ at, ts: selTs });
-      }
+      if (!prev || metersBetween(prev, at) >= ROUTE_MIN_STEP_M) tail.push({ at, ts: selTs });
     }
-    const full = [...path, ...tail.filter((p) => path.length === 0 || Date.parse(p.ts) > Date.parse(path[path.length - 1].ts))];
-    if (full.length === 0) return;
+
+    const t0 = Date.parse(route[0].from);
+    const t1 = Math.max(Date.parse(lastTo), tail.length ? Date.parse(tail[tail.length - 1].ts) : 0, t0 + 1);
+    const fracAt = (ms: number) => (ms - t0) / (t1 - t0);
 
     const group = L.layerGroup();
-    const line = full.map((p) => p.at);
-    if (line.length >= 2) {
-      // White casing under a thin teal line keeps it readable on both roads and satellite.
-      L.polyline(line, { color: "#fff", weight: 5, opacity: 0.85, interactive: false, lineJoin: "round", lineCap: "round" }).addTo(group);
-      L.polyline(line, { color: ROUTE_COLOR, weight: 2.5, opacity: 0.95, interactive: false, lineJoin: "round", lineCap: "round" }).addTo(group);
+    const arrowsAt: Array<{ a: [number, number]; b: [number, number]; frac: number }> = [];
+    const drawTrack = (coords: [number, number][], fromMs: number, toMs: number) => {
+      if (coords.length < 2) return;
+      // Time along the piece follows distance along it (the snapped line has no timestamps).
+      const cum = [0];
+      for (let i = 1; i < coords.length; i++) cum.push(cum[i - 1] + metersBetween(coords[i - 1], coords[i]));
+      const total = cum[cum.length - 1] || 1;
+      L.polyline(coords, { color: "#fff", weight: 6, opacity: 0.9, interactive: false, lineJoin: "round", lineCap: "round" }).addTo(group);
+      let run: [number, number][] = [coords[0]];
+      let runBucket = -1;
+      for (let i = 1; i < coords.length; i++) {
+        const frac = fracAt(fromMs + ((toMs - fromMs) * cum[i]) / total);
+        const bucket = Math.round(frac * 24);
+        if (runBucket !== -1 && bucket !== runBucket && run.length >= 2) {
+          L.polyline(run, { color: routeColor(runBucket / 24), weight: 3.5, opacity: 1, interactive: false, lineJoin: "round", lineCap: "round" }).addTo(group);
+          run = [coords[i - 1]];
+        }
+        runBucket = bucket;
+        run.push(coords[i]);
+        arrowsAt.push({ a: coords[i - 1], b: coords[i], frac });
+      }
+      if (run.length >= 2) L.polyline(run, { color: routeColor(runBucket / 24), weight: 3.5, opacity: 1, interactive: false, lineJoin: "round", lineCap: "round" }).addTo(group);
+    };
 
-      let total = 0;
-      for (let i = 1; i < line.length; i++) total += metersBetween(line[i - 1], line[i]);
-      const spacing = Math.max(60, total / 14);   // about a dozen arrows however long the day was
-      let since = spacing / 2;
-      for (let i = 1; i < line.length; i++) {
-        const seg = metersBetween(line[i - 1], line[i]);
-        since += seg;
-        if (since < spacing || seg < 20) continue;
-        since = 0;
-        const mid: [number, number] = [(line[i - 1][0] + line[i][0]) / 2, (line[i - 1][1] + line[i][1]) / 2];
-        L.marker(mid, {
-          interactive: false,
-          keyboard: false,
-          icon: L.divIcon({
-            className: "pp-route-arrow",
-            iconSize: [12, 12],
-            iconAnchor: [6, 6],
-            html: `<svg width="12" height="12" viewBox="0 0 12 12" style="display:block;transform:rotate(${Math.round(bearingDeg(line[i - 1], line[i]))}deg)"><path d="M6 1 L10.5 10.5 L6 8 L1.5 10.5 Z" fill="${ROUTE_COLOR}" stroke="#fff" stroke-width="1" stroke-linejoin="round"/></svg>`,
-          }),
-        }).addTo(group);
+    for (const piece of route) {
+      const fromMs = Date.parse(piece.from);
+      const toMs = Date.parse(piece.to);
+      if (piece.kind === "TRACK") {
+        drawTrack(piece.coords, fromMs, toMs);
+      } else if (piece.coords.length >= 2) {
+        L.polyline(piece.coords, { color: "#fff", weight: 5, opacity: 0.8, interactive: false }).addTo(group);
+        L.polyline(piece.coords, { color: ROUTE_ESTIMATE, weight: 2.5, opacity: 0.9, dashArray: "2 7", lineCap: "round", interactive: false })
+          .addTo(group);
       }
     }
-    // Where the day started.
-    const startTime = new Date(full[0].ts).toLocaleTimeString("en-GB", { timeZone: "Asia/Dhaka", hour: "2-digit", minute: "2-digit" });
-    L.circleMarker(full[0].at, { radius: 5, color: ROUTE_COLOR, weight: 2, fillColor: "#fff", fillOpacity: 1, interactive: line.length >= 2 })
-      .bindTooltip(startTime, { direction: "top", offset: [0, -4] })
+    if (tail.length) {
+      const lastPiece = route[route.length - 1];
+      const from = lastPiece.coords[lastPiece.coords.length - 1];
+      drawTrack([from, ...tail.map((p) => p.at)], Date.parse(lastTo), Date.parse(tail[tail.length - 1].ts));
+    }
+
+    // About a dozen direction arrows along the GPS parts, in the colour of the line under them.
+    let total = 0;
+    for (const s2 of arrowsAt) total += metersBetween(s2.a, s2.b);
+    const spacing = Math.max(60, total / 14);
+    let since = spacing / 2;
+    for (const s2 of arrowsAt) {
+      const seg = metersBetween(s2.a, s2.b);
+      since += seg;
+      if (since < spacing || seg < 8) continue;
+      since = 0;
+      const mid: [number, number] = [(s2.a[0] + s2.b[0]) / 2, (s2.a[1] + s2.b[1]) / 2];
+      L.marker(mid, {
+        interactive: false,
+        keyboard: false,
+        icon: L.divIcon({
+          className: "pp-route-arrow",
+          iconSize: [14, 14],
+          iconAnchor: [7, 7],
+          html: `<svg width="14" height="14" viewBox="0 0 12 12" style="display:block;transform:rotate(${Math.round(bearingDeg(s2.a, s2.b))}deg)"><path d="M6 1 L10.5 10.5 L6 8 L1.5 10.5 Z" fill="${routeColor(s2.frac)}" stroke="#fff" stroke-width="1" stroke-linejoin="round"/></svg>`,
+        }),
+      }).addTo(group);
+    }
+
+    // Stays: a pill with the time spent, a house for one of your own places.
+    for (const st of stays ?? []) {
+      if (st.ongoing || st.seconds < 300) continue;
+      const trusted = st.placeId != null;
+      const label = stayLength(st.seconds);
+      const name = st.name ?? `${st.latitude.toFixed(4)}, ${st.longitude.toFixed(4)}`;
+      L.marker([st.latitude, st.longitude], {
+        keyboard: false,
+        zIndexOffset: -500,
+        icon: L.divIcon({
+          className: "pp-stay",
+          iconSize: [0, 0],
+          html: `<div class="pp-stay-pill${trusted ? " pp-stay-place" : ""}">${trusted ? "&#8962; " : ""}${esc(label)}</div>`,
+        }),
+      })
+        .bindTooltip(`<b>${esc(name)}</b><br>${hhmm(st.from)} – ${hhmm(st.to)} · ${esc(label)}`, { direction: "top", offset: [0, -14] })
+        .addTo(group);
+    }
+
+    // Where the day started: a small flag with the time.
+    const startAt = route[0].coords[0];
+    L.marker(startAt, {
+      keyboard: false,
+      icon: L.divIcon({
+        className: "pp-stay",
+        iconSize: [0, 0],
+        html: `<div class="pp-route-start"><svg width="18" height="22" viewBox="0 0 18 22"><path d="M3 21V2" stroke="#2B3B38" stroke-width="2" stroke-linecap="round"/><path d="M4 2h11l-3 4 3 4H4Z" fill="${routeColor(0)}" stroke="#2B3B38" stroke-width="1.2" stroke-linejoin="round"/></svg></div>`,
+      }),
+    })
+      .bindTooltip(`${t("route.start")} · ${hhmm(route[0].from)}`, { direction: "top", offset: [0, -20] })
       .addTo(group);
 
     group.addTo(map);
@@ -1125,7 +1193,7 @@ export function FleetMap({ devices, locations, selectedImei, onSelect, onRefresh
       group.remove();
       if (routeLayerRef.current === group) routeLayerRef.current = null;
     };
-  }, [route, selectedImei, selLat, selLng, selTs]);
+  }, [route, stays, selectedImei, selLat, selLng, selTs, t]);
 
   // Sync markers with locations
   useEffect(() => {
@@ -1746,6 +1814,28 @@ export function FleetMap({ devices, locations, selectedImei, onSelect, onRefresh
         <GlobalFreshnessIndicator locations={locations} deviceByImei={deviceByImei} lastRefreshAt={lastRefreshAt} />
       </div>
 
+      {/* Route legend while a person's day is drawn */}
+      {selectedImei && route && route.length > 0 && (
+        <div
+          className="absolute z-[1000] flex flex-wrap items-center gap-x-3 gap-y-1 rounded-xl bg-white/95 px-3 py-2 text-[12px] font-semibold text-ink-700 shadow-md ring-1 ring-black/5"
+          style={{ left: leftInset + 12, bottom: 24 + bottomInset }}
+        >
+          <span className="inline-flex items-center gap-1.5">
+            {t("route.legendStart")}
+            <span className="inline-block h-[5px] w-16 rounded-full" style={{ background: `linear-gradient(90deg, ${routeColor(0)}, ${routeColor(1)})` }} />
+            {t("route.legendNow")}
+          </span>
+          <span className="inline-flex items-center gap-1.5">
+            <svg width="26" height="6"><line x1="1" y1="3" x2="25" y2="3" stroke={ROUTE_ESTIMATE} strokeWidth="2.5" strokeDasharray="2 6" strokeLinecap="round" /></svg>
+            {t("route.legendEstimate")}
+          </span>
+          <span className="inline-flex items-center gap-1.5">
+            <span className="rounded-full border-2 border-brand-500 bg-white px-1.5 text-[11px] leading-4">15 min</span>
+            {t("route.legendStay")}
+          </span>
+        </div>
+      )}
+
       {/* Refresh button (bottom-right) - Glassy */}
       <div className="absolute right-3 z-[1000]" style={{ bottom: 24 + bottomInset }}>
         <button
@@ -1773,6 +1863,24 @@ export function FleetMap({ devices, locations, selectedImei, onSelect, onRefresh
           will-change: transform;
         }
         /* Route arrows sit at fixed points: they must not glide like the person markers do. */
+        .pp-stay { background: transparent; border: none; }
+        .pp-stay-pill {
+          position: absolute;
+          transform: translate(-50%, -50%);
+          white-space: nowrap;
+          background: #fff;
+          color: #0B2E28;
+          border: 2px solid #0F6B5C;
+          border-radius: 999px;
+          padding: 1px 8px;
+          font-size: 12px;
+          font-weight: 700;
+          box-shadow: 0 1px 4px rgba(0,0,0,.25);
+          cursor: default;
+        }
+        .pp-stay-pill.pp-stay-place { background: #0F6B5C; color: #fff; border-color: #fff; }
+        .pp-route-start { position: absolute; transform: translate(-3px, -21px); }
+        .leaflet-marker-icon.pp-stay, .leaflet-marker-icon.pp-stay * { transition: none !important; }
         .leaflet-marker-icon.pp-route-arrow {
           transition: none !important;
           background: transparent;

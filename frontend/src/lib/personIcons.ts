@@ -96,7 +96,8 @@ export function buildPersonSvg(
   const pointer =
     rotation == null
       ? ""
-      : `<path d="M0 -26 L6.5 -15 L-6.5 -15 Z" fill="${color}" stroke="#fff" stroke-width="1.6" stroke-linejoin="round" transform="rotate(${Math.round(((rotation % 360) + 360) % 360)})"/>`;
+      : // A bold arrowhead outside the ring pointing where the person is heading (only while moving).
+        `<path d="M0 -33 L10 -18.5 L0 -22.5 L-10 -18.5 Z" fill="${color}" stroke="#fff" stroke-width="2" stroke-linejoin="round" transform="rotate(${Math.round(((rotation % 360) + 360) % 360)})"/>`;
 
   const base = `<svg width="${width}" height="${height}" viewBox="-16 -6 72 72" xmlns="http://www.w3.org/2000/svg" style="display:block;${SHADOW}"><g transform="translate(20 30)">${pointer}${badge(normalizePersonType(personType), color)}</g></svg>`;
   if (!photoUrl) return base;

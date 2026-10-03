@@ -356,6 +356,23 @@ export interface NightRestView {
   to: string;
 }
 
+/** A piece of the route from GET /devices/:imei/route. TRACK = GPS, solid; ESTIMATE = Wi-Fi or a silence, dashed. */
+export interface RoutePiece {
+  kind: "TRACK" | "ESTIMATE";
+  from: string;
+  to: string;
+  speedKmh: number;
+  /** The coordinates follow the road (map-matched). */
+  snapped: boolean;
+  /** [lat, lng] pairs. */
+  coords: [number, number][];
+}
+
+export interface RouteData {
+  pieces: RoutePiece[];
+  snapPending: boolean;
+}
+
 /** One stay from GET /devices/:imei/stays. */
 export interface StayView {
   from: string;

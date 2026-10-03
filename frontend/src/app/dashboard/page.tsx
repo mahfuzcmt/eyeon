@@ -7,7 +7,7 @@ import { useDevices } from "@/hooks/useDevices";
 import { useDeviceGroups } from "@/hooks/useDeviceGroups";
 import { useDrivers } from "@/hooks/useDrivers";
 import { useLiveLocations } from "@/hooks/useLiveLocations";
-import { useLocationHistory } from "@/hooks/useLocationHistory";
+import { useDayRoute } from "@/hooks/useDayRoute";
 import { dhakaTodayStartIso } from "@/lib/format";
 import { useSession } from "@/lib/session-context";
 import { useLocale } from "@/lib/i18n";
@@ -140,7 +140,7 @@ export default function DashboardPage() {
 
   // Today's route of whoever is selected, drawn on the map as a thin line with arrows.
   const todayStartIso = useMemo(() => dhakaTodayStartIso(), []);
-  const { locations: routeToday } = useLocationHistory(selectedImei, todayStartIso);
+  const { pieces: routeToday, stays: staysToday } = useDayRoute(selectedImei, todayStartIso);
 
   const visibleLocations = useMemo(() => {
     if (hiddenImeis.size === 0) return locations;
@@ -216,6 +216,7 @@ export default function DashboardPage() {
         locations={visibleLocations}
         selectedImei={selectedImei}
         route={routeToday}
+        stays={staysToday}
         onSelect={setSelectedImei}
         onRefresh={refresh}
         lastRefreshAt={lastRefreshAt}
