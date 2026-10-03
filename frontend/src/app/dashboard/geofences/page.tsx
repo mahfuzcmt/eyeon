@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import { useLocale, type StringKey } from "@/lib/i18n";
 import { useGeofences } from "@/hooks/useGeofences";
 import { useDevices } from "@/hooks/useDevices";
@@ -38,6 +39,7 @@ function toPatch(before: GeofenceView, req: GeofenceCreate): GeofenceUpdate {
 
 export default function Page() {
   const { t, locale } = useLocale();
+  const router = useRouter();
   const { geofences: allGeofences, loading, error, create, update, remove, getAssignedDevices, assignDevices, unassignDevice } =
     useGeofences();
   const { devices } = useDevices();
@@ -46,6 +48,21 @@ export default function Page() {
   const isPlaces = tab === "TRUSTED_PLACE";
   // null = closed, "new" = create for the current tab, otherwise the zone being edited.
   const [editor, setEditor] = useState<"new" | GeofenceView | null>(null);
+  // From the map popup ("Add this location as ..."): where the new zone starts and who it is for.
+  const [newStart, setNewStart] = useState<{ lat: number; lng: number; imei: string | null } | null>(null);
+
+  useEffect(() => {
+    const p = new URLSearchParams(window.location.search);
+    const kind = p.get("new");
+    const lat = parseFloat(p.get("lat") ?? "");
+    const lng = parseFloat(p.get("lng") ?? "");
+    if ((kind === "TRUSTED_PLACE" || kind === "BOUNDARY") && Number.isFinite(lat) && Number.isFinite(lng)) {
+      setTab(kind);
+      setNewStart({ lat, lng, imei: p.get("device") });
+      setEditor("new");
+      router.replace("/dashboard/geofences");
+    }
+  }, [router]);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [assigningGeofence, setAssigningGeofence] = useState<{ id: string; name: string } | null>(null);
   const [assignedImeis, setAssignedImeis] = useState<string[]>([]);
@@ -267,11 +284,24 @@ export default function Page() {
           key={editor === "new" ? `new-${tab}` : editor.id}
           kind={editor === "new" ? tab : editor.kind}
           initial={editor === "new" ? undefined : editor}
-          onCancel={() => setEditor(null)}
-          onSubmit={async (req) => {
-            if (editor === "new") await create(req);
-            else await update(editor.id, toPatch(editor, req));
+          start={editor === "new" && newStart ? { lat: newStart.lat, lng: newStart.lng } : undefined}
+          onCancel={() => {
             setEditor(null);
+            setNewStart(null);
+          }}
+          onSubmit={async (req) => {
+            if (editor === "new") {
+              const created = await create(req);
+              // Started from a person's popup: the zone is for that person.
+              if (newStart?.imei) {
+                await assignDevices(created.id, [newStart.imei]);
+                setDeviceCounts((prev) => ({ ...prev, [created.id]: 1 }));
+              }
+            } else {
+              await update(editor.id, toPatch(editor, req));
+            }
+            setEditor(null);
+            setNewStart(null);
           }}
         />
       )}

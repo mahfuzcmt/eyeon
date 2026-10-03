@@ -44,7 +44,7 @@ const SHEET_BAR = 48;
 /** Height reserved below `lg` for the full-width KPI strip (3-line cells) above the map controls. */
 const NARROW_KPI_INSET = 78;
 
-type Panel = "history" | "live" | "command" | "settings" | "share" | "edit" | null;
+type Panel = "history" | "live" | "command" | "settings" | "share" | "edit" | "addZone" | null;
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -96,7 +96,7 @@ export default function DashboardPage() {
         case "share": setPanel("share"); break;
         case "edit": setPanel("edit"); break;
         case "details": router.push(`/dashboard/devices/${imei}`); break;
-        case "geofence": router.push(`/dashboard/geofences?device=${imei}`); break;
+        case "geofence": setPanel(loc ? "addZone" : null); break;
         case "navigate":
           if (loc) window.open(`https://www.google.com/maps/dir/?api=1&destination=${loc.latitude},${loc.longitude}`, "_blank", "noopener");
           break;
@@ -301,6 +301,33 @@ export default function DashboardPage() {
       {selectedDevice && panel === "settings" && (
         <TrackerSettingsPanel device={selectedDevice} onClose={() => setPanel(null)} />
       )}
+      {selectedDevice && panel === "addZone" && (() => {
+        const loc = locations.get(selectedDevice.imei);
+        if (!loc) return null;
+        const go = (kind: "TRUSTED_PLACE" | "BOUNDARY") =>
+          router.push(`/dashboard/geofences?new=${kind}&lat=${loc.latitude}&lng=${loc.longitude}&device=${selectedDevice.imei}`);
+        return (
+          <div className="fixed inset-0 z-[5000] flex items-center justify-center bg-ink-950/40 p-4" role="dialog" aria-modal="true" onClick={() => setPanel(null)}>
+            <div className="w-full max-w-sm rounded-2xl bg-white p-5 shadow-xl" onClick={(e) => e.stopPropagation()}>
+              <h2 className="font-display text-lg font-semibold text-ink-900">{t("popup.addZone")}</h2>
+              <p className="mb-4 text-[14px] text-ink-500">{t("popup.addZoneHint")}</p>
+              <div className="space-y-2">
+                <button type="button" className="block w-full rounded-xl bg-brand-500 px-4 py-3 text-left text-white hover:bg-brand-600" onClick={() => go("TRUSTED_PLACE")}>
+                  <div className="text-[15px] font-semibold">{t("popup.addPlace")}</div>
+                  <div className="text-[13px] opacity-90">{t("popup.addPlaceHint")}</div>
+                </button>
+                <button type="button" className="block w-full rounded-xl bg-surface-100 px-4 py-3 text-left text-ink-900 ring-1 ring-surface-300 hover:bg-surface-200" onClick={() => go("BOUNDARY")}>
+                  <div className="text-[15px] font-semibold">{t("popup.addBoundary")}</div>
+                  <div className="text-[13px] text-ink-500">{t("popup.addBoundaryHint")}</div>
+                </button>
+              </div>
+              <div className="mt-4 flex justify-end">
+                <button type="button" className="btn-ghost px-4" onClick={() => setPanel(null)}>{t("common.cancel")}</button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
       {selectedDevice && panel === "share" && (
         <ShareLinkModal
           deviceImei={selectedDevice.imei}

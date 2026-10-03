@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { DEFAULT_ZOOM, DHAKA_CENTER, createBaseLayer } from "@/lib/leaflet";
-import { searchAddress, type GeocodeResult } from "@/lib/geocode";
+import { SEARCH_DEBOUNCE_MS, SEARCH_MIN_CHARS, searchAddress, type GeocodeResult } from "@/lib/geocode";
 import { useLocale, type StringKey } from "@/lib/i18n";
 import type {
   GeofenceCreate,
@@ -27,11 +27,13 @@ interface Props {
   kind: GeofenceKind;
   /** Present when editing; the form starts from it and the map frames it. */
   initial?: GeofenceView;
+  /** For a new zone: where to put it (e.g. a person's current position) - the map opens there and a circle is centred on it. */
+  start?: LatLng;
   onSubmit: (req: GeofenceCreate) => Promise<unknown>;
   onCancel: () => void;
 }
 
-export function GeofenceEditor({ kind, initial, onSubmit, onCancel }: Props) {
+export function GeofenceEditor({ kind, initial, start, onSubmit, onCancel }: Props) {
   const { t, locale } = useLocale();
   const isPlace = kind === "TRUSTED_PLACE";
   const minRadius = isPlace ? MIN_PLACE_RADIUS_M : 10;
@@ -47,7 +49,7 @@ export function GeofenceEditor({ kind, initial, onSubmit, onCancel }: Props) {
   const [type, setType] = useState<GeofenceType>(isPlace ? "CIRCLE" : initial?.type ?? "CIRCLE");
   const [notifyOn, setNotifyOn] = useState<GeofenceNotifyOn>(initial?.notifyOn ?? "BOTH");
   const [color, setColor] = useState(initial?.color ?? (isPlace ? PLACE_COLOR : BOUNDARY_COLOR));
-  const [center, setCenter] = useState<LatLng | null>(initial?.center ?? null);
+  const [center, setCenter] = useState<LatLng | null>(initial?.center ?? start ?? null);
   const [radiusM, setRadiusM] = useState<number>(initial?.radiusM ?? (isPlace ? 150 : 200));
   const [polygon, setPolygon] = useState<LatLng[]>(initial?.polygon ?? []);
   // A new place is named after its type ("Home") until the user types something else.
@@ -59,6 +61,8 @@ export function GeofenceEditor({ kind, initial, onSubmit, onCancel }: Props) {
   const [searchQ, setSearchQ] = useState("");
   const [searching, setSearching] = useState(false);
   const [searchResults, setSearchResults] = useState<GeocodeResult[] | null>(null);
+  /** Set when a result was just picked, so the box's new text does not start another search. */
+  const searchPicked = useRef(false);
   const [address, setAddress] = useState<string | null>(initial?.address ?? null);
 
   const canSave = useMemo(() => {
@@ -91,6 +95,8 @@ export function GeofenceEditor({ kind, initial, onSubmit, onCancel }: Props) {
     // Editing: frame the existing zone instead of opening on the city.
     if (initial?.center && initial.radiusM) {
       map.fitBounds(L.latLng(initial.center.lat, initial.center.lng).toBounds(initial.radiusM * 3));
+    } else if (start) {
+      map.setView([start.lat, start.lng], 17);
     } else if (initial && initial.polygon.length >= 3) {
       map.fitBounds(L.latLngBounds(initial.polygon.map((p) => [p.lat, p.lng] as [number, number])), {
         padding: [40, 40],
@@ -216,21 +222,39 @@ export function GeofenceEditor({ kind, initial, onSubmit, onCancel }: Props) {
     }
   }, [type, polygon, color]);
 
-  const runSearch = async () => {
-    const q = searchQ.trim();
-    if (!q || searching) return;
-    setSearching(true);
-    try {
-      setSearchResults(await searchAddress(q, mapRef.current?.getBounds(), locale));
-    } catch {
-      setSearchResults([]);
-    } finally {
-      setSearching(false);
+  // Search as you type, once the typing pauses; an answer to an older query is dropped.
+  useEffect(() => {
+    if (searchPicked.current) {
+      searchPicked.current = false;
+      return;
     }
-  };
+    const q = searchQ.trim();
+    if (q.length < SEARCH_MIN_CHARS) {
+      setSearchResults(null);
+      setSearching(false);
+      return;
+    }
+    const controller = new AbortController();
+    const timer = window.setTimeout(async () => {
+      setSearching(true);
+      try {
+        const results = await searchAddress(q, mapRef.current?.getBounds(), locale, controller.signal);
+        if (!controller.signal.aborted) setSearchResults(results);
+      } catch {
+        if (!controller.signal.aborted) setSearchResults([]);
+      } finally {
+        if (!controller.signal.aborted) setSearching(false);
+      }
+    }, SEARCH_DEBOUNCE_MS);
+    return () => {
+      window.clearTimeout(timer);
+      controller.abort();
+    };
+  }, [searchQ, locale]);
 
   const pickResult = (r: GeocodeResult) => {
     const map = mapRef.current;
+    searchPicked.current = true;
     setSearchResults(null);
     setSearchQ(r.label.split(",").slice(0, 2).join(",").trim());
     if (map) map.setView([r.lat, r.lng], Math.max(map.getZoom(), 17), { animate: true });
@@ -445,19 +469,12 @@ export function GeofenceEditor({ kind, initial, onSubmit, onCancel }: Props) {
               onKeyDown={(e) => {
                 if (e.key === "Enter") {
                   e.preventDefault();
-                  void runSearch();
+                  if (searchResults?.length) pickResult(searchResults[0]);
                 }
                 if (e.key === "Escape") setSearchResults(null);
               }}
             />
-            <button
-              type="button"
-              className="px-3 text-[14px] font-semibold text-brand-500 hover:bg-brand-50 disabled:opacity-50"
-              disabled={searching || !searchQ.trim()}
-              onClick={() => void runSearch()}
-            >
-              {searching ? t("common.loading") : t("common.search")}
-            </button>
+            <span className="flex items-center px-3 text-[13px] text-ink-500">{searching ? t("common.loading") : ""}</span>
           </div>
           {searchResults && (
             <ul className="mt-1 max-h-60 overflow-y-auto rounded-xl bg-white py-1 shadow-lg ring-1 ring-surface-300">
@@ -475,7 +492,9 @@ export function GeofenceEditor({ kind, initial, onSubmit, onCancel }: Props) {
               ))}
             </ul>
           )}
-          {!searchResults && <p className="mt-1 px-1 text-[13px] text-ink-700 drop-shadow-[0_0_2px_#fff]">{t("geo.searchHint")}</p>}
+          {!searchResults && (
+            <p className="mt-1 inline-block rounded-md bg-white/90 px-2 py-0.5 text-[13px] text-ink-700 shadow-sm">{t("geo.searchHint")}</p>
+          )}
         </div>
       </div>
     </div>

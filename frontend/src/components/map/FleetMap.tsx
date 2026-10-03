@@ -36,7 +36,7 @@ import { useSpeedLimits } from "@/hooks/useSpeedLimits";
 import { useLocale } from "@/lib/i18n";
 import { api } from "@/lib/api";
 import { restingUntil } from "@/lib/nightRest";
-import { searchAddress, type GeocodeResult } from "@/lib/geocode";
+import { SEARCH_DEBOUNCE_MS, SEARCH_MIN_CHARS, searchAddress, type GeocodeResult } from "@/lib/geocode";
 import type { DeviceView, LocationView, NightRestView, StaysResult } from "@/types/domain";
 import { type LiveLocationView, getInterpolatedPosition, isAnimating } from "@/hooks/useLiveLocations";
 
@@ -1538,7 +1538,7 @@ export function FleetMap({ devices, locations, selectedImei, onSelect, onRefresh
   // matches the OSM fallback strategy of lib/leaflet.ts.
   const runSearch = useCallback(async () => {
     const q = searchQ.trim();
-    if (!q) return;
+    if (q.length < SEARCH_MIN_CHARS) return;
     setSearching(true);
     try {
       setSearchResults(await searchAddress(q, mapRef.current?.getBounds()));
@@ -1548,6 +1548,13 @@ export function FleetMap({ devices, locations, selectedImei, onSelect, onRefresh
       setSearching(false);
     }
   }, [searchQ]);
+
+  // Results appear as you type, once the typing pauses.
+  useEffect(() => {
+    if (searchQ.trim().length < SEARCH_MIN_CHARS) return;
+    const timer = window.setTimeout(() => void runSearch(), SEARCH_DEBOUNCE_MS);
+    return () => window.clearTimeout(timer);
+  }, [searchQ, runSearch]);
 
   const gotoSearchResult = useCallback((r: GeocodeResult) => {
     const map = mapRef.current;

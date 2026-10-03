@@ -1380,7 +1380,8 @@ Reworked 2026-09-15 to match (and tidy up) the ADL Moto Viewer live-monitoring s
 - Map with all geofences drawn as polygons / circles
 - Sidebar: list of geofences with toggles
 - Top button: "Draw new" → enters drawing mode (click points for polygon, drag for circle)
-- **Address search in the editor (2026-10-03):** a search box over the editor map (`lib/geocode.ts`, Nominatim, biased to the current view, shared with the live map's search). Picking a hit moves the map; for a circle it also drops the pin there and stores the hit's label as the zone's `address`, cleared again when the pin is moved by hand.
+- **Address search in the editor (2026-10-03):** a search box over the editor map (`lib/geocode.ts`, Nominatim, **Bangladesh only** (`countrycodes=bd`, owner's decision), biased to the current view, results appear as you type after a 500 ms pause and 3 characters; shared with the live map's search). Picking a hit moves the map; for a circle it also drops the pin there and stores the hit's label as the zone's `address`, cleared again when the pin is moved by hand.
+- **From the map popup (2026-10-03):** the popup's "Add as place" action asks *trusted place or boundary* and opens the editor at the person's current position (`/dashboard/geofences?new=KIND&lat&lng&device`; `GeofenceEditor` prop `start`); the created zone is assigned to that person.
 - Each geofence has notification settings, assigned devices
 
 ### 10.7 `/dashboard/alarms`
