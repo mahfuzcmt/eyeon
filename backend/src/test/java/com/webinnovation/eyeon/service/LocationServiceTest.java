@@ -52,7 +52,8 @@ class LocationServiceTest {
                 mock(TripService.class),
                 mock(AlarmRuleService.class),
                 mock(CellLocationService.class),
-                mock(LocationBufferService.class));
+                mock(LocationBufferService.class),
+                mock(org.springframework.beans.factory.ObjectProvider.class));
     }
 
     private static LocationData packet(boolean valid) {

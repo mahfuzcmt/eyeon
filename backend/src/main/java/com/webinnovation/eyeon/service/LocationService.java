@@ -44,6 +44,7 @@ public class LocationService {
     private final AlarmRuleService alarmRuleService;
     private final CellLocationService cellLocationService;
     private final LocationBufferService locationBufferService;
+    private final org.springframework.beans.factory.ObjectProvider<NetworkLocationService> networkLocation;
 
     @Transactional
     public void saveAndBroadcast(LocationData loc) {
@@ -89,6 +90,10 @@ public class LocationService {
             // 0 mV is "no external supply" (a battery tracker), not a reading: it must not wipe
             // the battery voltage the heartbeat reported.
             Integer deviceVoltageMv = loc.getVoltageMv() != null && loc.getVoltageMv() > 0 ? loc.getVoltageMv() : null;
+            if (loc.isValid() && gps) {
+                NetworkLocationService nls = networkLocation.getIfAvailable();
+                if (nls != null) nls.noteGpsFix(loc.getImei(), loc.getTimestamp(), loc.getLatitude(), loc.getLongitude(), loc.getSpeed());
+            }
             if (loc.isValid()) {
                 deviceRepo.updateLastPosition(
                         loc.getImei(),

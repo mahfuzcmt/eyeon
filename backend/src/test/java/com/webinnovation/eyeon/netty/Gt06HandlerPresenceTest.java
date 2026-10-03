@@ -108,6 +108,59 @@ class Gt06HandlerPresenceTest {
         channel.releaseOutbound();
     }
 
+    /** 0xA3 content captured on production, 2026-10-03 11:21:52 Dhaka: an SOS press with a GPS fix. Dropped until 2026-10-04. */
+    static final String SOS_0XA3 = "1a0a03051534cf028c635009b249520014001081d600020000bd290000000001fcbf164003040102";
+    /** 0xA3 with code 0x0B: GPS regained (leaving the metro). */
+    static final String GPS_BACK_0XA3 = "1a0a0310152ccf028c8e2209b28aa400140" + "01081d600020000bbef00000000020325" + "0f4004040b02";
+
+    @Test
+    void an_sos_with_a_gps_fix_0xa3_is_stored_and_raised_as_critical() {
+        login();
+
+        channel.writeInbound(frame(0xA3, ByteBufUtil.decodeHexDump(SOS_0XA3), 9));
+
+        ByteBuf ack = channel.readOutbound();
+        assertEquals("787805a30009", ByteBufUtil.hexDump(ack).substring(0, 12));
+        ack.release();
+        ArgumentCaptor<com.webinnovation.eyeon.protocol.LocationData> loc =
+                ArgumentCaptor.forClass(com.webinnovation.eyeon.protocol.LocationData.class);
+        verify(locationService, timeout(3000)).saveAndBroadcast(loc.capture());
+        assertEquals(23.75272, loc.getValue().getLatitude(), 0.0001);
+        assertEquals(90.37729, loc.getValue().getLongitude(), 0.0001);
+        assertEquals(java.time.Instant.parse("2026-10-03T05:21:52Z"), loc.getValue().getTimestamp());
+        verify(alarmService, timeout(3000)).raise(any(), org.mockito.ArgumentMatchers.eq(IMEI),
+                org.mockito.ArgumentMatchers.eq(com.webinnovation.eyeon.domain.enums.AlarmType.SOS),
+                org.mockito.ArgumentMatchers.eq(com.webinnovation.eyeon.domain.enums.AlarmSeverity.CRITICAL),
+                org.mockito.ArgumentMatchers.eq(java.time.Instant.parse("2026-10-03T05:21:52Z")),
+                org.mockito.ArgumentMatchers.anyDouble(), org.mockito.ArgumentMatchers.anyDouble(), any());
+    }
+
+    @Test
+    void gps_lost_and_regained_codes_are_not_alarms() {
+        login();
+
+        channel.writeInbound(frame(0xA3, ByteBufUtil.decodeHexDump(GPS_BACK_0XA3), 10));
+
+        verify(networkLocationService, timeout(3000)).gpsBack(IMEI);
+        verify(locationService, timeout(3000)).saveAndBroadcast(any());
+        verify(alarmService, after(300).never()).raise(any(), any(), any(), any(), any(),
+                org.mockito.ArgumentMatchers.anyDouble(), org.mockito.ArgumentMatchers.anyDouble(), any());
+    }
+
+    @Test
+    void an_sos_with_only_the_cell_0xa5_is_raised_at_the_last_known_position() {
+        login();
+        Device d = deviceService.findByImei(IMEI).get();
+        when(d.lastLatitude()).thenReturn(23.73);
+        when(d.lastLongitude()).thenReturn(90.41);
+
+        channel.writeInbound(frame(0xA5, ByteBufUtil.decodeHexDump("81d600020000bbef0000000001ff884d4004030102"), 11));
+
+        verify(alarmService, timeout(3000)).raise(any(), org.mockito.ArgumentMatchers.eq(IMEI),
+                org.mockito.ArgumentMatchers.eq(com.webinnovation.eyeon.domain.enums.AlarmType.SOS),
+                any(), any(), org.mockito.ArgumentMatchers.eq(23.73), org.mockito.ArgumentMatchers.eq(90.41), any());
+    }
+
     @Test
     void extended_heartbeat_0x36_is_acked_with_its_own_type_and_refreshes_status() {
         login();

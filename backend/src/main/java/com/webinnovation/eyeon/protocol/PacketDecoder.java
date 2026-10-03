@@ -251,6 +251,62 @@ public class PacketDecoder {
      * The alarm code is read from the end of the packet, so it survives even if the variable
      * part is laid out differently on other firmware; the scan is then simply left empty.
      */
+    /** A Jimi 4G alarm: the position if it has one, and the GT06 alarm code. */
+    public record Alarm4G(LocationData location, int alarmCode) {}
+
+    /**
+     * Jimi 0xA3 (alarm with GPS, 4G). Captured from the production PL601 (2026-10-03):
+     * {@code 1a0a0305 1534 cf 028c6350 09b24952 00 1400 10 81d6 0002 0000bd29 0000000001fcbf16 40 03 04 01 02}
+     * = date, GPS byte, lat, lng, speed, course/status, LBS length (16), MCC (bit 15 = 2-byte MNC),
+     * MNC, LAC(4), cell(8), terminal info, voltage level, GSM level, alarm (0x01 SOS), language.
+     */
+    public Alarm4G decodeGpsAlarm4G(ByteBuf content) {
+        int end = content.writerIndex();
+        int alarmCode = content.readableBytes() >= 2 ? content.getUnsignedByte(end - 2) : 0;
+        LocationData loc = new LocationData();
+        loc.setProtocolNumber(PacketType.JIMI_GPS_ALARM_4G);
+        loc.setTimestamp(decodeDateTime(content));
+        int gpsByte = content.readUnsignedByte();
+        loc.setGpsInfoLength((gpsByte >> 4) & 0x0F);
+        loc.setSatellites(gpsByte & 0x0F);
+        long latRaw = content.readUnsignedInt();
+        long lonRaw = content.readUnsignedInt();
+        loc.setSpeed(content.readUnsignedByte());
+        int courseStatus = content.readUnsignedShort();
+        loc.setCourse(courseStatus & 0x03FF);
+        loc.setValid((courseStatus & 0x1000) != 0);
+        double lat = latRaw / 1_800_000.0, lon = lonRaw / 1_800_000.0;
+        if ((courseStatus & 0x0400) == 0) lat = -lat;
+        if ((courseStatus & 0x0800) != 0) lon = -lon;
+        loc.setLatitude(lat);
+        loc.setLongitude(lon);
+        try {
+            int lbsLength = content.readUnsignedByte();
+            int lbsStart = content.readerIndex();
+            int mcc = content.readUnsignedShort();
+            loc.setMcc(mcc & 0x7FFF);
+            loc.setMnc((mcc & 0x8000) != 0 ? content.readUnsignedShort() : content.readUnsignedByte());
+            loc.setLac((int) content.readUnsignedInt());
+            loc.setCellId(content.readLong());
+            content.readerIndex(lbsStart + lbsLength);
+            if (content.readableBytes() >= 3) {
+                int info = content.readUnsignedByte();
+                loc.setAccOn((info & 0x02) != 0);
+                content.readUnsignedByte();                     // voltage level
+                loc.setGsmSignal((int) content.readUnsignedByte());
+            }
+        } catch (IndexOutOfBoundsException e) {
+            // The position is what matters; a short cell block is not worth losing an SOS over.
+        }
+        loc.setAlarmCode(alarmCode);
+        return new Alarm4G(loc, alarmCode);
+    }
+
+    /** Jimi 0xA5 (alarm with only the serving cell, 4G): no date and no position; the alarm code is second to last. */
+    public int decodeLbsAlarm4GCode(ByteBuf content) {
+        return content.readableBytes() >= 2 ? content.getUnsignedByte(content.writerIndex() - 2) : 0;
+    }
+
     public ScanAlarm decodeScanAlarm(ByteBuf content) {
         int end = content.writerIndex();
         int alarmCode = content.readableBytes() >= 2 ? content.getUnsignedByte(end - 2) : 0;

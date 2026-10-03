@@ -49,6 +49,52 @@ public class NetworkLocationService {
     private final ConcurrentHashMap<String, Resolved> lastResolved = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<String, Instant> lastRequestAt = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<String, Instant> lastWifiScanAt = new ConcurrentHashMap<>();
+    /** Last GPS fix with its speed, per tracker (fed by LocationService). */
+    private record Fix(Instant at, double lat, double lng, int speedKmh) {}
+    private final ConcurrentHashMap<String, Fix> lastGps = new ConcurrentHashMap<>();
+    /** Set while the tracker says it is in a GPS blind area (alarm code 0x0A until 0x0B). */
+    private final ConcurrentHashMap<String, Instant> gpsLostAt = new ConcurrentHashMap<>();
+
+    /**
+     * A tracker that was moving at vehicle speed when it lost GPS is probably in a vehicle - a metro
+     * car, a bus. The Wi-Fi it hears there travels with it (the train's own access points,
+     * passengers' hotspots), so a Wi-Fi answer is wherever those were last seen, and the "same
+     * access points as last time" reuse below would freeze the person there. Seen on production
+     * 2026-10-03 22:14-22:21: the map showed Secretariat for 7 minutes while the train went to
+     * Farmgate. While travelling, network positions are stored as not valid (they do not move the
+     * marker or trigger places) and the reuse is skipped.
+     */
+    static final int TRAVEL_KMH = 15;
+    static final Duration TRAVEL_MEMORY = Duration.ofMinutes(15);
+    /** A network position implying more than this speed from the last fix is a wrong answer. */
+    static final double MAX_PLAUSIBLE_MPS = 35;
+
+    public void noteGpsFix(String imei, Instant at, double lat, double lng, int speedKmh) {
+        lastGps.put(imei, new Fix(at, lat, lng, speedKmh));
+        gpsLostAt.remove(imei);
+    }
+
+    public void gpsLost(String imei) {
+        gpsLostAt.put(imei, Instant.now());
+    }
+
+    public void gpsBack(String imei) {
+        gpsLostAt.remove(imei);
+    }
+
+    /** Was the tracker last seen moving at vehicle speed, recently enough to still be in that vehicle? */
+    boolean travelling(String imei, Instant now) {
+        Fix f = lastGps.get(imei);
+        return f != null && f.speedKmh() >= TRAVEL_KMH && f.at().isAfter(now.minus(TRAVEL_MEMORY));
+    }
+
+    /** Would reaching this position from the last GPS fix need an impossible speed? */
+    boolean implausible(String imei, double lat, double lng, Instant at) {
+        Fix f = lastGps.get(imei);
+        if (f == null) return false;
+        double seconds = Math.max(1, Math.abs(Duration.between(f.at(), at).toSeconds()));
+        return StayDetector.meters(f.lat(), f.lng(), lat, lng) / seconds > MAX_PLAUSIBLE_MPS;
+    }
 
     /** Called on the ingest executor for every decoded scan packet. */
     public void onScan(String imei, UUID orgId, int protocolNumber, NetworkScan scan, byte[] raw) {
@@ -75,14 +121,17 @@ public class NetworkLocationService {
             }
         }
 
-        Optional<CellLocation> where = resolve(imei, scan, now);
+        // Both times are the tracker's clock, so a replayed backlog is judged consistently.
+        boolean travelling = travelling(imei, scan.ts());
+        Optional<CellLocation> where = resolve(imei, scan, now, travelling);
         if (where.isEmpty()) {
             deviceService.markOnline(imei);
             return Optional.empty();
         }
 
         CellLocation w = where.get();
-        boolean precise = scan.hasWifi() && w.getAccuracyMeters() <= GOOD_ACCURACY_M;
+        boolean precise = scan.hasWifi() && w.getAccuracyMeters() <= GOOD_ACCURACY_M
+                && !travelling && !implausible(imei, w.getLatitude(), w.getLongitude(), scan.ts());
         LocationData loc = new LocationData();
         loc.setImei(imei);
         loc.setOrgId(orgId);
@@ -104,9 +153,9 @@ public class NetworkLocationService {
         return Optional.of(loc);
     }
 
-    private Optional<CellLocation> resolve(String imei, NetworkScan scan, Instant now) {
+    private Optional<CellLocation> resolve(String imei, NetworkScan scan, Instant now, boolean travelling) {
         Resolved prev = lastResolved.get(imei);
-        if (prev != null && sameSurroundings(prev, scan)) {
+        if (prev != null && !travelling && sameSurroundings(prev, scan)) {
             return Optional.of(prev.where());
         }
         if (!geolocation.canLocateScans()) {

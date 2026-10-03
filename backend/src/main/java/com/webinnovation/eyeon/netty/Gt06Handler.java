@@ -132,6 +132,8 @@ public class Gt06Handler extends SimpleChannelInboundHandler<ByteBuf> {
 
             // Jimi IoT specific packets
             case PacketType.JIMI_SCAN_ALARM_4G -> handleScanAlarm(ctx, proto, serial, content);
+            case PacketType.JIMI_GPS_ALARM_4G -> handleGpsAlarm4G(ctx, serial, content);
+            case PacketType.JIMI_LBS_ALARM_4G -> handleLbsAlarm4G(ctx, serial, content);
             case PacketType.JIMI_LBS_EXTENSION, PacketType.JIMI_WIFI,
                  PacketType.JIMI_LBS_4G, PacketType.JIMI_WIFI_4G -> handleNetworkScan(ctx, proto, serial, content);
             case PacketType.JIMI_TIME_CALIBRATION -> handleJimiTimeCalibration(ctx, serial, content);
@@ -603,12 +605,8 @@ public class Gt06Handler extends SimpleChannelInboundHandler<ByteBuf> {
                 PacketDecoder.ScanAlarm alarm = packetDecoder.decodeScanAlarm(io.netty.buffer.Unpooled.wrappedBuffer(raw));
                 Optional<LocationData> where = networkLocationService.onScan(imei, orgId, proto, alarm.scan(), raw, true);
 
-                // This family reuses the GT06 codes: 0x01 SOS, 0x19 internal battery low.
-                com.webinnovation.eyeon.domain.enums.AlarmType type = switch (alarm.alarmCode()) {
-                    case 0x01 -> com.webinnovation.eyeon.domain.enums.AlarmType.SOS;
-                    case 0x19 -> com.webinnovation.eyeon.domain.enums.AlarmType.LOW_BATTERY;
-                    default -> null;
-                };
+                if (gpsBlindAreaEvent(imei, alarm.alarmCode())) return;
+                com.webinnovation.eyeon.domain.enums.AlarmType type = jimiAlarmType(alarm.alarmCode());
                 if (type == null) {
                     log.warn("Scan alarm from imei={} with unknown code 0x{}: not raised, content={}", imei,
                             Integer.toHexString(alarm.alarmCode()), ByteBufUtil.hexDump(raw));
@@ -631,6 +629,128 @@ public class Gt06Handler extends SimpleChannelInboundHandler<ByteBuf> {
                                 "protocol", "jimi-scan", "positionResolved", where.isPresent()));
             } catch (Exception e) {
                 log.error("Scan alarm decode/persist failed for imei={}: {}", imei, e.getMessage(), e);
+            }
+        }, ingestExecutor);
+    }
+
+    /**
+     * The GT06 alarm codes the Jimi 4G alarm packets (0xA3, 0xA5, 0xA9) use. 0x0A / 0x0B are not
+     * alarms (see {@link #gpsBlindAreaEvent}); unknown codes return null and are logged.
+     */
+    static com.webinnovation.eyeon.domain.enums.AlarmType jimiAlarmType(int code) {
+        return switch (code) {
+            case 0x01 -> com.webinnovation.eyeon.domain.enums.AlarmType.SOS;
+            case 0x02 -> com.webinnovation.eyeon.domain.enums.AlarmType.POWER_CUT;
+            case 0x03 -> com.webinnovation.eyeon.domain.enums.AlarmType.SHOCK;
+            case 0x06 -> com.webinnovation.eyeon.domain.enums.AlarmType.OVERSPEED;
+            case 0x13 -> com.webinnovation.eyeon.domain.enums.AlarmType.REMOVE;
+            case 0x19 -> com.webinnovation.eyeon.domain.enums.AlarmType.LOW_BATTERY;
+            default -> null;
+        };
+    }
+
+    /**
+     * Codes 0x0A / 0x0B are the tracker saying it lost / regained GPS ("enter / leave GPS blind
+     * area"): seen on production when the wearer boarded and left the metro, and on going indoors.
+     * Not alarms for a parent, but they tell the network-position code that the person may be
+     * travelling without GPS. @return true when the code was one of these
+     */
+    private boolean gpsBlindAreaEvent(String imei, int code) {
+        if (code == 0x0A) {
+            networkLocationService.gpsLost(imei);
+            log.info("Tracker imei={} lost GPS (blind-area code 0x0A)", imei);
+            return true;
+        }
+        if (code == 0x0B) {
+            networkLocationService.gpsBack(imei);
+            log.info("Tracker imei={} has GPS again (blind-area code 0x0B)", imei);
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * Jimi 0xA3: an alarm with a GPS position (4G). The production PL601 sends SOS this way when it
+     * has a fix; until 2026-10-04 these were acknowledged and dropped, so SOS presses on 2026-10-03
+     * at 11:21 and 20:29 Dhaka time never raised an alarm. Test: Gt06HandlerJimiAlarmTest.
+     */
+    private void handleGpsAlarm4G(ChannelHandlerContext ctx, int serial, ByteBuf content) {
+        ctx.writeAndFlush(packetEncoder.buildAck(PacketType.JIMI_GPS_ALARM_4G, serial));
+        LoginGate gate = gateOf(ctx);
+        if (gate == null) {
+            log.debug("Dropping packet on channel id={} that never logged in", ctx.channel().id());
+            return;
+        }
+        byte[] raw = new byte[content.readableBytes()];
+        content.getBytes(content.readerIndex(), raw);
+        gate.submit(session -> {
+            String imei = session.imei();
+            UUID orgId = session.orgId();
+            try {
+                PacketDecoder.Alarm4G a = packetDecoder.decodeGpsAlarm4G(io.netty.buffer.Unpooled.wrappedBuffer(raw));
+                LocationData loc = a.location();
+                loc.setImei(imei);
+                loc.setOrgId(orgId);
+                loc.setRawPayload(raw);
+                locationService.saveAndBroadcast(loc);
+                if (gpsBlindAreaEvent(imei, a.alarmCode())) return;
+                com.webinnovation.eyeon.domain.enums.AlarmType type = jimiAlarmType(a.alarmCode());
+                if (type == null) {
+                    log.warn("GPS alarm from imei={} with unknown code 0x{}: not raised, content={}", imei,
+                            Integer.toHexString(a.alarmCode()), ByteBufUtil.hexDump(raw));
+                    return;
+                }
+                double lat = loc.getLatitude(), lng = loc.getLongitude();
+                if (!loc.isValid()) {
+                    Device d = deviceService.findByImei(imei).orElse(null);
+                    if (d != null && d.lastLatitude() != null && d.lastLongitude() != null) {
+                        lat = d.lastLatitude();
+                        lng = d.lastLongitude();
+                    }
+                }
+                alarmService.raise(orgId, imei, type, getAlarmSeverity(type), loc.getTimestamp(), lat, lng,
+                        java.util.Map.of("source", "device", "alarmCode", a.alarmCode(), "protocol", "jimi-gps-4g",
+                                "positionResolved", loc.isValid()));
+            } catch (Exception e) {
+                log.error("GPS alarm decode/persist failed for imei={}: {}", imei, e.getMessage(), e);
+            }
+        }, ingestExecutor);
+    }
+
+    /** Jimi 0xA5: an alarm with only the serving cell and no date; raised at the last known position. */
+    private void handleLbsAlarm4G(ChannelHandlerContext ctx, int serial, ByteBuf content) {
+        ctx.writeAndFlush(packetEncoder.buildAck(PacketType.JIMI_LBS_ALARM_4G, serial));
+        LoginGate gate = gateOf(ctx);
+        if (gate == null) {
+            log.debug("Dropping packet on channel id={} that never logged in", ctx.channel().id());
+            return;
+        }
+        byte[] raw = new byte[content.readableBytes()];
+        content.getBytes(content.readerIndex(), raw);
+        gate.submit(session -> {
+            String imei = session.imei();
+            UUID orgId = session.orgId();
+            try {
+                int code = packetDecoder.decodeLbsAlarm4GCode(io.netty.buffer.Unpooled.wrappedBuffer(raw));
+                deviceService.markOnline(imei);
+                if (gpsBlindAreaEvent(imei, code)) return;
+                com.webinnovation.eyeon.domain.enums.AlarmType type = jimiAlarmType(code);
+                if (type == null) {
+                    log.warn("Cell alarm from imei={} with unknown code 0x{}: not raised, content={}", imei,
+                            Integer.toHexString(code), ByteBufUtil.hexDump(raw));
+                    return;
+                }
+                double lat = 0, lng = 0;
+                Device d = deviceService.findByImei(imei).orElse(null);
+                if (d != null && d.lastLatitude() != null && d.lastLongitude() != null) {
+                    lat = d.lastLatitude();
+                    lng = d.lastLongitude();
+                }
+                alarmService.raise(orgId, imei, type, getAlarmSeverity(type), java.time.Instant.now(), lat, lng,
+                        java.util.Map.of("source", "device", "alarmCode", code, "protocol", "jimi-lbs-4g",
+                                "positionResolved", false));
+            } catch (Exception e) {
+                log.error("Cell alarm handling failed for imei={}: {}", imei, e.getMessage(), e);
             }
         }, ingestExecutor);
     }

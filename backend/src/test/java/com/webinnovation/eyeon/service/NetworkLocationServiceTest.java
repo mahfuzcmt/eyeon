@@ -129,6 +129,46 @@ class NetworkLocationServiceTest {
     }
 
     @Test
+    void in_a_metro_car_the_wifi_answer_does_not_move_the_person_and_is_not_reused() {
+        // Production, 2026-10-03: last GPS fix at 50 km/h near Shahbag, then GPS lost in the train.
+        // The train's own access points come along, so Google keeps answering "Secretariat".
+        service.noteGpsFix(IMEI, Instant.parse("2026-10-01T06:45:00Z"), 23.73141, 90.39691, 50);
+        when(geolocation.locate(any())).thenReturn(Optional.of(at(23.72975, 90.40729, 40)));
+
+        service.onScan(IMEI, orgId, 0xA2, scan("aa", "bb", "cc"), new byte[0]);
+
+        ArgumentCaptor<LocationData> saved = ArgumentCaptor.forClass(LocationData.class);
+        verify(locationService).saveAndBroadcast(saved.capture());
+        assertFalse(saved.getValue().isValid(), "stored, but does not move the marker or check places");
+        assertEquals("LBS", saved.getValue().getPositionSource());
+    }
+
+    @Test
+    void a_wifi_answer_that_would_need_an_impossible_speed_is_not_trusted() {
+        // Walking pace before, then an answer 10 km away 98 s later.
+        service.noteGpsFix(IMEI, Instant.parse("2026-10-01T06:45:00Z"), 23.70, 90.40, 3);
+        when(geolocation.locate(any())).thenReturn(Optional.of(at(23.79, 90.40, 30)));
+
+        service.onScan(IMEI, orgId, 0xA2, scan("aa", "bb", "cc"), new byte[0]);
+
+        ArgumentCaptor<LocationData> saved = ArgumentCaptor.forClass(LocationData.class);
+        verify(locationService).saveAndBroadcast(saved.capture());
+        assertFalse(saved.getValue().isValid());
+    }
+
+    @Test
+    void after_walking_slowly_a_wifi_answer_is_trusted_as_before() {
+        service.noteGpsFix(IMEI, Instant.parse("2026-10-01T06:45:00Z"), 23.7805, 90.4073, 4);
+        when(geolocation.locate(any())).thenReturn(Optional.of(at(23.7806, 90.4074, 35)));
+
+        service.onScan(IMEI, orgId, 0xA2, scan("aa", "bb", "cc"), new byte[0]);
+
+        ArgumentCaptor<LocationData> saved = ArgumentCaptor.forClass(LocationData.class);
+        verify(locationService).saveAndBroadcast(saved.capture());
+        assertTrue(saved.getValue().isValid());
+    }
+
+    @Test
     void without_a_geolocation_service_nothing_is_stored_but_the_tracker_stays_online() {
         when(geolocation.canLocateScans()).thenReturn(false);
         when(geolocation.locate(any())).thenReturn(Optional.empty());
