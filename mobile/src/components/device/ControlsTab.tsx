@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { Alert, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useDeviceLive } from "@/hooks/useDeviceLive";
-import { queryAddress, rebootDevice } from "@/api/endpoints";
+import { useRouter } from "expo-router";
+import { findTracker, followLive, locateNow, queryAddress, rebootDevice } from "@/api/endpoints";
 import { extractError } from "@/api/client";
 import { Loading, Metric, Section } from "@/ui";
 import { fmtAgo, fmtVoltage, motionColor, motionOf, subscriptionDaysLeft, subscriptionExpired } from "@/format";
@@ -10,6 +11,7 @@ import { colors, radius, space } from "@/theme";
 
 export default function ControlsTab({ imei, orgId }: { imei: string; orgId: string | null }) {
   const { t } = useI18n();
+  const router = useRouter();
   const { device, loc, loading, reloadDevice } = useDeviceLive(imei, orgId);
   const [busy, setBusy] = useState<string | null>(null);
   const [lastReply, setLastReply] = useState<string | null>(null);
@@ -22,12 +24,21 @@ export default function ControlsTab({ imei, orgId }: { imei: string; orgId: stri
   }
 
   // No engine cut/restore: EyeOn trackers are worn by people, not wired into a vehicle.
-  async function runCommand(kind: "query" | "reboot") {
+  async function runCommand(kind: "locate" | "live" | "find" | "query" | "reboot") {
     setBusy(kind);
     setLastReply(null);
     try {
       let res;
       switch (kind) {
+        case "locate":
+          res = await locateNow(imei);
+          break;
+        case "live":
+          res = await followLive(imei, 300);
+          break;
+        case "find":
+          res = await findTracker(imei, 20);
+          break;
         case "query":
           res = await queryAddress(imei);
           break;
@@ -36,7 +47,12 @@ export default function ControlsTab({ imei, orgId }: { imei: string; orgId: stri
           break;
       }
       if (res.ok) {
-        setLastReply(res.reply ?? t("ctrl.cmdSent"));
+        const done =
+          kind === "locate" ? t("cmd.locateStarted")
+          : kind === "live" ? t("cmd.liveStarted")
+          : kind === "find" ? t("cmd.findStarted")
+          : res.reply ?? t("ctrl.cmdSent");
+        setLastReply(done);
         await reloadDevice();
       } else {
         Alert.alert(t("ctrl.cmdFailed"), res.error ?? t("common.error"));
@@ -46,6 +62,14 @@ export default function ControlsTab({ imei, orgId }: { imei: string; orgId: stri
     } finally {
       setBusy(null);
     }
+  }
+
+  // The buzzer is loud and the tracker may be on a child in a classroom: ask first.
+  function confirmFind() {
+    Alert.alert(t("cmd.find"), t("cmd.confirmFind"), [
+      { text: t("common.cancel"), style: "cancel" },
+      { text: t("cmd.find"), onPress: () => runCommand("find") },
+    ]);
   }
 
   function confirmReboot() {
@@ -94,6 +118,17 @@ export default function ControlsTab({ imei, orgId }: { imei: string; orgId: stri
       {/* Device Commands */}
       <Section title={t("ctrl.commands")}>
         <View style={styles.cmdGrid}>
+          <CommandBtn label={t("cmd.locate")} tone="primary" icon="📍" disabled={busy !== null} loading={busy === "locate"} onPress={() => runCommand("locate")} fullWidth />
+          <CommandBtn label={t("cmd.live")} tone="neutral" icon="▶" disabled={busy !== null} loading={busy === "live"} onPress={() => runCommand("live")} fullWidth />
+          <CommandBtn label={t("cmd.find")} tone="neutral" icon="🔔" disabled={busy !== null} loading={busy === "find"} onPress={confirmFind} fullWidth />
+          <CommandBtn
+            label={t("act.settings")}
+            tone="neutral"
+            icon="⚙️"
+            disabled={busy !== null}
+            onPress={() => router.push({ pathname: "/tracker-settings", params: { imei, name: device?.name ?? "" } })}
+            fullWidth
+          />
           <CommandBtn
             label={t("ctrl.queryLocation")}
             tone="neutral"
@@ -166,7 +201,7 @@ function CommandBtn({
   fullWidth,
 }: {
   label: string;
-  tone: "danger" | "ok" | "warn" | "neutral";
+  tone: "danger" | "ok" | "warn" | "neutral" | "primary";
   icon: string;
   disabled?: boolean;
   loading?: boolean;
@@ -178,6 +213,7 @@ function CommandBtn({
     ok: colors.ok,
     warn: colors.warn,
     neutral: colors.textDim,
+    primary: colors.brand,
   };
   const color = toneColors[tone];
 

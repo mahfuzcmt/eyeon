@@ -228,3 +228,77 @@ export interface TripView {
   idleTimeS: number;
   status: TripStatus;
 }
+
+// ----- Stays (GET /devices/:imei/stays) -----
+export interface StayView {
+  from: string;
+  to: string;
+  seconds: number;
+  latitude: number;
+  longitude: number;
+  /** The caller's own trusted place, else the street / area; absent while it is being looked up. */
+  name?: string | null;
+  placeId?: string | null;
+  placeType?: PlaceType | null;
+  /** Already there when the requested period began. */
+  openStart: boolean;
+  /** Still there now; `to` is the time of the request. */
+  ongoing: boolean;
+}
+
+export interface StaysResult {
+  stays: StayView[];
+  namesPending: boolean;
+}
+
+// ----- Expected times of a trusted place (/geofences/:id/schedules) -----
+export type PlaceScheduleKind = "ARRIVE_BY" | "LEAVE_BY";
+export interface PlaceSchedule {
+  id: string;
+  kind: PlaceScheduleKind;
+  /** HH:mm in the organization's timezone. */
+  time: string;
+  /** ISO weekdays: 1 = Monday ... 7 = Sunday. */
+  weekdays: number[];
+  active: boolean;
+}
+
+// ----- Tracker settings (/devices/:imei/settings); value shapes in backend TrackerSetting.java -----
+export type TrackerSettingKey =
+  | "SOS_NUMBERS"
+  | "SOS_ALARM"
+  | "CALL_PERMISSION"
+  | "ANSWER_MODE"
+  | "CALL_VOLUME"
+  | "RING_VOLUME"
+  | "REPORTING"
+  | "HEARTBEAT"
+  | "NIGHT_REST"
+  | "QUIET_HOURS"
+  | "LOW_BATTERY_ALARM"
+  | "FALL_ALARM"
+  | "POWER_OFF_LOCK"
+  | "AUTO_POWER_ON";
+export type TrackerSettingValue = Record<string, unknown>;
+export type TrackerSettingStatus = "UNKNOWN" | "SYNCED" | "PENDING" | "FAILED" | "UNSUPPORTED";
+export interface TrackerSettingItem {
+  key: TrackerSettingKey;
+  wanted?: TrackerSettingValue | null;
+  applied?: TrackerSettingValue | null;
+  status: TrackerSettingStatus;
+  trackerReply?: string | null;
+  syncedAt?: string | null;
+}
+export interface TrackerSettingsData {
+  imei: string;
+  online: boolean;
+  reading: boolean;
+  settings: TrackerSettingItem[];
+}
+
+/** A tracker whose night rest is switched on (GET /devices/rest); HH:mm in Asia/Dhaka. */
+export interface NightRestView {
+  imei: string;
+  from: string;
+  to: string;
+}

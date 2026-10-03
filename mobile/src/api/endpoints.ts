@@ -13,8 +13,16 @@ import type {
   LatLng,
   LocationView,
   LoginResponse,
+  NightRestView,
   OrgSummary,
+  PlaceSchedule,
+  PlaceScheduleKind,
   PlaceType,
+  StaysResult,
+  TrackerSettingItem,
+  TrackerSettingKey,
+  TrackerSettingsData,
+  TrackerSettingValue,
 } from "@/types";
 
 // ----- Auth -----
@@ -217,4 +225,85 @@ export async function listAlarms(onlyUnacked = false, limit = 100): Promise<Alar
 export async function acknowledgeAlarm(id: string): Promise<AlarmView> {
   const r = await api.post<AlarmView>(`/alarms/${id}/acknowledge`);
   return r.data;
+}
+
+// ----- Personal tracker commands (PL601; CLAUDE.md §8.3) -----
+/** A burst of live positions for ~30 s: about three fresh fixes. */
+export async function locateNow(imei: string): Promise<CommandResponse> {
+  const r = await api.post<CommandResponse>(`/devices/${imei}/commands/locate`, {}, { timeout: 30_000 });
+  return r.data;
+}
+
+/** 10-second updates for this long (30-1800 s). */
+export async function followLive(imei: string, seconds = 300): Promise<CommandResponse> {
+  const r = await api.post<CommandResponse>(`/devices/${imei}/commands/live`, { seconds }, { timeout: 30_000 });
+  return r.data;
+}
+
+/** Buzzer and lights on the tracker for this long (5-60 s). */
+export async function findTracker(imei: string, seconds = 20): Promise<CommandResponse> {
+  const r = await api.post<CommandResponse>(`/devices/${imei}/commands/find`, { seconds }, { timeout: 30_000 });
+  return r.data;
+}
+
+// ----- Stays -----
+export async function deviceStays(imei: string, params: { from?: string; to?: string; names?: boolean; lang?: string }): Promise<StaysResult> {
+  const r = await api.get<StaysResult>(`/devices/${imei}/stays`, { params });
+  return r.data;
+}
+
+// ----- Expected times of a trusted place -----
+export async function listPlaceSchedules(geofenceId: string): Promise<PlaceSchedule[]> {
+  const r = await api.get<PlaceSchedule[]>(`/geofences/${geofenceId}/schedules`);
+  return r.data;
+}
+
+export async function createPlaceSchedule(geofenceId: string, req: { kind: PlaceScheduleKind; time: string; weekdays: number[] }): Promise<PlaceSchedule> {
+  const r = await api.post<PlaceSchedule>(`/geofences/${geofenceId}/schedules`, req);
+  return r.data;
+}
+
+export async function deletePlaceSchedule(geofenceId: string, scheduleId: string): Promise<void> {
+  await api.delete(`/geofences/${geofenceId}/schedules/${scheduleId}`);
+}
+
+// ----- Tracker settings -----
+export async function getTrackerSettings(imei: string): Promise<TrackerSettingsData> {
+  const r = await api.get<TrackerSettingsData>(`/devices/${imei}/settings`);
+  return r.data;
+}
+
+/** Asks the tracker for all its settings; answers arrive over the next seconds (poll getTrackerSettings). */
+export async function readTrackerSettings(imei: string): Promise<boolean> {
+  try {
+    const r = await api.post<{ started: boolean }>(`/devices/${imei}/settings/read`);
+    return r.data.started;
+  } catch {
+    return false;   // 409: not connected
+  }
+}
+
+export async function saveTrackerSetting(imei: string, key: TrackerSettingKey, value: TrackerSettingValue): Promise<TrackerSettingItem> {
+  const r = await api.put<TrackerSettingItem>(`/devices/${imei}/settings/${key}`, value, { timeout: 30_000 });
+  return r.data;
+}
+
+/** Trackers the user can see whose night rest is on. */
+export async function listNightRest(): Promise<NightRestView[]> {
+  const r = await api.get<NightRestView[]>("/devices/rest");
+  return r.data;
+}
+
+// ----- Photo of the person -----
+/** Uploads a JPEG; the server crops it square and strips its metadata. */
+export async function uploadDevicePhoto(imei: string, body: Blob | ArrayBuffer): Promise<{ photoUpdatedAt: string }> {
+  const r = await api.put<{ photoUpdatedAt: string }>(`/devices/${imei}/photo`, body, {
+    headers: { "Content-Type": "image/jpeg" },
+    timeout: 60_000,
+  });
+  return r.data;
+}
+
+export async function deleteDevicePhoto(imei: string): Promise<void> {
+  await api.delete(`/devices/${imei}/photo`);
 }

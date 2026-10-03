@@ -1,8 +1,10 @@
-import { RefreshControl, ScrollView, StyleSheet, Text } from "react-native";
+import { Pressable, RefreshControl, ScrollView, StyleSheet, Text } from "react-native";
+import { useRouter } from "expo-router";
 import { useDeviceLive } from "@/hooks/useDeviceLive";
+import { useCurrentStay } from "@/hooks/useCurrentStay";
 import { useDeviceTodayStats } from "@/hooks/useDeviceTodayStats";
 import { Loading, Metric, Section } from "@/ui";
-import { fmtAgo, fmtDistance, fmtDuration, fmtVoltage } from "@/format";
+import { fmtAgo, fmtDistance, fmtDuration, fmtSince, fmtTime, fmtVoltage } from "@/format";
 import { useI18n, type StringKey } from "@/i18n";
 import { colors, space } from "@/theme";
 
@@ -10,6 +12,8 @@ export default function StatisticsTab({ imei, orgId }: { imei: string; orgId: st
   const { t } = useI18n();
   const { device, loc, loading } = useDeviceLive(imei, orgId);
   const { stats, loading: statsLoading, reload } = useDeviceTodayStats(imei);
+  const router = useRouter();
+  const stay = useCurrentStay(imei);
 
   if (loading && !device) return <Loading label={t("stats.loading")} />;
 
@@ -26,10 +30,20 @@ export default function StatisticsTab({ imei, orgId }: { imei: string; orgId: st
       refreshControl={<RefreshControl refreshing={statsLoading} onRefresh={reload} tintColor={colors.brand} />}
     >
       <Section title={t("stats.today")}>
+        {stay && (
+          <Metric
+            label={t("popup.hereFor")}
+            value={`${fmtSince(stay.from)}${stay.openStart ? "+" : ""} · ${t("popup.since")} ${fmtTime(stay.from)}`}
+            width="100%"
+          />
+        )}
         <Metric label={t("hist.distance")} value={fmtDistance(stats.distanceM)} />
         <Metric label={t("home.moveDuration")} value={fmtDuration(stats.moveS)} />
         <Metric label={t("home.stopDuration")} value={fmtDuration(stats.stillS)} />
       </Section>
+      <Pressable onPress={() => router.push({ pathname: "/stays", params: { imei } })} style={({ pressed }) => [styles.link, pressed && { opacity: 0.7 }]}>
+        <Text style={styles.linkText}>{t("stays.title")} ›</Text>
+      </Pressable>
 
       <Section title={t("stats.current")}>
         <Metric label={t("graph.speed")} value={`${loc?.speed ?? device?.lastSpeed ?? 0} ${t("veh.kmh")}`} />
@@ -75,6 +89,8 @@ function fmtExpiry(date: string | null | undefined, t: (k: StringKey) => string)
 }
 
 const styles = StyleSheet.create({
+  link: { alignSelf: "flex-end", paddingVertical: 4 },
+  linkText: { color: colors.brand, fontWeight: "700", fontSize: 15 },
   screen: { flex: 1, backgroundColor: colors.bg },
   content: { padding: space.md, gap: space.md, paddingBottom: space.xl },
   server: { color: colors.textFaint, fontSize: 12 },

@@ -91,6 +91,15 @@ export default function PlacesScreen() {
                 </Text>
               </View>
               <Pressable
+                onPress={() => router.push({ pathname: "/place-times", params: { id: item.id, name: item.name } })}
+                hitSlop={8}
+                style={styles.deleteBtn}
+                accessibilityRole="button"
+                accessibilityLabel={t("place.times")}
+              >
+                <Ionicons name="alarm-outline" size={22} color={colors.brand} />
+              </Pressable>
+              <Pressable
                 onPress={() => confirmDelete(item)}
                 hitSlop={8}
                 style={styles.deleteBtn}

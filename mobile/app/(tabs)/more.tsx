@@ -27,6 +27,8 @@ export default function MoreScreen() {
           onPress={() => router.push("/geofences")}
         />
         <View style={styles.divider} />
+        <MenuRow icon="time-outline" label={t("stays.title")} onPress={() => router.push("/stays")} />
+        <View style={styles.divider} />
         <View style={styles.row}>
           <View style={styles.rowLeft}>
             <Ionicons name="language-outline" size={20} color={colors.textDim} />
