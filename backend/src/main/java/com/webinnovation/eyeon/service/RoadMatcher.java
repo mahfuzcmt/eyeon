@@ -41,6 +41,9 @@ public class RoadMatcher {
     private String userAgent;
     @Value("${eyeon.roads.min-interval-ms:1100}")
     private long minIntervalMs;
+    /** The public OSRM servers answer "TooBig" above 10 trace points; a self-hosted one allows 100. */
+    @Value("${eyeon.roads.max-points:10}")
+    private int maxPoints = 10;
 
     private long lastCallAt;
 
@@ -56,8 +59,11 @@ public class RoadMatcher {
     }
 
     /** @return the road geometry as [lat, lng], or empty when the service has no confident answer */
-    public Optional<Match> match(List<RoutePlanner.Pt> pts, String profile) {
-        if (!enabled() || pts.size() < 2) return Optional.empty();
+    public Optional<Match> match(List<RoutePlanner.Pt> all, String profile) {
+        if (!enabled() || all.size() < 2) return Optional.empty();
+        // Matching routes along the roads between the points it is given, so evenly spaced
+        // samples (always keeping both ends) describe a piece as well as every point does.
+        List<RoutePlanner.Pt> pts = sample(all, maxPoints);
         String coords = pts.stream().map(p -> String.format(java.util.Locale.ROOT, "%.6f,%.6f", p.lng(), p.lat()))
                 .collect(Collectors.joining(";"));
         String stamps = pts.stream().map(p -> String.valueOf(p.ts().getEpochSecond())).collect(Collectors.joining(";"));
@@ -84,7 +90,14 @@ public class RoadMatcher {
                 return Optional.empty();
             }
         }
-        return parse(body, pts);
+        return parse(body, all);
+    }
+
+    static List<RoutePlanner.Pt> sample(List<RoutePlanner.Pt> pts, int max) {
+        if (pts.size() <= max) return pts;
+        List<RoutePlanner.Pt> out = new ArrayList<>(max);
+        for (int i = 0; i < max; i++) out.add(pts.get((int) Math.round(i * (pts.size() - 1) / (double) (max - 1))));
+        return out;
     }
 
     static Optional<Match> parse(JsonNode body, List<RoutePlanner.Pt> pts) {

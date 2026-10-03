@@ -76,4 +76,16 @@ class RoutePlannerTest {
         assertEquals("bike", RoadMatcher.profileFor(12));
         assertEquals("car", RoadMatcher.profileFor(45));
     }
+
+    @Test
+    void a_long_piece_is_sent_as_ten_evenly_spaced_points_keeping_both_ends() {
+        List<Pt> pts = new ArrayList<>();
+        for (int s = 0; s <= 790; s += 10) pts.add(gps(s, s, 20));
+
+        List<Pt> sample = RoadMatcher.sample(pts, 10);
+
+        assertEquals(10, sample.size());
+        assertEquals(pts.get(0), sample.get(0));
+        assertEquals(pts.get(pts.size() - 1), sample.get(9));
+    }
 }
