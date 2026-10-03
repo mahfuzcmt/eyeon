@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { ScrollView, StyleSheet, Text, View } from "react-native";
+import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { useRouter } from "expo-router";
 import { useDeviceLive } from "@/hooks/useDeviceLive";
+import { useTodayRoute } from "@/hooks/useTodayRoute";
 import WebMap, { MapVehicle } from "@/components/WebMap";
 import { Loading, Metric, Section } from "@/ui";
 import {
@@ -19,8 +21,10 @@ import { colors, radius, space } from "@/theme";
 
 export default function TrackTab({ imei, orgId }: { imei: string; orgId: string | null }) {
   const { t } = useI18n();
+  const router = useRouter();
   const { device, loc, loading } = useDeviceLive(imei, orgId);
   const speedLimits = useSpeedLimits();
+  const route = useTodayRoute(imei, loc);
   const [center, setCenter] = useState<{ lat: number; lng: number; zoom: number; nonce: number } | null>(null);
   const centered = useRef(false);
 
@@ -78,7 +82,7 @@ export default function TrackTab({ imei, orgId }: { imei: string; orgId: string 
       )}
 
       <View style={styles.mapBox}>
-        <WebMap vehicles={vehicles} photos={photos} center={center} />
+        <WebMap vehicles={vehicles} photos={photos} center={center} route={route} />
         <View style={[styles.speedo, overspeeding && { borderColor: colors.danger }]}>
           <Text style={[styles.speedoVal, overspeeding && { color: colors.danger }]}>{speed}</Text>
           <Text style={styles.speedoUnit}>{t("veh.kmh")}</Text>
@@ -90,6 +94,20 @@ export default function TrackTab({ imei, orgId }: { imei: string; orgId: string 
           {t("veh.parkedFor")} {fmtSince(device?.parkedSince)}
         </Text>
       ) : null}
+      {loc && (
+        <Pressable
+          onPress={() =>
+            Alert.alert(t("popup.addZone"), t("popup.addZoneHint"), [
+              { text: t("common.cancel"), style: "cancel" },
+              { text: t("popup.addBoundary"), onPress: () => router.push({ pathname: "/geofence-new", params: { lat: String(loc.latitude), lng: String(loc.longitude), imei } }) },
+              { text: t("popup.addPlace"), onPress: () => router.push({ pathname: "/place-new", params: { lat: String(loc.latitude), lng: String(loc.longitude), imei } }) },
+            ])
+          }
+          style={({ pressed }) => [styles.addZone, pressed && { opacity: 0.7 }]}
+        >
+          <Text style={styles.addZoneText}>+ {t("act.geofence")}</Text>
+        </Pressable>
+      )}
 
       <Section title={t("track.telemetry")}>
         <Metric label={t("track.ignition")} value={loc?.accOn == null ? "—" : loc.accOn ? t("common.on") : t("common.off")} />
@@ -127,6 +145,8 @@ const styles = StyleSheet.create({
   bannerTitle: { fontSize: 14, fontWeight: "800" },
   bannerNote: { color: colors.textDim, fontSize: 13 },
   parked: { color: colors.textDim, fontSize: 13, paddingHorizontal: space.md },
+  addZone: { alignSelf: "flex-start", marginHorizontal: space.md, paddingHorizontal: space.lg, paddingVertical: 10, borderRadius: radius.sm, borderWidth: 1, borderColor: colors.brand },
+  addZoneText: { color: colors.brand, fontWeight: "700", fontSize: 15 },
   speedo: {
     position: "absolute",
     right: space.md,

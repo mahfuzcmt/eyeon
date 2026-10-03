@@ -2,7 +2,8 @@ import { useState } from "react";
 import { Alert, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useDeviceLive } from "@/hooks/useDeviceLive";
 import { useRouter } from "expo-router";
-import { findTracker, followLive, locateNow, queryAddress, rebootDevice } from "@/api/endpoints";
+import * as ImagePicker from "expo-image-picker";
+import { deleteDevicePhoto, findTracker, followLive, locateNow, queryAddress, rebootDevice, uploadDevicePhoto } from "@/api/endpoints";
 import { extractError } from "@/api/client";
 import { Loading, Metric, Section } from "@/ui";
 import { fmtAgo, fmtVoltage, motionColor, motionOf, subscriptionDaysLeft, subscriptionExpired } from "@/format";
@@ -62,6 +63,54 @@ export default function ControlsTab({ imei, orgId }: { imei: string; orgId: stri
     } finally {
       setBusy(null);
     }
+  }
+
+  // The person's photo replaces the drawn portrait on the map and in lists. The server crops it
+  // square and strips the metadata (a phone photo carries the place it was taken).
+  async function changePhoto() {
+    const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!perm.granted) return;
+    const picked = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.8,
+    });
+    if (picked.canceled || !picked.assets[0]) return;
+    setBusy("photo");
+    try {
+      const blob = await (await fetch(picked.assets[0].uri)).blob();
+      await uploadDevicePhoto(imei, blob);
+      await reloadDevice();
+      setLastReply(t("photo.saved"));
+    } catch (e) {
+      Alert.alert(t("common.error"), extractError(e).message);
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  function removePhoto() {
+    Alert.alert(t("photo.remove"), "", [
+      { text: t("common.cancel"), style: "cancel" },
+      {
+        text: t("common.delete"),
+        style: "destructive",
+        onPress: () => {
+          void (async () => {
+            setBusy("photo");
+            try {
+              await deleteDevicePhoto(imei);
+              await reloadDevice();
+            } catch (e) {
+              Alert.alert(t("common.error"), extractError(e).message);
+            } finally {
+              setBusy(null);
+            }
+          })();
+        },
+      },
+    ]);
   }
 
   // The buzzer is loud and the tracker may be on a child in a classroom: ask first.
@@ -129,6 +178,10 @@ export default function ControlsTab({ imei, orgId }: { imei: string; orgId: stri
             onPress={() => router.push({ pathname: "/tracker-settings", params: { imei, name: device?.name ?? "" } })}
             fullWidth
           />
+          <CommandBtn label={t("photo.change")} tone="neutral" icon="🖼" disabled={busy !== null} loading={busy === "photo"} onPress={() => void changePhoto()} fullWidth />
+          {device?.photoUpdatedAt ? (
+            <CommandBtn label={t("photo.remove")} tone="warn" icon="✕" disabled={busy !== null} onPress={removePhoto} fullWidth />
+          ) : null}
           <CommandBtn
             label={t("ctrl.queryLocation")}
             tone="neutral"

@@ -1772,14 +1772,7 @@ A feature is considered **DONE** when:
 
 Steps F0-F7 in [`docs/FAMILY_SAFETY_PLAN.md`](docs/FAMILY_SAFETY_PLAN.md): F0 visual restyle (done 2026-09-21) · F1 SOS SMS recipients (done 2026-09-21, see §7.7) · F2 trusted places: `V19`, `PATCH /geofences/:id`, drift guards (done 2026-09-21) · F3 bilingual push composer + `arrivals` channel (done for push; SMS wording not done) · F4 Places UI: mobile `app/places.tsx` + `app/place-new.tsx`, web Places/Boundaries tabs with edit mode (done) · F5 person avatars + vocabulary sweep · F6 day timeline / who-is-where-now · F7 marketing rewrite. F2-F4 are covered by unit tests and typecheck/build only: **the V19 migration and the new SQL have not been run against PostgreSQL, and nothing has been tried on a device or a real tracker.** See §8.5.
 
-**Web first, mobile afterwards (owner's decision, 2026-10-02).** New features are built and finished in the web app; the mobile app is brought up to date in one pass once the web app is ready. Do not build a mobile version of a feature alongside the web one unless asked. Web features waiting for that pass (keep this list current):
-- Stays report (Statistics → Stays) and the popup's "Here for ..." line - `GET /devices/:imei/stays` (§8.6)
-- Expected times on a trusted place - `/geofences/:id/schedules` (§8.5); the app only has the labels for `NOT_ARRIVED` / `NOT_LEFT` / `CHARGE_REMINDER`
-- Locate now / Follow live / Ring the tracker - `/commands/locate`, `/live`, `/find` (§8.3)
-- Uploading a person's photo (the app shows photos but cannot upload one)
-- Today's route line on the live map
-- Address search in the place / boundary editor
-- Tracker settings panel (SOS numbers, night rest, reporting ...) and "Resting until 07:00" - `/devices/:imei/settings`, `/devices/rest` (§8.3)
+**Web first, then the mobile pass (owner's decision, 2026-10-02; mobile pass started 2026-10-03).** New features are built and finished in the web app; the mobile app follows once a batch of web work is ready ("after web done start mobile app development with same features"). On 2026-10-03 the app received: Tracker settings (`app/tracker-settings.tsx`, opened from a person's Controls tab), Stays (`app/stays.tsx`, More menu and a "Here for ..." line in Statistics), expected times per trusted place (`app/place-times.tsx`, alarm-clock button in Places), Locate now / Follow live / Ring the tracker and photo upload (`expo-image-picker`) in Controls, today's route line and an "Add as place" chooser on the person's Track tab (opens `place-new` / `geofence-new` at their position, watching them), an address search box over both editors (`components/AddressSearch.tsx`, Bangladesh only, as you type), "Resting until 07:00" in the people list, and gliding markers in `WebMap`. **None of it has been run on a phone**: typecheck, lint and a headless-Chrome run of the WebView page only, and `expo-image-picker` is a new native module, so a new build (EAS) is needed. Keep this list current when a web feature ships before its mobile pass.
 
 ### Launch Phases (12-Week Plan)
 

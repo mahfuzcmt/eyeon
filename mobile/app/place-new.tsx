@@ -14,6 +14,7 @@ import {
 import { extractError } from "@/api/client";
 import { useDevices } from "@/hooks/useDevices";
 import WebMap, { MapVehicle } from "@/components/WebMap";
+import { AddressSearch } from "@/components/AddressSearch";
 import { Chip, Field, Loading, PrimaryButton } from "@/ui";
 import { fmtDistance } from "@/format";
 import { useI18n } from "@/i18n";
@@ -37,19 +38,23 @@ export default function PlaceNewScreen() {
   const { t } = useI18n();
   const router = useRouter();
   const navigation = useNavigation();
-  const { id } = useLocalSearchParams<{ id?: string }>();
+  const { id, lat: startLat, lng: startLng, imei: startImei } = useLocalSearchParams<{ id?: string; lat?: string; lng?: string; imei?: string }>();
   const editing = typeof id === "string" && id.length > 0;
+  // From a person's screen ("Add this location as ..."): pin at their position, watching them.
+  const start = !editing && startLat && startLng && Number.isFinite(parseFloat(startLat)) && Number.isFinite(parseFloat(startLng))
+    ? { lat: parseFloat(startLat), lng: parseFloat(startLng) }
+    : null;
   const { devices } = useDevices();
 
   const [placeType, setPlaceType] = useState<PlaceType>("HOME");
   const [name, setName] = useState("");
-  const [center, setCenter] = useState<LatLng | null>(null);
+  const [center, setCenter] = useState<LatLng | null>(start);
   const [radiusM, setRadiusM] = useState(PLACE_DEFAULT_RADIUS);
   const [arrive, setArrive] = useState(true);
   const [leave, setLeave] = useState(true);
-  const [imeis, setImeis] = useState<Set<string>>(new Set());
+  const [imeis, setImeis] = useState<Set<string>>(new Set(startImei ? [startImei] : []));
   const [locations, setLocations] = useState<LocationView[]>([]);
-  const [mapCenter, setMapCenter] = useState<{ lat: number; lng: number; zoom: number; nonce?: number } | null>(null);
+  const [mapCenter, setMapCenter] = useState<{ lat: number; lng: number; zoom: number; nonce?: number } | null>(start ? { ...start, zoom: 16 } : null);
   const [loadingPlace, setLoadingPlace] = useState(editing);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -57,7 +62,7 @@ export default function PlaceNewScreen() {
   // What the server had when the edit screen opened, to diff on save.
   const original = useRef<{ center: LatLng | null; radiusM: number; imeis: Set<string> } | null>(null);
   const nameTouched = useRef(false);
-  const imeisTouched = useRef(false);
+  const imeisTouched = useRef(!!startImei);
 
   useEffect(() => {
     navigation.setOptions({ headerTitle: editing ? t("place.edit") : t("place.add") });
@@ -215,6 +220,7 @@ export default function PlaceNewScreen() {
           circle={center ? { ...center, radiusM } : null}
           onMapPress={(p) => placePin(p, false)}
         />
+        <AddressSearch near={center ?? mapCenter} onPick={(r) => placePin({ lat: r.lat, lng: r.lng }, true)} />
         <View style={styles.mapHint} pointerEvents="none">
           <Text style={styles.mapHintText}>
             {center ? `${t("place.pinSet")} · ${fmtDistance(radiusM)}` : t("place.tapMap")}

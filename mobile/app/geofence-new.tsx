@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
-import { useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { createCircleGeofence, lastKnownAll } from "@/api/endpoints";
 import { extractError } from "@/api/client";
 import { useDevices } from "@/hooks/useDevices";
 import WebMap, { MapVehicle } from "@/components/WebMap";
+import { AddressSearch } from "@/components/AddressSearch";
 import { Chip, Field, PrimaryButton } from "@/ui";
 import { fmtDistance } from "@/format";
 import { useI18n, type StringKey } from "@/i18n";
@@ -22,19 +23,24 @@ export default function GeofenceNewScreen() {
   const { t } = useI18n();
   const router = useRouter();
   const { devices } = useDevices();
+  const { lat: startLat, lng: startLng, imei: startImei } = useLocalSearchParams<{ lat?: string; lng?: string; imei?: string }>();
+  // From a person's screen ("Add this location as ..."): centred on their position, watching them.
+  const start = startLat && startLng && Number.isFinite(parseFloat(startLat)) && Number.isFinite(parseFloat(startLng))
+    ? { lat: parseFloat(startLat), lng: parseFloat(startLng) }
+    : null;
 
   const [name, setName] = useState("");
-  const [center, setCenter] = useState<LatLng | null>(null);
+  const [center, setCenter] = useState<LatLng | null>(start);
   const [radiusM, setRadiusM] = useState(500);
   const [notifyOn, setNotifyOn] = useState<GeofenceNotifyOn>("BOTH");
-  const [imeis, setImeis] = useState<Set<string>>(new Set());
+  const [imeis, setImeis] = useState<Set<string>>(new Set(startImei ? [startImei] : []));
   const [locations, setLocations] = useState<LocationView[]>([]);
-  const [mapCenter, setMapCenter] = useState<{ lat: number; lng: number; zoom: number } | null>(null);
+  const [mapCenter, setMapCenter] = useState<{ lat: number; lng: number; zoom: number } | null>(start ? { ...start, zoom: 15 } : null);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   // Preselect the whole fleet once devices load (until the user edits the set).
-  const imeisTouched = useRef(false);
+  const imeisTouched = useRef(!!startImei);
   useEffect(() => {
     if (!imeisTouched.current && devices.length > 0) {
       setImeis(new Set(devices.map((d) => d.imei)));
@@ -50,7 +56,8 @@ export default function GeofenceNewScreen() {
         if (cancelled) return;
         setLocations(locs);
         const first = locs.find((l) => l.valid);
-        if (first) setMapCenter({ lat: first.latitude, lng: first.longitude, zoom: 13 });
+        // Opened at a person's position: keep it there.
+        if (first && !startLat) setMapCenter({ lat: first.latitude, lng: first.longitude, zoom: 13 });
       } catch {
         // Map falls back to the Bangladesh default view.
       }
@@ -130,6 +137,14 @@ export default function GeofenceNewScreen() {
           onMapPress={(p) => {
             setError(null);
             setCenter(p);
+          }}
+        />
+        <AddressSearch
+          near={center ?? mapCenter}
+          onPick={(r) => {
+            setError(null);
+            setCenter({ lat: r.lat, lng: r.lng });
+            setMapCenter({ lat: r.lat, lng: r.lng, zoom: 16 });
           }}
         />
         <View style={styles.mapHint} pointerEvents="none">

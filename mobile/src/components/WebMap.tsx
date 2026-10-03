@@ -270,6 +270,44 @@ ${googleScripts}
     if(el) el.style.transform = 'rotate('+(course||0)+'deg)';
   }
 
+  // A person's marker glides to its new position over about one reporting interval instead of
+  // jumping (same rule as the web map). Glides are landed before a zoom, which re-lays markers out.
+  const glides = {};
+  const lastMoveAt = {};
+  let glideFrame = null;
+  function glidePos(g, now){
+    const p = Math.min(1, (now - g.start) / g.duration);
+    return L.latLng(g.from.lat + (g.to.lat - g.from.lat) * p, g.from.lng + (g.to.lng - g.from.lng) * p);
+  }
+  function glideStep(){
+    glideFrame = null;
+    const now = performance.now();
+    let active = false;
+    Object.keys(glides).forEach(function(imei){
+      const g = glides[imei], m = markers[imei];
+      if(!m){ delete glides[imei]; return; }
+      if(now - g.start >= g.duration){ m.setLatLng(g.to); delete glides[imei]; }
+      else { m.setLatLng(glidePos(g, now)); active = true; }
+    });
+    if(active) glideFrame = requestAnimationFrame(glideStep);
+  }
+  function moveMarker(imei, m, lat, lng){
+    const now = performance.now();
+    const g = glides[imei];
+    const from = g ? glidePos(g, now) : m.getLatLng();
+    const to = L.latLng(lat, lng);
+    const since = lastMoveAt[imei];
+    lastMoveAt[imei] = now;
+    const d = from.distanceTo(to);
+    if(d < 0.5 || d > 3000){ delete glides[imei]; m.setLatLng(to); return; }
+    glides[imei] = { from: from, to: to, start: now, duration: Math.min(12000, Math.max(800, since ? now - since : 800)) };
+    m.setLatLng(from);
+    if(!glideFrame) glideFrame = requestAnimationFrame(glideStep);
+  }
+  map.on('zoomstart', function(){
+    Object.keys(glides).forEach(function(imei){ const m = markers[imei]; if(m) m.setLatLng(glides[imei].to); delete glides[imei]; });
+  });
+
   window.MLMap = {
     setVehicles(list){
       const seen = {};
@@ -277,7 +315,7 @@ ${googleScripts}
         seen[v.imei]=1;
         const m = markers[v.imei];
         if(m){
-          m.setLatLng([v.lat,v.lng]);
+          moveMarker(v.imei, m, v.lat, v.lng);
           m._mlV = v;
           if(m._mlSig !== vehSig(v)){ m.setIcon(vehIcon(v)); m._mlSig = vehSig(v); }
           rotate(m, v.course);
@@ -291,7 +329,7 @@ ${googleScripts}
         }
       });
       Object.keys(markers).forEach(imei => {
-        if(!seen[imei]){ markers[imei].remove(); delete markers[imei]; }
+        if(!seen[imei]){ markers[imei].remove(); delete markers[imei]; delete glides[imei]; }
       });
     },
     // Photos arrive after the markers (each is fetched with the user's token): redraw those affected.
@@ -308,7 +346,7 @@ ${googleScripts}
     setRoute(coords){
       const latlngs = coords.map(c => [c[1], c[0]]);   // [lng,lat] -> [lat,lng]
       if(route){ route.setLatLngs(latlngs); }
-      else { route = L.polyline(latlngs, {color:'${colors.brand}', weight:4, opacity:0.9}).addTo(map); }
+      else { route = L.polyline(latlngs, {color:'${colors.brand}', weight:3, opacity:0.85}).addTo(map); }
     },
     setMoving(pt){
       if(!pt){ if(moving){moving.remove(); moving=null;} return; }

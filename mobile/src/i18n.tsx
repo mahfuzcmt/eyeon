@@ -479,6 +479,10 @@ const STRINGS = {
   "cmd.liveStarted": { en: "Live tracking is on: updates every 10 seconds for 5 minutes, then it returns to battery saving.", bn: "লাইভ ট্র্যাকিং চালু: ৫ মিনিট ধরে প্রতি ১০ সেকেন্ডে আপডেট, তারপর আবার ব্যাটারি সাশ্রয় মোড।" },
   "place.timesHint": { en: "You get an alert when they are not here by a time, or have not left by a time. The tracker is asked for a fresh position first, so allow about 4 minutes.", bn: "নির্ধারিত সময়ে এখানে না পৌঁছালে, বা সময়ের পরেও বের না হলে আপনাকে সতর্ক করা হবে। আগে ট্র্যাকার থেকে নতুন অবস্থান নেওয়া হয়, তাই প্রায় ৪ মিনিট সময় লাগে।" },
   "stays.hint": { en: "Where each person stayed for 5 minutes or more, and for how long.", bn: "কে কোথায় ৫ মিনিট বা তার বেশি সময় ছিল, এবং কতক্ষণ।" },
+  "act.geofence": { en: "Add as place", bn: "জায়গা হিসেবে যোগ" },
+  "photo.change": { en: "Change photo", bn: "ছবি বদলান" },
+  "photo.remove": { en: "Remove photo", bn: "ছবি সরান" },
+  "photo.saved": { en: "Photo saved. It now shows on the map and in lists.", bn: "ছবি সংরক্ষিত। এখন ম্যাপ ও তালিকায় দেখাবে।" },
 } as const;
 
 export type StringKey = keyof typeof STRINGS;

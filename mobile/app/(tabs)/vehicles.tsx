@@ -9,6 +9,8 @@ import { Chip, EmptyState, Loading, Pill } from "@/ui";
 import { batteryColor, fmtAgo, fmtSince, motionColor, motionOf, subscriptionDaysLeft, subscriptionExpired } from "@/format";
 import { useDevicePhotos } from "@/photos";
 import { useSpeedLimits } from "@/hooks/useSpeedLimits";
+import { useNightRest } from "@/hooks/useNightRest";
+import { restingUntil } from "@/geocode";
 import { useI18n, type StringKey } from "@/i18n";
 import { colors, radius, space } from "@/theme";
 import type { DeviceView, LocationView, MotionStatus } from "@/types";
@@ -28,6 +30,7 @@ export default function VehiclesScreen() {
   const { org } = useAuth();
   const router = useRouter();
   const { devices, loading, reload } = useDevices();
+  const restByImei = useNightRest();
   const { locations } = useLiveLocations(org?.id ?? null);
   const speedLimits = useSpeedLimits();
   const photos = useDevicePhotos(devices);
@@ -93,6 +96,7 @@ export default function VehiclesScreen() {
             motion={item.motion}
             overspeed={item.overspeed}
             photo={photos[item.d.imei] ?? null}
+            restingUntil={item.motion === "OFFLINE" ? restingUntil(restByImei.get(item.d.imei)) : null}
             onPress={() => router.push({ pathname: "/device/[imei]", params: { imei: item.d.imei } })}
           />
         )}
@@ -107,6 +111,7 @@ function VehicleCard({
   motion,
   overspeed,
   photo,
+  restingUntil: wakesAt,
   onPress,
 }: {
   device: DeviceView;
@@ -115,6 +120,8 @@ function VehicleCard({
   overspeed: boolean;
   /** data: URI of the uploaded photo, or null. */
   photo: string | null;
+  /** "07:00" while the tracker is switched off for its night rest. */
+  restingUntil: string | null;
   onPress: () => void;
 }) {
   const { t } = useI18n();
@@ -167,9 +174,11 @@ function VehicleCard({
         {expiringSoon ? <Pill label={t("sub.expiringSoon")} color={colors.warn} /> : null}
       </View>
       <Text style={styles.seen}>
-        {parked
-          ? `${t("veh.parkedFor")} ${fmtSince(device.parkedSince)}`
-          : `${t("veh.lastSeen")} ${fmtAgo(device.lastSeenAt)}`}
+        {wakesAt
+          ? `${t("veh.resting")} ${wakesAt}`
+          : parked
+            ? `${t("veh.parkedFor")} ${fmtSince(device.parkedSince)}`
+            : `${t("veh.lastSeen")} ${fmtAgo(device.lastSeenAt)}`}
       </Text>
     </Pressable>
   );

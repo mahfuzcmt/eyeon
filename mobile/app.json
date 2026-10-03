@@ -30,6 +30,10 @@
         { "locationWhenInUsePermission": "EyeOn uses your location to center the map on where you are." }
       ],
       [
+        "expo-image-picker",
+        { "photosPermission": "EyeOn needs your photos to use one as the person's marker on the map." }
+      ],
+      [
         "expo-notifications",
         { "color": "#E8900A" }
       ]
