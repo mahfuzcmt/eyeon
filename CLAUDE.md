@@ -1355,7 +1355,7 @@ Reworked 2026-09-15 to match (and tidy up) the ADL Moto Viewer live-monitoring s
 - Plate labels are hidden below zoom 13 except for the selected vehicle (`LABEL_MIN_ZOOM`); markers cluster below zoom 16.
 - Top bar: global vehicle search (name / plate / IMEI / SIM → focuses the vehicle, or deep-links `/dashboard?focus={imei}` from other pages), brand + Live pill, notifications, language, user menu. No fake refresh counter — the real countdown sits bottom-right beside the freshness indicator.
 - KPI strip floats top-centre of the map area (z ≥ 1000, above Leaflet panes).
-- Real-time updates via WebSocket batches; marker moves animate with CSS transitions.
+- Real-time updates via WebSocket batches. **Markers glide (2026-10-03):** a position change is animated frame by frame in the map's rAF loop (`moveMarker` / `glidePosition` / `drawAt` in `FleetMap.tsx`), over about the time the tracker took between its two reports (0.8-12 s), for steps up to 3 km while the marker is on screen; larger steps and clustered markers jump. Glides are landed before a zoom. The earlier CSS `transition: transform` never worked with clustering: `leaflet.markercluster` removes and re-adds a marker on every `setLatLng`, so the element was recreated and jumped.
 - **Day route line (2026-10-02):** selecting a person draws today's stored positions (`useLocationHistory` from the start of the Asia/Dhaka day) as a thin teal line with a white casing, about a dozen direction arrows and a dot labelled with the start time; live positions extend it. Points within 15 m of the previous one are dropped so indoor Wi-Fi jitter is not drawn as a scribble (`routePath` in `FleetMap.tsx`).
 - **Command sheet:** Locate now / Follow live for 5 minutes / Ring the tracker (asks first) plus a raw command box; see §6.7.
 - **Alarm notifications (2026-09-16, V15):** every alarm that arrives live pops up as a toast on any dashboard page (`components/alarm/AlarmToast.tsx`, mounted in `DashboardShell`), optionally with a synthesized tone (`lib/alarmSound.ts`; CRITICAL repeats until acknowledged). Which types pop up / sound / push to the phone is per user: `user_notification_settings` (V15), `GET/PUT /users/me/notification-settings`, edited under Settings → Notifications (matrix + "Test sound" + "Preview popup"). `PushService` filters Expo pushes by each user's `push_types`. The alarm center (`/dashboard/alarms`) filters by type/severity/vehicle/date/unacked (`GET /alarms?type&severity&imei&from&to&unacked`), opens a map modal per alarm and exports Excel. Live STOMP alarm payloads use `imei`, not `deviceImei`; `useAlarms` normalises them. **ADL parity (V17):** `/dashboard/alarms` has *Alarm overview* (device × type counts, `GET /alarms/overview`, `/exports/alarm-overview.xlsx`) and *Alarm details* tabs; acknowledging opens a *Process* dialog (`POST /alarms/{id}/acknowledge {result: HANDLED|FALSE_ALARM|NO_ACTION, notes}`). Rules gained `PARKING_TIMEOUT` / `OFFLINE_TIMEOUT` / `IDLE_TIMEOUT` (threshold = minutes) evaluated by `AlarmRuleService.sweepStateRules()` every minute, raising `PARKING_TIMEOUT` / `OFFLINE_TIMEOUT` / `ENGINE_IDLE`. ADL's screens are documented in `docs/ADL_ALARM_SYSTEM.md`.
@@ -1380,6 +1380,7 @@ Reworked 2026-09-15 to match (and tidy up) the ADL Moto Viewer live-monitoring s
 - Map with all geofences drawn as polygons / circles
 - Sidebar: list of geofences with toggles
 - Top button: "Draw new" → enters drawing mode (click points for polygon, drag for circle)
+- **Address search in the editor (2026-10-03):** a search box over the editor map (`lib/geocode.ts`, Nominatim, biased to the current view, shared with the live map's search). Picking a hit moves the map; for a circle it also drops the pin there and stores the hit's label as the zone's `address`, cleared again when the pin is moved by hand.
 - Each geofence has notification settings, assigned devices
 
 ### 10.7 `/dashboard/alarms`
@@ -1776,6 +1777,7 @@ Steps F0-F7 in [`docs/FAMILY_SAFETY_PLAN.md`](docs/FAMILY_SAFETY_PLAN.md): F0 vi
 - Locate now / Follow live / Ring the tracker - `/commands/locate`, `/live`, `/find` (§8.3)
 - Uploading a person's photo (the app shows photos but cannot upload one)
 - Today's route line on the live map
+- Address search in the place / boundary editor
 - Tracker settings panel (SOS numbers, night rest, reporting ...) and "Resting until 07:00" - `/devices/:imei/settings`, `/devices/rest` (§8.3)
 
 ### Launch Phases (12-Week Plan)

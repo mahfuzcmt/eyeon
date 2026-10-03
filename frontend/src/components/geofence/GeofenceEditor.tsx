@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { DEFAULT_ZOOM, DHAKA_CENTER, createBaseLayer } from "@/lib/leaflet";
+import { searchAddress, type GeocodeResult } from "@/lib/geocode";
 import { useLocale, type StringKey } from "@/lib/i18n";
 import type {
   GeofenceCreate,
@@ -31,7 +32,7 @@ interface Props {
 }
 
 export function GeofenceEditor({ kind, initial, onSubmit, onCancel }: Props) {
-  const { t } = useLocale();
+  const { t, locale } = useLocale();
   const isPlace = kind === "TRUSTED_PLACE";
   const minRadius = isPlace ? MIN_PLACE_RADIUS_M : 10;
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -53,6 +54,12 @@ export function GeofenceEditor({ kind, initial, onSubmit, onCancel }: Props) {
   const nameTouched = useRef(!!initial);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Address search: some places are hard to find by panning; a hit moves the map and, for a
+  // circle, drops the pin there. The chosen label is saved as the zone's address.
+  const [searchQ, setSearchQ] = useState("");
+  const [searching, setSearching] = useState(false);
+  const [searchResults, setSearchResults] = useState<GeocodeResult[] | null>(null);
+  const [address, setAddress] = useState<string | null>(initial?.address ?? null);
 
   const canSave = useMemo(() => {
     const hasName = !!name.trim();
@@ -119,6 +126,8 @@ export function GeofenceEditor({ kind, initial, onSubmit, onCancel }: Props) {
       const ll = { lat: e.latlng.lat, lng: e.latlng.lng };
       if (type === "CIRCLE") {
         setCenter(ll);
+        // The pin was moved by hand: the searched address no longer describes it.
+        setAddress(null);
       } else {
         setPolygon((prev) => [...prev, ll]);
       }
@@ -207,6 +216,30 @@ export function GeofenceEditor({ kind, initial, onSubmit, onCancel }: Props) {
     }
   }, [type, polygon, color]);
 
+  const runSearch = async () => {
+    const q = searchQ.trim();
+    if (!q || searching) return;
+    setSearching(true);
+    try {
+      setSearchResults(await searchAddress(q, mapRef.current?.getBounds(), locale));
+    } catch {
+      setSearchResults([]);
+    } finally {
+      setSearching(false);
+    }
+  };
+
+  const pickResult = (r: GeocodeResult) => {
+    const map = mapRef.current;
+    setSearchResults(null);
+    setSearchQ(r.label.split(",").slice(0, 2).join(",").trim());
+    if (map) map.setView([r.lat, r.lng], Math.max(map.getZoom(), 17), { animate: true });
+    if (type === "CIRCLE") {
+      setCenter({ lat: r.lat, lng: r.lng });
+      setAddress(r.label);
+    }
+  };
+
   const handleSubmit = async () => {
     if (!canSave) return;
     setBusy(true);
@@ -218,6 +251,7 @@ export function GeofenceEditor({ kind, initial, onSubmit, onCancel }: Props) {
         notifyOn,
         color,
         kind,
+        ...(address ? { address } : {}),
         ...(isPlace ? { placeType } : {}),
         ...(type === "CIRCLE"
           ? { center: center!, radiusM }
@@ -398,6 +432,51 @@ export function GeofenceEditor({ kind, initial, onSubmit, onCancel }: Props) {
 
       <div className="relative min-h-[240px] flex-1 bg-white md:min-h-[400px]">
         <div ref={containerRef} className="absolute inset-0" style={{ width: "100%", height: "100%" }} />
+
+        <div className="absolute left-3 right-3 top-3 z-[1000] sm:right-auto sm:w-[380px]">
+          <div className="flex overflow-hidden rounded-xl bg-white shadow-lg ring-1 ring-surface-300">
+            <input
+              type="search"
+              className="h-11 min-w-0 flex-1 bg-transparent px-3 text-[15px] text-ink-900 placeholder:text-ink-400 focus:outline-none"
+              placeholder={t("geo.searchAddress")}
+              aria-label={t("geo.searchAddress")}
+              value={searchQ}
+              onChange={(e) => setSearchQ(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  void runSearch();
+                }
+                if (e.key === "Escape") setSearchResults(null);
+              }}
+            />
+            <button
+              type="button"
+              className="px-3 text-[14px] font-semibold text-brand-500 hover:bg-brand-50 disabled:opacity-50"
+              disabled={searching || !searchQ.trim()}
+              onClick={() => void runSearch()}
+            >
+              {searching ? t("common.loading") : t("common.search")}
+            </button>
+          </div>
+          {searchResults && (
+            <ul className="mt-1 max-h-60 overflow-y-auto rounded-xl bg-white py-1 shadow-lg ring-1 ring-surface-300">
+              {searchResults.length === 0 && <li className="px-3 py-2 text-[14px] text-ink-500">{t("geo.searchNone")}</li>}
+              {searchResults.map((r) => (
+                <li key={`${r.lat},${r.lng}`}>
+                  <button
+                    type="button"
+                    className="block w-full px-3 py-2 text-left text-[14px] text-ink-800 hover:bg-surface-100"
+                    onClick={() => pickResult(r)}
+                  >
+                    {r.label}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+          {!searchResults && <p className="mt-1 px-1 text-[13px] text-ink-700 drop-shadow-[0_0_2px_#fff]">{t("geo.searchHint")}</p>}
+        </div>
       </div>
     </div>
   );

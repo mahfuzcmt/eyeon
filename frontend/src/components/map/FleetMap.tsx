@@ -36,6 +36,7 @@ import { useSpeedLimits } from "@/hooks/useSpeedLimits";
 import { useLocale } from "@/lib/i18n";
 import { api } from "@/lib/api";
 import { restingUntil } from "@/lib/nightRest";
+import { searchAddress, type GeocodeResult } from "@/lib/geocode";
 import type { DeviceView, LocationView, NightRestView, StaysResult } from "@/types/domain";
 import { type LiveLocationView, getInterpolatedPosition, isAnimating } from "@/hooks/useLiveLocations";
 
@@ -142,11 +143,6 @@ const ICON = {
   doc: svgIcon('<path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9Z"/><path d="M14 3v6h6M8 13h8M8 17h6"/>'),
 };
 
-interface GeocodeResult {
-  label: string;
-  lat: number;
-  lng: number;
-}
 
 /** Cache key for address lookups (rounded to ~100m precision to reduce API calls) */
 function addressCacheKey(lat: number, lng: number): string {
@@ -326,6 +322,11 @@ const STATE_TEXT: Record<VehicleState, string> = {
   expired: "Expired",
   nodata: "No Data",
 };
+
+/** A marker glides for a step up to this far; anything larger is a jump in the data, not a walk. */
+const GLIDE_MAX_M = 3000;
+const GLIDE_MIN_MS = 800;
+const GLIDE_MAX_MS = 12_000;
 
 function formatDateTime(ts: string | null | undefined): string {
   if (!ts) return "—";
@@ -636,6 +637,11 @@ export function FleetMap({ devices, locations, selectedImei, onSelect, onRefresh
   const userMarkerRef = useRef<L.Marker | null>(null);
   const searchMarkerRef = useRef<L.Marker | null>(null);
   const animationFrameRef = useRef<number | null>(null);
+  // A person's marker glides from where it is drawn to the new position over about one
+  // reporting interval, driven frame by frame. (A CSS transition cannot do it: the clustering
+  // layer re-creates the marker element on every setLatLng, which is why markers used to jump.)
+  const glidesRef = useRef<Map<string, { from: L.LatLng; to: L.LatLng; start: number; duration: number }>>(new Map());
+  const lastMoveAtRef = useRef<Map<string, number>>(new Map());
   const locationsRef = useRef<Map<string, LocationView | LiveLocationView>>(locations);
   const trailsRef = useRef<Map<string, L.Polyline>>(new Map());
   const trailPointsRef = useRef<Map<string, Array<[number, number]>>>(new Map());
@@ -732,6 +738,52 @@ export function FleetMap({ devices, locations, selectedImei, onSelect, onRefresh
       };
     });
   }, [t]);
+
+  /** Where a gliding marker is drawn right now. */
+  const glidePosition = useCallback((imei: string, now: number): L.LatLng | null => {
+    const g = glidesRef.current.get(imei);
+    if (!g) return null;
+    const p = Math.min(1, (now - g.start) / g.duration);
+    return L.latLng(g.from.lat + (g.to.lat - g.from.lat) * p, g.from.lng + (g.to.lng - g.from.lng) * p);
+  }, []);
+
+  /** Draws the marker (and its label / open popup) at a position without telling Leaflet's layers. */
+  const drawAt = useCallback((marker: L.Marker, pos: L.LatLng) => {
+    const map = mapRef.current;
+    const el = marker.getElement();
+    if (!map || !el) return;
+    L.DomUtil.setPosition(el, map.latLngToLayerPoint(pos));
+    marker.getTooltip()?.setLatLng(pos);
+    if (marker.isPopupOpen()) marker.getPopup()?.setLatLng(pos);
+  }, []);
+
+  /** Moves a marker to a new position: gliding when it is on screen and the step is a plausible walk or ride. */
+  const moveMarker = useCallback((imei: string, marker: L.Marker, to: L.LatLng, now: number) => {
+    const map = mapRef.current;
+    const from = glidePosition(imei, now) ?? marker.getLatLng();
+    const sinceLast = lastMoveAtRef.current.get(imei);
+    lastMoveAtRef.current.set(imei, now);
+    const distance = from.distanceTo(to);
+    const onScreen = !!marker.getElement() && !!map && map.getBounds().pad(0.5).contains(from);
+    if (!onScreen || distance < 0.5 || distance > GLIDE_MAX_M) {
+      glidesRef.current.delete(imei);
+      marker.setLatLng(to);
+      return;
+    }
+    // Take about as long as the tracker took between its two reports, so a walk looks continuous.
+    const duration = Math.min(GLIDE_MAX_MS, Math.max(GLIDE_MIN_MS, sinceLast ? now - sinceLast : GLIDE_MIN_MS));
+    glidesRef.current.set(imei, { from, to, start: now, duration });
+    drawAt(marker, from);
+  }, [glidePosition, drawAt]);
+
+  /** Ends every glide at its destination (before a zoom, which re-lays markers out from their stored position). */
+  const finishGlides = useCallback(() => {
+    for (const [imei, g] of glidesRef.current) {
+      const marker = markersRef.current.get(imei);
+      if (marker) marker.setLatLng(g.to);
+    }
+    glidesRef.current.clear();
+  }, []);
 
   // Tick every second to update the "X sec ago" freshness display
   useEffect(() => {
@@ -886,9 +938,14 @@ export function FleetMap({ devices, locations, selectedImei, onSelect, onRefresh
     });
     resizeObserver.observe(container);
 
+    // Leaflet lays markers out again from their stored position on zoom: land every glide first.
+    map.on("zoomstart viewreset", finishGlides);
+
     return () => {
       clearTimeout(timer);
       resizeObserver.disconnect();
+      map.off("zoomstart viewreset", finishGlides);
+      glidesRef.current.clear();
       clusterGroup.clearLayers();
       clusterGroupRef.current = null;
       for (const marker of markersRef.current.values()) marker.remove();
@@ -899,7 +956,7 @@ export function FleetMap({ devices, locations, selectedImei, onSelect, onRefresh
       map.remove();
       mapRef.current = null;
     };
-  }, [applyLabelVisibility]);
+  }, [applyLabelVisibility, finishGlides]);
 
   // Base layer (all 5 types). Owns the tile layer so the dropdown can swap it;
   // runs on mount to create the initial layer too.
@@ -1163,10 +1220,13 @@ export function FleetMap({ devices, locations, selectedImei, onSelect, onRefresh
         marker.setTooltipContent(plateLabelHtml(device, loc, color));
         if (marker.isPopupOpen()) refreshPopupDom(marker, imei);
 
-        // Update position - CSS transition will animate smoothly
         const currentLatLng = marker.getLatLng();
         if (currentLatLng.lat !== loc.latitude || currentLatLng.lng !== loc.longitude) {
-          marker.setLatLng([loc.latitude, loc.longitude]);
+          moveMarker(imei, marker, L.latLng(loc.latitude, loc.longitude), performance.now());
+        } else {
+          // A rebuilt icon is laid out at the stored position: put it back on its glide path.
+          const pos = glidePosition(imei, performance.now());
+          if (pos) drawAt(marker, pos);
         }
 
         // Auto-follow: pan map to keep selected vehicle in view when position changes
@@ -1233,7 +1293,7 @@ export function FleetMap({ devices, locations, selectedImei, onSelect, onRefresh
       }
       initialFitDoneRef.current = true;
     }
-  }, [locations, deviceByImei, selectedImei, onSelect, createPopupContent, speedLimits, autoFollow, applyLabelVisibility, refreshPopupDom]);
+  }, [locations, deviceByImei, selectedImei, onSelect, createPopupContent, speedLimits, autoFollow, applyLabelVisibility, refreshPopupDom, moveMarker, glidePosition, drawAt]);
 
   // Keep locationsRef in sync with state (doesn't trigger animation restart)
   useEffect(() => {
@@ -1362,6 +1422,24 @@ export function FleetMap({ devices, locations, selectedImei, onSelect, onRefresh
 
       frameCount++;
 
+      if (glidesRef.current.size > 0) {
+        const now = performance.now();
+        for (const [imei, g] of glidesRef.current) {
+          const marker = markersRef.current.get(imei);
+          if (!marker) {
+            glidesRef.current.delete(imei);
+            continue;
+          }
+          if (now - g.start >= g.duration) {
+            glidesRef.current.delete(imei);
+            marker.setLatLng(g.to);
+          } else {
+            const pos = glidePosition(imei, now);
+            if (pos) drawAt(marker, pos);
+          }
+        }
+      }
+
       // GoMax-style: NO JavaScript position interpolation
       // Marker positions are updated in the marker sync useEffect when data changes
       // CSS transitions handle the smooth animation automatically
@@ -1463,17 +1541,7 @@ export function FleetMap({ devices, locations, selectedImei, onSelect, onRefresh
     if (!q) return;
     setSearching(true);
     try {
-      let url = `https://nominatim.openstreetmap.org/search?format=json&limit=5&q=${encodeURIComponent(q)}`;
-      const map = mapRef.current;
-      if (map) {
-        const b = map.getBounds();
-        url += `&viewbox=${b.getWest()},${b.getNorth()},${b.getEast()},${b.getSouth()}`;
-      }
-      const res = await fetch(url, { headers: { Accept: "application/json" } });
-      const data = (await res.json()) as Array<{ display_name: string; lat: string; lon: string }>;
-      setSearchResults(
-        data.map((r) => ({ label: r.display_name, lat: parseFloat(r.lat), lng: parseFloat(r.lon) })),
-      );
+      setSearchResults(await searchAddress(q, mapRef.current?.getBounds()));
     } catch {
       setSearchResults([]);
     } finally {
@@ -1669,13 +1737,8 @@ export function FleetMap({ devices, locations, selectedImei, onSelect, onRefresh
       </div>
 
       <style jsx global>{`
-        .pp-vehicle-icon {
-          transition: transform 300ms ease-out;
-        }
-        /* GoMax-style smooth position transitions - CSS handles the animation */
-        .leaflet-marker-icon {
-          transition: transform 1s ease-out !important;
-        }
+        /* Position is animated frame by frame (moveMarker); a CSS transform transition would
+           lag behind it and fight Leaflet's own zoom animation. */
         .leaflet-marker-pane .leaflet-marker-icon {
           will-change: transform;
         }
