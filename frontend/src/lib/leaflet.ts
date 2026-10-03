@@ -149,15 +149,21 @@ export function preloadGoogleMaps(): void {
   if (getGoogleMapsApiKey()) loadGoogleMaps();
 }
 
+/**
+ * Closest zoom of the maps. OpenStreetMap and Esri tiles stop at 19 and are upscaled for the
+ * last step; Google draws its own up to 21. Raised from 18 on 2026-10-03 (owner wanted closer).
+ */
+export const MAX_ZOOM = 20;
+
 export async function createBaseLayer(kind: BaseLayerKind = DEFAULT_BASE_LAYER): Promise<L.GridLayer> {
   const gmapType = googleMapType(kind);
 
   // Free layers: plain tiles, no Google API needed
   if (kind === "esri-satellite") {
-    return L.tileLayer(TILE_URL_SATELLITE, { attribution: SATELLITE_ATTRIBUTION, maxZoom: 19 });
+    return L.tileLayer(TILE_URL_SATELLITE, { attribution: SATELLITE_ATTRIBUTION, maxZoom: MAX_ZOOM, maxNativeZoom: 19 });
   }
   if (kind === "osm" || !gmapType) {
-    return L.tileLayer(TILE_URL, { attribution: TILE_ATTRIBUTION, maxZoom: 19 });
+    return L.tileLayer(TILE_URL, { attribution: TILE_ATTRIBUTION, maxZoom: MAX_ZOOM, maxNativeZoom: 19 });
   }
 
   // Google layer types
@@ -192,9 +198,9 @@ export async function createBaseLayer(kind: BaseLayerKind = DEFAULT_BASE_LAYER):
 
   // Fallback: OSM for street-like types, Esri satellite for satellite types
   if (kind === "google-satellite" || kind === "google-hybrid") {
-    return L.tileLayer(TILE_URL_SATELLITE, { attribution: SATELLITE_ATTRIBUTION, maxZoom: 19 });
+    return L.tileLayer(TILE_URL_SATELLITE, { attribution: SATELLITE_ATTRIBUTION, maxZoom: MAX_ZOOM, maxNativeZoom: 19 });
   }
-  return L.tileLayer(TILE_URL, { attribution: TILE_ATTRIBUTION, maxZoom: 19 });
+  return L.tileLayer(TILE_URL, { attribution: TILE_ATTRIBUTION, maxZoom: MAX_ZOOM, maxNativeZoom: 19 });
 }
 
 // Dhaka centre — used as initial map view when no devices yet have a fix.

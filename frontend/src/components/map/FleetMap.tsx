@@ -9,6 +9,7 @@ import "leaflet.markercluster";
 import {
   DEFAULT_ZOOM,
   DHAKA_CENTER,
+  MAX_ZOOM,
   DEFAULT_BASE_LAYER,
   createBaseLayer,
   expandBounds,
@@ -323,6 +324,8 @@ const STATE_TEXT: Record<VehicleState, string> = {
   nodata: "No Data",
 };
 
+/** Zoom used when the map starts following a person: the streets and buildings around them. */
+const FOLLOW_ZOOM = 19;
 /** A marker glides for a step up to this far; anything larger is a jump in the data, not a walk. */
 const GLIDE_MAX_M = 3000;
 const GLIDE_MIN_MS = 800;
@@ -661,6 +664,8 @@ export function FleetMap({ devices, locations, selectedImei, onSelect, onRefresh
   const [searching, setSearching] = useState(false);
   const [searchResults, setSearchResults] = useState<GeocodeResult[]>([]);
   const [autoFollow, setAutoFollow] = useState(true); // Auto-follow selected vehicle
+  /** Who the map is following right now; a change zooms in on them once. */
+  const followedRef = useRef<string | null>(null);
   const [showTrails, setShowTrails] = useState(false); // Motion trails (off by default, like GoMax)
   const showTrailsRef = useRef(showTrails);
   const [, setTick] = useState(0); // Force re-render every second for freshness timer
@@ -890,7 +895,7 @@ export function FleetMap({ devices, locations, selectedImei, onSelect, onRefresh
       zoom: DEFAULT_ZOOM,
       zoomControl: false, // We use our own MapToolbar instead
       minZoom: 3,         // Prevent zooming out too far
-      maxZoom: 18,        // GoMax-style: limit max zoom to prevent excessive detail
+      maxZoom: MAX_ZOOM,
     });
 
     mapRef.current = map;
@@ -1229,16 +1234,6 @@ export function FleetMap({ devices, locations, selectedImei, onSelect, onRefresh
           if (pos) drawAt(marker, pos);
         }
 
-        // Auto-follow: pan map to keep selected vehicle in view when position changes
-        if (autoFollow && isSelected && map) {
-          const bounds = map.getBounds();
-          const point = L.latLng(loc.latitude, loc.longitude);
-          // Only pan if vehicle moved outside visible area (with some padding)
-          const paddedBounds = bounds.pad(-0.2); // 20% padding from edges
-          if (!paddedBounds.contains(point)) {
-            map.panTo(point, { animate: true, duration: 0.5 });
-          }
-        }
       }
     }
 
@@ -1269,6 +1264,34 @@ export function FleetMap({ devices, locations, selectedImei, onSelect, onRefresh
 
     applyLabelVisibility();
 
+    // Follow: the selected person, or - when nobody is selected - the one person who is moving
+    // (a parent watching one child walk home). Zoom in close once when the followed person
+    // changes; after that only pan when they leave the middle of the view.
+    if (map && initialFitDoneRef.current) {
+      let target: string | null = selectedImei;
+      if (!target) {
+        const moving: string[] = [];
+        for (const [imei, l] of locations) {
+          const d = deviceByImei.get(imei);
+          if (d && vehicleState(d, l) === "moving") moving.push(imei);
+        }
+        if (moving.length === 1) target = moving[0];
+      }
+      if (!autoFollow || !target || !locations.has(target)) {
+        followedRef.current = null;
+      } else {
+        const l = locations.get(target)!;
+        const point = L.latLng(l.latitude, l.longitude);
+        if (followedRef.current !== target) {
+          followedRef.current = target;
+          finishGlides();
+          map.setView(point, FOLLOW_ZOOM, { animate: true });
+        } else if (!map.getBounds().pad(-0.2).contains(point)) {
+          map.panTo(point, { animate: true, duration: 0.5 });
+        }
+      }
+    }
+
     // First-load fit-to-bounds — dynamically zoom based on vehicle spread
     if (!initialFitDoneRef.current && locations.size > 0) {
       const pts: Array<[number, number]> = [];
@@ -1293,7 +1316,7 @@ export function FleetMap({ devices, locations, selectedImei, onSelect, onRefresh
       }
       initialFitDoneRef.current = true;
     }
-  }, [locations, deviceByImei, selectedImei, onSelect, createPopupContent, speedLimits, autoFollow, applyLabelVisibility, refreshPopupDom, moveMarker, glidePosition, drawAt]);
+  }, [locations, deviceByImei, selectedImei, onSelect, createPopupContent, speedLimits, autoFollow, applyLabelVisibility, refreshPopupDom, moveMarker, glidePosition, drawAt, finishGlides]);
 
   // Keep locationsRef in sync with state (doesn't trigger animation restart)
   useEffect(() => {
@@ -1671,8 +1694,8 @@ export function FleetMap({ devices, locations, selectedImei, onSelect, onRefresh
 
       {/* Map controls (top-right) — Auto-follow + Traffic + Layer dropdown */}
       <div className="absolute right-3 z-[1000] flex items-center gap-2" style={{ top: 12 + topInset }}>
-        {/* Auto-follow toggle - only show when a vehicle is selected */}
-        {selectedImei && (
+        {/* Auto-follow toggle: the selected person, or the one person who is moving */}
+        {(selectedImei || followedRef.current) && (
           <label
             className={`glass-btn flex cursor-pointer items-center gap-1.5 rounded-xl px-3 py-2 text-[14px] font-semibold transition ${
               autoFollow
