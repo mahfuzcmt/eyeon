@@ -506,7 +506,7 @@ function createVehicleIcon(
   ` : '';
 
   return L.divIcon({
-    html: `<div style="position: relative;">${buildPersonSvg(vehicleType, isOverspeed ? OVERSPEED_COLOR : bodyColor, isMoving ? rotation : null, baseSize, photoUrl)}${warningBadge}</div>`,
+    html: `<div style="position: relative;">${buildPersonSvg(vehicleType, isOverspeed ? OVERSPEED_COLOR : bodyColor, rotation, baseSize, photoUrl, isMoving)}${warningBadge}</div>`,
     className: classes,
     iconSize: [width, height],
     iconAnchor: [width / 2, height / 2], // Center anchor for top-down view
@@ -663,6 +663,8 @@ export function FleetMap({ devices, locations, selectedImei, onSelect, onRefresh
   // layer re-creates the marker element on every setLatLng, which is why markers used to jump.)
   const glidesRef = useRef<Map<string, { from: L.LatLng; to: L.LatLng; start: number; duration: number }>>(new Map());
   const lastMoveAtRef = useRef<Map<string, number>>(new Map());
+  /** Markers moved in place: where the cluster index still has them, and where they are. */
+  const silentRef = useRef<Map<string, { indexed: L.LatLng; now: L.LatLng }>>(new Map());
   const locationsRef = useRef<Map<string, LocationView | LiveLocationView>>(locations);
   const trailsRef = useRef<Map<string, L.Polyline>>(new Map());
   const trailPointsRef = useRef<Map<string, Array<[number, number]>>>(new Map());
@@ -780,16 +782,50 @@ export function FleetMap({ devices, locations, selectedImei, onSelect, onRefresh
     if (marker.isPopupOpen()) marker.getPopup()?.setLatLng(pos);
   }, []);
 
+  /**
+   * Moves a marker without the clustering layer noticing. markercluster removes and re-adds a
+   * marker on every setLatLng, which destroys its element (the photo reloads: a blink). While the
+   * marker is shown on its own (zoom 16+), the position is changed in place and the cluster index
+   * is brought up to date later (syncSilent) - before a zoom, when the element is re-laid anyway.
+   */
+  const placeSilently = useCallback((imei: string, marker: L.Marker, to: L.LatLng) => {
+    const map = mapRef.current;
+    const single = !!map && map.getZoom() >= 16 && !!marker.getElement();
+    if (!single) {
+      marker.setLatLng(to);
+      return;
+    }
+    const prev = silentRef.current.get(imei);
+    silentRef.current.set(imei, { indexed: prev?.indexed ?? marker.getLatLng(), now: to });
+    (marker as unknown as { _latlng: L.LatLng })._latlng = to;
+    (marker as unknown as { update: () => void }).update();
+    drawAt(marker, to);
+  }, [drawAt]);
+
+  /** Tells the clustering layer where silently moved markers really are. */
+  const syncSilent = useCallback((imei?: string) => {
+    const entries = imei ? [[imei, silentRef.current.get(imei)] as const] : [...silentRef.current.entries()];
+    for (const [id, s2] of entries) {
+      if (!s2) continue;
+      const marker = markersRef.current.get(id);
+      silentRef.current.delete(id);
+      if (!marker) continue;
+      (marker as unknown as { _latlng: L.LatLng })._latlng = s2.indexed;
+      marker.setLatLng(s2.now);
+    }
+  }, []);
+
   /** Moves a marker to a new position: gliding when it is on screen and the step is a plausible walk or ride. */
   const moveMarker = useCallback((imei: string, marker: L.Marker, to: L.LatLng, now: number) => {
     const map = mapRef.current;
-    const from = glidePosition(imei, now) ?? marker.getLatLng();
+    const from = glidePosition(imei, now) ?? silentRef.current.get(imei)?.now ?? marker.getLatLng();
     const sinceLast = lastMoveAtRef.current.get(imei);
     lastMoveAtRef.current.set(imei, now);
     const distance = from.distanceTo(to);
     const onScreen = !!marker.getElement() && !!map && map.getBounds().pad(0.5).contains(from);
     if (!onScreen || distance < 0.5 || distance > GLIDE_MAX_M) {
       glidesRef.current.delete(imei);
+      syncSilent(imei);
       marker.setLatLng(to);
       return;
     }
@@ -797,15 +833,28 @@ export function FleetMap({ devices, locations, selectedImei, onSelect, onRefresh
     const duration = Math.min(GLIDE_MAX_MS, Math.max(GLIDE_MIN_MS, sinceLast ? now - sinceLast : GLIDE_MIN_MS));
     glidesRef.current.set(imei, { from, to, start: now, duration });
     drawAt(marker, from);
-  }, [glidePosition, drawAt]);
+  }, [glidePosition, drawAt, syncSilent]);
 
   /** Ends every glide at its destination (before a zoom, which re-lays markers out from their stored position). */
   const finishGlides = useCallback(() => {
     for (const [imei, g] of glidesRef.current) {
       const marker = markersRef.current.get(imei);
-      if (marker) marker.setLatLng(g.to);
+      if (marker) placeSilently(imei, marker, g.to);
     }
     glidesRef.current.clear();
+    syncSilent();
+  }, [placeSilently, syncSilent]);
+
+  /** Turns / shows / hides the heading arrow on the existing element. */
+  const setPointer = useCallback((marker: L.Marker, moving: boolean, course: number) => {
+    const el = marker.getElement();
+    if (!el) return;
+    const ptr = el.querySelector<SVGPathElement>(".pp-ptr");
+    if (ptr) {
+      ptr.setAttribute("transform", `rotate(${Math.round(((course % 360) + 360) % 360)})`);
+      ptr.style.display = moving ? "" : "none";
+    }
+    el.classList.toggle("pp-moving", moving);
   }, []);
 
   // Tick every second to update the "X sec ago" freshness display
@@ -1286,7 +1335,9 @@ export function FleetMap({ devices, locations, selectedImei, onSelect, onRefresh
       const justUpdated = isJustUpdated(loc);
 
       // Create a key for icon state to detect changes (skip justUpdated as it's transient)
-      const iconStateKey = `${device?.vehicleType || ''}|${device.photoUpdatedAt || ''}|${bodyColor}|${Math.round(course / 10)}|${isSelected}|${isOverspeed}|${noFix}|${isMoving}|${isStale}`;
+      // Heading and moving are applied to the existing element (setPointer), not by rebuilding it:
+      // a rebuilt icon reloads the photo (a blink) and is first laid out at the stored position.
+      const iconStateKey = `${device?.vehicleType || ''}|${device.photoUpdatedAt || ''}|${bodyColor}|${isSelected}|${isOverspeed}|${noFix}|${isStale}`;
 
       if (!marker) {
         // Create new marker
@@ -1340,7 +1391,11 @@ export function FleetMap({ devices, locations, selectedImei, onSelect, onRefresh
         if (prevIconState !== iconStateKey) {
           marker.setIcon(createVehicleIcon(device?.vehicleType, bodyColor, course, isSelected, isOverspeed, noFix, isMoving, isStale, justUpdated, filterSpeed(loc.speed, loc.valid), personPhotoUrl(device)));
           iconStateRef.current.set(imei, iconStateKey);
+          // Put the new element where the marker is drawn now, in the same frame.
+          const pos = glidePosition(imei, performance.now()) ?? silentRef.current.get(imei)?.now;
+          if (pos) drawAt(marker, pos);
         }
+        setPointer(marker, isMoving, course);
         marker.setPopupContent(createPopupContent(device, loc));
         marker.setTooltipContent(plateLabelHtml(device, loc, color));
         if (marker.isPopupOpen()) refreshPopupDom(marker, imei);
@@ -1360,6 +1415,8 @@ export function FleetMap({ devices, locations, selectedImei, onSelect, onRefresh
     // Remove markers whose device disappeared from snapshot
     for (const [imei, marker] of markersRef.current.entries()) {
       if (!seen.has(imei)) {
+        syncSilent(imei);
+        glidesRef.current.delete(imei);
         if (clusterGroupRef.current) {
           clusterGroupRef.current.removeLayer(marker);
         } else {
@@ -1436,7 +1493,7 @@ export function FleetMap({ devices, locations, selectedImei, onSelect, onRefresh
       }
       initialFitDoneRef.current = true;
     }
-  }, [locations, deviceByImei, selectedImei, onSelect, createPopupContent, speedLimits, autoFollow, applyLabelVisibility, refreshPopupDom, moveMarker, glidePosition, drawAt, finishGlides, arrowClock]);
+  }, [locations, deviceByImei, selectedImei, onSelect, createPopupContent, speedLimits, autoFollow, applyLabelVisibility, refreshPopupDom, moveMarker, glidePosition, drawAt, finishGlides, arrowClock, setPointer, syncSilent]);
 
   // Keep locationsRef in sync with state (doesn't trigger animation restart)
   useEffect(() => {
@@ -1575,7 +1632,7 @@ export function FleetMap({ devices, locations, selectedImei, onSelect, onRefresh
           }
           if (now - g.start >= g.duration) {
             glidesRef.current.delete(imei);
-            marker.setLatLng(g.to);
+            placeSilently(imei, marker, g.to);
           } else {
             const pos = glidePosition(imei, now);
             if (pos) drawAt(marker, pos);
