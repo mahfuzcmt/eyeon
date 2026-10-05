@@ -230,7 +230,7 @@ ${googleScripts}
   }
   function pointerSvg(color){
     return '<svg width="48" height="48" viewBox="-24 -24 48 48" style="overflow:visible">'
-      + '<path d="M0 -34 L8 -20 L-8 -20 Z" fill="'+color+'" stroke="#fff" stroke-width="1.6" stroke-linejoin="round"/></svg>';
+      + '<path d="M0 -35 L10 -20.5 L0 -24.5 L-10 -20.5 Z" fill="'+color+'" stroke="#fff" stroke-width="2" stroke-linejoin="round"/></svg>';
   }
   // Uploaded photos, imei -> data URI. The photo sits over the drawn portrait and under a
   // repainted ring; if it cannot be shown it removes itself and the portrait is visible again.
@@ -245,7 +245,9 @@ ${googleScripts}
     const photo = photos[v.imei];
     return '<div class="vwrap'+(v.overspeed?' ovs':'')+'">'
       + (v.label ? '<div class="lbl" style="background:'+color+'">'+esc(v.label)+'</div>' : '')
-      + (v.moving ? '<div class="ptr" style="transform:rotate('+(v.course||0)+'deg)">'+pointerSvg(color)+'</div>' : '')
+      // Always present; turned and shown/hidden in place (setPointer) so a new heading does not
+      // rebuild the marker - a rebuilt marker reloads the photo, which blinks.
+      + '<div class="ptr" style="display:none">'+pointerSvg(color)+'</div>'
       + '<div class="ava">'+avatarSvg(personType(v.vehicleType), color)
       + (photo ? '<img class="pho" alt="" src="'+photo+'" onerror="this.remove()"/>'+ringSvg(color) : '')
       + '</div>'
@@ -254,7 +256,35 @@ ${googleScripts}
   function vehIcon(v){
     return L.divIcon({className:'', iconSize:[48,48], iconAnchor:[24,24], html: vehHtml(v)});
   }
-  function vehSig(v){ return [v.vehicleType,v.color,v.label,v.overspeed?1:0,v.moving?1:0,(photos[v.imei]||'').length].join('|'); }
+  function vehSig(v){ return [v.vehicleType,v.color,v.label,v.overspeed?1:0,(photos[v.imei]||'').length].join('|'); }
+
+  // Heading arrow. A person walks at 2-6 km/h and GPS course is unreliable at that pace, so the
+  // arrow follows how the position actually moved: shown when it moved 8 m or more since the last
+  // position (held 25 s), pointing along that step; at vehicle speed the GPS course is used.
+  const motion = {};
+  function bearing(a, b){
+    const toR = Math.PI / 180, la1 = a.lat * toR, la2 = b.lat * toR, dl = (b.lng - a.lng) * toR;
+    const y = Math.sin(dl) * Math.cos(la2), x = Math.cos(la1) * Math.sin(la2) - Math.sin(la1) * Math.cos(la2) * Math.cos(dl);
+    return (Math.atan2(y, x) / toR + 360) % 360;
+  }
+  function noteMotion(v){
+    const now = Date.now(), here = L.latLng(v.lat, v.lng), m = motion[v.imei];
+    if(!m){ motion[v.imei] = {at: here, heading: null, until: 0}; return; }
+    if(m.at.distanceTo(here) >= 8){ m.heading = bearing(m.at, here); m.until = now + 25000; m.at = here; }
+  }
+  function pointerState(v){
+    const m = motion[v.imei], walking = !!m && m.heading != null && Date.now() < m.until;
+    return {shown: !!v.moving || walking, course: walking ? m.heading : (v.course || 0)};
+  }
+  function setPointer(marker, st){
+    const root = marker.getElement(), el = root && root.querySelector('.ptr');
+    if(!el) return;
+    el.style.display = st.shown ? '' : 'none';
+    el.style.transform = 'rotate('+Math.round(st.course)+'deg)';
+  }
+  setInterval(function(){
+    Object.keys(markers).forEach(function(imei){ const mk = markers[imei]; if(mk._mlV) setPointer(mk, pointerState(mk._mlV)); });
+  }, 5000);
 
   // Playback marker keeps the plain arrow (it marks a position on the route, not a person).
   function arrowIcon(color, course){
@@ -314,11 +344,12 @@ ${googleScripts}
       list.forEach(v => {
         seen[v.imei]=1;
         const m = markers[v.imei];
+        noteMotion(v);
         if(m){
           moveMarker(v.imei, m, v.lat, v.lng);
           m._mlV = v;
           if(m._mlSig !== vehSig(v)){ m.setIcon(vehIcon(v)); m._mlSig = vehSig(v); }
-          rotate(m, v.course);
+          setPointer(m, pointerState(v));
         } else {
           const nm = L.marker([v.lat,v.lng], {icon: vehIcon(v)});
           nm._mlV = v;
@@ -326,6 +357,7 @@ ${googleScripts}
           nm.on('click', () => post({type:'select', imei:v.imei}));
           nm.addTo(map);
           markers[v.imei] = nm;
+          setPointer(nm, pointerState(v));
         }
       });
       Object.keys(markers).forEach(imei => {
@@ -338,7 +370,7 @@ ${googleScripts}
       Object.keys(markers).forEach(imei => {
         const m = markers[imei];
         if(m._mlV && m._mlSig !== vehSig(m._mlV)){
-          m.setIcon(vehIcon(m._mlV)); m._mlSig = vehSig(m._mlV); rotate(m, m._mlV.course);
+          m.setIcon(vehIcon(m._mlV)); m._mlSig = vehSig(m._mlV); setPointer(m, pointerState(m._mlV));
         }
       });
     },
