@@ -3,14 +3,16 @@
     "name": "EyeOn",
     "slug": "eyeon",
     "scheme": "eyeon",
-    "version": "0.1.0",
+    "version": "0.2.0",
     "orientation": "portrait",
     "userInterfaceStyle": "light",
     "splash": {
       "backgroundColor": "#FFFFFF",
       "resizeMode": "contain"
     },
-    "assetBundlePatterns": ["**/*"],
+    "assetBundlePatterns": [
+      "**/*"
+    ],
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.webinnovation.eyeon",
@@ -20,24 +22,38 @@
     },
     "android": {
       "package": "com.webinnovation.eyeon",
-      "permissions": ["ACCESS_FINE_LOCATION", "ACCESS_COARSE_LOCATION"]
+      "permissions": [
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION"
+      ],
+      "versionCode": 2
     },
     "plugins": [
       "expo-router",
       "expo-secure-store",
       [
         "expo-location",
-        { "locationWhenInUsePermission": "EyeOn uses your location to center the map on where you are." }
+        {
+          "locationWhenInUsePermission": "EyeOn uses your location to center the map on where you are."
+        }
       ],
       [
         "expo-image-picker",
-        { "photosPermission": "EyeOn needs your photos to use one as the person's marker on the map." }
+        {
+          "photosPermission": "EyeOn needs your photos to use one as the person's marker on the map.",
+          "cameraPermission": false,
+          "microphonePermission": false
+        }
       ],
       [
         "expo-notifications",
-        { "color": "#E8900A" }
+        {
+          "color": "#E8900A"
+        }
       ]
     ],
-    "experiments": { "typedRoutes": true }
+    "experiments": {
+      "typedRoutes": true
+    }
   }
 }
