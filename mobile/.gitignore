@@ -10,3 +10,6 @@ expo-env.d.ts
 android/app/build/
 android/.gradle/
 android/local.properties
+
+# Firebase config for push (kept out of git; copy it here before building)
+google-services.json
