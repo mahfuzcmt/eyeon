@@ -137,6 +137,13 @@ export type AlarmType =
   | "GEOFENCE_EXIT"
   | "PLACE_ARRIVED"
   | "PLACE_LEFT"
+  | "NOT_ARRIVED"
+  | "NOT_LEFT"
+  | "ARRIVED_ON_TIME"
+  | "LEFT_ON_TIME"
+  | "ARRIVED_LATE"
+  | "LEFT_LATE"
+  | "CHARGE_REMINDER"
   | "COLLISION"
   | "ACC_ON"
   | "ACC_OFF"
@@ -260,6 +267,8 @@ export interface PlaceSchedule {
   time: string;
   /** ISO weekdays: 1 = Monday ... 7 = Sunday. */
   weekdays: number[];
+  /** Minutes after `time` that still count as on time (0-120). */
+  graceMinutes: number;
   active: boolean;
 }
 

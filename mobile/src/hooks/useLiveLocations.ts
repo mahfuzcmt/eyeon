@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { AppState } from "react-native";
 import { lastKnownAll } from "@/api/endpoints";
 import { subscribeLocations } from "@/ws/stomp";
 import type { LocationView } from "@/types";
@@ -33,9 +34,15 @@ export function useLiveLocations(orgId: string | null) {
     try {
       const rows = await lastKnownAll();
       if (!mounted.current) return;
-      const m = new Map<string, LocationView>();
-      for (const l of rows) m.set(l.imei, l);
-      setLocations(m);
+      // Keep a position the socket delivered if it is newer than the REST row.
+      setLocations((prev) => {
+        const m = new Map<string, LocationView>();
+        for (const l of rows) {
+          const live = prev.get(l.imei);
+          m.set(l.imei, live && new Date(live.ts).getTime() > new Date(l.ts).getTime() ? live : l);
+        }
+        return m;
+      });
       setError(null);
     } catch (e) {
       if (mounted.current) setError(e instanceof Error ? e.message : "refresh failed");
@@ -62,12 +69,16 @@ export function useLiveLocations(orgId: string | null) {
 
       // Auto-refresh every 10 seconds for reliable updates
       intervalId = setInterval(() => {
-        if (mounted.current) void refresh();
+        if (mounted.current && AppState.currentState === "active") void refresh();
       }, AUTO_REFRESH_INTERVAL_MS);
     })();
+    const appSub = AppState.addEventListener("change", (s) => {
+      if (s === "active" && mounted.current) void refresh();
+    });
 
     return () => {
       mounted.current = false;
+      appSub.remove();
       unsub?.();
       if (intervalId) clearInterval(intervalId);
     };

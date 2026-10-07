@@ -89,6 +89,26 @@ class NotificationComposerTest {
     }
 
     @Test
+    void on_time_and_late_messages_carry_the_actual_and_the_expected_time() {
+        Map<String, Object> meta = Map.of("geofenceName", "School", "expectedTime", "08:00", "graceMinutes", 10);
+        Message onTime = composer.compose(alarm("ARRIVED_ON_TIME", "INFO", MORNING, meta), "Rafi", Lang.EN);
+        assertEquals("✅ Rafi reached School on time", onTime.title());
+        assertEquals("Arrived 8:02 AM · Expected by 8:00 AM (+10 min)", onTime.body());
+        assertEquals(NotificationComposer.CHANNEL_ARRIVALS, onTime.channelId());
+
+        Message bn = composer.compose(alarm("ARRIVED_ON_TIME", "INFO", MORNING, meta), "রাফি", Lang.BN);
+        assertEquals("✅ সময়মতো: রাফি এখন School-এ", bn.title());
+        assertEquals("পৌঁছানো: সকাল ৮:০২ · নির্ধারিত সময়: সকাল ৮:০০ (+১০ মিনিট)", bn.body());
+
+        Message missed = composer.compose(alarm("NOT_ARRIVED", "WARNING", MORNING, meta), "Rafi", Lang.EN);
+        assertTrue(missed.body().startsWith("Expected by 8:00 AM (+10 min)"));
+
+        Message late = composer.compose(alarm("LEFT_LATE", "INFO", MORNING, meta), "Rafi", Lang.EN);
+        assertEquals("🕘 Rafi left School late", late.title());
+        assertEquals("Left 8:02 AM · Expected to leave by 8:00 AM (+10 min)", late.body());
+    }
+
+    @Test
     void charge_reminder_is_calm_in_the_evening_and_urgent_in_the_morning() {
         Message evening = composer.compose(
                 alarm("CHARGE_REMINDER", "INFO", MORNING, Map.of("reason", "EVENING", "batteryPercent", 30)), "Rafi", Lang.EN);

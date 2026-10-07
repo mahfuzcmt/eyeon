@@ -28,7 +28,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-/** One schedule, one child, through the morning: probe at the deadline, alert once if still not there. */
+/** One schedule, one child, through the morning: on time, probe, alert once, late. */
 class ExpectedTimeServiceTest {
 
     private static final String IMEI = "868322070079370";
@@ -61,8 +61,12 @@ class ExpectedTimeServiceTest {
     }
 
     private Due row(String kind, Boolean inside) {
-        return new Due(scheduleId, kind, LocalTime.of(8, 15), List.of(7, 1, 2, 3, 4), placeId, orgId,
-                "School", "SCHOOL", ownerId, "Asia/Dhaka", IMEI, inside);
+        return row(kind, inside, null);
+    }
+
+    private Due row(String kind, Boolean inside, Instant changedAt) {
+        return new Due(scheduleId, kind, LocalTime.of(8, 15), List.of(7, 1, 2, 3, 4), 0, placeId, orgId,
+                "School", "SCHOOL", ownerId, "Asia/Dhaka", IMEI, inside, changedAt);
     }
 
     @Test
@@ -80,13 +84,13 @@ class ExpectedTimeServiceTest {
     void still_missing_after_the_grace_period_alerts_the_owner_once() {
         when(repo.checkStatus(key, IMEI, DAY)).thenReturn("PROBED");
 
-        service.evaluate(row("ARRIVE_BY", false), DEADLINE.plus(ExpectedTimeCheck.GRACE).plusSeconds(5));
+        service.evaluate(row("ARRIVE_BY", false), DEADLINE.plus(ExpectedTimeCheck.MIN_PROBE).plusSeconds(5));
 
         verify(repo).setCheck(key, IMEI, DAY, "ALERTED");
         @SuppressWarnings("unchecked")
         ArgumentCaptor<Map<String, Object>> meta = ArgumentCaptor.forClass(Map.class);
         verify(alarms).raise(eq(orgId), eq(IMEI), eq(AlarmType.NOT_ARRIVED), eq(AlarmSeverity.WARNING),
-                eq(DEADLINE), any(), any(), meta.capture());
+                eq(DEADLINE.plus(ExpectedTimeCheck.MIN_PROBE)), any(), any(), meta.capture());
         assertEquals("School", meta.getValue().get("geofenceName"));
         assertEquals("08:15", meta.getValue().get("expectedTime"));
         // The place is the parent's own: only they are told.
@@ -94,13 +98,27 @@ class ExpectedTimeServiceTest {
     }
 
     @Test
-    void arriving_during_the_grace_period_cancels_the_alert() {
+    void arriving_during_the_grace_period_sends_the_on_time_message() {
         when(repo.checkStatus(key, IMEI, DAY)).thenReturn("PROBED");
+        Instant arrived = DEADLINE.plusSeconds(120);
 
-        service.evaluate(row("ARRIVE_BY", true), DEADLINE.plus(ExpectedTimeCheck.GRACE).plusSeconds(5));
+        service.evaluate(row("ARRIVE_BY", true, arrived), DEADLINE.plusSeconds(180));
 
-        verify(repo).setCheck(key, IMEI, DAY, "OK");
-        verify(alarms, never()).raise(any(), anyString(), any(), any(), any(), any(), any(), any());
+        verify(repo).setCheck(key, IMEI, DAY, "OK_SENT");
+        verify(alarms).raise(eq(orgId), eq(IMEI), eq(AlarmType.ARRIVED_ON_TIME), eq(AlarmSeverity.INFO),
+                eq(arrived), any(), any(), any());
+    }
+
+    @Test
+    void arriving_after_the_alert_sends_a_late_message() {
+        when(repo.checkStatus(key, IMEI, DAY)).thenReturn("ALERTED");
+        Instant arrived = DEADLINE.plusSeconds(1500);
+
+        service.evaluate(row("ARRIVE_BY", true, arrived), arrived.plusSeconds(30));
+
+        verify(repo).setCheck(key, IMEI, DAY, "LATE");
+        verify(alarms).raise(eq(orgId), eq(IMEI), eq(AlarmType.ARRIVED_LATE), eq(AlarmSeverity.INFO),
+                eq(arrived), any(), any(), any());
     }
 
     @Test
@@ -115,10 +133,10 @@ class ExpectedTimeServiceTest {
 
     @Test
     void still_at_coaching_after_the_leaving_time_raises_not_left() {
-        service.evaluate(row("LEAVE_BY", true), DEADLINE.plus(ExpectedTimeCheck.GRACE).plusSeconds(5));
+        service.evaluate(row("LEAVE_BY", true, DEADLINE.minusSeconds(3600)), DEADLINE.plus(ExpectedTimeCheck.MIN_PROBE).plusSeconds(5));
 
         verify(alarms).raise(eq(orgId), eq(IMEI), eq(AlarmType.NOT_LEFT), eq(AlarmSeverity.WARNING),
-                eq(DEADLINE), any(), any(), any());
+                eq(DEADLINE.plus(ExpectedTimeCheck.MIN_PROBE)), any(), any(), any());
     }
 
     @Test
@@ -127,7 +145,7 @@ class ExpectedTimeServiceTest {
         when(restRepo.restWindows(orgId)).thenReturn(Map.of(IMEI,
                 new com.webinnovation.eyeon.repository.TrackerSettingsRepository.Window(LocalTime.MIDNIGHT, LocalTime.of(9, 0), "Asia/Dhaka")));
 
-        service.evaluate(row("ARRIVE_BY", false), DEADLINE.plus(ExpectedTimeCheck.GRACE).plusSeconds(5));
+        service.evaluate(row("ARRIVE_BY", false), DEADLINE.plus(ExpectedTimeCheck.MIN_PROBE).plusSeconds(5));
 
         verify(alarms, never()).raise(any(), anyString(), any(), any(), any(), any(), any(), any());
         verify(repo, never()).setCheck(anyString(), anyString(), any(), anyString());

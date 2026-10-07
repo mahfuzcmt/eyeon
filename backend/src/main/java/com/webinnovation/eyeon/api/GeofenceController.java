@@ -166,7 +166,8 @@ public class GeofenceController {
     public ResponseEntity<com.webinnovation.eyeon.dto.GeofenceDtos.ScheduleView> addSchedule(
             @PathVariable UUID id, @RequestBody com.webinnovation.eyeon.dto.GeofenceDtos.ScheduleCreate req) {
         UUID orgId = TenantContext.requireOrgId();
-        var created = expectedTimes.create(orgId, TenantContext.requireUserId(), id, req.kind(), req.time(), req.weekdays());
+        var created = expectedTimes.create(orgId, TenantContext.requireUserId(), id, req.kind(), req.time(), req.weekdays(),
+                req.graceMinutes());
         audit.record("PLACE_SCHEDULE_ADD", "geofence", id.toString(),
                 java.util.Map.of("kind", created.kind(), "time", created.localTime().toString()));
         return ResponseEntity.status(201).body(com.webinnovation.eyeon.dto.GeofenceDtos.ScheduleView.of(created));

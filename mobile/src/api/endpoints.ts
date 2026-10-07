@@ -258,7 +258,7 @@ export async function listPlaceSchedules(geofenceId: string): Promise<PlaceSched
   return r.data;
 }
 
-export async function createPlaceSchedule(geofenceId: string, req: { kind: PlaceScheduleKind; time: string; weekdays: number[] }): Promise<PlaceSchedule> {
+export async function createPlaceSchedule(geofenceId: string, req: { kind: PlaceScheduleKind; time: string; weekdays: number[]; graceMinutes: number }): Promise<PlaceSchedule> {
   const r = await api.post<PlaceSchedule>(`/geofences/${geofenceId}/schedules`, req);
   return r.data;
 }

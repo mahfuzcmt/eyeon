@@ -1,5 +1,6 @@
+import { AppState, type AppStateStatus } from "react-native";
 import { Client as StompClient, IMessage, StompSubscription } from "@stomp/stompjs";
-import { tokenStore } from "@/api/client";
+import { freshAccessToken } from "@/api/client";
 import type { AlarmView, LocationView } from "@/types";
 
 type Listener<T> = (msg: T) => void;
@@ -10,6 +11,11 @@ const wsUrl = process.env.EXPO_PUBLIC_WS_BASE ?? "ws://10.0.2.2:8081/ws";
  * One shared STOMP client for the app. The CONNECT frame carries the JWT
  * access token (mobile holds it directly, unlike the cookie-based web client).
  * See CLAUDE.md §9 and StompAuthChannelInterceptor.
+ *
+ * The token is read again before every (re)connect and refreshed when about to expire;
+ * reusing the one from the first connect meant every reconnect after an hour was refused.
+ * Coming back to the foreground forces a reconnect, because a socket that slept in the
+ * background is often dead without having noticed.
  */
 class WsClient {
   private client: StompClient | null = null;
@@ -25,7 +31,9 @@ class WsClient {
     this.connecting = new Promise<void>((resolve, reject) => {
       const client = new StompClient({
         brokerURL: wsUrl,
-        connectHeaders: { Authorization: `Bearer ${tokenStore.getAccess() ?? ""}` },
+        beforeConnect: async () => {
+          client.connectHeaders = { Authorization: `Bearer ${(await freshAccessToken()) ?? ""}` };
+        },
         reconnectDelay: 3_000,
         heartbeatIncoming: 10_000,
         heartbeatOutgoing: 10_000,
@@ -49,6 +57,7 @@ class WsClient {
       };
       client.activate();
       this.client = client;
+      this.watchAppState();
     }).finally(() => {
       this.connecting = null;
     });
@@ -99,7 +108,24 @@ class WsClient {
     };
   }
 
+  private appStateSub: { remove: () => void } | null = null;
+  private lastAppState: AppStateStatus = AppState.currentState;
+
+  private watchAppState(): void {
+    if (this.appStateSub) return;
+    this.appStateSub = AppState.addEventListener("change", (next) => {
+      const wasAway = this.lastAppState !== "active";
+      this.lastAppState = next;
+      if (next === "active" && wasAway && this.client) {
+        // Drop the possibly dead socket; stompjs reconnects at once with a fresh token.
+        this.client.forceDisconnect();
+      }
+    });
+  }
+
   disconnect(): void {
+    this.appStateSub?.remove();
+    this.appStateSub = null;
     this.client?.deactivate();
     this.client = null;
     this.connected = false;

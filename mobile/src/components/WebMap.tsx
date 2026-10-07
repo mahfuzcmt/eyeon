@@ -300,8 +300,9 @@ ${googleScripts}
     if(el) el.style.transform = 'rotate('+(course||0)+'deg)';
   }
 
-  // A person's marker glides to its new position over about one reporting interval instead of
-  // jumping (same rule as the web map). Glides are landed before a zoom, which re-lays markers out.
+  // A person's marker glides to its new position instead of jumping. The glide is kept short
+  // (at most 2.5 s): gliding over a whole reporting interval, as the web map does, left the
+  // marker up to 12 s behind the position the app already had. Glides are landed before a zoom, which re-lays markers out.
   const glides = {};
   const lastMoveAt = {};
   let glideFrame = null;
@@ -330,7 +331,7 @@ ${googleScripts}
     lastMoveAt[imei] = now;
     const d = from.distanceTo(to);
     if(d < 0.5 || d > 3000){ delete glides[imei]; m.setLatLng(to); return; }
-    glides[imei] = { from: from, to: to, start: now, duration: Math.min(12000, Math.max(800, since ? now - since : 800)) };
+    glides[imei] = { from: from, to: to, start: now, duration: Math.min(2500, Math.max(600, since ? now - since : 600)) };
     m.setLatLng(from);
     if(!glideFrame) glideFrame = requestAnimationFrame(glideStep);
   }

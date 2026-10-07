@@ -48,7 +48,9 @@ public class AlarmService {
     /** INFO alarms a carer still wants on their phone: arrivals, departures, back in the safe area. */
     private static boolean isPlaceEvent(AlarmType type) {
         return type == AlarmType.PLACE_ARRIVED || type == AlarmType.PLACE_LEFT || type == AlarmType.GEOFENCE_ENTER
-                || type == AlarmType.CHARGE_REMINDER;
+                || type == AlarmType.CHARGE_REMINDER
+                || type == AlarmType.ARRIVED_ON_TIME || type == AlarmType.LEFT_ON_TIME
+                || type == AlarmType.ARRIVED_LATE || type == AlarmType.LEFT_LATE;
     }
 
     public static final Set<String> PROCESS_RESULTS = Set.of("HANDLED", "FALSE_ALARM", "NO_ACTION");

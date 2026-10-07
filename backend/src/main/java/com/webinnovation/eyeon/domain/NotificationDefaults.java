@@ -33,7 +33,8 @@ public final class NotificationDefaults {
             // tone on the dashboard: leaving the safe area warns, the rest is a soft chime.
             AlarmType.GEOFENCE_EXIT, AlarmType.GEOFENCE_ENTER,
             AlarmType.PLACE_ARRIVED, AlarmType.PLACE_LEFT, AlarmType.LOW_BATTERY,
-            AlarmType.NOT_ARRIVED, AlarmType.NOT_LEFT, AlarmType.CHARGE_REMINDER));
+            AlarmType.NOT_ARRIVED, AlarmType.NOT_LEFT, AlarmType.CHARGE_REMINDER,
+            AlarmType.ARRIVED_ON_TIME, AlarmType.LEFT_ON_TIME, AlarmType.ARRIVED_LATE, AlarmType.LEFT_LATE));
 
     public static final Set<String> PUSH = ALL_TYPES;
 

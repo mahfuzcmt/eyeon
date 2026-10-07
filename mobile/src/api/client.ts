@@ -74,6 +74,33 @@ async function refreshAccessToken(): Promise<string | null> {
   return refreshing;
 }
 
+/** Seconds since the epoch at which a JWT expires, or null when it cannot be read. */
+function jwtExpiry(token: string): number | null {
+  try {
+    const part = token.split(".")[1];
+    if (!part || typeof atob !== "function") return null;
+    const json = atob(part.replace(/-/g, "+").replace(/_/g, "/").padEnd(Math.ceil(part.length / 4) * 4, "="));
+    const exp = (JSON.parse(json) as { exp?: unknown }).exp;
+    return typeof exp === "number" ? exp : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * An access token that is still valid for at least a minute, refreshing it first when needed.
+ * For the WebSocket CONNECT frame, which (unlike REST) has no 401-and-retry: a socket that
+ * reconnected with the expired token from an hour ago was refused, and live updates stopped.
+ */
+export async function freshAccessToken(): Promise<string | null> {
+  const current = tokens.accessToken;
+  if (current) {
+    const exp = jwtExpiry(current);
+    if (exp === null || exp * 1000 - Date.now() > 60_000) return current;
+  }
+  return (await refreshAccessToken()) ?? tokens.accessToken;
+}
+
 api.interceptors.response.use(
   (r) => r,
   async (error: AxiosError) => {

@@ -74,14 +74,34 @@ public class NotificationComposer {
             case "NOT_ARRIVED" -> new Message(
                     bn ? "⏰ " + personName + " এখনো " + at(place, bn) + " পৌঁছায়নি"
                        : "⏰ " + personName + " has not reached " + orPlace(place, bn),
-                    joinDot(bn ? "নির্ধারিত সময়: " + time : "Expected by " + time,
+                    joinDot(expected(alarm, time, bn, true),
                             bn ? "কোথায় আছে দেখতে ট্যাপ করুন" : "Tap to see where they are"),
                     CHANNEL_ALARMS);
             case "NOT_LEFT" -> new Message(
                     bn ? "⏰ " + personName + " এখনো " + at(place, bn) + " আছে"
                        : "⏰ " + personName + " is still at " + orPlace(place, bn),
-                    bn ? "বের হওয়ার নির্ধারিত সময়: " + time : "Expected to leave by " + time,
+                    expected(alarm, time, bn, false),
                     CHANNEL_ALARMS);
+            case "ARRIVED_ON_TIME" -> new Message(
+                    bn ? "✅ সময়মতো: " + personName + " এখন " + at(place, bn)
+                       : "✅ " + personName + " reached " + orPlace(place, bn) + " on time",
+                    joinDot(bn ? "পৌঁছানো: " + time : "Arrived " + time, expected(alarm, null, bn, true)),
+                    CHANNEL_ARRIVALS);
+            case "LEFT_ON_TIME" -> new Message(
+                    bn ? "✅ সময়মতো: " + personName + " আর " + at(place, bn) + " নেই"
+                       : "✅ " + personName + " left " + orPlace(place, bn) + " on time",
+                    joinDot(bn ? "বের হওয়া: " + time : "Left " + time, expected(alarm, null, bn, false)),
+                    CHANNEL_ARRIVALS);
+            case "ARRIVED_LATE" -> new Message(
+                    bn ? "🕘 দেরিতে: " + personName + " এখন " + at(place, bn)
+                       : "🕘 " + personName + " reached " + orPlace(place, bn) + " late",
+                    joinDot(bn ? "পৌঁছানো: " + time : "Arrived " + time, expected(alarm, null, bn, true)),
+                    CHANNEL_ARRIVALS);
+            case "LEFT_LATE" -> new Message(
+                    bn ? "🕘 দেরিতে: " + personName + " আর " + at(place, bn) + " নেই"
+                       : "🕘 " + personName + " left " + orPlace(place, bn) + " late",
+                    joinDot(bn ? "বের হওয়া: " + time : "Left " + time, expected(alarm, null, bn, false)),
+                    CHANNEL_ARRIVALS);
             case "CHARGE_REMINDER" -> {
                 String pct = metaString(alarm.metadata(), "batteryPercent");
                 String level = pct == null ? null
@@ -138,6 +158,30 @@ public class NotificationComposer {
         return "EyeOn " + what + " " + (bn ? "সময় " + time + "।" : time + ".") + where;
     }
 
+    /**
+     * "Expected by 8:00 AM (+10 min)" from the schedule in the metadata; falls back to the
+     * alarm's own time for alarms raised before the metadata carried it.
+     */
+    private static String expected(Alarm alarm, String fallback, boolean bn, boolean arrive) {
+        String hhmm = metaString(alarm.metadata(), "expectedTime");
+        String clock;
+        if (hhmm != null) {
+            try {
+                java.time.LocalTime t = java.time.LocalTime.parse(hhmm);
+                clock = formatClock(t.getHour(), t.getMinute(), bn ? Lang.BN : Lang.EN);
+            } catch (java.time.DateTimeException e) {
+                clock = fallback;
+            }
+        } else {
+            clock = fallback;
+        }
+        if (clock == null) return null;
+        String g = metaString(alarm.metadata(), "graceMinutes");
+        String grace = g == null || "0".equals(g) ? "" : (bn ? " (+" + toBengaliDigits(g) + " মিনিট)" : " (+" + g + " min)");
+        if (bn) return (arrive ? "নির্ধারিত সময়: " : "বের হওয়ার নির্ধারিত সময়: ") + clock + grace;
+        return (arrive ? "Expected by " : "Expected to leave by ") + clock + grace;
+    }
+
     /** "School-এ" — the hyphenated locative attaches cleanly to any name the user typed. */
     private static String at(String place, boolean bn) {
         return orPlace(place, bn) + "-এ";
@@ -150,9 +194,12 @@ public class NotificationComposer {
     /** {@code সকাল ৮:০২} / {@code 8:02 AM}, always Asia/Dhaka. */
     static String formatTime(Instant ts, Lang lang) {
         ZonedDateTime z = (ts == null ? Instant.now() : ts).atZone(DHAKA);
-        int h24 = z.getHour();
+        return formatClock(z.getHour(), z.getMinute(), lang);
+    }
+
+    static String formatClock(int h24, int minute, Lang lang) {
         int h12 = h24 % 12 == 0 ? 12 : h24 % 12;
-        String mm = String.format("%02d", z.getMinute());
+        String mm = String.format("%02d", minute);
         if (lang == Lang.EN) {
             return h12 + ":" + mm + (h24 < 12 ? " AM" : " PM");
         }

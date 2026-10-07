@@ -9,22 +9,33 @@ import { useI18n, type StringKey } from "@/i18n";
 import { colors, radius, space, touch } from "@/theme";
 import type { PlaceSchedule, PlaceScheduleKind } from "@/types";
 
-/** "Should be at School by 08:15, Sunday to Thursday": the expected times of one trusted place. */
+/**
+ * "Reaches School at 08:00, leaves at 12:00, 10 minutes grace, Sunday to Thursday": the expected
+ * times of one trusted place (same as the web dialog). The carer is told either way once the grace
+ * is over. An arrival and a leaving time are stored as two schedules.
+ */
 
 /** Shown Sunday first: the school week in Bangladesh runs Sunday to Thursday. ISO numbers, 7 = Sunday. */
 const WEEK = [7, 1, 2, 3, 4, 5, 6];
 const SCHOOL_DAYS = [7, 1, 2, 3, 4];
 const TIME_RE = /^([01]\d|2[0-3]):[0-5]\d$/;
+const GRACE_CHOICES = [0, 5, 10, 15, 20, 30, 45, 60];
+const BN_DIGITS = "০১২৩৪৫৬৭৮৯";
+const digits = (n: number, bn: boolean) => (bn ? String(n).replace(/\d/g, (d) => BN_DIGITS[Number(d)]) : String(n));
 
 export default function PlaceTimesScreen() {
   const { id, name } = useLocalSearchParams<{ id: string; name?: string }>();
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
+  const bn = locale === "bn";
   const [schedules, setSchedules] = useState<PlaceSchedule[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [kind, setKind] = useState<PlaceScheduleKind>("ARRIVE_BY");
-  const [time, setTime] = useState("08:15");
+  const [arriveOn, setArriveOn] = useState(true);
+  const [arrive, setArrive] = useState("08:00");
+  const [leaveOn, setLeaveOn] = useState(true);
+  const [leave, setLeave] = useState("12:00");
+  const [grace, setGrace] = useState(10);
   const [days, setDays] = useState<number[]>(SCHOOL_DAYS);
 
   const load = useCallback(async () => {
@@ -50,17 +61,24 @@ export default function PlaceTimesScreen() {
   const dayNames = (list: number[]) => WEEK.filter((d) => list.includes(d)).map((d) => t(`day.${d}` as StringKey)).join(" · ");
 
   const add = async () => {
-    if (!TIME_RE.test(time)) {
+    const wanted: [PlaceScheduleKind, string][] = [];
+    if (arriveOn) wanted.push(["ARRIVE_BY", arrive.trim()]);
+    if (leaveOn) wanted.push(["LEAVE_BY", leave.trim()]);
+    if (wanted.some(([, time]) => !TIME_RE.test(time))) {
       setError("HH:MM");
       return;
     }
     setSaving(true);
     setError(null);
     try {
-      const created = await createPlaceSchedule(id, { kind, time, weekdays: days });
-      setSchedules((prev) => [...prev, created].sort((a, b) => a.time.localeCompare(b.time)));
+      const added: PlaceSchedule[] = [];
+      for (const [kind, time] of wanted) {
+        added.push(await createPlaceSchedule(id, { kind, time, weekdays: days, graceMinutes: grace }));
+      }
+      setSchedules((prev) => [...prev, ...added].sort((a, b) => a.time.localeCompare(b.time)));
     } catch (e) {
       setError(extractError(e).message);
+      void load();
     } finally {
       setSaving(false);
     }
@@ -103,6 +121,9 @@ export default function PlaceTimesScreen() {
                 <View style={{ flex: 1 }}>
                   <Text style={styles.rowTitle}>
                     {t(`place.times.${s.kind}` as StringKey)} <Text style={styles.mono}>{s.time}</Text>
+                    {s.graceMinutes > 0 ? (
+                      <Text style={styles.grace}> {t("place.timesGraceShort").replace("{n}", digits(s.graceMinutes, bn))}</Text>
+                    ) : null}
                   </Text>
                   <Text style={styles.rowDays}>{dayNames(s.weekdays)}</Text>
                 </View>
@@ -115,21 +136,41 @@ export default function PlaceTimesScreen() {
         )}
 
         <View style={styles.form}>
+          {(
+            [
+              ["arrive", t("place.timesArrive"), arriveOn, setArriveOn, arrive, setArrive],
+              ["leave", t("place.timesLeave"), leaveOn, setLeaveOn, leave, setLeave],
+            ] as const
+          ).map(([key, label, on, setOn, value, setValue]) => (
+            <View key={key} style={styles.timeRow}>
+              <Pressable
+                onPress={() => setOn(!on)}
+                style={styles.check}
+                accessibilityRole="checkbox"
+                accessibilityState={{ checked: on }}
+                accessibilityLabel={label}
+              >
+                <Ionicons name={on ? "checkbox" : "square-outline"} size={26} color={on ? colors.brand : colors.textFaint} />
+                <Text style={styles.timeLabel}>{label}</Text>
+              </Pressable>
+              <TextInput
+                style={[styles.input, !on && styles.inputOff]}
+                value={value}
+                editable={on}
+                onChangeText={setValue}
+                placeholder="HH:MM"
+                placeholderTextColor={colors.textFaint}
+                keyboardType="numbers-and-punctuation"
+                maxLength={5}
+              />
+            </View>
+          ))}
+          <Text style={styles.label}>{t("place.timesGrace")}</Text>
           <View style={styles.chips}>
-            {(["ARRIVE_BY", "LEAVE_BY"] as const).map((k) => (
-              <Chip key={k} label={t(`place.times.${k}` as StringKey)} active={kind === k} onPress={() => setKind(k)} />
+            {GRACE_CHOICES.map((n) => (
+              <Chip key={n} label={digits(n, bn)} active={grace === n} onPress={() => setGrace(n)} />
             ))}
           </View>
-          <Text style={styles.label}>{t("ts.to")}</Text>
-          <TextInput
-            style={styles.input}
-            value={time}
-            onChangeText={setTime}
-            placeholder="HH:MM"
-            placeholderTextColor={colors.textFaint}
-            keyboardType="numbers-and-punctuation"
-            maxLength={5}
-          />
           <Text style={styles.label}>{t("place.timesDays")}</Text>
           <View style={styles.chips}>
             {WEEK.map((d) => (
@@ -137,7 +178,7 @@ export default function PlaceTimesScreen() {
             ))}
           </View>
           {error ? <Text style={styles.error}>{error}</Text> : null}
-          <PrimaryButton label={t("place.timesAdd")} loading={saving} disabled={!time || days.length === 0} onPress={() => void add()} />
+          <PrimaryButton label={t("place.timesAdd")} loading={saving} disabled={(!arriveOn && !leaveOn) || days.length === 0} onPress={() => void add()} />
         </View>
       </ScrollView>
     </View>
@@ -161,4 +202,9 @@ const styles = StyleSheet.create({
   label: { color: colors.textFaint, fontSize: 14 },
   input: { minHeight: 48, borderWidth: 1, borderColor: colors.border, borderRadius: radius.sm, paddingHorizontal: space.md, color: colors.text, fontSize: 16, width: 120 },
   error: { color: colors.danger, fontSize: 14 },
+  grace: { color: colors.textFaint, fontSize: 14, fontWeight: "400" },
+  timeRow: { flexDirection: "row", alignItems: "center", gap: space.md },
+  check: { flex: 1, flexDirection: "row", alignItems: "center", gap: space.sm, minHeight: touch.min },
+  timeLabel: { color: colors.text, fontSize: 16, fontWeight: "700" },
+  inputOff: { opacity: 0.45 },
 });

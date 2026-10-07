@@ -7,8 +7,9 @@
     "orientation": "portrait",
     "userInterfaceStyle": "light",
     "splash": {
-      "backgroundColor": "#FFFFFF",
-      "resizeMode": "contain"
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#FFFFFF"
     },
     "assetBundlePatterns": [
       "**/*"
@@ -27,7 +28,11 @@
         "android.permission.ACCESS_COARSE_LOCATION"
       ],
       "versionCode": 3,
-      "googleServicesFile": "./google-services.json"
+      "googleServicesFile": "./google-services.json",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#0F6B5C"
+      }
     },
     "plugins": [
       "expo-router",
@@ -49,7 +54,8 @@
       [
         "expo-notifications",
         {
-          "color": "#E8900A"
+          "icon": "./assets/notification-icon.png",
+          "color": "#0F6B5C"
         }
       ]
     ],
@@ -64,6 +70,7 @@
         "projectId": "3685e130-2a07-4555-ad7a-177030123f21"
       }
     },
-    "owner": "mahfuz"
+    "owner": "mahfuz",
+    "icon": "./assets/icon.png"
   }
 }

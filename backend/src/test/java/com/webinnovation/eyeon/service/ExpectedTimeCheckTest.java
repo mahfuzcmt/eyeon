@@ -1,7 +1,7 @@
 package com.webinnovation.eyeon.service;
 
 import com.webinnovation.eyeon.service.ExpectedTimeCheck.Kind;
-import com.webinnovation.eyeon.service.ExpectedTimeCheck.Phase;
+import com.webinnovation.eyeon.service.ExpectedTimeCheck.Action;
 import org.junit.jupiter.api.Test;
 
 import java.time.Duration;
@@ -45,14 +45,90 @@ class ExpectedTimeCheckTest {
         assertEquals(SUNDAY_DEADLINE, ExpectedTimeCheck.deadlineToday(AT, SCHOOL_DAYS, DHAKA, now));
     }
 
+    // 08:00 with 10 minutes grace, Sunday: 02:00 UTC, decided at 02:10 UTC.
+    private static final Instant EIGHT = Instant.parse("2026-10-04T02:00:00Z");
+    private static final Instant MORNING_ARRIVAL = Instant.parse("2026-10-04T01:52:00Z");
+    private static final Instant YESTERDAY = Instant.parse("2026-10-03T08:00:00Z");
+
+    private static Action arrive(Boolean inside, Instant changedAt, String status, Instant now) {
+        return ExpectedTimeCheck.decide(Kind.ARRIVE_BY, inside, changedAt, EIGHT, 10, status, DHAKA, now);
+    }
+
+    private static Action leave(Boolean inside, Instant changedAt, String status, Instant now) {
+        return ExpectedTimeCheck.decide(Kind.LEAVE_BY, inside, changedAt, EIGHT, 10, status, DHAKA, now);
+    }
+
     @Test
-    void probe_first_then_decide_then_give_up() {
-        assertEquals(Phase.NOT_DUE, ExpectedTimeCheck.phase(SUNDAY_DEADLINE, SUNDAY_DEADLINE.minusSeconds(1)));
-        assertEquals(Phase.PROBE, ExpectedTimeCheck.phase(SUNDAY_DEADLINE, SUNDAY_DEADLINE));
-        assertEquals(Phase.PROBE, ExpectedTimeCheck.phase(SUNDAY_DEADLINE, SUNDAY_DEADLINE.plus(ExpectedTimeCheck.GRACE).minusSeconds(1)));
-        assertEquals(Phase.DECIDE, ExpectedTimeCheck.phase(SUNDAY_DEADLINE, SUNDAY_DEADLINE.plus(ExpectedTimeCheck.GRACE)));
-        assertEquals(Phase.EXPIRED, ExpectedTimeCheck.phase(SUNDAY_DEADLINE, SUNDAY_DEADLINE.plus(ExpectedTimeCheck.WINDOW)));
-        assertEquals(Phase.NOT_DUE, ExpectedTimeCheck.phase(null, SUNDAY_DEADLINE));
+    void nothing_before_the_expected_time() {
+        assertEquals(Action.NONE, arrive(true, MORNING_ARRIVAL, null, EIGHT.minusSeconds(1)));
+        assertEquals(Action.NONE, arrive(false, null, null, EIGHT.minusSeconds(1)));
+    }
+
+    @Test
+    void already_there_at_the_time_is_on_time_at_once() {
+        assertEquals(Action.ON_TIME, arrive(true, MORNING_ARRIVAL, null, EIGHT));
+        assertEquals(Action.NONE, arrive(true, MORNING_ARRIVAL, ExpectedTimeCheck.OK_SENT, EIGHT.plusSeconds(60)));
+    }
+
+    @Test
+    void not_there_at_the_time_probes_once_then_waits_for_the_grace() {
+        assertEquals(Action.PROBE, arrive(false, null, null, EIGHT));
+        assertEquals(Action.NONE, arrive(false, null, ExpectedTimeCheck.PROBED, EIGHT.plusSeconds(300)));
+        assertEquals(Action.NONE, arrive(false, null, ExpectedTimeCheck.PROBED, EIGHT.plusSeconds(599)));
+    }
+
+    @Test
+    void arriving_inside_the_grace_is_on_time() {
+        assertEquals(Action.ON_TIME, arrive(true, EIGHT.plusSeconds(360), ExpectedTimeCheck.PROBED, EIGHT.plusSeconds(420)));
+    }
+
+    @Test
+    void still_missing_when_the_grace_ends_is_missed_once() {
+        assertEquals(Action.MISSED, arrive(false, null, ExpectedTimeCheck.PROBED, EIGHT.plusSeconds(600)));
+        assertEquals(Action.NONE, arrive(false, null, ExpectedTimeCheck.ALERTED, EIGHT.plusSeconds(900)));
+    }
+
+    @Test
+    void arriving_after_the_alert_is_reported_as_late_within_three_hours() {
+        assertEquals(Action.LATE, arrive(true, EIGHT.plusSeconds(1500), ExpectedTimeCheck.ALERTED, EIGHT.plusSeconds(1560)));
+        assertEquals(Action.SKIP, arrive(true, EIGHT.plusSeconds(4 * 3600), ExpectedTimeCheck.ALERTED,
+                EIGHT.plusSeconds(4 * 3600)));
+        assertEquals(Action.NONE, arrive(true, EIGHT.plusSeconds(1500), ExpectedTimeCheck.LATE_SENT, EIGHT.plusSeconds(1620)));
+    }
+
+    @Test
+    void a_short_grace_still_leaves_time_for_the_probe() {
+        Instant decide = ExpectedTimeCheck.decisionAt(EIGHT, 0);
+        assertEquals(EIGHT.plus(ExpectedTimeCheck.MIN_PROBE), decide);
+        assertEquals(EIGHT.plusSeconds(600), ExpectedTimeCheck.decisionAt(EIGHT, 10));
+    }
+
+    @Test
+    void a_check_first_seen_long_after_its_time_is_skipped() {
+        Instant late = EIGHT.plusSeconds(600).plus(ExpectedTimeCheck.WINDOW);
+        assertEquals(Action.SKIP, arrive(false, null, null, late));
+        assertEquals(Action.SKIP, arrive(true, MORNING_ARRIVAL, null, late));
+    }
+
+    @Test
+    void leaving_on_time_and_late() {
+        // Left at 07:58 after being there in the morning.
+        assertEquals(Action.ON_TIME, leave(false, Instant.parse("2026-10-04T01:58:00Z"), null, EIGHT));
+        // Still inside at the time: probe, then missed, then late when they do leave.
+        assertEquals(Action.PROBE, leave(true, MORNING_ARRIVAL, null, EIGHT));
+        assertEquals(Action.MISSED, leave(true, MORNING_ARRIVAL, ExpectedTimeCheck.PROBED, EIGHT.plusSeconds(600)));
+        assertEquals(Action.LATE, leave(false, EIGHT.plusSeconds(1200), ExpectedTimeCheck.ALERTED, EIGHT.plusSeconds(1260)));
+    }
+
+    @Test
+    void never_at_the_place_today_says_nothing_about_leaving_it() {
+        assertEquals(Action.SKIP, leave(false, YESTERDAY, null, EIGHT));
+        assertEquals(Action.SKIP, leave(null, null, null, EIGHT));
+    }
+
+    @Test
+    void the_old_ok_status_counts_as_done() {
+        assertEquals(Action.NONE, arrive(true, MORNING_ARRIVAL, ExpectedTimeCheck.LEGACY_OK, EIGHT.plusSeconds(60)));
     }
 
     @Test

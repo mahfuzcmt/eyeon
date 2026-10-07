@@ -3,11 +3,13 @@
 import { useCallback, useEffect, useState } from "react";
 import { api, extractError } from "@/lib/api";
 import { useLocale, type StringKey } from "@/lib/i18n";
+import { formatNumber } from "@/lib/format";
 import type { GeofenceView, PlaceSchedule, PlaceScheduleKind } from "@/types/domain";
 
 /** Shown Sunday first: the school week in Bangladesh runs Sunday to Thursday. ISO numbers, 7 = Sunday. */
 const WEEK: number[] = [7, 1, 2, 3, 4, 5, 6];
 const SCHOOL_DAYS: number[] = [7, 1, 2, 3, 4];
+const GRACE_CHOICES: number[] = [0, 5, 10, 15, 20, 30, 45, 60];
 
 interface Props {
   place: GeofenceView;
@@ -15,18 +17,22 @@ interface Props {
 }
 
 /**
- * "Should be at School by 08:15, Sunday to Thursday": the expected times of one trusted place.
- * The server alerts the place's owner when the time passes and the person is not there (or has
- * not left). Applies to everyone the place is assigned to.
+ * "Reaches School at 08:00, leaves at 12:00, 10 minutes grace, Sunday to Thursday": the expected
+ * times of one trusted place. Once the grace is over the server tells the place's owner either
+ * way - on time, or not there yet - and again if the person arrives late. Applies to everyone
+ * the place is assigned to. An arrival and a leaving time are stored as two schedules.
  */
 export function ExpectedTimesDialog({ place, onClose }: Props) {
-  const { t } = useLocale();
+  const { t, locale } = useLocale();
   const [schedules, setSchedules] = useState<PlaceSchedule[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
-  const [kind, setKind] = useState<PlaceScheduleKind>("ARRIVE_BY");
-  const [time, setTime] = useState("08:15");
+  const [arriveOn, setArriveOn] = useState(true);
+  const [arrive, setArrive] = useState("08:00");
+  const [leaveOn, setLeaveOn] = useState(true);
+  const [leave, setLeave] = useState("12:00");
+  const [grace, setGrace] = useState(10);
   const [days, setDays] = useState<number[]>(SCHOOL_DAYS);
 
   const refresh = useCallback(async () => {
@@ -52,10 +58,23 @@ export function ExpectedTimesDialog({ place, onClose }: Props) {
     setSaving(true);
     setError(null);
     try {
-      const r = await api.post<PlaceSchedule>(`/geofences/${place.id}/schedules`, { kind, time, weekdays: days });
-      setSchedules((prev) => [...prev, r.data].sort((a, b) => a.time.localeCompare(b.time)));
+      const wanted: [PlaceScheduleKind, string][] = [];
+      if (arriveOn && arrive) wanted.push(["ARRIVE_BY", arrive]);
+      if (leaveOn && leave) wanted.push(["LEAVE_BY", leave]);
+      const added: PlaceSchedule[] = [];
+      for (const [kind, time] of wanted) {
+        const r = await api.post<PlaceSchedule>(`/geofences/${place.id}/schedules`, {
+          kind,
+          time,
+          weekdays: days,
+          graceMinutes: grace,
+        });
+        added.push(r.data);
+      }
+      setSchedules((prev) => [...prev, ...added].sort((a, b) => a.time.localeCompare(b.time)));
     } catch (err) {
       setError(extractError(err).message);
+      void refresh();
     } finally {
       setSaving(false);
     }
@@ -76,6 +95,9 @@ export function ExpectedTimesDialog({ place, onClose }: Props) {
       .map((d) => t(`day.${d}` as StringKey))
       .join(" · ");
 
+  const graceLabel = (n: number) => t("place.timesGraceShort").replace("{n}", formatNumber(n, locale));
+  const nothingPicked = !(arriveOn && arrive) && !(leaveOn && leave);
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink-950/40 p-4" role="dialog" aria-modal="true">
       <div className="max-h-full w-full max-w-md overflow-y-auto rounded-2xl bg-white p-6 shadow-xl">
@@ -94,6 +116,9 @@ export function ExpectedTimesDialog({ place, onClose }: Props) {
                 <div className="min-w-0 flex-1">
                   <div className="text-[15px] font-semibold text-ink-900">
                     {t(`place.times.${s.kind}` as StringKey)} <span className="font-mono">{s.time}</span>
+                    {s.graceMinutes > 0 && (
+                      <span className="ml-1.5 text-[14px] font-normal text-ink-500">{graceLabel(s.graceMinutes)}</span>
+                    )}
                   </div>
                   <div className="text-[14px] text-ink-500">{dayNames(s.weekdays)}</div>
                 </div>
@@ -106,24 +131,45 @@ export function ExpectedTimesDialog({ place, onClose }: Props) {
         )}
 
         <div className="rounded-lg bg-surface-50 p-3 ring-1 ring-surface-300">
-          <div className="flex flex-wrap items-center gap-2">
+          {(
+            [
+              ["arrive", t("place.timesArrive"), arriveOn, setArriveOn, arrive, setArrive],
+              ["leave", t("place.timesLeave"), leaveOn, setLeaveOn, leave, setLeave],
+            ] as const
+          ).map(([id, label, on, setOn, value, setValue]) => (
+            <label key={id} className="mb-2 flex items-center gap-3">
+              <input
+                type="checkbox"
+                className="h-5 w-5 accent-brand-500"
+                checked={on}
+                onChange={(e) => setOn(e.target.checked)}
+              />
+              <span className="flex-1 text-[15px] font-semibold text-ink-900">{label}</span>
+              <input
+                type="time"
+                className="input w-32 text-[15px]"
+                value={value}
+                disabled={!on}
+                aria-label={label}
+                onChange={(e) => setValue(e.target.value)}
+              />
+            </label>
+          ))}
+          <label className="flex items-center gap-3">
+            <span className="flex-1 text-[15px] font-semibold text-ink-900">{t("place.timesGrace")}</span>
             <select
-              className="input w-auto flex-1 text-[15px]"
-              value={kind}
-              aria-label={t("place.times")}
-              onChange={(e) => setKind(e.target.value as PlaceScheduleKind)}
+              className="input w-32 text-[15px]"
+              value={grace}
+              aria-label={t("place.timesGrace")}
+              onChange={(e) => setGrace(Number(e.target.value))}
             >
-              <option value="ARRIVE_BY">{t("place.times.ARRIVE_BY")}</option>
-              <option value="LEAVE_BY">{t("place.times.LEAVE_BY")}</option>
+              {GRACE_CHOICES.map((n) => (
+                <option key={n} value={n}>
+                  {formatNumber(n, locale)} {t("place.timesGraceUnit")}
+                </option>
+              ))}
             </select>
-            <input
-              type="time"
-              className="input w-auto text-[15px]"
-              value={time}
-              aria-label={t("place.times")}
-              onChange={(e) => setTime(e.target.value)}
-            />
-          </div>
+          </label>
           <div className="mt-3 text-[14px] text-ink-500">{t("place.timesDays")}</div>
           <div className="mt-1.5 flex flex-wrap gap-1.5">
             {WEEK.map((d) => {
@@ -144,7 +190,7 @@ export function ExpectedTimesDialog({ place, onClose }: Props) {
           <button
             type="button"
             className="btn-primary mt-3 w-full"
-            disabled={saving || !time || days.length === 0}
+            disabled={saving || nothingPicked || days.length === 0}
             onClick={add}
           >
             {saving ? t("common.loading") : t("place.timesAdd")}
