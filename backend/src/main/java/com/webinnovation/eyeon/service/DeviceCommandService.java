@@ -57,6 +57,15 @@ public class DeviceCommandService {
         channels.computeIfPresent(imei, (k, current) -> current == channel ? null : current);
     }
 
+    /** Close the tracker's live connection, if any (used after the device is deleted). */
+    public void disconnect(String imei) {
+        Channel c = channels.remove(imei);
+        if (c != null && c.isActive()) {
+            log.info("Closing channel for deleted imei={}", imei);
+            c.close();
+        }
+    }
+
     public boolean isOnline(String imei) {
         Channel c = channels.get(imei);
         return c != null && c.isActive();

@@ -403,6 +403,35 @@ public class DeviceRepository {
                 """, new MapSqlParameterSource("imei", imei).addValue("newOrgId", newOrgId));
     }
 
+    /** Tables keyed by {@code device_imei} with no foreign key to {@code devices}; cleared on delete. */
+    private static final List<String> PER_DEVICE_TABLES = List.of(
+            "locations", "alarms", "trips", "geofence_devices", "geofence_states",
+            "user_devices", "device_group_members", "alarm_rule_devices", "alarm_rule_state",
+            "driver_assignments", "share_location_links", "scheduled_commands", "device_photos",
+            "daily_checks", "route_matches", "tracker_settings");
+
+    /**
+     * Permanently delete a device and everything recorded for it (Super Admin only).
+     * Subscriptions with payments are kept as CANCELLED so financial records survive;
+     * the rest are removed. Returns the number of device rows deleted (0 or 1).
+     * Caller must run this in a transaction.
+     */
+    public int deleteDeviceCascade(String imei) {
+        MapSqlParameterSource p = new MapSqlParameterSource("imei", imei);
+        for (String table : PER_DEVICE_TABLES) {
+            jdbc.update("DELETE FROM " + table + " WHERE device_imei = :imei", p);
+        }
+        jdbc.update("""
+                DELETE FROM subscriptions s WHERE s.device_imei = :imei
+                  AND NOT EXISTS (SELECT 1 FROM payments pm WHERE pm.subscription_id = s.id)
+                """, p);
+        jdbc.update("""
+                UPDATE subscriptions SET status = 'CANCELLED', auto_renew = false, updated_at = now()
+                WHERE device_imei = :imei
+                """, p);
+        return jdbc.update("DELETE FROM devices WHERE imei = :imei", p);
+    }
+
     /**
      * Count total devices.
      */

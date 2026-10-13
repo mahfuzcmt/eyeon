@@ -16,11 +16,13 @@ import com.webinnovation.eyeon.repository.OrganizationRepository;
 import com.webinnovation.eyeon.repository.UserRepository;
 import com.webinnovation.eyeon.security.TenantContext;
 import com.webinnovation.eyeon.service.AuditService;
+import com.webinnovation.eyeon.service.DeviceDeletionService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -53,6 +55,7 @@ public class AdminController {
     private final DeviceRepository deviceRepo;
     private final UserRepository userRepo;
     private final AuditService audit;
+    private final DeviceDeletionService deletionService;
 
     // ─────────────────────────────────────────────────────────────
     // Stats
@@ -207,6 +210,14 @@ public class AdminController {
 
         Device updated = deviceRepo.findByImei(imei).orElseThrow();
         return DeviceAdminView.of(updated, targetOrg.name());
+    }
+
+    /** Permanently delete a tracker and all of its history, in any organization. */
+    @DeleteMapping("/devices/{imei}")
+    public ResponseEntity<Void> deleteDevice(@PathVariable String imei) {
+        requireSuperAdmin();
+        deletionService.delete(imei);
+        return ResponseEntity.noContent().build();
     }
 
     // ─────────────────────────────────────────────────────────────
