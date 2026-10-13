@@ -133,18 +133,26 @@
   .t-link    { @apply text-[15px] leading-[22px] font-medium text-link hover:text-link-hover; }
 
   /* ── Surfaces: white cards on #EEF4F2, #D2DEDA borders ── */
+  /* Phones: dialogs rise from the bottom edge as a sheet and scroll inside;
+     from `sm` up they are centred cards. */
   .modal-overlay {
-    @apply fixed inset-0 z-[1300] flex items-center justify-center bg-ink-950/40 p-4;
+    @apply fixed inset-0 z-[2400] flex items-end justify-center bg-ink-950/40 p-0 sm:items-center sm:p-4;
   }
   .modal {
-    @apply w-full overflow-hidden border border-surface-300 bg-white shadow-xl;
-    border-radius: 16px;
+    @apply flex max-h-[92dvh] w-full flex-col overflow-hidden border border-surface-300 bg-white shadow-xl;
+    border-radius: 16px 16px 0 0;
+  }
+  @media (min-width: 640px) {
+    .modal { border-radius: 16px; max-height: calc(100dvh - 32px); }
+  }
+  .modal-body {
+    @apply min-h-0 flex-1 overflow-y-auto;
   }
   .modal-header {
-    @apply flex items-center justify-between border-b border-surface-300 px-4 py-3;
+    @apply flex shrink-0 items-center justify-between border-b border-surface-300 px-4 py-3;
   }
   .modal-footer {
-    @apply flex items-center justify-end gap-2 border-t border-surface-300 bg-surface-50 px-4 py-3;
+    @apply flex shrink-0 flex-wrap items-center justify-end gap-2 border-t border-surface-300 bg-surface-50 px-4 py-3;
   }
 
   /* Data tables: white header row with muted 13px labels, #1C2B28 cells (ADL grid). */
@@ -346,7 +354,7 @@
     display: none;
   }
   .tab-item {
-    @apply flex h-[42px] cursor-pointer items-center gap-1.5 px-4 font-semibold transition;
+    @apply flex h-[42px] shrink-0 cursor-pointer items-center gap-1.5 whitespace-nowrap px-3 font-semibold transition sm:px-4;
     font-size: 15px;
     color: #52625F;
     border-bottom: 3px solid transparent;

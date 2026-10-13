@@ -131,5 +131,10 @@ export function useAdminDevices(orgFilter?: string) {
     return r.data;
   }, [refresh]);
 
-  return { devices, loading, error, refresh, reassignDevice };
+  const deleteDevice = useCallback(async (imei: string): Promise<void> => {
+    await api.delete(`/admin/devices/${imei}`);
+    await refresh();
+  }, [refresh]);
+
+  return { devices, loading, error, refresh, reassignDevice, deleteDevice };
 }

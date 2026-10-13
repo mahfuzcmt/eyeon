@@ -59,7 +59,7 @@ export function DeviceGroupModal({ group, onSave, onClose }: DeviceGroupModalPro
           <button type="button" className="btn-icon" onClick={onClose} aria-label={t("common.close")}>×</button>
         </div>
 
-        <div className="flex flex-col gap-3 p-4">
+        <div className="modal-body flex flex-col gap-3 p-4">
           <label className="text-[14px]">
             <span className="mb-1 block text-ink-500">{t("group.name")} *</span>
             <input type="text" className="input" value={name} onChange={(e) => setName(e.target.value)} placeholder={t("group.namePlaceholder")} disabled={saving} autoFocus />
@@ -78,7 +78,7 @@ export function DeviceGroupModal({ group, onSave, onClose }: DeviceGroupModalPro
                   key={c}
                   type="button"
                   onClick={() => setColor(c)}
-                  className={`h-6 w-6 rounded-full border-2 transition ${color === c ? "scale-110 border-ink-900" : "border-transparent hover:scale-105"}`}
+                  className={`h-8 w-8 rounded-full border-2 transition ${color === c ? "scale-110 border-ink-900" : "border-transparent hover:scale-105"}`}
                   style={{ backgroundColor: c }}
                   aria-label={c}
                   disabled={saving}

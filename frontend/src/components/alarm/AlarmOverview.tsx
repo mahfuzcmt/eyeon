@@ -64,11 +64,11 @@ export function AlarmOverview({ from, to, onExport, exporting }: Props) {
           <div className="px-3 py-12 text-center text-[14px] text-ink-500">{t("common.empty")}</div>
         )}
         {!loading && data && data.rows.length > 0 && (
-          <table className="data-table min-w-[640px]">
+          <table className="data-table min-w-[560px] sm:min-w-[640px]">
             <thead>
               <tr>
-                <th>{t("alarms.vehicle")}</th>
-                <th>IMEI</th>
+                <th className="left-0 z-20 shadow-[1px_0_0_#D2DEDA]">{t("alarms.vehicle")}</th>
+                <th className="hidden sm:table-cell">IMEI</th>
                 {data.types.map((ty) => (
                   <th key={ty} className="text-right">{alarmTypeLabel(ty, t)}</th>
                 ))}
@@ -78,8 +78,8 @@ export function AlarmOverview({ from, to, onExport, exporting }: Props) {
             <tbody>
               {data.rows.map((r) => (
                 <tr key={r.imei} className={r.total === 0 ? "text-ink-400" : ""}>
-                  <td className="text-ink-900">{r.name || r.vehiclePlate || r.imei}</td>
-                  <td className="font-mono text-[13px] text-ink-500">{r.imei}</td>
+                  <td className="sticky left-0 z-[1] bg-white text-ink-900 shadow-[1px_0_0_#D2DEDA]">{r.name || r.vehiclePlate || r.imei}</td>
+                  <td className="hidden font-mono text-[13px] text-ink-500 sm:table-cell">{r.imei}</td>
                   {data.types.map((ty) => {
                     const n = r.counts[ty] ?? 0;
                     return (

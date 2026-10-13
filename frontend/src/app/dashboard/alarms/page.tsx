@@ -73,9 +73,9 @@ export default function Page() {
   return (
     <div className="flex h-full flex-col bg-white">
       {/* ADL: Alarm Overview | Alarm Details */}
-      <div className="flex items-center gap-3 border-b border-surface-300 px-4 pt-2">
-        <h1 className="t-title mb-2">{t("alarms.title")}</h1>
-        <div className="tab-bar ml-2 !border-b-0 !bg-transparent">
+      <div className="flex items-center gap-2 border-b border-surface-300 px-3 pt-2 sm:gap-3 sm:px-4">
+        <h1 className="t-title mb-2 shrink-0">{t("alarms.title")}</h1>
+        <div className="tab-bar min-w-0 !border-b-0 !bg-transparent sm:ml-2">
           <button type="button" className={tab === "overview" ? "tab-item-active" : "tab-item"} onClick={() => setTab("overview")}>
             {t("alarms.tabOverview")}
           </button>
@@ -87,14 +87,14 @@ export default function Page() {
       <div className="min-h-0 flex-1">
         {tab === "overview" ? (
           <div className="flex h-full flex-col">
-            <div className="flex flex-wrap items-end gap-2 border-b border-surface-300 px-4 py-2 text-[14px]">
-              <label className="flex flex-col gap-0.5">
+            <div className="grid grid-cols-2 items-end gap-2 border-b border-surface-300 px-3 py-2 text-[14px] sm:flex sm:flex-wrap sm:px-4">
+              <label className="flex min-w-0 flex-col gap-0.5">
                 <span className="t-label">{t("common.from")}</span>
-                <input type="date" className="input w-auto" value={filter.from} max={filter.to} onChange={(e) => setFilter({ ...filter, from: e.target.value })} />
+                <input type="date" className="input w-full min-w-0 sm:w-auto" value={filter.from} max={filter.to} onChange={(e) => setFilter({ ...filter, from: e.target.value })} />
               </label>
-              <label className="flex flex-col gap-0.5">
+              <label className="flex min-w-0 flex-col gap-0.5">
                 <span className="t-label">{t("common.to")}</span>
-                <input type="date" className="input w-auto" value={filter.to} min={filter.from} onChange={(e) => setFilter({ ...filter, to: e.target.value })} />
+                <input type="date" className="input w-full min-w-0 sm:w-auto" value={filter.to} min={filter.from} onChange={(e) => setFilter({ ...filter, to: e.target.value })} />
               </label>
             </div>
             <div className="min-h-0 flex-1">

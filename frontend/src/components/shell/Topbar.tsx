@@ -71,7 +71,7 @@ export function Topbar({ user, onMenu }: { user: UserView; orgId: string; onMenu
           <button
             type="button"
             onClick={() => setShowSettingsMenu(!showSettingsMenu)}
-            className="flex h-8 w-8 items-center justify-center rounded-md text-ink-500 hover:bg-surface-100"
+            className="flex h-8 w-8 items-center justify-center rounded-md text-ink-500 hover:bg-surface-100 [@media(pointer:coarse)]:h-11 [@media(pointer:coarse)]:w-11"
             aria-label="Account menu"
             aria-expanded={showSettingsMenu}
           >
@@ -87,7 +87,7 @@ export function Topbar({ user, onMenu }: { user: UserView; orgId: string; onMenu
               <div className="absolute right-0 top-full z-50 mt-1 w-52 rounded-lg border border-surface-300 bg-white py-1 shadow-lg">
                 <Link
                   href="/dashboard/settings"
-                  className="flex items-center gap-2.5 px-4 py-2 text-[15px] text-ink-700 hover:bg-surface-50"
+                  className="flex items-center gap-2.5 px-4 py-2 text-[15px] text-ink-700 hover:bg-surface-50 [@media(pointer:coarse)]:py-3"
                   onClick={() => setShowSettingsMenu(false)}
                 >
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -98,7 +98,7 @@ export function Topbar({ user, onMenu }: { user: UserView; orgId: string; onMenu
                 </Link>
                 <Link
                   href="/dashboard/settings?tab=account"
-                  className="flex items-center gap-2.5 px-4 py-2 text-[15px] text-ink-700 hover:bg-surface-50"
+                  className="flex items-center gap-2.5 px-4 py-2 text-[15px] text-ink-700 hover:bg-surface-50 [@media(pointer:coarse)]:py-3"
                   onClick={() => setShowSettingsMenu(false)}
                 >
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -110,7 +110,7 @@ export function Topbar({ user, onMenu }: { user: UserView; orgId: string; onMenu
                 <div className="my-1 border-t border-surface-200" />
                 <button
                   onClick={onSignOut}
-                  className="flex w-full items-center gap-2.5 px-4 py-2 text-[15px] text-red-600 hover:bg-red-50"
+                  className="flex w-full items-center gap-2.5 px-4 py-2 text-[15px] text-red-600 hover:bg-red-50 [@media(pointer:coarse)]:py-3"
                 >
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                     <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />

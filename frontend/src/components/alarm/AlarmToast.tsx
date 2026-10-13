@@ -163,14 +163,16 @@ export function AlarmToast() {
 
   // Monitor's bottom-right holds the refresh button (desktop) or the vehicle sheet bar (phones).
   // Phones also have the freshness row and the loading/error pill stacked above the sheet bar.
-  const bellBottom = isDesktop ? 76 : 172;
+  // Other pages have no map controls in that corner, so on phones the bell drops to the bottom edge.
+  const onMonitor = pathname === "/dashboard";
+  const bellBottom = isDesktop ? 76 : onMonitor ? 172 : 16;
 
   return (
     <>
       {/* ADL-style unread bell, bottom-right on every dashboard page */}
-      <div className="fixed right-3 z-[2250] flex items-center gap-2" style={{ bottom: bellBottom }}>
+      <div className="fixed right-3 z-[1050] flex items-center gap-2" style={{ bottom: `calc(${bellBottom}px + env(safe-area-inset-bottom, 0px))` }}>
         {showStrip && (
-          <div className="flex max-w-[calc(100vw-88px)] items-center overflow-hidden rounded-md bg-brand-500 text-white shadow-lg">
+          <div className="hidden max-w-[calc(100vw-88px)] items-center overflow-hidden rounded-md bg-brand-500 sm:flex text-white shadow-lg">
             <Link
               href="/dashboard/alarms?unacked=1"
               className="flex min-w-0 items-center gap-1 px-3 py-2 text-[14px] leading-tight hover:bg-brand-600"
@@ -182,7 +184,7 @@ export function AlarmToast() {
             </Link>
             <button
               type="button"
-              className="flex h-full shrink-0 items-center px-2 text-white/70 hover:bg-brand-600 hover:text-white"
+              className="flex min-h-[40px] w-10 shrink-0 items-center justify-center self-stretch text-white/80 hover:bg-brand-600 hover:text-white"
               aria-label={t("common.close")}
               onClick={() => setStripHiddenAt(Date.now())}
             >

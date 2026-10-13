@@ -60,44 +60,44 @@ export function AlarmList({ alarms, loading, devices, filter, onFilterChange, on
       </div>
 
       {/* Filters */}
-      <div className="flex flex-wrap items-end gap-2 border-b border-surface-300 px-4 py-2 text-[14px]">
-        <label className="flex flex-col gap-0.5">
+      <div className="grid grid-cols-2 items-end gap-2 border-b border-surface-300 px-3 py-2 text-[14px] sm:flex sm:flex-wrap sm:px-4">
+        <label className="flex min-w-0 flex-col gap-0.5">
           <span className="t-label">{t("alarms.type")}</span>
-          <select className="select w-40" value={filter.type} onChange={(e) => set("type", e.target.value)}>
+          <select className="select w-full sm:w-40" value={filter.type} onChange={(e) => set("type", e.target.value)}>
             <option value="">{t("alarms.allTypes")}</option>
             {ALARM_TYPES.map((ty) => (
               <option key={ty} value={ty}>{alarmTypeLabel(ty, t)}</option>
             ))}
           </select>
         </label>
-        <label className="flex flex-col gap-0.5">
+        <label className="flex min-w-0 flex-col gap-0.5">
           <span className="t-label">{t("alarms.severity")}</span>
-          <select className="select w-32" value={filter.severity} onChange={(e) => set("severity", e.target.value)}>
+          <select className="select w-full sm:w-32" value={filter.severity} onChange={(e) => set("severity", e.target.value)}>
             <option value="">{t("alarms.allSeverities")}</option>
             {ALARM_SEVERITIES.map((s) => (
               <option key={s} value={s}>{severityLabel(s, t)}</option>
             ))}
           </select>
         </label>
-        <label className="flex flex-col gap-0.5">
+        <label className="flex min-w-0 flex-col gap-0.5">
           <span className="t-label">{t("alarms.vehicle")}</span>
-          <select className="select w-44" value={filter.imei} onChange={(e) => set("imei", e.target.value)}>
+          <select className="select w-full sm:w-44" value={filter.imei} onChange={(e) => set("imei", e.target.value)}>
             <option value="">{t("alarms.allVehicles")}</option>
             {devices.map((d) => (
               <option key={d.imei} value={d.imei}>{d.name || d.vehiclePlate || d.imei}</option>
             ))}
           </select>
         </label>
-        <label className="flex flex-col gap-0.5">
+        <label className="flex min-w-0 flex-col gap-0.5">
           <span className="t-label">{t("common.from")}</span>
-          <input type="date" className="input w-auto" value={filter.from} max={filter.to} onChange={(e) => set("from", e.target.value)} />
+          <input type="date" className="input w-full min-w-0 sm:w-auto" value={filter.from} max={filter.to} onChange={(e) => set("from", e.target.value)} />
         </label>
-        <label className="flex flex-col gap-0.5">
+        <label className="flex min-w-0 flex-col gap-0.5">
           <span className="t-label">{t("common.to")}</span>
-          <input type="date" className="input w-auto" value={filter.to} min={filter.from} onChange={(e) => set("to", e.target.value)} />
+          <input type="date" className="input w-full min-w-0 sm:w-auto" value={filter.to} min={filter.from} onChange={(e) => set("to", e.target.value)} />
         </label>
-        <label className="flex h-7 items-center gap-1.5 text-ink-700">
-          <input type="checkbox" checked={filter.unackedOnly} onChange={(e) => set("unackedOnly", e.target.checked)} className="h-3.5 w-3.5 accent-brand-500" />
+        <label className="col-span-2 flex min-h-[40px] items-center gap-2 text-ink-700 sm:min-h-0 sm:h-10">
+          <input type="checkbox" checked={filter.unackedOnly} onChange={(e) => set("unackedOnly", e.target.checked)} className="h-4 w-4 accent-brand-500" />
           {t("alarms.unackedOnly")}
         </label>
       </div>
@@ -108,7 +108,48 @@ export function AlarmList({ alarms, loading, devices, filter, onFilterChange, on
           <div className="px-3 py-12 text-center text-[14px] text-ink-500">{t("common.empty")}</div>
         )}
         {!loading && alarms.length > 0 && (
-          <table className="data-table min-w-[720px]">
+          <ul className="divide-y divide-surface-200 lg:hidden">
+            {alarms.map((a) => (
+              <li
+                key={a.id}
+                className={`space-y-1.5 px-3 py-3 ${a.acknowledged ? "" : a.severity === "CRITICAL" ? "bg-red-50/60" : ""}`}
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <span className={`status-pill ${SEV_PILL[a.severity]}`}>{severityLabel(a.severity, t)}</span>
+                  <span className="text-[14px] text-ink-500">{formatDateTime(a.ts, locale)}</span>
+                </div>
+                <div className="font-semibold text-ink-900">{alarmTypeLabel(a.type, t)}</div>
+                <div className="text-[15px] text-ink-700">
+                  {deviceName(a.deviceImei)} <span className="font-mono text-[13px] text-ink-500">{a.deviceImei}</span>
+                </div>
+                {a.processResult && (
+                  <div className="text-[14px] text-ink-700">
+                    {processResultLabel(a.processResult, t)}
+                    {a.processNotes && <span className="text-ink-500"> · {a.processNotes}</span>}
+                  </div>
+                )}
+                <div className="flex flex-wrap items-center gap-2 pt-0.5">
+                  {a.latitude != null && a.longitude != null && (
+                    <button type="button" className="btn-ghost -ml-3 text-link" onClick={() => setMapAlarm(a)}>
+                      {t("alarms.showMap")}
+                    </button>
+                  )}
+                  <span className="ml-auto">
+                    {a.acknowledged ? (
+                      <span className="text-[13px] text-ink-500">{t("common.acknowledged")}</span>
+                    ) : (
+                      <button type="button" onClick={() => setAckAlarm(a)} className="btn-secondary">
+                        {t("alarms.process")}
+                      </button>
+                    )}
+                  </span>
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
+        {!loading && alarms.length > 0 && (
+          <table className="data-table hidden min-w-[720px] lg:table">
             <thead>
               <tr>
                 <th>{t("alarms.severity")}</th>

@@ -74,10 +74,10 @@ export function ExportModal({ onClose, devices = [], defaultType, defaultDevice 
   };
 
   return (
-    <div className="fixed inset-0 z-[1300] flex items-center justify-center bg-ink-950/40 p-4">
-      <div className="bg-white rounded-lg w-full max-w-md overflow-hidden">
+    <div className="fixed inset-0 z-[2400] flex items-end justify-center bg-ink-950/40 p-0 sm:items-center sm:p-4" role="dialog" aria-modal="true">
+      <div className="flex max-h-[92dvh] w-full max-w-md flex-col overflow-hidden rounded-t-2xl bg-white sm:rounded-lg">
         {/* Header */}
-        <div className="p-4 border-b border-surface-300 flex items-center justify-between">
+        <div className="flex shrink-0 items-center justify-between border-b border-surface-300 p-4">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-brand-50 rounded-lg flex items-center justify-center">
               <svg className="w-5 h-5 text-brand-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -93,7 +93,7 @@ export function ExportModal({ onClose, devices = [], defaultType, defaultDevice 
               </p>
             </div>
           </div>
-          <button onClick={onClose} className="text-ink-400 hover:text-ink-900 p-1">
+          <button type="button" onClick={onClose} className="btn-icon" aria-label={lang === "bn" ? "বন্ধ" : "Close"}>
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
             </svg>
@@ -101,7 +101,7 @@ export function ExportModal({ onClose, devices = [], defaultType, defaultDevice 
         </div>
 
         {/* Content */}
-        <div className="p-4 space-y-4">
+        <div className="min-h-0 flex-1 space-y-4 overflow-y-auto p-4">
           {/* Export type selection */}
           <div>
             <label className="block text-[15px] text-ink-600 mb-2">
@@ -211,7 +211,7 @@ export function ExportModal({ onClose, devices = [], defaultType, defaultDevice 
         </div>
 
         {/* Footer */}
-        <div className="p-4 border-t border-surface-300 flex gap-3">
+        <div className="flex shrink-0 gap-3 border-t border-surface-300 p-4">
           <button
             onClick={onClose}
             className="flex-1 px-4 py-2 text-[15px] border border-surface-300 bg-white text-ink-700 rounded hover:bg-surface-100 transition-colors"

@@ -317,7 +317,7 @@ export function DeviceList({
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder={t("list.searchPlaceholder")}
-            className="h-8 w-full rounded-md border border-surface-300 bg-white pl-8 pr-3 text-[15px] text-ink-700 placeholder:text-ink-400 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500/40"
+            className="h-8 w-full rounded-md border border-surface-300 bg-white pl-8 pr-3 text-[15px] [@media(pointer:coarse)]:h-11 text-ink-700 placeholder:text-ink-400 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500/40"
           />
         </div>
       </div>
@@ -330,7 +330,7 @@ export function DeviceList({
             key={id}
             type="button"
             onClick={() => setTab(id)}
-            className={`shrink-0 whitespace-nowrap px-2 py-1.5 text-[14px] font-medium transition border-b-2 -mb-px ${
+            className={`shrink-0 whitespace-nowrap px-2 py-1.5 text-[14px] font-medium transition border-b-2 -mb-px [@media(pointer:coarse)]:py-3 ${
               tab === id
                 ? "border-brand-500 text-brand-500"
                 : "border-transparent text-ink-500 hover:text-ink-700"
@@ -347,7 +347,7 @@ export function DeviceList({
         <select
           value={sortKey}
           onChange={(e) => setSortKey(e.target.value as SortKey)}
-          className="h-7 rounded border border-surface-300 bg-white px-2 text-[14px] text-ink-700 focus:border-brand-500 focus:outline-none"
+          className="h-7 rounded border border-surface-300 bg-white px-2 text-[14px] text-ink-700 [@media(pointer:coarse)]:h-10 focus:border-brand-500 focus:outline-none"
           aria-label={t("list.sort")}
         >
           {(Object.keys(SORT_LABEL) as SortKey[]).map((k) => (
@@ -355,13 +355,13 @@ export function DeviceList({
           ))}
         </select>
         <div className="flex items-center gap-2">
-          <label className="flex cursor-pointer items-center gap-1.5 text-[14px] text-ink-500">
+          <label className="flex cursor-pointer items-center gap-1.5 text-[14px] text-ink-500 [@media(pointer:coarse)]:min-h-[40px]">
             <input
               ref={selectAllRef}
               type="checkbox"
               checked={allVisible}
               onChange={toggleAllVisible}
-              className="h-3.5 w-3.5 cursor-pointer accent-brand-500"
+              className="h-3.5 w-3.5 cursor-pointer accent-brand-500 [@media(pointer:coarse)]:h-5 [@media(pointer:coarse)]:w-5"
             />
             {t("list.showAll")}
           </label>
@@ -369,7 +369,7 @@ export function DeviceList({
             <button
               type="button"
               onClick={onNewGroup}
-              className="btn-icon !h-7 !w-7 text-ink-500 hover:text-brand-500"
+              className="btn-icon !h-7 !w-7 text-ink-500 hover:text-brand-500 [@media(pointer:coarse)]:!h-10 [@media(pointer:coarse)]:!w-10"
               title={t("group.new")}
               aria-label={t("group.new")}
             >
@@ -391,7 +391,7 @@ export function DeviceList({
           const isCollapsed = collapsed.has(section.id);
           return (
             <div key={section.id}>
-              <div className="group/hdr flex h-9 w-full items-center border-b border-surface-200 pr-2 hover:bg-surface-50">
+              <div className="group/hdr flex h-9 w-full items-center [@media(pointer:coarse)]:h-11 border-b border-surface-200 pr-2 hover:bg-surface-50">
                 <button
                   type="button"
                   onClick={() => toggleGroup(section.id)}
@@ -414,7 +414,7 @@ export function DeviceList({
                       <button
                         type="button"
                         onClick={() => onEditGroup(section.group!)}
-                        className="btn-icon !h-6 !w-6 hover:text-brand-500"
+                        className="btn-icon !h-6 !w-6 hover:text-brand-500 [@media(pointer:coarse)]:!h-10 [@media(pointer:coarse)]:!w-10"
                         title={t("group.edit")}
                         aria-label={`${t("group.edit")} ${section.name}`}
                       >
@@ -427,7 +427,7 @@ export function DeviceList({
                       <button
                         type="button"
                         onClick={() => onDeleteGroup(section.group!)}
-                        className="btn-icon !h-6 !w-6 hover:text-alarm-red"
+                        className="btn-icon !h-6 !w-6 hover:text-alarm-red [@media(pointer:coarse)]:!h-10 [@media(pointer:coarse)]:!w-10"
                         title={t("group.delete")}
                         aria-label={`${t("group.delete")} ${section.name}`}
                       >
@@ -500,7 +500,7 @@ function VehicleRow({ row, selected, visible, onSelect, onToggleVisible, onActio
           onSelect();
         }
       }}
-      className={`group flex h-9 cursor-pointer items-center gap-2 border-b border-surface-200 border-l-[3px] pl-6 pr-1 transition-colors ${
+      className={`group flex h-9 cursor-pointer items-center gap-2 [@media(pointer:coarse)]:h-12 border-b border-surface-200 border-l-[3px] pl-6 pr-1 transition-colors ${
         selected ? "border-l-brand-500 bg-brand-500/10" : "border-l-transparent hover:bg-surface-50"
       } ${visible ? "" : "opacity-60"}`}
     >
@@ -510,7 +510,7 @@ function VehicleRow({ row, selected, visible, onSelect, onToggleVisible, onActio
         onChange={onToggleVisible}
         onClick={(e) => e.stopPropagation()}
         title={t("list.showOnMap")}
-        className="h-3.5 w-3.5 shrink-0 cursor-pointer accent-brand-500"
+        className="h-3.5 w-3.5 shrink-0 cursor-pointer accent-brand-500 [@media(pointer:coarse)]:h-5 [@media(pointer:coarse)]:w-5"
       />
       <span className="inline-flex shrink-0" dangerouslySetInnerHTML={{ __html: icon }} />
       {/* ADL: the whole row reads in the state colour — name, status text, icon and dot. */}
@@ -605,11 +605,15 @@ function RowMenu({ onAction, t, groups = [], currentGroupId = null, onMoveToGrou
         onClick={(e) => {
           e.stopPropagation();
           const r = e.currentTarget.getBoundingClientRect();
-          setPos({ top: r.bottom + 4, left: Math.max(8, r.right - 190) });
+          // Keep the menu on screen: rows near the bottom (phone sheet) open it upwards.
+          const est = Math.min(window.innerHeight * 0.7, (MENU_ITEMS.length + groups.length + 2) * 44);
+          const top = r.bottom + 4 + est > window.innerHeight - 8 ? Math.max(8, r.top - 4 - est) : r.bottom + 4;
+          setPos({ top, left: Math.max(8, Math.min(r.right - 190, window.innerWidth - 198)) });
           setOpen((v) => !v);
         }}
-        className="flex h-6 w-6 shrink-0 items-center justify-center rounded text-ink-400 opacity-70 transition hover:bg-surface-200 hover:text-ink-700 group-hover:opacity-100"
+        className="flex h-6 w-6 shrink-0 items-center justify-center rounded text-ink-500 opacity-70 transition hover:bg-surface-200 hover:text-ink-700 group-hover:opacity-100 [@media(pointer:coarse)]:h-10 [@media(pointer:coarse)]:w-10 [@media(pointer:coarse)]:opacity-100"
         title="More"
+        aria-label="More"
         aria-haspopup="menu"
         aria-expanded={open}
       >
@@ -633,7 +637,7 @@ function RowMenu({ onAction, t, groups = [], currentGroupId = null, onMoveToGrou
               type="button"
               role="menuitem"
               onClick={() => { setOpen(false); onAction(m.action); }}
-              className="flex w-full items-center px-3 py-1.5 text-left text-[15px] text-ink-700 hover:bg-surface-100"
+              className="flex w-full items-center px-3 py-1.5 text-left text-[15px] text-ink-700 hover:bg-surface-100 [@media(pointer:coarse)]:py-3"
             >
               {t(m.label)}
             </button>
@@ -654,7 +658,7 @@ function RowMenu({ onAction, t, groups = [], currentGroupId = null, onMoveToGrou
                     aria-checked={active}
                     disabled={active}
                     onClick={() => { setOpen(false); onMoveToGroup(g.id); }}
-                    className={`flex w-full items-center gap-2 px-3 py-1.5 text-left text-[15px] ${
+                    className={`flex w-full items-center gap-2 px-3 py-1.5 text-left text-[15px] [@media(pointer:coarse)]:py-3 ${
                       active ? "cursor-default font-semibold text-ink-900" : "text-ink-700 hover:bg-surface-100"
                     }`}
                   >

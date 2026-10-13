@@ -130,7 +130,7 @@ export function NotificationsTab() {
       </div>
 
       <div className="overflow-x-auto rounded-lg border border-surface-300">
-        <table className="data-table min-w-[520px]">
+        <table className="data-table sm:min-w-[520px] [&_td]:max-sm:px-2 [&_th]:max-sm:px-2">
           <thead>
             <tr>
               <th>{t("alarms.type")}</th>
@@ -140,7 +140,7 @@ export function NotificationsTab() {
                     <span>{c.label}</span>
                     <input
                       type="checkbox"
-                      className="h-3.5 w-3.5 accent-brand-500"
+                      className="h-3.5 w-3.5 accent-brand-500 [@media(pointer:coarse)]:h-5 [@media(pointer:coarse)]:w-5"
                       checked={allOn(c.ch)}
                       onChange={(e) => toggleAll(c.ch, e.target.checked)}
                       aria-label={`${c.label} — ${t("notif.all")}`}
@@ -158,7 +158,7 @@ export function NotificationsTab() {
                   <td key={c.ch} className="text-center">
                     <input
                       type="checkbox"
-                      className="h-4 w-4 cursor-pointer accent-brand-500"
+                      className="h-4 w-4 cursor-pointer accent-brand-500 [@media(pointer:coarse)]:h-6 [@media(pointer:coarse)]:w-6"
                       checked={has(c.ch, ty)}
                       onChange={(e) => toggle(c.ch, ty, e.target.checked)}
                       aria-label={`${alarmTypeLabel(ty, t)} ${c.label}`}

@@ -32,7 +32,6 @@ export default function TrackTab({ device, orgId }: { device: DeviceView; orgId:
 
       {/* Telemetry strip */}
       <div className="grid shrink-0 grid-cols-3 gap-px border-t border-surface-300 bg-surface-200 sm:grid-cols-6">
-        <Cell label={t("fleet.acc")} value={live?.accOn == null ? "—" : live.accOn ? t("fleet.accOn") : t("fleet.accOff")} />
         <Cell label={t("fleet.gsm")} value={device.lastGsmSignal != null ? String(device.lastGsmSignal) : "—"} />
         <Cell label="GPS" value={live?.satellites != null ? String(live.satellites) : "—"} />
         <Cell label={t("fleet.voltage")} value={formatVoltage(live?.voltageMv ?? device.lastVoltageMv, "en")} />

@@ -696,13 +696,30 @@ export function FleetMap({ devices, locations, selectedImei, onSelect, onRefresh
   // The floating vehicle panel covers the left edge; popups and fit-to-bounds
   // must pad past it. Kept in a ref so marker callbacks see the latest value.
   const leftInsetRef = useRef(leftInset);
+  const topInsetRef = useRef(topInset);
+  const bottomInsetRef = useRef(bottomInset);
+  // Phones: the popup must clear the KPI strip and the Follow/layer row above it and the
+  // control column on the right, so it is panned into the area between them.
+  const popupPadding = useCallback(() => {
+    const phone = typeof window !== 'undefined' && window.innerWidth < 640;
+    return {
+      topLeft: L.point(leftInsetRef.current + (phone ? 12 : 20), topInsetRef.current + (phone ? 64 : 70)),
+      bottomRight: L.point(phone ? 60 : 20, bottomInsetRef.current + 40),
+    };
+  }, []);
   useEffect(() => {
     leftInsetRef.current = leftInset;
+    topInsetRef.current = topInset;
+    bottomInsetRef.current = bottomInset;
+    const pad = popupPadding();
     for (const marker of markersRef.current.values()) {
       const popup = marker.getPopup();
-      if (popup) popup.options.autoPanPaddingTopLeft = L.point(leftInset + 20, 70);
+      if (popup) {
+        popup.options.autoPanPaddingTopLeft = pad.topLeft;
+        popup.options.autoPanPaddingBottomRight = pad.bottomRight;
+      }
     }
-  }, [leftInset]);
+  }, [leftInset, topInset, bottomInset, popupPadding]);
 
   const selectedImeiRef = useRef(selectedImei);
   useEffect(() => {
@@ -1346,8 +1363,8 @@ export function FleetMap({ devices, locations, selectedImei, onSelect, onRefresh
           .bindPopup(createPopupContent(device, loc), {
             maxWidth: 380,
             className: 'pp-popup-container',
-            autoPanPaddingTopLeft: L.point(leftInsetRef.current + 20, 70),
-            autoPanPaddingBottomRight: L.point(20, 40),
+            autoPanPaddingTopLeft: popupPadding().topLeft,
+            autoPanPaddingBottomRight: popupPadding().bottomRight,
           })
           .bindTooltip(plateLabelHtml(device, loc, color), {
             permanent: true,
@@ -1374,6 +1391,23 @@ export function FleetMap({ devices, locations, selectedImei, onSelect, onRefresh
             // Pan into view once on open; content refreshes every few seconds
             // must not yank the map around while the user reads the card.
             window.setTimeout(() => { popup.options.autoPan = false; }, 400);
+            // Phones: selecting a person re-centres the map on them (Follow) right after the
+            // card opens, and the address loads into it, so Leaflet's one-off auto-pan is
+            // undone. Once that has settled, nudge the map so the card clears the controls.
+            if (window.innerWidth < 640) {
+              window.setTimeout(() => {
+                const m = mapRef.current;
+                const el = popup.getElement();
+                if (!m || !el || !popup.isOpen()) return;
+                const box = m.getContainer().getBoundingClientRect();
+                const r = el.getBoundingClientRect();
+                const pad = popupPadding();
+                const dy = Math.max(0, pad.topLeft.y - (r.top - box.top));
+                const dx = Math.max(0, r.right - box.left - (box.width - pad.bottomRight.x))
+                  - Math.max(0, pad.topLeft.x - (r.left - box.left));
+                if (dy > 0 || dx !== 0) m.panBy([dx, -dy], { animate: true });
+              }, 900);
+            }
           }
           refreshPopupDom(currentMarker, imei);
         });
@@ -1493,7 +1527,7 @@ export function FleetMap({ devices, locations, selectedImei, onSelect, onRefresh
       }
       initialFitDoneRef.current = true;
     }
-  }, [locations, deviceByImei, selectedImei, onSelect, createPopupContent, speedLimits, autoFollow, applyLabelVisibility, refreshPopupDom, moveMarker, glidePosition, drawAt, finishGlides, arrowClock, setPointer, syncSilent]);
+  }, [locations, deviceByImei, selectedImei, onSelect, createPopupContent, speedLimits, autoFollow, applyLabelVisibility, refreshPopupDom, moveMarker, glidePosition, drawAt, finishGlides, arrowClock, setPointer, syncSilent, popupPadding]);
 
   // Keep locationsRef in sync with state (doesn't trigger animation restart)
   useEffect(() => {
@@ -1939,7 +1973,7 @@ export function FleetMap({ devices, locations, selectedImei, onSelect, onRefresh
             {t("route.legendEstimate")}
           </span>
           <span className="inline-flex items-center gap-1.5">
-            <span className="rounded-full border-2 border-brand-500 bg-white px-1.5 text-[11px] leading-4">15 min</span>
+            <span className="rounded-full border-2 border-brand-500 bg-white px-1.5 text-[12px] leading-4">15 min</span>
             {t("route.legendStay")}
           </span>
         </div>
@@ -2110,7 +2144,7 @@ export function FleetMap({ devices, locations, selectedImei, onSelect, onRefresh
           background: var(--state-color);
           font-family: var(--font-jetbrains), 'JetBrains Mono', monospace;
           font-variant-numeric: tabular-nums;
-          font-size: 11px;
+          font-size: 12px;
           font-weight: 600;
           line-height: 1;
           padding: 4px 5px;
@@ -2124,7 +2158,7 @@ export function FleetMap({ devices, locations, selectedImei, onSelect, onRefresh
           display: inline-flex;
           align-items: center;
           padding: 0 5px;
-          font-size: 11px;
+          font-size: 12px;
         }
         /* Just updated vehicle marker - bright glow pulse */
         .pp-vehicle-icon.pp-just-updated {
@@ -2272,11 +2306,11 @@ export function FleetMap({ devices, locations, selectedImei, onSelect, onRefresh
           min-width: 0;
         }
         .pp-card-cell-label {
-          font-size: 11px;
+          font-size: 12px;
           font-weight: 500;
           text-transform: uppercase;
           letter-spacing: 0.06em;
-          color: #7e8792;
+          color: #637370;
           line-height: 1.2;
         }
         .pp-card-cell-value {
@@ -2334,7 +2368,7 @@ export function FleetMap({ devices, locations, selectedImei, onSelect, onRefresh
           color: #475569;
           cursor: pointer;
           font-family: var(--font-nunito), 'Nunito', var(--font-hind-siliguri), -apple-system, sans-serif;
-          font-size: 11px;
+          font-size: 12px;
           font-weight: 500;
           transition: background 0.15s, color 0.15s;
         }
@@ -2351,12 +2385,28 @@ export function FleetMap({ devices, locations, selectedImei, onSelect, onRefresh
         }
 
         /* Mobile responsive */
+        /* Phones: the card fits between the screen edge and the map's control column,
+           and the action bar becomes a 4-column grid of labelled 52px touch targets. */
         @media (max-width: 640px) {
           .pp-card {
-            width: min(352px, 86vw);
+            width: min(352px, calc(100vw - 80px));
           }
-          .pp-card-action > span {
-            display: none;
+          .pp-card-actions {
+            flex-wrap: wrap;
+          }
+          .pp-card-action {
+            flex: 1 0 25%;
+            min-height: 52px;
+            justify-content: center;
+            padding: 6px 2px;
+            text-align: center;
+            line-height: 1.15;
+          }
+          .pp-popup-container .leaflet-popup-close-button {
+            width: 36px;
+            height: 36px;
+            right: 2px;
+            top: 2px;
           }
         }
       `}</style>

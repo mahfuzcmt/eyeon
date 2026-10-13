@@ -44,9 +44,10 @@ export function KpiStrip({ liveOnlineCount, liveOfflineCount, leftInset = 0 }: P
       <div className="pointer-events-auto flex max-w-full items-stretch overflow-x-auto rounded-xl border border-black/5 bg-white/95 shadow-lg backdrop-blur [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         {!collapsed && (
           <>
-            <Kpi label={t("kpi.online")} value={formatNumber(online, locale)} accent="text-emerald-600" />
-            <Kpi label={t("kpi.offline")} value={formatNumber(offline, locale)} accent="text-ink-500" />
+            <Kpi fit={!wide} label={t("kpi.online")} value={formatNumber(online, locale)} accent="text-emerald-600" />
+            <Kpi fit={!wide} label={t("kpi.offline")} value={formatNumber(offline, locale)} accent="text-ink-500" />
             <Kpi
+              fit={!wide}
               label={t("kpi.alertsToday")}
               value={formatNumber(kpis.alarmsToday, locale)}
               accent={kpis.alarmsCriticalToday > 0 ? "text-red-600" : "text-amber-600"}
@@ -56,6 +57,7 @@ export function KpiStrip({ liveOnlineCount, liveOfflineCount, leftInset = 0 }: P
             />
             {/* No trip tiles: EyeOn tracks people and has no trips (trip counts/distance would always be 0). */}
             <Kpi
+              fit={!wide}
               label={t("kpi.unacknowledged")}
               value={formatNumber(kpis.alarmsUnacknowledged, locale)}
               accent={kpis.alarmsUnacknowledged > 0 ? "text-amber-600" : "text-ink-800"}
@@ -66,7 +68,7 @@ export function KpiStrip({ liveOnlineCount, liveOfflineCount, leftInset = 0 }: P
           type="button"
           onClick={() => setCollapsed((v) => !v)}
           aria-label={collapsed ? "Expand KPIs" : "Collapse KPIs"}
-          className="flex shrink-0 items-center px-2 text-ink-400 transition-colors hover:bg-surface-100 hover:text-ink-700"
+          className="flex min-w-[36px] shrink-0 items-center justify-center px-2 text-ink-500 transition-colors hover:bg-surface-100 hover:text-ink-700"
         >
           <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
             {collapsed ? <path d="M9 5l7 7-7 7" /> : <path d="M15 19l-7-7 7-7" />}
@@ -83,17 +85,26 @@ interface KpiProps {
   unit?: string;
   subValue?: string;
   accent?: string;
+  /** Narrow screens: share the strip's width equally instead of scrolling sideways. */
+  fit?: boolean;
 }
 
-function Kpi({ label, value, unit, subValue, accent = "text-ink-800" }: KpiProps) {
+function Kpi({ label, value, unit, subValue, accent = "text-ink-800", fit = false }: KpiProps) {
   return (
-    <div className="flex min-w-[72px] shrink-0 flex-col gap-0.5 border-r border-surface-200 px-2.5 py-1.5 last:border-r-0 sm:min-w-[84px] sm:px-3">
-      <span className="text-[12px] font-medium uppercase tracking-wide text-ink-500">{label}</span>
+    <div
+      className={`flex flex-col gap-0.5 border-r border-surface-200 py-1.5 last:border-r-0 ${
+        fit ? "min-w-0 flex-1 px-2" : "min-w-[84px] shrink-0 px-3"
+      }`}
+    >
+      <span className={`text-[12px] font-medium uppercase leading-4 text-ink-500 ${fit ? "line-clamp-2 break-words" : "tracking-wide"}`}>
+        {label}
+      </span>
       <div className="flex items-baseline gap-1">
         <span className={`text-[17px] font-semibold leading-none tabular-nums ${accent}`}>{value}</span>
         {unit && <span className="text-[12px] text-ink-500">{unit}</span>}
       </div>
-      {subValue && <span className="text-[12px] text-ink-500">{subValue}</span>}
+      {/* Narrow screens keep the strip short: the critical count moves into the accessible name only. */}
+      {subValue && (fit ? <span className="sr-only">{subValue}</span> : <span className="text-[12px] text-ink-500">{subValue}</span>)}
     </div>
   );
 }

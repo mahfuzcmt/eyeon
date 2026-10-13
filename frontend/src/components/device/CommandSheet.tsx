@@ -60,7 +60,7 @@ export function CommandSheet({ device, onClose, onOpenSettings }: Props) {
   ];
 
   return (
-    <div className="absolute bottom-16 left-3 right-3 z-[1100] overflow-hidden rounded-xl border border-black/5 bg-white shadow-2xl sm:left-auto sm:w-[320px]">
+    <div className="absolute bottom-16 left-3 right-3 z-[1100] max-h-[calc(100%-5rem)] overflow-y-auto rounded-xl border border-black/5 bg-white shadow-2xl sm:left-auto sm:w-[320px]">
       <div className="flex items-center justify-between border-b border-surface-200 px-3 py-2">
         <div className="min-w-0">
           <div className="text-[15px] font-semibold text-ink-700">{t("cmd.title")}</div>

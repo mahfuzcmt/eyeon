@@ -20,6 +20,44 @@ export function UsersTab({ canManage }: { canManage: boolean }) {
   if (loading) return <div className="text-[15px] text-ink-400">{t("common.loading")}</div>;
   if (error) return <div className="text-[15px] text-alarm-red">{error}</div>;
 
+  const renderActions = (u: UserDetail) =>
+    canManage ? (
+      <div className="flex justify-end gap-2">
+        {u.role === "ORG_USER" && (
+          <button
+            type="button"
+            className="btn-ghost px-2 py-1 text-[14px]"
+            onClick={() => setManagingDevices(u)}
+          >
+            {t("users.manageDevices")}
+          </button>
+        )}
+        <button
+          type="button"
+          className="btn-ghost px-2 py-1 text-[14px]"
+          onClick={() => setEditing(u)}
+        >
+          {t("users.edit")}
+        </button>
+        {u.isActive && u.id !== selfId && (
+          <button
+            type="button"
+            className="btn-ghost px-2 py-1 text-[14px] text-alarm-red"
+            onClick={async () => {
+              if (!confirm(`${t("users.disable")} ${u.email}?`)) return;
+              try {
+                await disable(u.id);
+              } catch (err) {
+                alert(extractError(err).message);
+              }
+            }}
+          >
+            {t("users.disable")}
+          </button>
+        )}
+      </div>
+    ) : null;
+
   return (
     <div>
       <div className="mb-3 flex items-center justify-between">
@@ -33,6 +71,43 @@ export function UsersTab({ canManage }: { canManage: boolean }) {
         )}
       </div>
 
+      {/* Phone: one card per user */}
+      <ul className="space-y-2 lg:hidden">
+        {users.map((u) => {
+          const roleKey = `users.role.${u.role}` as StringKey;
+          const isAdminRole = u.role === "SUPER_ADMIN" || u.role === "ORG_ADMIN";
+          return (
+            <li key={u.id} className="space-y-1.5 rounded-lg border border-surface-300 bg-white p-3">
+              <div className="flex items-start justify-between gap-2">
+                <div className="min-w-0">
+                  <div className="truncate font-medium text-ink-900">{u.fullName ?? u.email}</div>
+                  {u.fullName && <div className="truncate text-[14px] text-ink-700">{u.email}</div>}
+                  {u.phone && <div className="text-[14px] text-ink-500">{u.phone}</div>}
+                </div>
+                <span
+                  className={`shrink-0 rounded-full px-2 py-0.5 text-[13px] ${
+                    u.isActive ? "bg-brand-500/15 text-brand-600" : "bg-ink-400/15 text-ink-500"
+                  }`}
+                >
+                  {u.isActive ? t("users.active") : t("users.inactive")}
+                </span>
+              </div>
+              <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-[14px] text-ink-700">
+                <span>{t(roleKey)}</span>
+                <span>
+                  {t("users.devices")}: {isAdminRole || u.seeAllDevices ? "All" : u.assignedDeviceCount}
+                </span>
+                <span className="text-ink-500">
+                  {t("users.lastLogin")}: {u.lastLoginAt ? formatDateTime(u.lastLoginAt, locale) : "—"}
+                </span>
+              </div>
+              {canManage && <div className="-mx-1 flex flex-wrap [&>div]:justify-start">{renderActions(u)}</div>}
+            </li>
+          );
+        })}
+      </ul>
+
+      <div className="hidden overflow-x-auto lg:block">
       <table className="w-full text-[15px]">
         <thead className="text-left text-[14px] uppercase text-ink-500 bg-surface-50">
           <tr>
@@ -79,48 +154,14 @@ export function UsersTab({ canManage }: { canManage: boolean }) {
                   </span>
                 </td>
                 <td className="px-3 py-2 text-right">
-                  {canManage && (
-                    <div className="flex justify-end gap-2">
-                      {u.role === "ORG_USER" && (
-                        <button
-                          type="button"
-                          className="btn-ghost px-2 py-1 text-[14px]"
-                          onClick={() => setManagingDevices(u)}
-                        >
-                          {t("users.manageDevices")}
-                        </button>
-                      )}
-                      <button
-                        type="button"
-                        className="btn-ghost px-2 py-1 text-[14px]"
-                        onClick={() => setEditing(u)}
-                      >
-                        {t("users.edit")}
-                      </button>
-                      {u.isActive && u.id !== selfId && (
-                        <button
-                          type="button"
-                          className="btn-ghost px-2 py-1 text-[14px] text-alarm-red"
-                          onClick={async () => {
-                            if (!confirm(`${t("users.disable")} ${u.email}?`)) return;
-                            try {
-                              await disable(u.id);
-                            } catch (err) {
-                              alert(extractError(err).message);
-                            }
-                          }}
-                        >
-                          {t("users.disable")}
-                        </button>
-                      )}
-                    </div>
-                  )}
+                  {renderActions(u)}
                 </td>
               </tr>
             );
           })}
         </tbody>
       </table>
+      </div>
 
       {editing && (
         <UserDialog
@@ -207,10 +248,10 @@ function UserDialog({
   };
 
   return (
-    <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+    <div className="fixed inset-0 z-[2400] flex items-end justify-center bg-black/40 p-0 backdrop-blur-sm sm:items-center sm:p-4" role="dialog" aria-modal="true">
       <form
         onSubmit={submit}
-        className="w-full max-w-md space-y-3 rounded-xl border border-surface-200 bg-white p-5 shadow-xl"
+        className="max-h-[92dvh] w-full max-w-md space-y-3 overflow-y-auto rounded-t-2xl border border-surface-200 bg-white p-5 shadow-xl sm:rounded-xl"
       >
         <div className="flex items-center justify-between">
           <div className="font-display text-base font-semibold text-ink-900">
@@ -218,8 +259,9 @@ function UserDialog({
           </div>
           <button
             type="button"
-            className="text-ink-400 hover:text-ink-700"
+            className="btn-icon -mr-2 text-[20px]"
             onClick={onCancel}
+            aria-label={t("common.close")}
           >
             ×
           </button>
@@ -398,8 +440,8 @@ function DeviceAssignmentDialog({
   };
 
   return (
-    <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-      <div className="w-full max-w-lg rounded-xl border border-surface-200 bg-white p-5 shadow-xl">
+    <div className="fixed inset-0 z-[2400] flex items-end justify-center bg-black/40 p-0 backdrop-blur-sm sm:items-center sm:p-4" role="dialog" aria-modal="true">
+      <div className="max-h-[92dvh] w-full max-w-lg overflow-y-auto rounded-t-2xl border border-surface-200 bg-white p-5 shadow-xl sm:rounded-xl">
         <div className="flex items-center justify-between mb-4">
           <div>
             <div className="font-display text-base font-semibold text-ink-900">
@@ -409,8 +451,9 @@ function DeviceAssignmentDialog({
           </div>
           <button
             type="button"
-            className="text-ink-400 hover:text-ink-700"
+            className="btn-icon -mr-2 text-[20px]"
             onClick={onClose}
+            aria-label={t("common.close")}
           >
             ×
           </button>

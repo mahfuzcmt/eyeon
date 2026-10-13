@@ -99,8 +99,8 @@ export function ExpectedTimesDialog({ place, onClose }: Props) {
   const nothingPicked = !(arriveOn && arrive) && !(leaveOn && leave);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink-950/40 p-4" role="dialog" aria-modal="true">
-      <div className="max-h-full w-full max-w-md overflow-y-auto rounded-2xl bg-white p-6 shadow-xl">
+    <div className="fixed inset-0 z-[2400] flex items-end justify-center bg-ink-950/40 p-0 sm:items-center sm:p-4" role="dialog" aria-modal="true">
+      <div className="max-h-[92dvh] w-full max-w-md overflow-y-auto rounded-t-2xl bg-white p-5 shadow-xl sm:max-h-full sm:rounded-2xl sm:p-6">
         <h2 className="font-display text-lg font-semibold text-ink-900">{t("place.times")}</h2>
         <p className="mb-1 text-[15px] font-semibold text-brand-500">{place.name}</p>
         <p className="mb-4 text-[14px] text-ink-500">{t("place.timesHint")}</p>

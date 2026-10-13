@@ -17,7 +17,6 @@ const EXPIRY_OPTIONS = [
   { value: 24, label: { en: "24 hours", bn: "২৪ ঘন্টা" } },
   { value: 72, label: { en: "3 days", bn: "৩ দিন" } },
   { value: 168, label: { en: "7 days", bn: "৭ দিন" } },
-  { value: 720, label: { en: "30 days", bn: "৩০ দিন" } },
 ];
 
 export function ShareLinkModal({ deviceImei, deviceName, onClose }: ShareLinkModalProps) {
@@ -96,8 +95,8 @@ export function ShareLinkModal({ deviceImei, deviceName, onClose }: ShareLinkMod
   };
 
   return (
-    <div className="fixed inset-0 z-[1300] flex items-center justify-center bg-ink-950/40 p-4">
-      <div className="bg-white rounded-lg w-full max-w-lg max-h-[80vh] overflow-hidden flex flex-col">
+    <div className="fixed inset-0 z-[2400] flex items-end justify-center bg-ink-950/40 p-0 sm:items-center sm:p-4" role="dialog" aria-modal="true">
+      <div className="flex max-h-[92dvh] w-full max-w-lg flex-col overflow-hidden rounded-t-2xl bg-white sm:max-h-[80vh] sm:rounded-lg">
         {/* Header */}
         <div className="p-4 border-b border-surface-300 flex items-center justify-between">
           <div>
@@ -107,8 +106,10 @@ export function ShareLinkModal({ deviceImei, deviceName, onClose }: ShareLinkMod
             <p className="text-[15px] text-ink-400">{deviceName || deviceImei}</p>
           </div>
           <button
+            type="button"
             onClick={onClose}
-            className="text-ink-400 hover:text-ink-900 p-1"
+            className="btn-icon"
+            aria-label={lang === "bn" ? "বন্ধ" : "Close"}
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />

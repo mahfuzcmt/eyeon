@@ -138,9 +138,14 @@ export function DeviceEditModal({ device, onClose, onSaved, onPhotoChanged }: Pr
   };
 
   return (
-    <div className="fixed inset-0 z-[1300] flex items-center justify-center bg-white/70 p-4" onClick={onClose}>
+    <div
+      className="fixed inset-0 z-[2400] flex items-end justify-center bg-ink-950/40 p-0 sm:items-center sm:bg-white/70 sm:p-4"
+      onClick={onClose}
+      role="dialog"
+      aria-modal="true"
+    >
       <div
-        className="panel w-full max-w-sm max-h-[90vh] overflow-y-auto"
+        className="panel max-h-[92dvh] w-full overflow-y-auto rounded-b-none sm:max-h-[90vh] sm:max-w-sm sm:rounded-b-[12px]"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="panel-header">

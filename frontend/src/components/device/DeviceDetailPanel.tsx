@@ -95,16 +95,6 @@ export function DeviceDetailPanel({ device, location, onClose }: Props) {
               <dt>{t("fleet.course")}</dt>
               <dd>{formatNumber(location.course, locale)}°</dd>
             </div>
-            <div className="data-row">
-              <dt>{t("fleet.acc")}</dt>
-              <dd>
-                {location.accOn == null
-                  ? "—"
-                  : location.accOn
-                    ? t("fleet.accOn")
-                    : t("fleet.accOff")}
-              </dd>
-            </div>
             {location.voltageMv != null && (
               <div className="data-row">
                 <dt>{t("fleet.voltage")}</dt>
@@ -141,15 +131,6 @@ export function DeviceDetailPanel({ device, location, onClose }: Props) {
           <div className="data-row">
             <dt>{t("veh.plate")}</dt>
             <dd className="font-mono">{device.vehiclePlate}</dd>
-          </div>
-        )}
-        {device.protocol && (
-          <div className="data-row">
-            <dt>Protocol</dt>
-            <dd className="font-mono text-[13px]">
-              {device.protocol}
-              {device.protocolVariant ? ` ${device.protocolVariant}` : ""}
-            </dd>
           </div>
         )}
       </dl>

@@ -50,11 +50,11 @@ function PhoneMock() {
             >
               <Icon path={ICONS.pin} className="h-5 w-5" />
             </motion.div>
-            <div className="absolute left-3 top-3 flex items-center gap-1.5 rounded-full bg-white px-2.5 py-1 text-[11px] font-semibold text-brand-600 shadow-sm">
+            <div className="absolute left-3 top-3 flex items-center gap-1.5 rounded-full bg-white px-2.5 py-1 text-[12px] font-semibold text-brand-600 shadow-sm">
               <span className="h-1.5 w-1.5 rounded-full bg-brand-500" />
               {t("mock.live")}
             </div>
-            <div className="absolute bottom-3 left-3 rounded-full bg-brand-500 px-2.5 py-1 text-[11px] font-semibold text-white">{t("mock.safeZone")}</div>
+            <div className="absolute bottom-3 left-3 rounded-full bg-brand-500 px-2.5 py-1 text-[12px] font-semibold text-white">{t("mock.safeZone")}</div>
           </div>
 
           {/* Notifications */}
@@ -67,7 +67,7 @@ function PhoneMock() {
                 transition={{ delay: 0.6 + i * 0.25 }}
                 className="rounded-2xl bg-white p-3 shadow-sm"
               >
-                <div className="flex items-center justify-between text-[11px] font-semibold text-ink-500">
+                <div className="flex items-center justify-between text-[12px] font-semibold text-ink-500">
                   <span>EyeOn</span>
                   {i === 0 && <span>{t("mock.now")}</span>}
                 </div>

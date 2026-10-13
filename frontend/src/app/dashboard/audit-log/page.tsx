@@ -64,29 +64,30 @@ export default function Page() {
     <div className="flex h-full flex-col">
       <div className="flex flex-wrap items-center gap-3 border-b border-surface-300 px-4 py-3">
         <h1 className="font-display text-lg font-semibold">{t("audit.title")}</h1>
-        <div className="ml-auto flex flex-wrap items-center gap-2 text-[14px]">
-          <label className="flex items-center gap-1">
-            <span className="text-ink-400">{t("common.from")}</span>
+        <div className="grid w-full grid-cols-2 items-center gap-2 text-[14px] sm:ml-auto sm:flex sm:w-auto sm:flex-wrap">
+          <label className="flex min-w-0 flex-col gap-0.5 sm:flex-row sm:items-center sm:gap-1">
+            <span className="text-ink-500">{t("common.from")}</span>
             <input
               type="date"
-              className="input w-auto py-1"
+              className="input w-full min-w-0 py-1 sm:w-auto"
               value={from}
               onChange={(e) => setFrom(e.target.value)}
               max={to}
             />
           </label>
-          <label className="flex items-center gap-1">
-            <span className="text-ink-400">{t("common.to")}</span>
+          <label className="flex min-w-0 flex-col gap-0.5 sm:flex-row sm:items-center sm:gap-1">
+            <span className="text-ink-500">{t("common.to")}</span>
             <input
               type="date"
-              className="input w-auto py-1"
+              className="input w-full min-w-0 py-1 sm:w-auto"
               value={to}
               onChange={(e) => setTo(e.target.value)}
               min={from}
             />
           </label>
           <select
-            className="input w-auto py-1"
+            className="input col-span-2 w-full py-1 sm:w-auto"
+            aria-label={t("audit.action")}
             value={action}
             onChange={(e) => setAction(e.target.value)}
           >
@@ -108,7 +109,34 @@ export default function Page() {
         )}
 
         {entries.length > 0 && (
-          <table className="w-full min-w-[760px] text-[15px]">
+          <ul className="space-y-2 p-3 lg:hidden">
+            {entries.map((e) => (
+              <li key={e.id} className="space-y-1.5 rounded-lg border border-surface-300 bg-white p-3 text-[14px]">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <span className="rounded bg-surface-100 px-2 py-0.5 font-mono text-[13px] text-ink-800">{e.action}</span>
+                  <span className="text-ink-500">{formatDateTime(e.ts, locale)}</span>
+                </div>
+                {e.resourceType && (
+                  <div className="text-ink-700">
+                    {e.resourceType} · <span className="break-all font-mono">{e.resourceId ?? "—"}</span>
+                  </div>
+                )}
+                <div className="flex flex-wrap gap-x-3 font-mono text-[13px] text-ink-500">
+                  <span>{t("audit.actor")}: {e.userId ? e.userId.slice(0, 8) : "—"}</span>
+                  <span>{t("audit.ip")}: {e.ipAddress ?? "—"}</span>
+                </div>
+                {e.metadata && (
+                  <pre className="max-h-40 overflow-auto rounded bg-surface-100 p-2 font-mono text-[13px] text-ink-800">
+                    {prettyJson(e.metadata)}
+                  </pre>
+                )}
+              </li>
+            ))}
+          </ul>
+        )}
+
+        {entries.length > 0 && (
+          <table className="hidden w-full min-w-[760px] text-[15px] lg:table">
             <thead className="sticky top-0 z-10 bg-white text-left text-[14px] uppercase text-ink-400">
               <tr>
                 <th className="px-4 py-2">{t("audit.when")}</th>

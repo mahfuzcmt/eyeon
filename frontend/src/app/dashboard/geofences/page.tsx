@@ -204,7 +204,59 @@ export default function Page() {
         )}
 
         {geofences.length > 0 && (
-          <table className="w-full min-w-[640px] text-[15px]">
+          <ul className="space-y-2 p-3 lg:hidden">
+            {geofences.map((g) => (
+              <li key={g.id} className="space-y-1.5 rounded-lg border border-surface-300 bg-white p-3">
+                <div className="flex items-center gap-2">
+                  <span className="h-3 w-3 shrink-0 rounded-sm" style={{ backgroundColor: g.color }} />
+                  <span className="min-w-0 truncate font-medium text-ink-900">{g.name}</span>
+                </div>
+                <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-[14px] text-ink-700">
+                  <span>
+                    {isPlaces
+                      ? t(`place.type.${g.placeType ?? "OTHER"}` as StringKey)
+                      : g.type === "CIRCLE" ? t("geo.circle") : t("geo.polygon")}
+                  </span>
+                  <span>
+                    {isPlaces
+                      ? t(`place.alerts.${g.notifyOn}` as StringKey)
+                      : t(({ ENTER: "geo.notifyEnter", EXIT: "geo.notifyExit", BOTH: "geo.notifyBoth", NONE: "geo.notifyNone" } as const)[g.notifyOn])}
+                  </span>
+                  <span>{g.radiusM ? `${g.radiusM} m` : `${g.polygon.length} pts`}</span>
+                </div>
+                {g.address && <div className="truncate text-[14px] text-ink-500">{g.address}</div>}
+                <div className="-mx-1 flex flex-wrap items-center gap-1 pt-0.5">
+                  <button
+                    type="button"
+                    className="btn-ghost px-2 text-[14px]"
+                    onClick={() => openAssignDialog({ id: g.id, name: g.name })}
+                  >
+                    {t("geo.people")}: {deviceCounts[g.id] ?? 0}
+                  </button>
+                  {isPlaces && (
+                    <button type="button" className="btn-ghost px-2 text-[14px]" onClick={() => setTimesFor(g)}>
+                      {t("place.times")}
+                    </button>
+                  )}
+                  <button type="button" className="btn-ghost px-2 text-[14px]" onClick={() => setEditor(g)}>
+                    {t("common.edit")}
+                  </button>
+                  <button
+                    type="button"
+                    className="btn-ghost px-2 text-[14px] text-alarm-red"
+                    disabled={busyId === g.id}
+                    onClick={() => handleDelete(g.id, g.name)}
+                  >
+                    {busyId === g.id ? t("common.loading") : t("common.delete")}
+                  </button>
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
+
+        {geofences.length > 0 && (
+          <table className="hidden w-full min-w-[640px] text-[15px] lg:table">
             <thead className="sticky top-0 z-10 bg-white text-left text-[14px] uppercase text-ink-400">
               <tr>
                 <th className="px-4 py-2">{t("geo.name")}</th>
@@ -310,8 +362,8 @@ export default function Page() {
 
       {/* Device Assignment Dialog */}
       {assigningGeofence && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink-950/40">
-          <div className="w-full max-w-md rounded-lg bg-white p-6 shadow-xl">
+        <div className="fixed inset-0 z-[2400] flex items-end justify-center bg-ink-950/40 p-0 sm:items-center sm:p-4" role="dialog" aria-modal="true">
+          <div className="flex max-h-[92dvh] w-full max-w-md flex-col rounded-t-2xl bg-white p-5 shadow-xl sm:rounded-lg sm:p-6">
             <h2 className="mb-1 text-lg font-semibold text-ink-900">
               {t("geo.assignPeople")}
             </h2>
@@ -336,7 +388,7 @@ export default function Page() {
                       />
                       <button
                         type="button"
-                        className="ml-2 text-[14px] text-brand-500 hover:text-brand-400 whitespace-nowrap"
+                        className="ml-2 min-h-[40px] whitespace-nowrap px-1 text-[14px] text-brand-600 hover:text-brand-500"
                         onClick={allDevicesSelected ? deselectAllDevices : selectAllDevices}
                       >
                         {allDevicesSelected ? "Deselect All" : "Select All"}
@@ -345,7 +397,7 @@ export default function Page() {
                   </div>
                 )}
 
-                <div className="max-h-80 overflow-y-auto rounded border border-surface-300 bg-surface-50">
+                <div className="max-h-80 min-h-0 flex-1 overflow-y-auto rounded border border-surface-300 bg-surface-50">
                   {devices.length === 0 ? (
                     <div className="py-6 text-center text-[15px] text-ink-400">
                       {t("common.empty")}
@@ -359,7 +411,7 @@ export default function Page() {
                       {filteredDevices.map((d) => (
                         <li
                           key={d.imei}
-                          className="flex cursor-pointer items-center gap-3 px-3 py-2 hover:bg-surface-100"
+                          className="flex min-h-[44px] cursor-pointer items-center gap-3 px-3 py-2 hover:bg-surface-100"
                           onClick={() => toggleDevice(d.imei)}
                         >
                           <input

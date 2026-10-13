@@ -241,8 +241,9 @@ export default function DashboardPage() {
 
       {/* Mobile vehicle sheet: a grab bar at the bottom that expands over the map */}
       <section
-        className={`absolute inset-x-0 bottom-0 z-[1000] flex flex-col overflow-hidden rounded-t-2xl border-t border-black/10 bg-white shadow-[0_-8px_24px_rgba(0,0,0,0.12)] transition-[height] duration-300 ease-out md:hidden ${
-          sheetOpen ? "h-[65%]" : ""
+        className={`absolute inset-x-0 bottom-0 flex flex-col overflow-hidden rounded-t-2xl border-t border-black/10 bg-white shadow-[0_-8px_24px_rgba(0,0,0,0.12)] transition-[height] duration-300 ease-out md:hidden ${
+          // Open: above the alarm bell (z-1050) and the status pills so they do not cover list rows.
+          sheetOpen ? "z-[1060] h-[65%]" : "z-[1000]"
         }`}
         style={sheetOpen ? undefined : { height: SHEET_BAR }}
         aria-label={t("nav.vehicles")}
@@ -308,8 +309,8 @@ export default function DashboardPage() {
         const go = (kind: "TRUSTED_PLACE" | "BOUNDARY") =>
           router.push(`/dashboard/geofences?new=${kind}&lat=${loc.latitude}&lng=${loc.longitude}&device=${selectedDevice.imei}`);
         return (
-          <div className="fixed inset-0 z-[5000] flex items-center justify-center bg-ink-950/40 p-4" role="dialog" aria-modal="true" onClick={() => setPanel(null)}>
-            <div className="w-full max-w-sm rounded-2xl bg-white p-5 shadow-xl" onClick={(e) => e.stopPropagation()}>
+          <div className="fixed inset-0 z-[5000] flex items-end justify-center bg-ink-950/40 p-0 sm:items-center sm:p-4" role="dialog" aria-modal="true" onClick={() => setPanel(null)}>
+            <div className="max-h-[92dvh] w-full overflow-y-auto rounded-t-2xl bg-white p-5 shadow-xl sm:max-w-sm sm:rounded-2xl" onClick={(e) => e.stopPropagation()}>
               <h2 className="font-display text-lg font-semibold text-ink-900">{t("popup.addZone")}</h2>
               <p className="mb-4 text-[14px] text-ink-500">{t("popup.addZoneHint")}</p>
               <div className="space-y-2">

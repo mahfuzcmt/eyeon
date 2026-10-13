@@ -48,7 +48,7 @@ export default function AdminPage() {
 
       {/* Tabs */}
       <div className="shrink-0 border-b border-surface-300 bg-white px-4">
-        <div className="flex gap-4">
+        <div className="flex gap-4 overflow-x-auto">
           <TabButton
             active={activeTab === "orgs"}
             onClick={() => setActiveTab("orgs")}
@@ -285,8 +285,46 @@ function OrgsTab() {
         </form>
       )}
 
-      {/* Orgs Table */}
-      <div className="overflow-x-auto rounded-lg border border-surface-300 bg-white">
+      {/* Phone: one card per organization */}
+      <ul className="space-y-2 lg:hidden">
+        {orgs.length === 0 && (
+          <li className="rounded-lg border border-surface-300 bg-white px-4 py-8 text-center text-ink-500">
+            No organizations found
+          </li>
+        )}
+        {orgs.map((org) => (
+          <li key={org.id} className="space-y-2 rounded-lg border border-surface-300 bg-white p-3">
+            <div className="flex items-start justify-between gap-2">
+              <div className="min-w-0">
+                <div className="font-medium text-ink-900">{org.name}</div>
+                <div className="truncate font-mono text-[13px] text-ink-500">{org.slug}</div>
+              </div>
+              <StatusBadge status={org.status} />
+            </div>
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[14px] text-ink-700">
+              <span className="rounded bg-brand-50 px-2 py-0.5 font-medium text-brand-700">{org.planTier}</span>
+              <span>{org.deviceCount} devices</span>
+              <span>{org.userCount} users</span>
+              <span className="text-ink-500">{formatRelative(org.createdAt, locale)}</span>
+            </div>
+            <label className="block">
+              <span className="sr-only">Status of {org.name}</span>
+              <select
+                value={org.status}
+                onChange={(e) => handleStatusChange(org, e.target.value)}
+                className="select"
+              >
+                <option value="ACTIVE">Active</option>
+                <option value="SUSPENDED">Suspended</option>
+                <option value="CANCELLED">Cancelled</option>
+              </select>
+            </label>
+          </li>
+        ))}
+      </ul>
+
+      {/* Desktop: table */}
+      <div className="hidden overflow-x-auto rounded-lg border border-surface-300 bg-white lg:block">
         <table className="w-full text-left text-[15px]">
           <thead className="border-b border-surface-200 bg-surface-50">
             <tr>
@@ -365,10 +403,11 @@ function StatusBadge({ status }: { status: string }) {
 function DevicesTab() {
   const { orgs } = useAdminOrgs();
   const [orgFilter, setOrgFilter] = useState<string>("");
-  const { devices, loading, error, reassignDevice } = useAdminDevices(orgFilter || undefined);
+  const { devices, loading, error, reassignDevice, deleteDevice } = useAdminDevices(orgFilter || undefined);
   const { locale } = useLocale();
   const [reassigning, setReassigning] = useState<string | null>(null);
   const [selectedTargetOrg, setSelectedTargetOrg] = useState<Record<string, string>>({});
+  const [toDelete, setToDelete] = useState<DeviceAdminView | null>(null);
 
   const handleReassign = async (imei: string) => {
     const targetOrgId = selectedTargetOrg[imei];
@@ -397,15 +436,56 @@ function DevicesTab() {
     return <div className="py-10 text-center text-[15px] text-status-stopped">{error}</div>;
   }
 
+  const reassignControls = (device: DeviceAdminView) => (
+    <div className="flex flex-wrap items-center gap-2">
+      <select
+        value={selectedTargetOrg[device.imei] ?? ""}
+        onChange={(e) =>
+          setSelectedTargetOrg((prev) => ({
+            ...prev,
+            [device.imei]: e.target.value,
+          }))
+        }
+        aria-label={`Move ${device.imei} to organization`}
+        className="min-w-0 flex-1 rounded border border-surface-300 px-2 py-1 text-[14px] md:flex-none"
+      >
+        <option value="">Select org...</option>
+        {orgs
+          .filter((o) => o.id !== device.orgId)
+          .map((org) => (
+            <option key={org.id} value={org.id}>
+              {org.name}
+            </option>
+          ))}
+      </select>
+      <button
+        type="button"
+        onClick={() => handleReassign(device.imei)}
+        disabled={!selectedTargetOrg[device.imei] || reassigning === device.imei}
+        className="rounded bg-brand-500 px-2 py-1 text-[14px] font-medium text-white hover:bg-brand-600 disabled:opacity-50"
+      >
+        {reassigning === device.imei ? "..." : "Move"}
+      </button>
+      <button
+        type="button"
+        onClick={() => setToDelete(device)}
+        className="rounded border border-alarm-red/40 px-2 py-1 text-[14px] font-medium text-alarm-red hover:bg-alarm-red/10"
+      >
+        Delete
+      </button>
+    </div>
+  );
+
   return (
     <div className="space-y-4">
       {/* Filter */}
-      <div className="flex items-center gap-4">
-        <label className="text-[15px] font-medium text-ink-700">Filter by Organization:</label>
+      <div className="flex flex-wrap items-center gap-2 sm:gap-4">
+        <label htmlFor="admin-org-filter" className="text-[15px] font-medium text-ink-700">Filter by Organization:</label>
         <select
+          id="admin-org-filter"
           value={orgFilter}
           onChange={(e) => setOrgFilter(e.target.value)}
-          className="rounded-md border border-surface-300 px-3 py-1.5 text-[15px] focus:border-brand-500 focus:outline-none"
+          className="w-full rounded-md border border-surface-300 px-3 py-1.5 text-[15px] focus:border-brand-500 focus:outline-none sm:w-auto"
         >
           <option value="">All Organizations</option>
           {orgs.map((org) => (
@@ -416,8 +496,37 @@ function DevicesTab() {
         </select>
       </div>
 
-      {/* Devices Table */}
-      <div className="overflow-x-auto rounded-lg border border-surface-300 bg-white">
+      {/* Phone: one card per tracker */}
+      <ul className="space-y-2 lg:hidden">
+        {devices.length === 0 && (
+          <li className="rounded-lg border border-surface-300 bg-white px-4 py-8 text-center text-ink-500">
+            No devices found
+          </li>
+        )}
+        {devices.map((device) => (
+          <li key={device.imei} className="space-y-2 rounded-lg border border-surface-300 bg-white p-3">
+            <div className="flex items-start justify-between gap-2">
+              <div className="min-w-0">
+                <div className="truncate font-medium text-ink-900">
+                  {device.name || device.vehiclePlate || "—"}
+                </div>
+                <div className="font-mono text-[13px] text-ink-500">{device.imei}</div>
+              </div>
+              <DeviceStatusBadge status={device.status} />
+            </div>
+            <div className="text-[14px] text-ink-700">
+              {device.orgName} ·{" "}
+              <span className="text-ink-500">
+                {device.lastSeenAt ? formatRelative(device.lastSeenAt, locale) : "Never"}
+              </span>
+            </div>
+            {reassignControls(device)}
+          </li>
+        ))}
+      </ul>
+
+      {/* Desktop: table */}
+      <div className="hidden overflow-x-auto rounded-lg border border-surface-300 bg-white lg:block">
         <table className="w-full text-left text-[15px]">
           <thead className="border-b border-surface-200 bg-surface-50">
             <tr>
@@ -426,7 +535,7 @@ function DevicesTab() {
               <th className="px-4 py-2 font-medium text-ink-700">Organization</th>
               <th className="px-4 py-2 font-medium text-ink-700">Status</th>
               <th className="px-4 py-2 font-medium text-ink-700">Last Seen</th>
-              <th className="px-4 py-2 font-medium text-ink-700">Reassign</th>
+              <th className="px-4 py-2 font-medium text-ink-700">Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -450,43 +559,105 @@ function DevicesTab() {
                 <td className="px-4 py-2 text-[14px] text-ink-500">
                   {device.lastSeenAt ? formatRelative(device.lastSeenAt, locale) : "Never"}
                 </td>
-                <td className="px-4 py-2">
-                  <div className="flex items-center gap-2">
-                    <select
-                      value={selectedTargetOrg[device.imei] ?? ""}
-                      onChange={(e) =>
-                        setSelectedTargetOrg((prev) => ({
-                          ...prev,
-                          [device.imei]: e.target.value,
-                        }))
-                      }
-                      className="rounded border border-surface-300 px-2 py-1 text-[14px]"
-                    >
-                      <option value="">Select org...</option>
-                      {orgs
-                        .filter((o) => o.id !== device.orgId)
-                        .map((org) => (
-                          <option key={org.id} value={org.id}>
-                            {org.name}
-                          </option>
-                        ))}
-                    </select>
-                    <button
-                      type="button"
-                      onClick={() => handleReassign(device.imei)}
-                      disabled={
-                        !selectedTargetOrg[device.imei] || reassigning === device.imei
-                      }
-                      className="rounded bg-brand-500 px-2 py-1 text-[14px] font-medium text-white hover:bg-brand-600 disabled:opacity-50"
-                    >
-                      {reassigning === device.imei ? "..." : "Move"}
-                    </button>
-                  </div>
-                </td>
+                <td className="px-4 py-2">{reassignControls(device)}</td>
               </tr>
             ))}
           </tbody>
         </table>
+      </div>
+
+      {toDelete && (
+        <DeleteDeviceDialog
+          device={toDelete}
+          onCancel={() => setToDelete(null)}
+          onConfirm={async () => {
+            await deleteDevice(toDelete.imei);
+            setToDelete(null);
+          }}
+        />
+      )}
+    </div>
+  );
+}
+
+/** Asks the super admin to type the last 4 digits of the IMEI before deleting for good. */
+function DeleteDeviceDialog({
+  device,
+  onCancel,
+  onConfirm,
+}: {
+  device: DeviceAdminView;
+  onCancel: () => void;
+  onConfirm: () => Promise<void>;
+}) {
+  const [typed, setTyped] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+  const tail = device.imei.slice(-4);
+  const label = device.name || device.vehiclePlate || device.imei;
+
+  const submit = async () => {
+    setBusy(true);
+    setErr(null);
+    try {
+      await onConfirm();
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : "Failed to delete device");
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div
+      className="fixed inset-0 z-[2400] flex items-end justify-center bg-black/40 p-0 sm:items-center sm:p-4"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="delete-device-title"
+      onClick={(e) => { if (e.target === e.currentTarget && !busy) onCancel(); }}
+    >
+      <div className="max-h-[92dvh] w-full max-w-md overflow-y-auto rounded-t-2xl bg-white p-5 shadow-xl sm:rounded-2xl">
+        <h2 id="delete-device-title" className="text-lg font-semibold text-ink-900">
+          Delete {label}?
+        </h2>
+        <p className="mt-2 text-[15px] text-ink-700">
+          This permanently removes tracker <span className="font-mono">{device.imei}</span> from{" "}
+          <strong>{device.orgName}</strong> together with its location history, alarms, places
+          assignments, share links and settings. It cannot be undone.
+        </p>
+        <p className="mt-2 text-[14px] text-ink-500">
+          If the tracker is still switched on it will connect again and appear as a new tracker
+          in the default organization, with no history.
+        </p>
+        <label htmlFor="delete-confirm" className="mt-4 block text-[14px] font-medium text-ink-700">
+          Type the last 4 digits of the IMEI (<span className="font-mono">{tail}</span>) to confirm
+        </label>
+        <input
+          id="delete-confirm"
+          inputMode="numeric"
+          autoComplete="off"
+          value={typed}
+          onChange={(e) => setTyped(e.target.value.trim())}
+          className="mt-1 w-full rounded-md border border-surface-300 px-3 py-2 font-mono text-[15px] focus:border-brand-500 focus:outline-none"
+        />
+        {err && <p className="mt-2 text-[14px] text-alarm-red">{err}</p>}
+        <div className="mt-5 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+          <button
+            type="button"
+            onClick={onCancel}
+            disabled={busy}
+            className="rounded-md border border-surface-300 px-4 py-2 text-[15px] font-medium text-ink-700 hover:bg-surface-100"
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            onClick={submit}
+            disabled={busy || typed !== tail}
+            className="rounded-md bg-alarm-red px-4 py-2 text-[15px] font-semibold text-white hover:opacity-90 disabled:opacity-50"
+          >
+            {busy ? "Deleting..." : "Delete permanently"}
+          </button>
+        </div>
       </div>
     </div>
   );
@@ -660,8 +831,8 @@ function SubscriptionsTab() {
       </div>
 
       {/* Search Filters */}
-      <div className="flex flex-wrap items-end gap-4 rounded-lg border border-surface-300 bg-white p-4">
-        <div>
+      <div className="flex flex-wrap items-end gap-3 rounded-lg sm:gap-4 border border-surface-300 bg-white p-4">
+        <div className="w-full sm:w-auto">
           <label className="mb-1 block text-[14px] font-medium text-ink-700">
             Search IMEI
           </label>
@@ -670,17 +841,17 @@ function SubscriptionsTab() {
             value={imeiFilter}
             onChange={(e) => setImeiFilter(e.target.value)}
             placeholder="IMEI prefix..."
-            className="rounded-md border border-surface-300 px-3 py-1.5 text-[15px] focus:border-brand-500 focus:outline-none"
+            className="w-full rounded-md border border-surface-300 px-3 py-2 text-[15px] focus:border-brand-500 focus:outline-none sm:w-auto sm:py-1.5"
           />
         </div>
-        <div>
+        <div className="w-full sm:w-auto">
           <label className="mb-1 block text-[14px] font-medium text-ink-700">
             Organization
           </label>
           <select
             value={orgFilter}
             onChange={(e) => setOrgFilter(e.target.value)}
-            className="rounded-md border border-surface-300 px-3 py-1.5 text-[15px] focus:border-brand-500 focus:outline-none"
+            className="w-full rounded-md border border-surface-300 px-3 py-2 text-[15px] focus:border-brand-500 focus:outline-none sm:w-auto sm:py-1.5"
           >
             <option value="">All</option>
             {orgs.map((org) => (
@@ -690,14 +861,14 @@ function SubscriptionsTab() {
             ))}
           </select>
         </div>
-        <div>
+        <div className="w-full sm:w-auto">
           <label className="mb-1 block text-[14px] font-medium text-ink-700">
             Status
           </label>
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            className="rounded-md border border-surface-300 px-3 py-1.5 text-[15px] focus:border-brand-500 focus:outline-none"
+            className="w-full rounded-md border border-surface-300 px-3 py-2 text-[15px] focus:border-brand-500 focus:outline-none sm:w-auto sm:py-1.5"
           >
             <option value="">All</option>
             <option value="ACTIVE">Active</option>
@@ -709,21 +880,21 @@ function SubscriptionsTab() {
         <button
           type="button"
           onClick={handleSearch}
-          className="rounded-lg bg-brand-500 px-4 py-1.5 text-[15px] font-medium text-white hover:bg-brand-600"
+          className="rounded-lg bg-brand-500 min-h-[40px] px-4 py-1.5 text-[15px] font-medium text-white hover:bg-brand-600"
         >
           Search
         </button>
         <button
           type="button"
           onClick={() => findExpired()}
-          className="rounded-lg border border-surface-300 px-4 py-1.5 text-[15px] font-medium text-ink-700 hover:bg-surface-50"
+          className="rounded-lg border border-surface-300 min-h-[40px] px-4 py-1.5 text-[15px] font-medium text-ink-700 hover:bg-surface-50"
         >
           Show Expired
         </button>
         <button
           type="button"
           onClick={() => findDueSoon(7)}
-          className="rounded-lg border border-surface-300 px-4 py-1.5 text-[15px] font-medium text-ink-700 hover:bg-surface-50"
+          className="rounded-lg border border-surface-300 min-h-[40px] px-4 py-1.5 text-[15px] font-medium text-ink-700 hover:bg-surface-50"
         >
           Due Soon
         </button>
@@ -731,7 +902,7 @@ function SubscriptionsTab() {
           type="button"
           onClick={handleLoadDevicesWithoutSub}
           disabled={loadingNoSub}
-          className="rounded-lg border border-status-stopped px-4 py-1.5 text-[15px] font-medium text-status-stopped hover:bg-status-stopped/10"
+          className="rounded-lg border border-status-stopped min-h-[40px] px-4 py-1.5 text-[15px] font-medium text-status-stopped hover:bg-status-stopped/10"
         >
           {loadingNoSub ? "Loading..." : "Devices Without Subscription"}
         </button>
@@ -755,7 +926,26 @@ function SubscriptionsTab() {
           {devicesWithoutSub.length === 0 ? (
             <p className="text-[15px] text-ink-500">All devices have subscriptions.</p>
           ) : (
-            <div className="overflow-x-auto">
+            <>
+            <ul className="space-y-2 lg:hidden">
+              {devicesWithoutSub.map((d) => (
+                <li key={d.imei} className="flex items-center justify-between gap-3 rounded-lg border border-surface-300 bg-white p-3">
+                  <div className="min-w-0">
+                    <div className="truncate font-medium text-ink-900">{d.deviceName || "—"}</div>
+                    <div className="font-mono text-[13px] text-ink-500">{d.imei}</div>
+                    <div className="truncate text-[14px] text-ink-700">{d.orgName}</div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setShowCreateModal(d)}
+                    className="min-h-[40px] shrink-0 rounded-lg bg-brand-500 px-3 text-[14px] font-medium text-white hover:bg-brand-600"
+                  >
+                    Create
+                  </button>
+                </li>
+              ))}
+            </ul>
+            <div className="hidden overflow-x-auto lg:block">
               <table className="w-full text-left text-[15px]">
                 <thead className="border-b border-surface-200 bg-surface-50">
                   <tr>
@@ -785,12 +975,54 @@ function SubscriptionsTab() {
                 </tbody>
               </table>
             </div>
+            </>
           )}
         </div>
       )}
 
-      {/* Subscriptions Table */}
-      <div className="overflow-x-auto rounded-lg border border-surface-300 bg-white">
+      {/* Phone: one card per subscription */}
+      <ul className="space-y-2 lg:hidden">
+        {subscriptions.length === 0 && (
+          <li className="rounded-lg border border-surface-300 bg-white px-4 py-8 text-center text-ink-500">
+            No subscriptions found
+          </li>
+        )}
+        {subscriptions.map((sub) => (
+          <li
+            key={sub.id}
+            className={`space-y-2 rounded-lg border border-surface-300 p-3 ${sub.isExpired ? "bg-status-stopped/5" : "bg-white"}`}
+          >
+            <div className="flex items-start justify-between gap-2">
+              <div className="min-w-0">
+                <div className="truncate font-medium text-ink-900">{getOrgName(sub.orgId)}</div>
+                <div className="font-mono text-[13px] text-ink-500">{sub.deviceImei}</div>
+              </div>
+              <SubscriptionStatusBadge status={sub.effectiveStatus} />
+            </div>
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[14px] text-ink-700">
+              <span className="rounded bg-brand-50 px-2 py-0.5 font-medium text-brand-700">{sub.planTier}</span>
+              <span>Expires {formatDate(sub.nextDueAt)}</span>
+              <span
+                className={`font-medium ${
+                  sub.isExpired ? "text-status-stopped" : sub.daysUntilDue <= 7 ? "text-status-idle" : "text-ink-700"
+                }`}
+              >
+                {sub.isExpired ? "Expired" : `${sub.daysUntilDue} days left`}
+              </span>
+            </div>
+            <button
+              type="button"
+              onClick={() => setShowExtendModal(sub)}
+              className="min-h-[40px] w-full rounded-lg bg-brand-500 px-3 text-[15px] font-medium text-white hover:bg-brand-600"
+            >
+              Extend
+            </button>
+          </li>
+        ))}
+      </ul>
+
+      {/* Desktop: table */}
+      <div className="hidden overflow-x-auto rounded-lg border border-surface-300 bg-white lg:block">
         <table className="w-full text-left text-[15px]">
           <thead className="border-b border-surface-200 bg-surface-50">
             <tr>
@@ -865,8 +1097,8 @@ function SubscriptionsTab() {
 
       {/* Extend Modal */}
       {showExtendModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="w-full max-w-md rounded-lg bg-white p-6 shadow-xl">
+        <div className="fixed inset-0 z-[2400] flex items-end justify-center bg-black/50 p-0 sm:items-center sm:p-4" role="dialog" aria-modal="true">
+          <div className="max-h-[92dvh] w-full max-w-md overflow-y-auto rounded-t-2xl bg-white p-5 shadow-xl sm:rounded-lg sm:p-6">
             <h3 className="mb-4 text-lg font-semibold text-ink-900">
               Extend Subscription
             </h3>
@@ -933,8 +1165,8 @@ function SubscriptionsTab() {
 
       {/* Create Subscription Modal */}
       {showCreateModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="w-full max-w-md rounded-lg bg-white p-6 shadow-xl">
+        <div className="fixed inset-0 z-[2400] flex items-end justify-center bg-black/50 p-0 sm:items-center sm:p-4" role="dialog" aria-modal="true">
+          <div className="max-h-[92dvh] w-full max-w-md overflow-y-auto rounded-t-2xl bg-white p-5 shadow-xl sm:rounded-lg sm:p-6">
             <h3 className="mb-4 text-lg font-semibold text-ink-900">
               Create Subscription
             </h3>

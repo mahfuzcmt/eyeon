@@ -103,14 +103,14 @@ export default function Page() {
 
         {/* Excel Export Section */}
         <div className="panel p-4">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <div className="font-display text-[15px] font-semibold">{t("reports.excelExport")}</div>
               <p className="text-[14px] text-ink-400 mt-1">{t("reports.excelExportDesc")}</p>
             </div>
             <button
               type="button"
-              className="btn-primary flex items-center gap-2"
+              className="btn-primary flex shrink-0 items-center gap-2 whitespace-nowrap"
               onClick={() => setShowExportModal(true)}
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

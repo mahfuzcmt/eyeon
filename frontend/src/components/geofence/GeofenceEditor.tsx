@@ -296,7 +296,7 @@ export function GeofenceEditor({ kind, initial, start, onSubmit, onCancel }: Pro
           <div className="font-display text-[17px] font-semibold">
             {isPlace ? t(initial ? "place.edit" : "place.add") : t(initial ? "geo.edit" : "geo.new")}
           </div>
-          <button type="button" className="btn-icon" aria-label={t("common.cancel")} onClick={onCancel}>
+          <button type="button" className="btn-icon text-[20px]" aria-label={t("common.cancel")} onClick={onCancel}>
             ×
           </button>
         </div>
@@ -439,7 +439,8 @@ export function GeofenceEditor({ kind, initial, start, onSubmit, onCancel }: Pro
 
         {error && <div className="text-[14px] text-alarm-red">{error}</div>}
 
-        <div className="mt-auto flex gap-2">
+        {/* Phones: the form scrolls in the top half of the screen, so keep Save in view. */}
+        <div className="sticky bottom-0 -mx-4 -mb-4 mt-auto flex gap-2 border-t border-surface-200 bg-white px-4 py-3 md:static md:m-0 md:mt-auto md:border-0 md:p-0">
           <button type="button" className="btn-ghost flex-1" onClick={onCancel}>
             {t("common.cancel")}
           </button>

@@ -56,7 +56,7 @@ export default function DeviceDetailPage() {
     <div className="flex h-full min-h-0 flex-col bg-surface-50">
       {/* Header */}
       <div className="flex shrink-0 items-center gap-3 border-b border-surface-300 bg-white px-3 py-2">
-        <Link href="/dashboard/devices" className="btn-icon" title={t("veh.title")}>‹</Link>
+        <Link href="/dashboard/devices" className="btn-icon text-[22px]" title={t("veh.title")} aria-label={t("veh.title")}>‹</Link>
         <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: VEHICLE_STATE_COLOR[state] }} />
         <div className="min-w-0">
           <div className="truncate text-[15px] font-semibold text-ink-900">

@@ -45,7 +45,7 @@ export function AcknowledgeDialog({ alarm, deviceName, onConfirm, onClose }: Pro
           </div>
           <button type="button" className="btn-icon" onClick={onClose} aria-label={t("common.close")}>×</button>
         </div>
-        <div className="flex flex-col gap-3 p-4">
+        <div className="modal-body flex flex-col gap-3 p-4">
           <label className="text-[14px]">
             <span className="mb-1 block text-ink-500">{t("alarms.processResult")}</span>
             <select className="select" value={result} onChange={(e) => setResult(e.target.value as AlarmProcessResult)}>

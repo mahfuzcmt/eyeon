@@ -235,14 +235,14 @@ export function RouteHistoryPanel({ device, onClose }: Props) {
       </div>
 
       {/* Period selector */}
-      <div className="flex flex-wrap items-center gap-2 border-b border-surface-300 px-4 py-2">
-        <span className="text-[15px] text-ink-400">{t("fleet.period")}:</span>
+      <div className="flex items-center gap-2 overflow-x-auto border-b border-surface-300 px-4 py-2 [scrollbar-width:none] sm:flex-wrap [&::-webkit-scrollbar]:hidden">
+        <span className="shrink-0 text-[15px] text-ink-500">{t("fleet.period")}:</span>
         {(["1h", "6h", "24h", "7d"] as Period[]).map((p) => (
           <button
             key={p}
             type="button"
             onClick={() => setPeriod(p)}
-            className={`px-3 py-1 text-[15px] rounded ${
+            className={`shrink-0 whitespace-nowrap rounded px-3 py-1 text-[15px] [@media(pointer:coarse)]:min-h-[44px] ${
               period === p
                 ? "bg-brand-500 text-white"
                 : "bg-white text-ink-800 hover:bg-surface-200"
@@ -303,10 +303,6 @@ export function RouteHistoryPanel({ device, onClose }: Props) {
                   <div className="text-ink-900 font-mono">{(selectedPoint.voltageMv / 1000).toFixed(1)}V</div>
                 </>
               )}
-              <div className="text-ink-400">ACC:</div>
-              <div className={selectedPoint.accOn ? "text-alarm-green" : "text-ink-400"}>
-                {selectedPoint.accOn ? "ON" : "OFF"}
-              </div>
             </div>
           </div>
         )}

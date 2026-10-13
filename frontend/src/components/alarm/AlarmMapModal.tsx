@@ -66,7 +66,7 @@ export function AlarmMapModal({ alarm, deviceName, onClose }: { alarm: AlarmView
             </svg>
           </button>
         </div>
-        <div ref={containerRef} className="h-[60vh] w-full bg-surface-100" />
+        <div ref={containerRef} className="h-[60dvh] w-full shrink-0 bg-surface-100" />
         <div className="modal-footer">
           <a
             className="btn-secondary"
