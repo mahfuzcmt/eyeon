@@ -29,6 +29,8 @@ export default function MoreScreen() {
         <View style={styles.divider} />
         <MenuRow icon="time-outline" label={t("stays.title")} onPress={() => router.push("/stays")} />
         <View style={styles.divider} />
+        <MenuRow icon="alarm-outline" label={t("arule.title")} onPress={() => router.push("/alarm-rules")} />
+        <View style={styles.divider} />
         <View style={styles.row}>
           <View style={styles.rowLeft}>
             <Ionicons name="language-outline" size={20} color={colors.textDim} />
@@ -37,6 +39,26 @@ export default function MoreScreen() {
           <LanguageToggle />
         </View>
       </View>
+
+      <View style={styles.card}>
+        <MenuRow icon="folder-open-outline" label={t("set.groups")} onPress={() => router.push("/groups")} />
+        <View style={styles.divider} />
+        <MenuRow icon="settings-outline" label={t("set.title")} onPress={() => router.push("/settings")} />
+      </View>
+
+      {user?.role === "ORG_ADMIN" || user?.role === "SUPER_ADMIN" ? (
+        <View style={styles.card}>
+          <MenuRow icon="document-text-outline" label={t("rep.title")} onPress={() => router.push("/reports")} />
+          <View style={styles.divider} />
+          <MenuRow icon="list-outline" label={t("audit.title")} onPress={() => router.push("/audit-log")} />
+          {user.role === "SUPER_ADMIN" ? (
+            <>
+              <View style={styles.divider} />
+              <MenuRow icon="key-outline" label={t("adm.title")} onPress={() => router.push("/admin")} />
+            </>
+          ) : null}
+        </View>
+      ) : null}
 
       <View style={styles.card}>
         <MenuRow icon="log-out-outline" label={t("auth.signOut")} danger onPress={() => void signOut()} />

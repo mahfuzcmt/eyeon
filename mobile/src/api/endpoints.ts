@@ -1,7 +1,36 @@
 import { api } from "./client";
 import type {
+  AdminOrgStatus,
+  AdminStats,
+  AuditLogEntry,
+  BillingStats,
+  CreateShareLinkRequest,
+  CreateSubscriptionRequest,
+  DeviceAdminView,
+  DevicesWithoutSubResponse,
+  ExtendRequest,
+  OrgAdminView,
+  OrgCreate,
+  ShareLinkView,
+  SubscriptionSearch,
+  SubscriptionView,
+  DeviceGroupInput,
+  DeviceGroupView,
+  DeviceUpdate,
+  NotificationSettings,
+  NotificationSettingsUpdate,
+  OrgDetail,
+  OrgUpdate,
+  TokenPair,
+  UserCreate,
+  UserDetail,
+  UserUpdate,
   ActivityDay,
   ActivitySummary,
+  AlarmAcknowledgeRequest,
+  AlarmOverview,
+  AlarmQuery,
+  AlarmRuleRequest,
   AlarmRuleView,
   AlarmView,
   CommandResponse,
@@ -222,9 +251,45 @@ export async function listAlarms(onlyUnacked = false, limit = 100): Promise<Alar
   return r.data;
 }
 
-export async function acknowledgeAlarm(id: string): Promise<AlarmView> {
-  const r = await api.post<AlarmView>(`/alarms/${id}/acknowledge`);
+export async function acknowledgeAlarm(id: string, body?: AlarmAcknowledgeRequest): Promise<AlarmView> {
+  const r = await api.post<AlarmView>(`/alarms/${id}/acknowledge`, body ?? {});
   return r.data;
+}
+
+/** Alarm center list: GET /alarms?type&severity&imei&from&to&unacked, paged with limit/offset. */
+export async function searchAlarms(q: AlarmQuery, limit = 50, offset = 0): Promise<AlarmView[]> {
+  const params: Record<string, string | number> = { limit, offset };
+  if (q.unacked) params.unacked = "true";
+  if (q.type) params.type = q.type;
+  if (q.severity) params.severity = q.severity;
+  if (q.imei) params.imei = q.imei;
+  if (q.from) params.from = q.from;
+  if (q.to) params.to = q.to;
+  const r = await api.get<AlarmView[]>("/alarms", { params });
+  return r.data;
+}
+
+/** Person x alarm-type counts for a period (`to` exclusive). */
+export async function alarmOverview(fromIso: string, toIso: string): Promise<AlarmOverview> {
+  const r = await api.get<AlarmOverview>("/alarms/overview", { params: { from: fromIso, to: toIso } });
+  return r.data;
+}
+
+export async function getAlarmRule(id: string): Promise<AlarmRuleView> {
+  const r = await api.get<AlarmRuleView>(`/alarm-rules/${id}`);
+  return r.data;
+}
+
+export async function createAlarmRule(req: AlarmRuleRequest): Promise<void> {
+  await api.post("/alarm-rules", req);
+}
+
+export async function updateAlarmRule(id: string, req: AlarmRuleRequest): Promise<void> {
+  await api.patch(`/alarm-rules/${id}`, req);
+}
+
+export async function deleteAlarmRule(id: string): Promise<void> {
+  await api.delete(`/alarm-rules/${id}`);
 }
 
 // ----- Personal tracker commands (PL601; CLAUDE.md §8.3) -----
@@ -306,4 +371,215 @@ export async function uploadDevicePhoto(imei: string, body: Blob | ArrayBuffer):
 
 export async function deleteDevicePhoto(imei: string): Promise<void> {
   await api.delete(`/devices/${imei}/photo`);
+}
+
+// ----- Settings: account, organization, users, notifications -----
+/** Returns a fresh token pair; every other session of this user is signed out. */
+export async function changePassword(currentPassword: string, newPassword: string): Promise<TokenPair> {
+  const r = await api.post<TokenPair>("/auth/change-password", { currentPassword, newPassword });
+  return r.data;
+}
+
+export async function getOrgDetail(): Promise<OrgDetail> {
+  const r = await api.get<OrgDetail>("/orgs/me");
+  return r.data;
+}
+
+export async function updateOrg(patch: OrgUpdate): Promise<OrgDetail> {
+  const r = await api.patch<OrgDetail>("/orgs/me", patch);
+  return r.data;
+}
+
+export async function listOrgUsers(): Promise<UserDetail[]> {
+  const r = await api.get<UserDetail[]>("/orgs/me/users");
+  return r.data;
+}
+
+export async function createOrgUser(req: UserCreate): Promise<UserDetail> {
+  const r = await api.post<UserDetail>("/orgs/me/users", req);
+  return r.data;
+}
+
+export async function updateOrgUser(id: string, patch: UserUpdate): Promise<UserDetail> {
+  const r = await api.patch<UserDetail>(`/orgs/me/users/${id}`, patch);
+  return r.data;
+}
+
+/** Soft delete: the account is disabled, its history kept. */
+export async function disableOrgUser(id: string): Promise<void> {
+  await api.delete(`/orgs/me/users/${id}`);
+}
+
+export async function getUserDeviceImeis(userId: string): Promise<string[]> {
+  const r = await api.get<string[]>(`/orgs/me/users/${userId}/devices`);
+  return r.data;
+}
+
+/** Replaces the user's assigned people with exactly this list. */
+export async function setUserDeviceImeis(userId: string, deviceImeis: string[]): Promise<string[]> {
+  const r = await api.patch<string[]>(`/orgs/me/users/${userId}/devices`, { deviceImeis });
+  return r.data;
+}
+
+export async function setUserSeeAllDevices(userId: string, seeAllDevices: boolean): Promise<UserDetail> {
+  const r = await api.patch<UserDetail>(`/orgs/me/users/${userId}/see-all-devices`, { seeAllDevices });
+  return r.data;
+}
+
+export async function getNotificationSettings(): Promise<NotificationSettings> {
+  const r = await api.get<NotificationSettings>("/users/me/notification-settings");
+  return r.data;
+}
+
+/** Full replacement of all three sets. */
+export async function saveNotificationSettings(req: NotificationSettingsUpdate): Promise<NotificationSettings> {
+  const r = await api.put<NotificationSettings>("/users/me/notification-settings", req);
+  return r.data;
+}
+
+// ----- Person details (PATCH /devices/:imei) -----
+export async function updateDevice(imei: string, req: DeviceUpdate): Promise<DeviceView> {
+  const r = await api.patch<DeviceView>(`/devices/${encodeURIComponent(imei)}`, req);
+  return r.data;
+}
+
+// ----- Groups of people (per user) -----
+export async function listGroups(): Promise<DeviceGroupView[]> {
+  const r = await api.get<DeviceGroupView[]>("/groups");
+  return r.data;
+}
+
+export async function createGroup(req: DeviceGroupInput & { name: string }): Promise<DeviceGroupView> {
+  const r = await api.post<DeviceGroupView>("/groups", req);
+  return r.data;
+}
+
+export async function updateGroup(id: string, req: DeviceGroupInput): Promise<DeviceGroupView> {
+  const r = await api.patch<DeviceGroupView>(`/groups/${id}`, req);
+  return r.data;
+}
+
+/** Its people become ungrouped. */
+export async function deleteGroup(id: string): Promise<void> {
+  await api.delete(`/groups/${id}`);
+}
+
+/** Moves these people into the group (out of any other group of yours). */
+export async function assignToGroup(id: string, imeis: string[]): Promise<void> {
+  await api.post(`/groups/${id}/devices`, { imeis });
+}
+
+export async function removeFromGroup(id: string, imeis: string[]): Promise<void> {
+  await api.delete(`/groups/${id}/devices`, { data: { imeis } });
+}
+
+// ----- Super admin (SUPER_ADMIN only; mirrors web useAdminData / useAdminSubscriptions) -----
+export async function adminStats(): Promise<AdminStats> {
+  const r = await api.get<AdminStats>("/admin/stats");
+  return r.data;
+}
+
+export async function adminListOrgs(): Promise<OrgAdminView[]> {
+  const r = await api.get<OrgAdminView[]>("/admin/orgs");
+  return r.data;
+}
+
+export async function adminCreateOrg(req: OrgCreate): Promise<OrgAdminView> {
+  const r = await api.post<OrgAdminView>("/admin/orgs", req);
+  return r.data;
+}
+
+export async function adminSetOrgStatus(id: string, status: AdminOrgStatus): Promise<OrgAdminView> {
+  const r = await api.patch<OrgAdminView>(`/admin/orgs/${id}/status`, { status });
+  return r.data;
+}
+
+export async function adminListDevices(orgId?: string): Promise<DeviceAdminView[]> {
+  const r = await api.get<DeviceAdminView[]>("/admin/devices", { params: orgId ? { orgId } : undefined });
+  return r.data;
+}
+
+export async function adminReassignDevice(imei: string, targetOrgId: string): Promise<DeviceAdminView> {
+  const r = await api.patch<DeviceAdminView>(`/admin/devices/${imei}/org`, { targetOrgId });
+  return r.data;
+}
+
+/** Permanently removes the tracker with its history (204). */
+export async function adminDeleteDevice(imei: string): Promise<void> {
+  await api.delete(`/admin/devices/${imei}`);
+}
+
+export async function adminBillingStats(): Promise<BillingStats> {
+  const r = await api.get<BillingStats>("/admin/subscriptions/stats");
+  return r.data;
+}
+
+export async function adminSearchSubscriptions(params: SubscriptionSearch): Promise<SubscriptionView[]> {
+  const r = await api.get<SubscriptionView[]>("/admin/subscriptions", { params });
+  return r.data;
+}
+
+export async function adminExpiredSubscriptions(): Promise<SubscriptionView[]> {
+  const r = await api.get<SubscriptionView[]>("/admin/subscriptions/expired");
+  return r.data;
+}
+
+export async function adminDueSoonSubscriptions(days = 7): Promise<SubscriptionView[]> {
+  const r = await api.get<SubscriptionView[]>("/admin/subscriptions/due-soon", { params: { days } });
+  return r.data;
+}
+
+export async function adminDevicesWithoutSubscription(limit = 100): Promise<DevicesWithoutSubResponse> {
+  const r = await api.get<DevicesWithoutSubResponse>("/admin/subscriptions/devices-without-subscription", {
+    params: { limit },
+  });
+  return r.data;
+}
+
+export async function adminExtendSubscription(id: string, req: ExtendRequest): Promise<SubscriptionView> {
+  const r = await api.patch<SubscriptionView>(`/admin/subscriptions/${id}/extend`, req);
+  return r.data;
+}
+
+export async function adminSetSubscriptionStatus(id: string, status: string): Promise<SubscriptionView> {
+  const r = await api.patch<SubscriptionView>(`/admin/subscriptions/${id}/status`, null, { params: { status } });
+  return r.data;
+}
+
+export async function adminCreateSubscription(req: CreateSubscriptionRequest): Promise<SubscriptionView> {
+  const r = await api.post<SubscriptionView>("/admin/subscriptions/create", req);
+  return r.data;
+}
+
+// ----- Audit log (ORG_ADMIN / SUPER_ADMIN) -----
+export async function listAuditLog(params: {
+  from?: string;
+  to?: string;
+  action?: string;
+  limit?: number;
+  offset?: number;
+}): Promise<AuditLogEntry[]> {
+  const r = await api.get<AuditLogEntry[]>("/audit-log", { params });
+  return r.data;
+}
+
+// ----- Share location links -----
+export async function listShareLinks(imei: string): Promise<ShareLinkView[]> {
+  const r = await api.get<ShareLinkView[]>(`/share-links/device/${imei}`);
+  return r.data;
+}
+
+export async function createShareLink(req: CreateShareLinkRequest): Promise<ShareLinkView> {
+  const r = await api.post<ShareLinkView>("/share-links", req);
+  return r.data;
+}
+
+export async function revokeShareLink(id: string): Promise<void> {
+  await api.delete(`/share-links/${id}`);
+}
+
+/** The caller's organization's subscriptions (Settings → Subscription). */
+export async function listMySubscriptions(): Promise<SubscriptionView[]> {
+  const r = await api.get<SubscriptionView[]>("/billing/subscriptions");
+  return r.data;
 }

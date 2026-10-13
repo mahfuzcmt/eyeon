@@ -1,19 +1,25 @@
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { Alert, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useDeviceLive } from "@/hooks/useDeviceLive";
-import { useRouter } from "expo-router";
+import { useFocusEffect, useRouter } from "expo-router";
 import * as ImagePicker from "expo-image-picker";
 import { deleteDevicePhoto, findTracker, followLive, locateNow, queryAddress, rebootDevice, uploadDevicePhoto } from "@/api/endpoints";
 import { extractError } from "@/api/client";
 import { Loading, Metric, Section } from "@/ui";
 import { fmtAgo, fmtVoltage, motionColor, motionOf, subscriptionDaysLeft, subscriptionExpired } from "@/format";
-import { useI18n } from "@/i18n";
+import { useI18n, type StringKey } from "@/i18n";
 import { colors, radius, space } from "@/theme";
 
 export default function ControlsTab({ imei, orgId }: { imei: string; orgId: string | null }) {
   const { t } = useI18n();
   const router = useRouter();
   const { device, loc, loading, reloadDevice } = useDeviceLive(imei, orgId);
+  // Coming back from "Edit details" should show the new name, class and type.
+  useFocusEffect(
+    useCallback(() => {
+      void reloadDevice();
+    }, [reloadDevice]),
+  );
   const [busy, setBusy] = useState<string | null>(null);
   const [lastReply, setLastReply] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
@@ -156,11 +162,13 @@ export default function ControlsTab({ imei, orgId }: { imei: string; orgId: stri
       {/* Device Info */}
       <Section title={t("ctrl.deviceInfo")}>
         <Metric label="IMEI" value={device?.imei ?? "—"} width="100%" />
-        <Metric label={t("ctrl.model")} value={device?.model ?? "—"} width="50%" />
-        <Metric label={t("ctrl.protocol")} value={`${device?.protocol ?? "—"}${device?.protocolVariant ? ` ${device.protocolVariant}` : ""}`} width="50%" />
         <Metric label={t("ctrl.sim")} value={device?.simMsisdn ?? "—"} width="50%" />
         <Metric label={t("ctrl.plate")} value={device?.vehiclePlate ?? "—"} width="50%" />
-        <Metric label={t("ctrl.type")} value={device?.vehicleType ?? "—"} width="50%" />
+        <Metric
+          label={t("ctrl.type")}
+          value={t(`ptype.${["BOY", "GIRL", "OLD_MAN"].includes(device?.vehicleType ?? "") ? device?.vehicleType : "PERSON"}` as StringKey)}
+          width="50%"
+        />
         <Metric label={t("track.voltage")} value={fmtVoltage(loc?.voltageMv ?? device?.lastVoltageMv)} width="50%" />
       </Section>
 
@@ -176,6 +184,14 @@ export default function ControlsTab({ imei, orgId }: { imei: string; orgId: stri
             icon="⚙️"
             disabled={busy !== null}
             onPress={() => router.push({ pathname: "/tracker-settings", params: { imei, name: device?.name ?? "" } })}
+            fullWidth
+          />
+          <CommandBtn
+            label={t("pe.editButton")}
+            tone="neutral"
+            icon="✏️"
+            disabled={busy !== null}
+            onPress={() => router.push({ pathname: "/person-edit", params: { imei } })}
             fullWidth
           />
           <CommandBtn label={t("photo.change")} tone="neutral" icon="🖼" disabled={busy !== null} loading={busy === "photo"} onPress={() => void changePhoto()} fullWidth />

@@ -90,6 +90,36 @@ export default function RootLayout() {
               headerTintColor: colors.text,
             }}
           />
+          <Stack.Screen
+            name="alarm-rules"
+            options={{
+              headerShown: true,
+              headerTitle: "",
+              headerStyle: { backgroundColor: colors.surface },
+              headerTintColor: colors.text,
+            }}
+          />
+          <Stack.Screen
+            name="alarm-rule-edit"
+            options={{
+              headerShown: true,
+              headerTitle: "",
+              headerStyle: { backgroundColor: colors.surface },
+              headerTintColor: colors.text,
+            }}
+          />
+          {["admin", "audit-log", "reports"].map((name) => (
+            <Stack.Screen
+              key={name}
+              name={name}
+              options={{
+                headerShown: true,
+                headerTitle: "",
+                headerStyle: { backgroundColor: colors.surface },
+                headerTintColor: colors.text,
+              }}
+            />
+          ))}
         </Stack>
       </AuthProvider>
       </LocaleProvider>

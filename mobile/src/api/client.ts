@@ -22,6 +22,12 @@ export const tokenStore = {
     tokens.accessToken = pair.accessToken;
     tokens.refreshToken = pair.refreshToken;
   },
+  /** Swap in a new pair (e.g. after a password change) and persist it like a refresh would. */
+  replace(pair: TokenPair) {
+    tokens.accessToken = pair.accessToken;
+    tokens.refreshToken = pair.refreshToken;
+    onTokens(pair);
+  },
   clear() {
     tokens.accessToken = null;
     tokens.refreshToken = null;

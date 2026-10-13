@@ -91,23 +91,83 @@ export interface DeviceView {
   subscriptionExpiresAt: string | null;
   /** End of the latest completed trip (ISO) — null while driving or if unknown. */
   parkedSince: string | null;
+  /** The calling user's own group for this person (groups are per user), or null. */
+  groupId?: string | null;
   /** Set when a photo was uploaded; it replaces the drawn portrait (see src/photos.ts). */
   photoUpdatedAt?: string | null;
   /** 0-100 for battery-powered trackers (reported by the tracker itself), otherwise null. */
   batteryPercent?: number | null;
 }
 
-export type AlarmRuleType = "SPEED_OVER" | "VOLTAGE_UNDER" | "ACC_ON_DURING_WINDOW";
+export type AlarmRuleType =
+  | "SPEED_OVER"
+  | "VOLTAGE_UNDER"
+  | "ACC_ON_DURING_WINDOW"
+  | "PARKING_TIMEOUT"
+  | "OFFLINE_TIMEOUT"
+  | "IDLE_TIMEOUT";
 
-/** Subset of backend dto.AlarmRuleDtos used for overspeed highlighting. */
+/** Mirrors backend dto.AlarmRuleDtos.AlarmRuleView (GET /alarm-rules). */
 export interface AlarmRuleView {
   id: string;
   name: string;
   ruleType: AlarmRuleType;
   threshold: number | null;
+  /** "HH:mm:ss", only for ACC_ON_DURING_WINDOW. */
+  windowStart?: string | null;
+  windowEnd?: string | null;
+  cooldownSeconds?: number;
+  severity?: AlarmSeverity;
   active: boolean;
   appliesToAll: boolean;
   assignedImeis: string[];
+  createdAt?: string;
+}
+
+/** Body of POST /alarm-rules and PATCH /alarm-rules/{id} (PATCH accepts any subset). */
+export interface AlarmRuleRequest {
+  name?: string;
+  ruleType?: AlarmRuleType;
+  threshold?: number | null;
+  windowStart?: string | null;
+  windowEnd?: string | null;
+  cooldownSeconds?: number;
+  severity?: AlarmSeverity;
+  active?: boolean;
+  appliesToAll?: boolean;
+  assignedImeis?: string[];
+}
+
+/** Result recorded when an alarm is acknowledged ("Process" dialog). */
+export type AlarmProcessResult = "HANDLED" | "FALSE_ALARM" | "NO_ACTION";
+
+export interface AlarmAcknowledgeRequest {
+  result?: AlarmProcessResult;
+  notes?: string;
+}
+
+/** Mirrors backend dto.AlarmDtos.AlarmOverview (GET /alarms/overview). */
+export interface AlarmOverviewRow {
+  imei: string;
+  name: string | null;
+  vehiclePlate: string | null;
+  counts: Record<string, number>;
+  total: number;
+}
+
+export interface AlarmOverview {
+  types: string[];
+  rows: AlarmOverviewRow[];
+}
+
+/** Filters for GET /alarms. `from`/`to` are ISO instants, `to` exclusive. */
+export interface AlarmQuery {
+  type?: string;
+  severity?: string;
+  imei?: string;
+  from?: string;
+  to?: string;
+  unacked?: boolean;
 }
 
 /** Mirrors backend dto.LocationDtos.LocationView and the WS LocationEvent. */
@@ -148,7 +208,15 @@ export type AlarmType =
   | "ACC_ON"
   | "ACC_OFF"
   | "LOW_BATTERY"
-  | "CURFEW_VIOLATION";
+  | "CURFEW_VIOLATION"
+  | "EXTERNAL_LOW_VOLTAGE"
+  | "REMOVE"
+  | "DOOR"
+  | "URGENT_ACCELERATION"
+  | "URGENT_DECELERATION"
+  | "PARKING_TIMEOUT"
+  | "OFFLINE_TIMEOUT"
+  | "ENGINE_IDLE";
 
 export type AlarmSeverity = "INFO" | "WARNING" | "CRITICAL";
 
@@ -163,6 +231,8 @@ export interface AlarmView {
   acknowledged: boolean;
   acknowledgedBy: string | null;
   acknowledgedAt: string | null;
+  processResult?: AlarmProcessResult | null;
+  processNotes?: string | null;
   metadata: Record<string, unknown>;
 }
 
@@ -310,4 +380,255 @@ export interface NightRestView {
   imei: string;
   from: string;
   to: string;
+}
+
+// ----- Settings: organization, users, notifications (OrgController, NotificationSettingsController) -----
+/** Mirrors backend dto.OrgDtos.OrgView. */
+export interface OrgDetail extends OrgSummary {
+  status: string;
+  contactEmail: string | null;
+  contactPhone: string | null;
+  address: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** PATCH /orgs/me: absent = unchanged; blank googleMapsApiKey = back to the platform key. */
+export interface OrgUpdate {
+  name?: string;
+  contactEmail?: string;
+  contactPhone?: string;
+  address?: string;
+  locale?: string;
+  timezone?: string;
+  googleMapsApiKey?: string;
+}
+
+/** Mirrors backend dto.OrgDtos.UserView. */
+export interface UserDetail {
+  id: string;
+  orgId: string;
+  email: string;
+  phone: string | null;
+  fullName: string | null;
+  role: UserRole;
+  isActive: boolean;
+  seeAllDevices: boolean;
+  assignedDeviceCount: number;
+  lastLoginAt: string | null;
+  createdAt: string;
+}
+
+export interface UserCreate {
+  email: string;
+  fullName: string;
+  phone?: string;
+  role: UserRole;
+  password: string;
+}
+
+export interface UserUpdate {
+  fullName?: string;
+  phone?: string;
+  role?: UserRole;
+  isActive?: boolean;
+  password?: string;
+}
+
+/** Mirrors backend dto.NotificationDtos.NotificationSettingsView. */
+export interface NotificationSettings {
+  popupTypes: string[];
+  soundTypes: string[];
+  pushTypes: string[];
+  availableTypes: string[];
+  /** false = the defaults are in effect (nothing saved yet). */
+  customized: boolean;
+}
+
+export interface NotificationSettingsUpdate {
+  popupTypes: string[];
+  soundTypes: string[];
+  pushTypes: string[];
+}
+
+// ----- Groups of people (per user; /groups) -----
+/** Mirrors backend dto.DeviceGroupDtos.DeviceGroupView. */
+export interface DeviceGroupView {
+  id: string;
+  name: string;
+  description: string | null;
+  color: string;
+  icon: string;
+  sortOrder: number;
+  deviceCount: number;
+  createdAt: string;
+}
+
+export interface DeviceGroupInput {
+  name?: string;
+  description?: string;
+  color?: string;
+  icon?: string;
+}
+
+/** Stored in devices.vehicle_type (inherited column name). Anything else renders as PERSON. */
+export type PersonType = "BOY" | "GIRL" | "OLD_MAN" | "PERSON";
+
+/** PATCH /devices/:imei - blank strings are sent as null (cleared). */
+export interface DeviceUpdate {
+  name: string | null;
+  simMsisdn: string | null;
+  vehiclePlate: string | null;
+  vehicleType: PersonType;
+  iconColor: string;
+}
+
+// ----- Super admin (backend AdminController / AdminSubscriptionController) -----
+export interface AdminStats {
+  totalOrgs: number;
+  activeOrgs: number;
+  totalDevices: number;
+  onlineDevices: number;
+  totalUsers: number;
+}
+
+export type AdminOrgStatus = "ACTIVE" | "SUSPENDED" | "CANCELLED";
+
+export interface OrgAdminView {
+  id: string;
+  name: string;
+  slug: string;
+  planTier: string;
+  status: AdminOrgStatus;
+  contactEmail: string | null;
+  contactPhone: string | null;
+  address: string | null;
+  locale: string;
+  timezone: string;
+  deviceCount: number;
+  userCount: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface OrgCreate {
+  name: string;
+  slug: string;
+  planTier?: string;
+  contactEmail?: string;
+  contactPhone?: string;
+  address?: string;
+}
+
+export interface DeviceAdminView {
+  id: string;
+  orgId: string;
+  orgName: string;
+  imei: string;
+  name: string | null;
+  simMsisdn: string | null;
+  vehiclePlate: string | null;
+  vehicleType: string | null;
+  status: DeviceStatus;
+  lastSeenAt: string | null;
+  createdAt: string;
+}
+
+export interface BillingStats {
+  total: number;
+  active: number;
+  grace: number;
+  suspended: number;
+  cancelled: number;
+  expiringIn7Days: number;
+  expiredUnpaid: number;
+}
+
+export interface SubscriptionView {
+  id: string;
+  orgId: string;
+  deviceImei: string;
+  planTier: string;
+  monthlyPriceBdt: number;
+  startedAt: string;
+  nextDueAt: string;
+  status: string;
+  effectiveStatus: string;
+  autoRenew: boolean;
+  daysUntilDue: number;
+  isExpiringSoon: boolean;
+  isExpired: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface SubscriptionSearch {
+  orgId?: string;
+  imei?: string;
+  status?: string;
+  limit?: number;
+}
+
+export interface ExtendRequest {
+  additionalDays?: number;
+  /** yyyy-MM-dd */
+  newDueAt?: string;
+}
+
+export interface DeviceWithoutSub {
+  imei: string;
+  orgId: string;
+  orgName: string;
+  deviceName: string | null;
+}
+
+export interface DevicesWithoutSubResponse {
+  total: number;
+  devices: DeviceWithoutSub[];
+}
+
+export interface CreateSubscriptionRequest {
+  imei: string;
+  orgId: string;
+  planTier?: string;
+  days?: number;
+}
+
+// ----- Audit log (backend AuditController) -----
+export interface AuditLogEntry {
+  id: number;
+  orgId: string | null;
+  userId: string | null;
+  action: string;
+  resourceType: string | null;
+  resourceId: string | null;
+  metadata: string | null;
+  ipAddress: string | null;
+  userAgent: string | null;
+  ts: string;
+}
+
+// ----- Share location links (backend ShareLocationController) -----
+export interface ShareLinkView {
+  id: string;
+  deviceImei: string;
+  token: string;
+  shareUrl: string;
+  label: string | null;
+  expiresAt: string;
+  isActive: boolean;
+  showHistory: boolean;
+  allowRealtime: boolean;
+  createdAt: string;
+  lastAccessedAt: string | null;
+  accessCount: number;
+}
+
+export interface CreateShareLinkRequest {
+  deviceImei: string;
+  label?: string;
+  /** 1-168 (backend limit). */
+  expiresInHours: number;
+  showHistory: boolean;
+  allowRealtime: boolean;
 }

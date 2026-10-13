@@ -8,10 +8,19 @@ import { useKpis } from "@/hooks/useKpis";
 import { useDeviceTodayStats } from "@/hooks/useDeviceTodayStats";
 import { Chip, Loading } from "@/ui";
 import { LanguageToggle } from "@/components/LanguageToggle";
-import { fmtDistance, fmtDuration, motionColor, motionOf } from "@/format";
+import { fmtDistance, fmtDuration, motionColor, motionOf, subscriptionExpired } from "@/format";
 import { useI18n } from "@/i18n";
 import { colors, radius, space } from "@/theme";
-import type { MotionStatus } from "@/types";
+import type { DeviceView, LocationView, MotionStatus } from "@/types";
+
+/** Home status buckets: the four motion states plus the two the web home also counts. */
+type HomeState = MotionStatus | "NO_DATA" | "EXPIRED";
+
+function homeState(d: DeviceView, live?: LocationView | null): HomeState {
+  if (d.status === "NEVER_CONNECTED" || !d.lastSeenAt) return "NO_DATA";
+  if (subscriptionExpired(d)) return "EXPIRED";
+  return motionOf(d, live);
+}
 
 export default function HomeScreen() {
   const { t } = useI18n();
@@ -23,10 +32,15 @@ export default function HomeScreen() {
   const [picked, setPicked] = useState<string | null>(null);
 
   const counts = useMemo(() => {
-    const c: Record<MotionStatus, number> = { MOVING: 0, IDLE: 0, STOPPED: 0, OFFLINE: 0 };
-    for (const d of devices) c[motionOf(d, locations.get(d.imei))] += 1;
+    const c: Record<HomeState, number> = { MOVING: 0, IDLE: 0, STOPPED: 0, OFFLINE: 0, NO_DATA: 0, EXPIRED: 0 };
+    for (const d of devices) c[homeState(d, locations.get(d.imei))] += 1;
     return c;
   }, [devices, locations]);
+  // Status cards open the people list filtered to that state; alarm figures open the alarm center.
+  const openPeople = (state: MotionStatus) =>
+    router.navigate({ pathname: "/vehicles", params: { state, n: String(Date.now()) } });
+  const openAlarms = (unacked: boolean) =>
+    router.navigate({ pathname: "/alerts", params: { unacked: unacked ? "1" : "0", tab: "details", n: String(Date.now()) } });
 
   const selectedImei = picked ?? devices[0]?.imei ?? null;
 
@@ -48,17 +62,18 @@ export default function HomeScreen() {
 
       <Text style={styles.section}>{t("home.fleetStatus")}</Text>
       <View style={styles.grid}>
-        <StatusCard label={t("state.moving")} value={counts.MOVING} color={motionColor("MOVING")} />
-        <StatusCard label={t("state.idle")} value={counts.IDLE} color={motionColor("IDLE")} />
-        <StatusCard label={t("state.stopped")} value={counts.STOPPED} color={motionColor("STOPPED")} />
-        <StatusCard label={t("state.offline")} value={counts.OFFLINE} color={motionColor("OFFLINE")} />
+        <StatusCard label={t("state.moving")} value={counts.MOVING} color={motionColor("MOVING")} onPress={() => openPeople("MOVING")} />
+        <StatusCard label={t("state.idle")} value={counts.IDLE} color={motionColor("IDLE")} onPress={() => openPeople("IDLE")} />
+        <StatusCard label={t("state.stopped")} value={counts.STOPPED} color={motionColor("STOPPED")} onPress={() => openPeople("STOPPED")} />
+        <StatusCard label={t("state.offline")} value={counts.OFFLINE} color={motionColor("OFFLINE")} onPress={() => openPeople("OFFLINE")} />
+        <StatusCard label={t("homex.noData")} value={counts.NO_DATA} color={colors.warn} />
+        <StatusCard label={t("homex.expired")} value={counts.EXPIRED} color={colors.danger} />
       </View>
 
       {kpis ? (
         <View style={styles.kpiRow}>
-          <Kpi label={t("home.alarmsToday")} value={kpis.alarmsToday} accent={kpis.alarmsCriticalToday > 0} />
-          <Kpi label={t("home.unacked")} value={kpis.alarmsUnacknowledged} accent={kpis.alarmsUnacknowledged > 0} />
-          <Kpi label={t("home.tripsToday")} value={kpis.tripsCompletedToday} />
+          <Kpi label={t("home.alarmsToday")} value={kpis.alarmsToday} accent={kpis.alarmsCriticalToday > 0} onPress={() => openAlarms(false)} />
+          <Kpi label={t("home.unacked")} value={kpis.alarmsUnacknowledged} accent={kpis.alarmsUnacknowledged > 0} onPress={() => openAlarms(true)} />
           <Kpi label={t("home.fleetDistance")} value={fmtDistance(kpis.distanceTodayMeters)} />
         </View>
       ) : null}
@@ -119,22 +134,36 @@ function SingleVehicleStats({ imei, onOpen }: { imei: string; onOpen: () => void
   );
 }
 
-function StatusCard({ label, value, color }: { label: string; value: number; color: string }) {
+function StatusCard({ label, value, color, onPress }: { label: string; value: number; color: string; onPress?: () => void }) {
   return (
-    <View style={styles.statusCard}>
+    <Pressable
+      onPress={onPress}
+      disabled={!onPress}
+      style={({ pressed }) => [styles.statusCard, pressed && { opacity: 0.8 }]}
+      accessibilityRole={onPress ? "button" : undefined}
+      accessibilityLabel={`${label}: ${value}`}
+    >
       <View style={[styles.statusDot, { backgroundColor: color }]} />
       <Text style={styles.statusValue}>{value}</Text>
-      <Text style={styles.statusLabel}>{label}</Text>
-    </View>
+      <Text style={styles.statusLabel} numberOfLines={2}>
+        {label}
+      </Text>
+    </Pressable>
   );
 }
 
-function Kpi({ label, value, accent }: { label: string; value: number | string; accent?: boolean }) {
+function Kpi({ label, value, accent, onPress }: { label: string; value: number | string; accent?: boolean; onPress?: () => void }) {
   return (
-    <View style={styles.kpi}>
+    <Pressable
+      onPress={onPress}
+      disabled={!onPress}
+      style={({ pressed }) => [styles.kpi, pressed && { opacity: 0.8 }]}
+      accessibilityRole={onPress ? "button" : undefined}
+      accessibilityLabel={`${label}: ${value}`}
+    >
       <Text style={[styles.kpiValue, accent && { color: colors.warn }]}>{value}</Text>
       <Text style={styles.kpiLabel}>{label}</Text>
-    </View>
+    </Pressable>
   );
 }
 
@@ -154,9 +183,10 @@ const styles = StyleSheet.create({
   hello: { color: colors.text, fontSize: 22, fontWeight: "800" },
   sub: { color: colors.textFaint, fontSize: 15, marginTop: -4 },
   section: { color: colors.textDim, fontSize: 14, fontWeight: "700", marginTop: space.md },
-  grid: { flexDirection: "row", gap: space.sm },
+  grid: { flexDirection: "row", flexWrap: "wrap", gap: space.sm },
   statusCard: {
-    flex: 1,
+    flexGrow: 1,
+    flexBasis: 96,
     backgroundColor: colors.surface,
     borderRadius: radius.md,
     borderWidth: 1,
@@ -167,9 +197,10 @@ const styles = StyleSheet.create({
   statusDot: { width: 8, height: 8, borderRadius: 4 },
   statusValue: { color: colors.text, fontSize: 22, fontWeight: "800" },
   statusLabel: { color: colors.textFaint, fontSize: 13 },
-  kpiRow: { flexDirection: "row", gap: space.sm, marginTop: space.xs },
+  kpiRow: { flexDirection: "row", flexWrap: "wrap", gap: space.sm, marginTop: space.xs },
   kpi: {
-    flex: 1,
+    flexGrow: 1,
+    flexBasis: 96,
     backgroundColor: colors.surface,
     borderRadius: radius.md,
     borderWidth: 1,
