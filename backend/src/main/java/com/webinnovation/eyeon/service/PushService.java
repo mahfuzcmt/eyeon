@@ -7,15 +7,19 @@ import com.webinnovation.eyeon.repository.PushTokenRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Async;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
 
+import java.time.Duration;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Push notification dispatch via the Expo Push Service
@@ -25,7 +29,10 @@ import java.util.UUID;
  *
  * <p>Runs {@code @Async} — alarm dispatch must never block the ingestion
  * path (CLAUDE.md §3.2 rule 4). Tokens Expo reports as
- * {@code DeviceNotRegistered} (app uninstalled) are purged.
+ * {@code DeviceNotRegistered} (app uninstalled) are purged, both from the
+ * immediate ticket and from the delivery receipt Expo publishes ~15 minutes
+ * later - FCM usually only says "not registered" in the receipt (2026-10-18:
+ * a reinstalled phone's old token was accepted, then failed in its receipt).
  */
 @Service
 @Slf4j
@@ -33,12 +40,25 @@ public class PushService {
 
     /** Expo caps each push request at 100 messages. */
     private static final int CHUNK_SIZE = 100;
+    /** Expo caps each getReceipts request at 1000 ids. */
+    private static final int RECEIPT_CHUNK = 1000;
+    /** Expo recommends waiting about 15 minutes before asking for receipts. */
+    static final Duration RECEIPT_DELAY = Duration.ofMinutes(15);
+    /** Receipts are kept by Expo for 24 hours; tickets older than that are dropped. */
+    static final Duration RECEIPT_TTL = Duration.ofHours(24);
+    /** Bound on remembered tickets so a long Expo outage cannot grow memory without limit. */
+    private static final int MAX_PENDING = 20_000;
 
     private final PushTokenRepository tokenRepo;
     private final DeviceRepository deviceRepo;
     private final NotificationComposer composer;
     private final RestClient restClient;
     private final boolean enabled;
+    private final String receiptsUrl;
+    /** Ticket id → token it was sent to; in memory only (a restart forgets at most a day of receipts). */
+    private final Map<String, Pending> pendingReceipts = new ConcurrentHashMap<>();
+
+    record Pending(String token, Instant sentAt) {}
 
     public PushService(PushTokenRepository tokenRepo,
                        DeviceRepository deviceRepo,
@@ -51,6 +71,9 @@ public class PushService {
         this.deviceRepo = deviceRepo;
         this.composer = composer;
         this.enabled = enabled;
+        this.receiptsUrl = expoUrl.endsWith("/send")
+                ? expoUrl.substring(0, expoUrl.length() - "/send".length()) + "/getReceipts"
+                : expoUrl;
         restClientBuilder = restClientBuilder.clone()
                 .baseUrl(expoUrl)
                 .defaultHeader("Content-Type", "application/json")
@@ -139,7 +162,9 @@ public class PushService {
         List<ExpoPushTicket> tickets = response.data();
         for (int i = 0; i < tickets.size() && i < tokens.size(); i++) {
             ExpoPushTicket t = tickets.get(i);
-            if (t != null && "error".equals(t.status())) {
+            if (t != null && "ok".equals(t.status()) && t.id() != null && pendingReceipts.size() < MAX_PENDING) {
+                pendingReceipts.put(t.id(), new Pending(tokens.get(i), Instant.now()));
+            } else if (t != null && "error".equals(t.status())) {
                 String error = t.details() == null ? null : t.details().error();
                 if ("DeviceNotRegistered".equals(error)) {
                     dead.add(tokens.get(i));
@@ -155,13 +180,66 @@ public class PushService {
         }
     }
 
+    @Scheduled(fixedDelayString = "${eyeon.push.receipt-check-ms:300000}", initialDelay = 120_000)
+    public void checkReceipts() {
+        if (enabled) checkReceipts(Instant.now());
+    }
+
+    /** Ask Expo for receipts of tickets older than {@link #RECEIPT_DELAY}; purge dead installs. */
+    void checkReceipts(Instant now) {
+        pendingReceipts.entrySet().removeIf(e -> e.getValue().sentAt().isBefore(now.minus(RECEIPT_TTL)));
+        List<String> due = pendingReceipts.entrySet().stream()
+                .filter(e -> !e.getValue().sentAt().isAfter(now.minus(RECEIPT_DELAY)))
+                .map(Map.Entry::getKey)
+                .toList();
+        for (int i = 0; i < due.size(); i += RECEIPT_CHUNK) {
+            List<String> ids = due.subList(i, Math.min(i + RECEIPT_CHUNK, due.size()));
+            try {
+                ExpoReceiptsResponse response = restClient.post()
+                        .uri(receiptsUrl)
+                        .body(Map.of("ids", ids))
+                        .retrieve()
+                        .body(ExpoReceiptsResponse.class);
+                handleReceipts(response);
+            } catch (Exception e) {
+                // Leave them pending: the next sweep retries until RECEIPT_TTL.
+                log.warn("Expo receipt request failed ({} ids): {}", ids.size(), e.getMessage());
+            }
+        }
+    }
+
+    private void handleReceipts(ExpoReceiptsResponse response) {
+        if (response == null || response.data() == null) return;
+        List<String> dead = new ArrayList<>();
+        response.data().forEach((id, receipt) -> {
+            Pending p = pendingReceipts.remove(id);
+            if (p == null || receipt == null || !"error".equals(receipt.status())) return;
+            String error = receipt.details() == null ? null : receipt.details().error();
+            if ("DeviceNotRegistered".equals(error)) {
+                dead.add(p.token());
+            } else {
+                log.warn("Expo push receipt error for token …{}: {} ({})", tail(p.token()), receipt.message(), error);
+            }
+        });
+        if (!dead.isEmpty()) {
+            tokenRepo.deleteAll(dead);
+            log.info("Purged {} push tokens reported unregistered in receipts", dead.size());
+        }
+    }
+
+    int pendingReceiptCount() {
+        return pendingReceipts.size();
+    }
+
     private static String tail(String token) {
         return token.length() <= 8 ? token : token.substring(token.length() - 8);
     }
 
     record ExpoPushResponse(List<ExpoPushTicket> data) {}
 
-    record ExpoPushTicket(String status, String message, ExpoPushTicketDetails details) {}
+    record ExpoPushTicket(String status, String id, String message, ExpoPushTicketDetails details) {}
+
+    record ExpoReceiptsResponse(Map<String, ExpoPushTicket> data) {}
 
     record ExpoPushTicketDetails(String error) {}
 }

@@ -16,6 +16,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -31,6 +32,7 @@ import static org.springframework.test.web.client.response.MockRestResponseCreat
 class PushServiceTest {
 
     private static final String EXPO_URL = "https://exp.host/--/api/v2/push/send";
+    private static final String RECEIPTS_URL = "https://exp.host/--/api/v2/push/getReceipts";
 
     private PushTokenRepository tokenRepo;
     private DeviceRepository deviceRepo;
@@ -131,5 +133,45 @@ class PushServiceTest {
 
         disabledServer.verify();
         verify(tokenRepo, never()).listTokensForOrgAndType(any(), any(), any(), any());
+    }
+
+    @Test
+    void receipts_purge_tokens_that_fcm_later_reports_unregistered() {
+        UUID orgId = UUID.randomUUID();
+        when(tokenRepo.listTokensForOrgAndType(eq(orgId), any(), any(), any()))
+                .thenReturn(List.of(
+                        new PushTokenRepository.Target("ExponentPushToken[alive]", "en"),
+                        new PushTokenRepository.Target("ExponentPushToken[gone]", "en"),
+                        new PushTokenRepository.Target("ExponentPushToken[late]", "en")));
+        when(deviceRepo.findByImei("864290061234567")).thenReturn(Optional.empty());
+        // Expo accepts all three: FCM only tells us about the dead install in the receipt.
+        server.expect(requestTo(EXPO_URL))
+                .andRespond(withSuccess("""
+                        {"data":[{"status":"ok","id":"t-alive"},{"status":"ok","id":"t-gone"},{"status":"ok","id":"t-late"}]}
+                        """, MediaType.APPLICATION_JSON));
+        server.expect(requestTo(RECEIPTS_URL))
+                .andExpect(method(HttpMethod.POST))
+                .andExpect(jsonPath("$.ids.length()").value(3))
+                .andRespond(withSuccess("""
+                        {"data":{
+                          "t-alive":{"status":"ok"},
+                          "t-gone":{"status":"error","message":"The recipient device is not registered with FCM.","details":{"error":"DeviceNotRegistered"}}
+                        }}
+                        """, MediaType.APPLICATION_JSON));
+        pushService.sendAlarmPush(alarm(orgId));
+        assertThat(pushService.pendingReceiptCount()).isEqualTo(3);
+
+        // Too early: nothing is asked (the single receipts expectation would otherwise be used up here).
+        pushService.checkReceipts(Instant.now().plus(PushService.RECEIPT_DELAY).minusSeconds(60));
+        assertThat(pushService.pendingReceiptCount()).isEqualTo(3);
+
+        pushService.checkReceipts(Instant.now().plus(PushService.RECEIPT_DELAY).plusSeconds(60));
+
+        server.verify();
+        verify(tokenRepo).deleteAll(List.of("ExponentPushToken[gone]"));
+        // "t-late" had no receipt yet: kept for the next sweep, then dropped after a day.
+        assertThat(pushService.pendingReceiptCount()).isEqualTo(1);
+        pushService.checkReceipts(Instant.now().plus(PushService.RECEIPT_TTL).plusSeconds(60));
+        assertThat(pushService.pendingReceiptCount()).isZero();
     }
 }
