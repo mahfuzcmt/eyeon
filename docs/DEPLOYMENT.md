@@ -184,6 +184,10 @@ rsync -az backend/target/eyeon.jar root@103.159.37.145:/opt/eyeon/backend/target
 cd /opt/eyeon
 docker compose -f docker-compose.shared.yml --env-file .env up -d --build eyeon-backend
 nice -n 15 ionice -c3 docker compose -f docker-compose.shared.yml --env-file .env build eyeon-frontend   # ~3 min, heap capped at 1 GB
+# On the new box (since 2026-10-18) the default builder's cache came over from the old server broken
+# ("parent snapshot ... does not exist", even with --no-cache). Build with EyeOn's own builder instead
+# of pruning the shared cache:  docker buildx create --name eyeon-builder --driver docker-container  (once), then
+#   ... build --builder eyeon-builder eyeon-frontend   and afterwards   docker buildx stop eyeon-builder
 docker compose -f docker-compose.shared.yml --env-file .env up -d eyeon-frontend
 # end-to-end checks against the live stack; each removes its own data. Run detached and under a lock:
 # an SSH drop leaves the remote run going, and two overlapping runs delete each other's test data.
