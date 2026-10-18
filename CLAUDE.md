@@ -16,7 +16,7 @@
 
 No inherited `motolink`/`pingpath` identifiers remain in the tree. (Correction 2026-09-21: `frontend/public/eyeon-logo.png` and `.jpg` were still the MOTOLINK wordmark and were shown in the marketing header/footer; both were deleted and replaced by the inline `components/brand/EyeOnLogo.tsx`.) The one deliberate exception is `wordpress-theme/brands-data.json`, which lists an unrelated third-party electronics brand also called "Motolink".
 
-**Production (since 2026-09-21):** `https://eyeon.motolinkgps.com` on the shared VPS `ns.tracker.com` (`103.187.22.131`), which also runs PingPath/MotoLink production and other apps. Use `docker-compose.shared.yml`, never `scripts/deploy_vps.sh`, on that box - see `docs/DEPLOYMENT.md` "Shared server", including the rule that compose services must be named `eyeon-*` (a generic `frontend`/`backend` service name took kosailagbe.com down for ~25 s). Trackers connect to `103.187.22.131:5024`.
+**Production (since 2026-09-21):** `https://eyeon.motolinkgps.com` on a shared VPS (moved 2026-10-18 from `ns.tracker.com` / `103.187.22.131` to `103.159.37.145`), which also runs PingPath/MotoLink production and other apps. Use `docker-compose.shared.yml`, never `scripts/deploy_vps.sh`, on that box - see `docs/DEPLOYMENT.md` "Shared server", including the rule that compose services must be named `eyeon-*` (a generic `frontend`/`backend` service name took kosailagbe.com down for ~25 s). Trackers connect to **`eyeon.motolinkgps.com:5024` by domain name** (`SERVER,1,eyeon.motolinkgps.com,5024,0#`; MotoLink trackers use `motolinkgps.com:5023`), so a future server move only needs a DNS change. Both records must stay plain A records (never behind a CDN proxy, which cannot carry raw TCP) with a short TTL. Trackers configured before 2026-10-18 point at the old IP and must be re-pointed.
 
 **Domain placeholders:** `eyeongps.com`, `app.eyeongps.com`, `api.eyeongps.com`, `mobile.eyeongps.app`, `admin@eyeon.local`, SMS sender id `EYEON`. Replace these with the real EyeOn domain/sender before any deploy.
 
@@ -3092,4 +3092,4 @@ Full teardown lives in [`docs/COMPETITIVE_ANALYSIS.md`](docs/COMPETITIVE_ANALYSI
 
 ---
 
-*Last updated: 2026-10-13. Update the date when you change anything substantive.*
+*Last updated: 2026-10-18. Update the date when you change anything substantive.*

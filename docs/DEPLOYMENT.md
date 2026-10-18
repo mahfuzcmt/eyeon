@@ -91,7 +91,7 @@ docker exec -it eyeon-postgres psql -U eyeon -d eyeon -c "SELECT email, role, is
 Configure the device via SMS (per CLAUDE.md §7.4):
 
 ```
-SERVER,0,<public-ip>,5024,0#
+SERVER,1,eyeon.motolinkgps.com,5024,0#   # mode 1 = domain; survives a server IP change
 APN,gpinternet#
 GMT,E,6,0#
 TIMER,30,300#
@@ -154,7 +154,7 @@ systemctl restart sshd
 
 ## Shared server (current production, since 2026-09-21)
 
-EyeOn runs on `ns.tracker.com` (`103.187.22.131`), a **shared** VPS that also hosts PingPath/MotoLink
+EyeOn runs on `103.159.37.145` (until 2026-10-18 `ns.tracker.com` / `103.187.22.131`), a **shared** VPS that also hosts PingPath/MotoLink
 production and several unrelated apps. **Do not run `scripts/deploy_vps.sh` there**: it resets `ufw`
 (dropping WireGuard and PingPath's tracker port), expects free host ports `8081`/`3001` (both taken)
 and assumes it owns ports 80/443 (owned by the `kosaibari-nginx` container).
@@ -177,8 +177,8 @@ The box is too small to run Maven next to its neighbours, so the jar is built on
 # on your machine
 cd backend && ./mvnw -DskipTests package && cd ..          # -> backend/target/eyeon.jar (Java 21 bytecode)
 rsync -az --delete --exclude '.git/' --exclude 'node_modules/' --exclude '.next/' --exclude '.env*' \
-      --exclude 'mobile/' --exclude 'backend/target/' --filter 'P .env' ./ root@103.187.22.131:/opt/eyeon/
-rsync -az backend/target/eyeon.jar root@103.187.22.131:/opt/eyeon/backend/target/eyeon.jar
+      --exclude 'mobile/' --exclude 'backend/target/' --filter 'P .env' ./ root@103.159.37.145:/opt/eyeon/
+rsync -az backend/target/eyeon.jar root@103.159.37.145:/opt/eyeon/backend/target/eyeon.jar
 
 # on the server
 cd /opt/eyeon
