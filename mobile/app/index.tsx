@@ -14,5 +14,5 @@ export default function Index() {
       </View>
     );
   }
-  return <Redirect href={status === "authed" ? "/(tabs)" : "/login"} />;
+  return <Redirect href={status === "authed" ? "/(tabs)/map" : "/login"} />;
 }

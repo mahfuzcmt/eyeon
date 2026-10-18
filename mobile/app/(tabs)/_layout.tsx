@@ -11,7 +11,7 @@ function SignOut() {
   const { t } = useI18n();
   return (
     <Pressable onPress={() => void signOut()} hitSlop={12} style={{ paddingHorizontal: space.md }}>
-      <Text style={{ color: colors.brand, fontSize: 14, fontWeight: "600" }}>{t("auth.signOut")}</Text>
+      <Text style={{ color: colors.onHeader, fontSize: 14, fontWeight: "600" }}>{t("auth.signOut")}</Text>
     </Pressable>
   );
 }
@@ -25,12 +25,12 @@ export default function TabsLayout() {
   return (
     <Tabs
       screenOptions={{
-        headerStyle: { backgroundColor: colors.surface },
-        headerTintColor: colors.text,
-        tabBarStyle: { backgroundColor: colors.surface, borderTopColor: colors.border },
+        headerStyle: { backgroundColor: colors.header },
+        headerTintColor: colors.onHeader,
+        tabBarStyle: { backgroundColor: colors.tabBar, borderTopColor: colors.tabBar },
         tabBarLabelStyle: { fontSize: 13, fontWeight: "600" },
-        tabBarActiveTintColor: colors.brand,
-        tabBarInactiveTintColor: colors.textFaint,
+        tabBarActiveTintColor: colors.tabActive,
+        tabBarInactiveTintColor: colors.tabInactive,
       }}
     >
       <Tabs.Screen

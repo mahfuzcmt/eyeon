@@ -21,7 +21,7 @@ export default function GroupsScreen() {
       accessibilityLabel={t("grp.new")}
       style={{ paddingHorizontal: space.sm }}
     >
-      <Ionicons name="add-circle-outline" size={26} color={colors.brand} />
+      <Ionicons name="add-circle-outline" size={26} color={colors.onHeader} />
     </Pressable>
   );
 

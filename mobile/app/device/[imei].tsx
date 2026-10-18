@@ -4,9 +4,8 @@ import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { useAuth } from "@/auth/AuthContext";
 import TrackTab from "@/components/device/TrackTab";
-import CalendarTab from "@/components/device/CalendarTab";
 import HistoryTab from "@/components/device/HistoryTab";
-import GraphTab from "@/components/device/GraphTab";
+import StaysView from "@/components/StaysView";
 import StatisticsTab from "@/components/device/StatisticsTab";
 import ControlsTab from "@/components/device/ControlsTab";
 import { ShareButton } from "@/components/device/ShareLinksSheet";
@@ -15,13 +14,12 @@ import { EmptyState } from "@/ui";
 import { useI18n, type StringKey } from "@/i18n";
 import { colors, space } from "@/theme";
 
-type Tab = "track" | "controls" | "history" | "calendar" | "graph" | "stats";
+type Tab = "track" | "controls" | "history" | "stays" | "stats";
 const TABS: { key: Tab; label: StringKey }[] = [
   { key: "track", label: "det.track" },
   { key: "controls", label: "det.controls" },
   { key: "history", label: "det.history" },
-  { key: "calendar", label: "det.calendar" },
-  { key: "graph", label: "det.graph" },
+  { key: "stays", label: "stays.title" },
   { key: "stats", label: "det.stats" },
 ];
 
@@ -51,7 +49,7 @@ export default function DeviceScreen() {
               accessibilityLabel={t("pe.title")}
               style={{ paddingHorizontal: space.sm }}
             >
-              <Ionicons name="create-outline" size={24} color={colors.brand} />
+              <Ionicons name="create-outline" size={24} color={colors.onHeader} />
             </Pressable>
             </View>
           ),
@@ -73,8 +71,7 @@ export default function DeviceScreen() {
         {tab === "track" && <TrackTab imei={imei} orgId={orgId} />}
         {tab === "controls" && <ControlsTab imei={imei} orgId={orgId} />}
         {tab === "history" && <HistoryTab imei={imei} />}
-        {tab === "calendar" && <CalendarTab imei={imei} />}
-        {tab === "graph" && <GraphTab imei={imei} />}
+        {tab === "stays" && <StaysView imei={imei} />}
         {tab === "stats" && <StatisticsTab imei={imei} orgId={orgId} />}
       </View>
     </View>
@@ -84,9 +81,7 @@ export default function DeviceScreen() {
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.bg },
   tabScroll: {
-    backgroundColor: colors.surface,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
+    backgroundColor: colors.header,
     flexGrow: 0,
   },
   tabs: {
@@ -94,8 +89,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: space.md,
   },
   tab: { paddingVertical: space.md, marginRight: space.lg, borderBottomWidth: 2, borderBottomColor: "transparent" },
-  tabActive: { borderBottomColor: colors.brand },
-  tabText: { color: colors.textFaint, fontSize: 15, fontWeight: "600" },
-  tabTextActive: { color: colors.text },
+  tabActive: { borderBottomColor: colors.tabActive, borderBottomWidth: 3 },
+  tabText: { color: colors.onHeaderDim, fontSize: 15, fontWeight: "600" },
+  tabTextActive: { color: colors.onHeader },
   body: { flex: 1 },
 });

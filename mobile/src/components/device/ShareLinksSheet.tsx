@@ -248,7 +248,7 @@ export function ShareButton({ imei, personName }: { imei: string; personName: st
         accessibilityLabel={t("share.title")}
         style={{ paddingHorizontal: space.sm }}
       >
-        <Ionicons name="share-social-outline" size={24} color={colors.brand} />
+        <Ionicons name="share-social-outline" size={24} color={colors.onHeader} />
       </Pressable>
       <ShareLinksSheet imei={imei} personName={personName} visible={open} onClose={() => setOpen(false)} />
     </>

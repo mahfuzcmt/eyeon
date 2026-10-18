@@ -418,7 +418,7 @@ ${googleScripts}
       const pts = imeis.map(imei => markers[imei].getLatLng());
       if(pts.length === 1){
         // Single vehicle: zoom in close
-        map.setView(pts[0], 16, {animate:true});
+        map.setView(pts[0], 17, {animate:true});
       } else {
         // Multiple vehicles: calculate optimal zoom based on spread
         const b = L.latLngBounds(pts);

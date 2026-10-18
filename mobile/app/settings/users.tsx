@@ -47,7 +47,7 @@ export default function UsersScreen() {
       accessibilityLabel={t("usr.add")}
       style={{ paddingHorizontal: space.sm }}
     >
-      <Ionicons name="person-add-outline" size={24} color={colors.brand} />
+      <Ionicons name="person-add-outline" size={24} color={colors.onHeader} />
     </Pressable>
   );
 

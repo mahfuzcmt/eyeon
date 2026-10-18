@@ -1,17 +1,26 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Image, Pressable, StyleSheet, Text, View } from "react-native";
 import { useRouter } from "expo-router";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import * as Location from "expo-location";
 import { useAuth } from "@/auth/AuthContext";
 import { useLiveLocations } from "@/hooks/useLiveLocations";
 import { useDevices } from "@/hooks/useDevices";
 import WebMap, { MapVehicle } from "@/components/WebMap";
-import { motionColor, motionOf } from "@/format";
+import { batteryColor, fmtAgo, fmtSince, motionColor, motionOf } from "@/format";
+import { Pill } from "@/ui";
+import type { MotionStatus } from "@/types";
 import { useSpeedLimits } from "@/hooks/useSpeedLimits";
 import { useDevicePhotos } from "@/photos";
 import { useI18n, type StringKey } from "@/i18n";
+
+const MOTION_KEY: Record<MotionStatus, StringKey> = {
+  MOVING: "state.moving",
+  IDLE: "state.idle",
+  STOPPED: "state.stopped",
+  OFFLINE: "state.offline",
+};
 
 const VIEW_LABEL: Record<"street" | "satellite" | "google", StringKey> = {
   street: "map.normal",
@@ -25,6 +34,7 @@ export default function MapScreen() {
   const { org } = useAuth();
   const orgId = org?.id ?? null;
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const { locations, refresh } = useLiveLocations(orgId);
   const { devices } = useDevices();
   const [center, setCenter] = useState<{ lat: number; lng: number; zoom: number; nonce: number } | null>(null);
@@ -36,6 +46,8 @@ export default function MapScreen() {
   const [trafficAvailable, setTrafficAvailable] = useState(false);
   const [fitVehicles, setFitVehicles] = useState<{ nonce: number } | null>(null);
   const initialFitDone = useRef(false);
+  /** Person whose status card is open (tapped on the map). */
+  const [selected, setSelected] = useState<string | null>(null);
 
   const byImei = useMemo(() => new Map(devices.map((d) => [d.imei, d])), [devices]);
   const speedLimits = useSpeedLimits();
@@ -103,9 +115,16 @@ export default function MapScreen() {
         fitVehicles={fitVehicles}
         onTrafficAvailable={setTrafficAvailable}
         onGoogleAvailable={setGoogleAvailable}
-        onSelect={(imei) => router.push({ pathname: "/device/[imei]", params: { imei } })}
+        onSelect={(imei) => {
+          setSelected(imei);
+          const l = locations.get(imei);
+          if (l) setCenter({ lat: l.latitude, lng: l.longitude, zoom: 17, nonce: Date.now() });
+        }}
+        onMapPress={() => setSelected(null)}
       />
 
+      {/* The status bar icons are white app-wide: give them the header teal here too. */}
+      <View style={[styles.statusStrip, { height: insets.top }]} pointerEvents="none" />
       <SafeAreaView edges={["top"]} style={styles.topOverlay} pointerEvents="box-none">
         <View>
           <Pressable
@@ -150,6 +169,46 @@ export default function MapScreen() {
         )}
       </SafeAreaView>
 
+      {selected && (() => {
+        const d = byImei.get(selected);
+        const l = locations.get(selected) ?? null;
+        if (!d) return null;
+        const motion = motionOf(d, l);
+        const overspeed = speedLimits.isOverspeed(selected, l?.speed ?? 0);
+        const parked = (motion === "STOPPED" || motion === "OFFLINE") && d.parkedSince;
+        const photo = photos[selected] ?? null;
+        return (
+          <View style={styles.card}>
+            <View style={styles.cardTop}>
+              {photo ? <Image source={{ uri: photo }} style={[styles.avatar, { borderColor: motionColor(motion) }]} /> : null}
+              <View style={{ flex: 1, minWidth: 0 }}>
+                <Text style={styles.cardName} numberOfLines={1}>{d.name ?? d.vehiclePlate ?? d.imei}</Text>
+                <Text style={styles.cardSeen} numberOfLines={1}>
+                  {parked ? `${t("veh.parkedFor")} ${fmtSince(d.parkedSince)}` : `${t("veh.lastSeen")} ${fmtAgo(d.lastSeenAt)}`}
+                </Text>
+              </View>
+              <Pressable onPress={() => setSelected(null)} hitSlop={12} accessibilityRole="button" accessibilityLabel={t("common.close")}>
+                <Ionicons name="close" size={24} color={colors.textDim} />
+              </Pressable>
+            </View>
+            <View style={styles.cardPills}>
+              <Pill label={overspeed ? t("state.overspeed") : t(MOTION_KEY[motion])} color={overspeed ? colors.danger : motionColor(motion)} />
+              <Pill label={`${l?.speed ?? d.lastSpeed ?? 0} ${t("veh.kmh")}`} color={colors.textDim} />
+              {d.batteryPercent != null ? (
+                <Pill label={`${t("veh.battery")} ${Math.round(d.batteryPercent)}%`} color={batteryColor(d.batteryPercent)} />
+              ) : null}
+            </View>
+            <Pressable
+              onPress={() => router.push({ pathname: "/device/[imei]", params: { imei: selected } })}
+              style={({ pressed }) => [styles.cardButton, pressed && { opacity: 0.8 }]}
+              accessibilityRole="button"
+            >
+              <Text style={styles.cardButtonText}>{t("home.openVehicle")}</Text>
+            </Pressable>
+          </View>
+        );
+      })()}
+
       <SafeAreaView edges={["bottom"]} style={styles.controls} pointerEvents="box-none">
         <Pressable onPress={refresh} style={({ pressed }) => [styles.pill, pressed && { opacity: 0.7 }]}>
           <Ionicons name="refresh" size={16} color={colors.text} />
@@ -179,6 +238,7 @@ export default function MapScreen() {
 
 const styles = StyleSheet.create({
   fill: { flex: 1, backgroundColor: colors.bg },
+  statusStrip: { position: "absolute", top: 0, left: 0, right: 0, backgroundColor: colors.header },
   topOverlay: {
     position: "absolute",
     top: 0,
@@ -262,4 +322,26 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   zoomDivider: { width: 1, height: 20, backgroundColor: colors.border },
+  card: {
+    position: "absolute",
+    left: space.md,
+    right: space.md,
+    bottom: 76,
+    backgroundColor: colors.surface,
+    borderRadius: 16,
+    padding: space.lg,
+    gap: space.md,
+    shadowColor: "#0B2E28",
+    shadowOpacity: 0.2,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 3 },
+    elevation: 6,
+  },
+  cardTop: { flexDirection: "row", alignItems: "center", gap: space.md },
+  avatar: { width: 48, height: 48, borderRadius: 24, borderWidth: 3, backgroundColor: colors.surfaceAlt },
+  cardName: { color: colors.text, fontSize: 18, fontWeight: "800" },
+  cardSeen: { color: colors.textFaint, fontSize: 13, marginTop: 2 },
+  cardPills: { flexDirection: "row", flexWrap: "wrap", gap: space.sm },
+  cardButton: { backgroundColor: colors.brand, borderRadius: 12, minHeight: 48, alignItems: "center", justifyContent: "center" },
+  cardButtonText: { color: colors.onBrand, fontSize: 16, fontWeight: "700" },
 });

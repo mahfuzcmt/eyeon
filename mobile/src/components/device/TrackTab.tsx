@@ -8,7 +8,6 @@ import { Loading, Metric, Section } from "@/ui";
 import {
   filterSpeed,
   fmtSince,
-  fmtVoltage,
   motionColor,
   motionOf,
   subscriptionDaysLeft,
@@ -31,7 +30,7 @@ export default function TrackTab({ imei, orgId }: { imei: string; orgId: string 
   useEffect(() => {
     if (loc && !centered.current) {
       centered.current = true;
-      setCenter({ lat: loc.latitude, lng: loc.longitude, zoom: 15, nonce: 1 });
+      setCenter({ lat: loc.latitude, lng: loc.longitude, zoom: 17, nonce: 1 });
     }
   }, [loc]);
 
@@ -109,15 +108,6 @@ export default function TrackTab({ imei, orgId }: { imei: string; orgId: string 
         </Pressable>
       )}
 
-      <Section title={t("track.telemetry")}>
-        <Metric label={t("track.ignition")} value={loc?.accOn == null ? "—" : loc.accOn ? t("common.on") : t("common.off")} />
-        <Metric label={t("track.gpsSats")} value={loc?.satellites != null ? String(loc.satellites) : "—"} />
-        <Metric label="GSM" value={device?.lastGsmSignal != null ? String(device.lastGsmSignal) : "—"} />
-        <Metric label={t("track.voltage")} value={fmtVoltage(loc?.voltageMv ?? device?.lastVoltageMv)} />
-        <Metric label={t("track.course")} value={loc ? `${loc.course}°` : "—"} />
-        <Metric label={t("track.fix")} value={loc ? (loc.valid ? t("track.fixValid") : t("track.fixInvalid")) : "—"} />
-      </Section>
-
       {(device?.subscriptionStatus || device?.subscriptionExpiresAt) && (
         <Section title={t("sub.title")}>
           <Metric label={t("sub.status")} value={device?.subscriptionStatus ?? "—"} />
@@ -132,7 +122,7 @@ export default function TrackTab({ imei, orgId }: { imei: string; orgId: string 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.bg },
   content: { gap: space.md, paddingBottom: space.xl },
-  mapBox: { height: 300, backgroundColor: colors.bg },
+  mapBox: { height: 440, backgroundColor: colors.bg },
   banner: {
     marginHorizontal: space.md,
     marginTop: space.md,

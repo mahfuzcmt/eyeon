@@ -11,7 +11,7 @@ export default function RootLayout() {
     <SafeAreaProvider>
       <LocaleProvider>
       <AuthProvider>
-        <StatusBar style="dark" />
+        <StatusBar style="light" />
         <Stack
           screenOptions={{
             headerShown: false,
@@ -23,8 +23,8 @@ export default function RootLayout() {
             options={{
               headerShown: true,
               headerTitle: "",
-              headerStyle: { backgroundColor: colors.surface },
-              headerTintColor: colors.text,
+              headerStyle: { backgroundColor: colors.header },
+              headerTintColor: colors.onHeader,
             }}
           />
           <Stack.Screen
@@ -32,8 +32,8 @@ export default function RootLayout() {
             options={{
               headerShown: true,
               headerTitle: "",
-              headerStyle: { backgroundColor: colors.surface },
-              headerTintColor: colors.text,
+              headerStyle: { backgroundColor: colors.header },
+              headerTintColor: colors.onHeader,
             }}
           />
           <Stack.Screen
@@ -41,8 +41,8 @@ export default function RootLayout() {
             options={{
               headerShown: true,
               headerTitle: "",
-              headerStyle: { backgroundColor: colors.surface },
-              headerTintColor: colors.text,
+              headerStyle: { backgroundColor: colors.header },
+              headerTintColor: colors.onHeader,
             }}
           />
           <Stack.Screen
@@ -50,8 +50,8 @@ export default function RootLayout() {
             options={{
               headerShown: true,
               headerTitle: "",
-              headerStyle: { backgroundColor: colors.surface },
-              headerTintColor: colors.text,
+              headerStyle: { backgroundColor: colors.header },
+              headerTintColor: colors.onHeader,
             }}
           />
           <Stack.Screen
@@ -59,8 +59,8 @@ export default function RootLayout() {
             options={{
               headerShown: true,
               headerTitle: "",
-              headerStyle: { backgroundColor: colors.surface },
-              headerTintColor: colors.text,
+              headerStyle: { backgroundColor: colors.header },
+              headerTintColor: colors.onHeader,
             }}
           />
           <Stack.Screen
@@ -68,8 +68,8 @@ export default function RootLayout() {
             options={{
               headerShown: true,
               headerTitle: "",
-              headerStyle: { backgroundColor: colors.surface },
-              headerTintColor: colors.text,
+              headerStyle: { backgroundColor: colors.header },
+              headerTintColor: colors.onHeader,
             }}
           />
           <Stack.Screen
@@ -77,8 +77,8 @@ export default function RootLayout() {
             options={{
               headerShown: true,
               headerTitle: "",
-              headerStyle: { backgroundColor: colors.surface },
-              headerTintColor: colors.text,
+              headerStyle: { backgroundColor: colors.header },
+              headerTintColor: colors.onHeader,
             }}
           />
           <Stack.Screen
@@ -86,8 +86,8 @@ export default function RootLayout() {
             options={{
               headerShown: true,
               headerTitle: "",
-              headerStyle: { backgroundColor: colors.surface },
-              headerTintColor: colors.text,
+              headerStyle: { backgroundColor: colors.header },
+              headerTintColor: colors.onHeader,
             }}
           />
           <Stack.Screen
@@ -95,8 +95,8 @@ export default function RootLayout() {
             options={{
               headerShown: true,
               headerTitle: "",
-              headerStyle: { backgroundColor: colors.surface },
-              headerTintColor: colors.text,
+              headerStyle: { backgroundColor: colors.header },
+              headerTintColor: colors.onHeader,
             }}
           />
           <Stack.Screen
@@ -104,8 +104,8 @@ export default function RootLayout() {
             options={{
               headerShown: true,
               headerTitle: "",
-              headerStyle: { backgroundColor: colors.surface },
-              headerTintColor: colors.text,
+              headerStyle: { backgroundColor: colors.header },
+              headerTintColor: colors.onHeader,
             }}
           />
           {["admin", "audit-log", "reports"].map((name) => (
@@ -115,8 +115,8 @@ export default function RootLayout() {
               options={{
                 headerShown: true,
                 headerTitle: "",
-                headerStyle: { backgroundColor: colors.surface },
-                headerTintColor: colors.text,
+                headerStyle: { backgroundColor: colors.header },
+                headerTintColor: colors.onHeader,
               }}
             />
           ))}

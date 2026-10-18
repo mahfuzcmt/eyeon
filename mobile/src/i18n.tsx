@@ -14,6 +14,7 @@ const STRINGS = {
   // ── Common ────────────────────────────────────────────────────────
   "common.loading": { en: "Loading…", bn: "লোড হচ্ছে…" },
   "common.cancel": { en: "Cancel", bn: "বাতিল" },
+  "common.close": { en: "Close", bn: "বন্ধ করুন" },
   "common.apply": { en: "Apply", bn: "প্রয়োগ করুন" },
   "common.delete": { en: "Delete", bn: "মুছুন" },
   "common.retry": { en: "Retry", bn: "আবার চেষ্টা করুন" },

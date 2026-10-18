@@ -30,8 +30,8 @@ export function ScreenHeader({ title, right }: { title: string; right?: () => Re
       options={{
         headerShown: true,
         headerTitle: title,
-        headerStyle: { backgroundColor: colors.surface },
-        headerTintColor: colors.text,
+        headerStyle: { backgroundColor: colors.header },
+        headerTintColor: colors.onHeader,
         headerRight: right,
       }}
     />

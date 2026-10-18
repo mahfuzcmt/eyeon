@@ -23,7 +23,7 @@ export default function Login() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  if (status === "authed") return <Redirect href="/(tabs)" />;
+  if (status === "authed") return <Redirect href="/(tabs)/map" />;
 
   async function submit() {
     setError(null);
