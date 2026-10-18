@@ -27,7 +27,7 @@ export async function restoreFuel(imei: string, devicePassword?: string): Promis
 export async function queryAddress(imei: string, devicePassword?: string): Promise<CommandResponse> {
   const r = await api.post<CommandResponse>(`/devices/${encodeURIComponent(imei)}/commands/query-address`, {
     devicePassword,
-  });
+  }, { timeout: 25_000 });
   return r.data;
 }
 
@@ -36,7 +36,7 @@ export async function rebootDevice(imei: string, devicePassword?: string): Promi
   const password = devicePassword || "123456";
   const r = await api.post<CommandResponse>(`/devices/${encodeURIComponent(imei)}/commands/raw`, {
     rawCommand: `RESET,${password}#`,
-  });
+  }, { timeout: 25_000 });
   return r.data;
 }
 
@@ -44,7 +44,7 @@ export async function rebootDevice(imei: string, devicePassword?: string): Promi
 export async function sendRawCommand(imei: string, rawCommand: string): Promise<CommandResponse> {
   const r = await api.post<CommandResponse>(`/devices/${encodeURIComponent(imei)}/commands/raw`, {
     rawCommand,
-  });
+  }, { timeout: 25_000 });
   return r.data;
 }
 

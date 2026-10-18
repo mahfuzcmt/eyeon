@@ -92,19 +92,23 @@ export async function deviceLastLocation(imei: string): Promise<LocationView | n
 // ----- Engine lock commands (GT06 DYD / HFYD, CLAUDE.md §7.5) -----
 /** Query device address/location (GT06 DWXX command). */
 export async function queryAddress(imei: string, devicePassword?: string): Promise<CommandResponse> {
-  const r = await api.post<CommandResponse>(`/devices/${imei}/commands/query-address`, { devicePassword });
+  const r = await api.post<CommandResponse>(`/devices/${imei}/commands/query-address`, { devicePassword }, { timeout: 25_000 });
   return r.data;
 }
 
 /** Reboot/reset the GT06 device. */
 export async function rebootDevice(imei: string, devicePassword?: string): Promise<CommandResponse> {
-  const r = await api.post<CommandResponse>(`/devices/${imei}/commands/reboot`, { devicePassword });
+  const r = await api.post<CommandResponse>(
+    `/devices/${imei}/commands/raw`,
+    { rawCommand: `RESET,${devicePassword || "123456"}#` },
+    { timeout: 25_000 },
+  );
   return r.data;
 }
 
 /** Send a raw GT06 command (escape hatch for advanced users). */
-export async function sendRawCommand(imei: string, command: string, timeoutMs = 30000): Promise<CommandResponse> {
-  const r = await api.post<CommandResponse>(`/devices/${imei}/commands/raw`, { command, timeoutMs });
+export async function sendRawCommand(imei: string, rawCommand: string): Promise<CommandResponse> {
+  const r = await api.post<CommandResponse>(`/devices/${imei}/commands/raw`, { rawCommand }, { timeout: 25_000 });
   return r.data;
 }
 
