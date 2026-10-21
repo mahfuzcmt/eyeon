@@ -160,6 +160,24 @@ class PacketDecoderTest {
     }
 
     @Test
+    void heartbeat_of_2g_personal_tracker_gives_coarse_battery() {
+        // Captured on production 2026-10-21 (IMEI ...734645): 78 78 0a 13 00 03 04 00 01 | serial 01ef | crc f9ef
+        ByteBuf content = Unpooled.wrappedBuffer(new byte[] {0x00, 0x03, 0x04, 0x00, 0x01});
+        try {
+            PacketDecoder.HeartbeatStatus status = decoder.decodeHeartbeat(content);
+            assertThat(status.voltageLevel()).isEqualTo(3);
+            assertThat(status.gsmSignal()).isEqualTo(4);
+            assertThat(status.batteryPercent()).isNull();
+            assertThat(PacketDecoder.batteryPercentOfLevel(status.voltageLevel())).isEqualTo(25);
+        } finally {
+            content.release();
+        }
+        assertThat(PacketDecoder.batteryPercentOfLevel(6)).isEqualTo(100);
+        assertThat(PacketDecoder.batteryPercentOfLevel(0)).isZero();
+        assertThat(PacketDecoder.batteryPercentOfLevel(7)).isNull();
+    }
+
+    @Test
     void heartbeat_returns_null_when_status_block_missing() {
         ByteBuf content = Unpooled.buffer(0);
         try {

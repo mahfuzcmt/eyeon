@@ -44,6 +44,7 @@ public class LocationService {
     private final AlarmRuleService alarmRuleService;
     private final CellLocationService cellLocationService;
     private final LocationBufferService locationBufferService;
+    private final ParkedJitterFilter parkedJitter;
     private final org.springframework.beans.factory.ObjectProvider<NetworkLocationService> networkLocation;
 
     @Transactional
@@ -93,6 +94,12 @@ public class LocationService {
             if (loc.isValid() && gps) {
                 NetworkLocationService nls = networkLocation.getIfAvailable();
                 if (nls != null) nls.noteGpsFix(loc.getImei(), loc.getTimestamp(), loc.getLatitude(), loc.getLongitude(), loc.getSpeed());
+            }
+            if (loc.isValid()) {
+                // The raw fix is stored above; from here on a still tracker's wobble shows as one spot.
+                ParkedJitterFilter.Position shown = parkedJitter.apply(loc.getImei(), loc.getLatitude(), loc.getLongitude(), loc.getSpeed());
+                loc.setLatitude(shown.latitude());
+                loc.setLongitude(shown.longitude());
             }
             if (loc.isValid()) {
                 deviceRepo.updateLastPosition(

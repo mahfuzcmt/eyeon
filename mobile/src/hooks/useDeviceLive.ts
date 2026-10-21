@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { AppState } from "react-native";
 import { deviceLastLocation, getDevice } from "@/api/endpoints";
 import { subscribeLocations } from "@/ws/stomp";
+import { mergeLive } from "@/hooks/useLiveLocations";
 import type { DeviceView, LocationView } from "@/types";
 
 /** REST fallback while the socket is down or slow: the server's last-known position. */
@@ -26,7 +27,7 @@ export function useDeviceLive(imei: string, orgId: string | null) {
     let mounted = true;
     let unsub: (() => void) | null = null;
     const newer = (u: LocationView) => (prev: LocationView | null) =>
-      prev && new Date(prev.ts).getTime() >= new Date(u.ts).getTime() ? prev : u;
+      prev && new Date(prev.ts).getTime() >= new Date(u.ts).getTime() ? prev : mergeLive(prev, u);
     const poll = async () => {
       try {
         const l = await deviceLastLocation(imei);

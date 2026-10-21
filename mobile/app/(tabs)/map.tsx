@@ -14,6 +14,7 @@ import type { MotionStatus } from "@/types";
 import { useSpeedLimits } from "@/hooks/useSpeedLimits";
 import { useDevicePhotos } from "@/photos";
 import { useI18n, type StringKey } from "@/i18n";
+import { colors, space } from "@/theme";
 
 const MOTION_KEY: Record<MotionStatus, StringKey> = {
   MOVING: "state.moving",
@@ -27,7 +28,6 @@ const VIEW_LABEL: Record<"street" | "satellite" | "google", StringKey> = {
   satellite: "map.satellite",
   google: "map.google",
 };
-import { colors, space } from "@/theme";
 
 export default function MapScreen() {
   const { t } = useI18n();
@@ -39,7 +39,7 @@ export default function MapScreen() {
   const { devices } = useDevices();
   const [center, setCenter] = useState<{ lat: number; lng: number; zoom: number; nonce: number } | null>(null);
   const [zoomStep, setZoomStep] = useState<{ dir: 1 | -1; nonce: number } | null>(null);
-  const [baseLayer, setBaseLayer] = useState<"street" | "satellite" | "google">("street");
+  const [baseLayer, setBaseLayer] = useState<"street" | "satellite" | "google">("google");
   const [googleAvailable, setGoogleAvailable] = useState(false);
   const [viewMenuOpen, setViewMenuOpen] = useState(false);
   const [showTraffic, setShowTraffic] = useState(false);
@@ -68,7 +68,8 @@ export default function MapScreen() {
   const vehicles = useMemo<MapVehicle[]>(() => {
     const out: MapVehicle[] = [];
     for (const loc of locations.values()) {
-      if (!loc.valid) continue;
+      // Without a fix the row still carries the last known position; (0,0) means there never was one.
+      if (loc.latitude === 0 && loc.longitude === 0) continue;
       const d = byImei.get(loc.imei);
       const motion = d ? motionOf(d, loc) : loc.speed > 3 ? "MOVING" : "STOPPED";
       const overspeed = speedLimits.isOverspeed(loc.imei, loc.speed);
@@ -114,7 +115,10 @@ export default function MapScreen() {
         showTraffic={showTraffic}
         fitVehicles={fitVehicles}
         onTrafficAvailable={setTrafficAvailable}
-        onGoogleAvailable={setGoogleAvailable}
+        onGoogleAvailable={(ok) => {
+          setGoogleAvailable(ok);
+          if (!ok) setBaseLayer((b) => (b === "google" ? "street" : b));
+        }}
         onSelect={(imei) => {
           setSelected(imei);
           const l = locations.get(imei);

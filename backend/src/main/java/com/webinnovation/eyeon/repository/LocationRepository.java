@@ -130,6 +130,17 @@ public class LocationRepository {
         }
     }
 
+    /** The newest packet and the newest packet with a fix, for one tracker. Empty when it never reported. */
+    public Optional<LastKnownFix> findLastKnownWithFix(String imei) {
+        return findLastForImei(imei).map(latest -> {
+            if (latest.valid()) return new LastKnownFix(latest, latest);
+            List<Location> valid = jdbc.query(
+                    "SELECT " + SELECT_FIELDS + " FROM locations WHERE device_imei = :imei AND valid ORDER BY ts DESC LIMIT 1",
+                    new MapSqlParameterSource("imei", imei), ROW_MAPPER);
+            return new LastKnownFix(latest, valid.isEmpty() ? null : valid.get(0));
+        });
+    }
+
     public List<Location> findHistory(UUID orgId, String imei, Instant from, Instant to, int limit) {
         var params = new MapSqlParameterSource()
                 .addValue("orgId", orgId)

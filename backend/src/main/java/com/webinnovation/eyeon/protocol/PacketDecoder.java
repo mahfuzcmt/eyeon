@@ -226,6 +226,25 @@ public class PacketDecoder {
     }
 
     /**
+     * The 0-6 voltage level of a GT06 status block as a rough battery percentage, for trackers
+     * that report no exact figure (the 2G personal trackers on production, 2026-10-21, send only
+     * this). Concox levels: 0 no power, 1 extremely low, 2 very low (low-battery alarm), 3 low,
+     * 4 medium, 5 high, 6 full. Null for anything else.
+     */
+    public static Integer batteryPercentOfLevel(int voltageLevel) {
+        return switch (voltageLevel) {
+            case 0 -> 0;
+            case 1 -> 5;
+            case 2 -> 10;
+            case 3 -> 25;
+            case 4 -> 50;
+            case 5 -> 75;
+            case 6 -> 100;
+            default -> null;
+        };
+    }
+
+    /**
      * Heartbeat status snapshot. voltageLevel is coarse 0-6, gsmSignal is 0-31
      * (some firmware: 0-4). Both are best-effort indicators, not precise values.
      */

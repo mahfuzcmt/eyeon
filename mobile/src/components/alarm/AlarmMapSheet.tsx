@@ -57,7 +57,7 @@ export function AlarmMapSheet({
       {alarm && hasPos ? (
         <>
           <View style={[styles.map, { height: mapHeight }]}>
-            <WebMap vehicles={vehicles} center={center} baseLayer="street" />
+            <WebMap vehicles={vehicles} center={center} />
           </View>
           <View style={styles.row}>
             <Text style={styles.coords} selectable>

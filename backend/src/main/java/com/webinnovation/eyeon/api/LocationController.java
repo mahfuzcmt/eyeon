@@ -38,8 +38,10 @@ public class LocationController {
     public LocationView last(@PathVariable String imei) {
         UUID orgId = TenantContext.requireOrgId();
         access.requireVisible(imei);
-        return locationRepo.findLastForImei(imei)
-                .map(LocationView::of)
+        // Coordinates of the last fix, like /devices/locations/last: a packet without a fix
+        // carries a stale or made-up position that would pull the marker away.
+        return locationRepo.findLastKnownWithFix(imei)
+                .map(f -> LocationView.ofLastKnown(f.latest(), f.lastValid()))
                 .orElseThrow(() -> new NotFoundException("location", imei));
     }
 

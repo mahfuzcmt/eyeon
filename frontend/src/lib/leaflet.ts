@@ -34,8 +34,11 @@ export const SATELLITE_ATTRIBUTION =
 import { getGoogleMapsApiKey } from "./googleMapsKey";
 export { GOOGLE_MAPS_API_KEY, getGoogleMapsApiKey, setGoogleMapsApiKey } from "./googleMapsKey";
 
-/** What every map opens with. Change this one constant to make Google the default again. */
-export const DEFAULT_BASE_LAYER: BaseLayerKind = "osm";
+/**
+ * What every map opens with: Google again since 2026-10-21 (owner), for its Bangladesh roads and
+ * places. Without a key createBaseLayer falls back to OpenStreetMap. "osm" makes it free again.
+ */
+export const DEFAULT_BASE_LAYER: BaseLayerKind = "google-street";
 
 export type BaseLayerKind =
   | "osm"              // OSM Standard (free, always available)

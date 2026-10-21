@@ -382,7 +382,8 @@ public class Gt06Handler extends SimpleChannelInboundHandler<ByteBuf> {
                 io.netty.buffer.ByteBuf detached = io.netty.buffer.Unpooled.wrappedBuffer(raw);
                 PacketDecoder.HeartbeatStatus status = packetDecoder.decodeHeartbeat(detached);
                 if (status != null) {
-                    deviceService.applyHeartbeatStatus(imei, status.gsmSignal(), null, null);
+                    deviceService.applyHeartbeatStatus(imei, status.gsmSignal(),
+                            PacketDecoder.batteryPercentOfLevel(status.voltageLevel()), null);
                 } else {
                     deviceService.markOnline(imei);
                 }

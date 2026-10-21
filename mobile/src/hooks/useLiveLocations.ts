@@ -4,6 +4,15 @@ import { lastKnownAll } from "@/api/endpoints";
 import { subscribeLocations } from "@/ws/stomp";
 import type { LocationView } from "@/types";
 
+/**
+ * A packet without a GPS fix carries a stale or made-up position (a 2G tracker indoors repeats a
+ * spot ~100 m off): keep the last known position and take only the rest of the packet.
+ */
+export function mergeLive(prev: LocationView | undefined | null, next: LocationView): LocationView {
+  if (next.valid || !prev) return next;
+  return { ...next, latitude: prev.latitude, longitude: prev.longitude, course: prev.course, speed: 0 };
+}
+
 /** Auto-refresh interval in milliseconds (10 seconds). */
 const AUTO_REFRESH_INTERVAL_MS = 10_000;
 
@@ -25,7 +34,7 @@ export function useLiveLocations(orgId: string | null) {
         return prev; // drop out-of-order
       }
       const next = new Map(prev);
-      next.set(loc.imei, loc);
+      next.set(loc.imei, mergeLive(existing, loc));
       return next;
     });
   }, []);

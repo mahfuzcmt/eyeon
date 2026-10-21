@@ -49,8 +49,8 @@ interface Props {
   /** Zoom step command (+1 / -1); bump `nonce` to re-issue. */
   zoomStep?: { dir: 1 | -1; nonce: number } | null;
   /**
-   * Base layer. "street" (OpenStreetMap, the default) and "satellite" (Esri imagery) are free;
-   * "google" is billed per map load and its JS API is only downloaded when it is chosen.
+   * Base layer. "google" (the default when a key is configured, since 2026-10-21) is billed per
+   * map load; "street" (OpenStreetMap, used without a key) and "satellite" (Esri imagery) are free.
    */
   baseLayer?: "street" | "satellite" | "google";
   /** Circle overlay (geofence preview); null clears it. */
@@ -159,6 +159,11 @@ ${googleScripts}
   let baseKind = 'street';
   let base = makeBase(baseKind);
   base.addTo(map);
+  // Google is the default; the free map shows until it has loaded, and stays without a key.
+  if(GKEY){
+    baseKind = 'google';
+    loadGoogle(function(){ if(baseKind === 'google') swapBase(); });
+  }
   function swapBase(){
     map.removeLayer(base);
     base = makeBase(baseKind).addTo(map);
