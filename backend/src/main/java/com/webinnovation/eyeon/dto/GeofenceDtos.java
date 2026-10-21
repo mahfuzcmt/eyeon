@@ -88,5 +88,30 @@ public final class GeofenceDtos {
 
     /** @param kind ARRIVE_BY | LEAVE_BY; @param time HH:mm in the organization's timezone; @param weekdays ISO 1 (Mon) - 7 (Sun) */
     /** {@code graceMinutes} 0-120, null = 10. */
+    /** A drawn route to (TO) or from (FROM) a trusted place. */
+    public record RouteView(java.util.UUID id, String direction, String mode, java.util.List<LatLng> waypoints,
+                            java.util.List<LatLng> path, int widthM, double lengthM, boolean active) {
+        public static RouteView of(com.webinnovation.eyeon.repository.PlaceRouteRepository.Route r) {
+            return new RouteView(r.id(), r.direction(), r.mode(), latLngs(r.waypoints()), latLngs(r.path()), r.widthM(),
+                    Math.round(com.webinnovation.eyeon.service.RouteWatch.length(r.path())), r.active());
+        }
+    }
+
+    public record RouteSave(String mode, java.util.List<LatLng> waypoints, java.util.List<LatLng> path, Integer widthM) {}
+
+    public record SnapRequest(java.util.List<LatLng> points, String mode) {}
+
+    /** {@code roads} false: the road service had no answer and the line is straight between the points. */
+    public record SnapView(java.util.List<LatLng> path, double lengthM, boolean roads) {}
+
+    public static java.util.List<LatLng> latLngs(java.util.List<com.webinnovation.eyeon.service.RouteWatch.Pt> pts) {
+        return pts.stream().map(p -> new LatLng(p.lat(), p.lng())).toList();
+    }
+
+    public static java.util.List<com.webinnovation.eyeon.service.RouteWatch.Pt> pts(java.util.List<LatLng> in) {
+        return in == null ? null : in.stream()
+                .map(p -> p == null ? null : new com.webinnovation.eyeon.service.RouteWatch.Pt(p.lat(), p.lng())).toList();
+    }
+
     public record ScheduleCreate(String kind, String time, java.util.List<Integer> weekdays, Integer graceMinutes) {}
 }

@@ -110,7 +110,7 @@ public class AlarmRepository {
 
     private static final java.util.Set<String> GEOFENCE_TYPES =
             java.util.Set.of("PLACE_ARRIVED", "PLACE_LEFT", "GEOFENCE_ENTER", "GEOFENCE_EXIT", "NOT_ARRIVED", "NOT_LEFT",
-                    "ARRIVED_ON_TIME", "LEFT_ON_TIME", "ARRIVED_LATE", "LEFT_LATE");
+                    "ARRIVED_ON_TIME", "LEFT_ON_TIME", "ARRIVED_LATE", "LEFT_LATE", "ROUTE_DEVIATION", "BACK_ON_ROUTE");
 
     /**
      * Geofences and trusted places belong to one user, so the alarms they raise are that user's
@@ -120,7 +120,7 @@ public class AlarmRepository {
      */
     private static final String OWNER_FILTER =
             " AND (type NOT IN ('PLACE_ARRIVED','PLACE_LEFT','GEOFENCE_ENTER','GEOFENCE_EXIT','NOT_ARRIVED','NOT_LEFT',"
-            + "'ARRIVED_ON_TIME','LEFT_ON_TIME','ARRIVED_LATE','LEFT_LATE')"
+            + "'ARRIVED_ON_TIME','LEFT_ON_TIME','ARRIVED_LATE','LEFT_LATE','ROUTE_DEVIATION','BACK_ON_ROUTE')"
             + " OR metadata->>'" + GEOFENCE_OWNER_KEY + "' IS NULL"
             + " OR metadata->>'" + GEOFENCE_OWNER_KEY + "' = :viewer)";
 

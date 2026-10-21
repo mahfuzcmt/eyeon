@@ -102,6 +102,16 @@ public class NotificationComposer {
                        : "🕘 " + personName + " left " + orPlace(place, bn) + " late",
                     joinDot(bn ? "বের হওয়া: " + time : "Left " + time, expected(alarm, null, bn, false)),
                     CHANNEL_ARRIVALS);
+            case "ROUTE_DEVIATION" -> new Message(
+                    bn ? "🧭 " + personName + " অন্য পথে যাচ্ছে"
+                       : "🧭 " + personName + " is off the usual route",
+                    joinDot(routeName(alarm, place, bn), time, bn ? "কোথায় আছে দেখতে ট্যাপ করুন" : "Tap to see where they are"),
+                    CHANNEL_ALARMS);
+            case "BACK_ON_ROUTE" -> new Message(
+                    bn ? "✅ " + personName + " আবার চেনা পথে"
+                       : "✅ " + personName + " is back on the usual route",
+                    joinDot(routeName(alarm, place, bn), time),
+                    CHANNEL_ARRIVALS);
             case "CHARGE_REMINDER" -> {
                 String pct = metaString(alarm.metadata(), "batteryPercent");
                 String level = pct == null ? null
@@ -183,6 +193,13 @@ public class NotificationComposer {
     }
 
     /** "School-এ" — the hyphenated locative attaches cleanly to any name the user typed. */
+    /** {@code School-এ যাওয়ার পথ} / {@code Way to School}; the direction is in the metadata. */
+    private static String routeName(Alarm alarm, String place, boolean bn) {
+        boolean from = "FROM".equals(metaString(alarm.metadata(), "direction"));
+        if (bn) return from ? orPlace(place, true) + " থেকে ফেরার পথ" : orPlace(place, true) + "-এ যাওয়ার পথ";
+        return (from ? "Way back from " : "Way to ") + orPlace(place, false);
+    }
+
     private static String at(String place, boolean bn) {
         return orPlace(place, bn) + "-এ";
     }

@@ -45,6 +45,7 @@ public class LocationService {
     private final CellLocationService cellLocationService;
     private final LocationBufferService locationBufferService;
     private final ParkedJitterFilter parkedJitter;
+    private final PlaceRouteService placeRoutes;
     private final org.springframework.beans.factory.ObjectProvider<NetworkLocationService> networkLocation;
 
     @Transactional
@@ -137,6 +138,10 @@ public class LocationService {
             geofenceService.evaluate(loc);
             tripService.onLocation(loc);
             alarmRuleService.evaluate(loc);
+            if (loc.isValid()) {
+                placeRoutes.onFix(loc.getImei(), loc.getLatitude(), loc.getLongitude(), loc.getTimestamp(),
+                        gps ? null : loc.getAccuracyMeters());
+            }
         } catch (Exception e) {
             log.error("saveAndBroadcast failed for imei={}: {}", loc.getImei(), e.getMessage(), e);
         }

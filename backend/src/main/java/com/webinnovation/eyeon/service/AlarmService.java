@@ -50,7 +50,8 @@ public class AlarmService {
         return type == AlarmType.PLACE_ARRIVED || type == AlarmType.PLACE_LEFT || type == AlarmType.GEOFENCE_ENTER
                 || type == AlarmType.CHARGE_REMINDER
                 || type == AlarmType.ARRIVED_ON_TIME || type == AlarmType.LEFT_ON_TIME
-                || type == AlarmType.ARRIVED_LATE || type == AlarmType.LEFT_LATE;
+                || type == AlarmType.ARRIVED_LATE || type == AlarmType.LEFT_LATE
+                || type == AlarmType.BACK_ON_ROUTE;
     }
 
     public static final Set<String> PROCESS_RESULTS = Set.of("HANDLED", "FALSE_ALARM", "NO_ACTION");

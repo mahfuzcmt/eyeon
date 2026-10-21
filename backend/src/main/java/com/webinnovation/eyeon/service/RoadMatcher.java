@@ -45,6 +45,10 @@ public class RoadMatcher {
     @Value("${eyeon.roads.max-points:10}")
     private int maxPoints = 10;
 
+    /** OSRM route service, for drawing a planned route through points a parent tapped. Blank = straight lines. */
+    @Value("${eyeon.roads.route-url:https://routing.openstreetmap.de/routed-{profile}/route/v1/driving/}")
+    private String routeUrl;
+
     private long lastCallAt;
 
     public record Match(List<double[]> coords, double confidence) {}
@@ -94,6 +98,50 @@ public class RoadMatcher {
             }
         }
         return parse(body, all);
+    }
+
+    /**
+     * The road line through the given points, in order ([lat, lng] pairs), or empty when the service
+     * is off or has no answer - the caller then keeps straight lines between the points.
+     */
+    public Optional<List<double[]>> route(List<double[]> latLngs, String profile) {
+        if (routeUrl == null || routeUrl.isBlank() || latLngs.size() < 2) return Optional.empty();
+        String coords = latLngs.stream().map(p -> String.format(java.util.Locale.ROOT, "%.6f,%.6f", p[1], p[0]))
+                .collect(Collectors.joining(";"));
+        String url = routeUrl.replace("{profile}", profile) + coords + "?overview=full&geometries=geojson&steps=false";
+        JsonNode body = call(url, latLngs.size(), profile);
+        if (body == null || !"Ok".equals(body.path("code").asText())) return Optional.empty();
+        List<double[]> out = new ArrayList<>();
+        for (JsonNode c : body.path("routes").path(0).path("geometry").path("coordinates")) {
+            out.add(new double[] {c.get(1).asDouble(), c.get(0).asDouble()});
+        }
+        return out.size() < 2 ? Optional.empty() : Optional.of(out);
+    }
+
+    /** One rate-limited GET (the public servers ask for light use); null on any failure. */
+    private JsonNode call(String url, int points, String profile) {
+        synchronized (this) {
+            long wait = lastCallAt + minIntervalMs - System.currentTimeMillis();
+            if (wait > 0) {
+                try {
+                    Thread.sleep(wait);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    return null;
+                }
+            }
+            lastCallAt = System.currentTimeMillis();
+            try {
+                var factory = new org.springframework.http.client.SimpleClientHttpRequestFactory();
+                factory.setConnectTimeout(5_000);
+                factory.setReadTimeout(15_000);
+                return restClientBuilder.requestFactory(factory).build().get().uri(java.net.URI.create(url))
+                        .header("User-Agent", userAgent).retrieve().body(JsonNode.class);
+            } catch (Exception e) {
+                log.info("Road service call failed ({} points, {}): {}", points, profile, e.getMessage());
+                return null;
+            }
+        }
     }
 
     static List<RoutePlanner.Pt> sample(List<RoutePlanner.Pt> pts, int max) {

@@ -23,6 +23,10 @@ public enum AlarmType {
     ARRIVED_LATE,
     /** Left the place after a NOT_LEFT alert. INFO, pushed. */
     LEFT_LATE,
+    /** Off the drawn route to / from a trusted place for two minutes. WARNING. See PlaceRouteService. */
+    ROUTE_DEVIATION,
+    /** Back on the drawn route after a ROUTE_DEVIATION. INFO, pushed. */
+    BACK_ON_ROUTE,
     /** Battery assurance: charge tonight (INFO) / may not last the day (WARNING). See BatteryReminderService. */
     CHARGE_REMINDER,
     COLLISION,

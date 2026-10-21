@@ -203,6 +203,8 @@ export type AlarmType =
   | "LEFT_ON_TIME"
   | "ARRIVED_LATE"
   | "LEFT_LATE"
+  | "ROUTE_DEVIATION"
+  | "BACK_ON_ROUTE"
   | "CHARGE_REMINDER"
   | "COLLISION"
   | "ACC_ON"

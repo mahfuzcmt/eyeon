@@ -34,7 +34,8 @@ public final class NotificationDefaults {
             AlarmType.GEOFENCE_EXIT, AlarmType.GEOFENCE_ENTER,
             AlarmType.PLACE_ARRIVED, AlarmType.PLACE_LEFT, AlarmType.LOW_BATTERY,
             AlarmType.NOT_ARRIVED, AlarmType.NOT_LEFT, AlarmType.CHARGE_REMINDER,
-            AlarmType.ARRIVED_ON_TIME, AlarmType.LEFT_ON_TIME, AlarmType.ARRIVED_LATE, AlarmType.LEFT_LATE));
+            AlarmType.ARRIVED_ON_TIME, AlarmType.LEFT_ON_TIME, AlarmType.ARRIVED_LATE, AlarmType.LEFT_LATE,
+            AlarmType.ROUTE_DEVIATION, AlarmType.BACK_ON_ROUTE));
 
     public static final Set<String> PUSH = ALL_TYPES;
 

@@ -8,6 +8,7 @@ import { useDevices } from "@/hooks/useDevices";
 import { GeofenceEditor } from "@/components/geofence/GeofenceEditor";
 import { formatDateTime } from "@/lib/format";
 import { ExpectedTimesDialog } from "@/components/geofence/ExpectedTimesDialog";
+import { RoutesDialog } from "@/components/geofence/RoutesDialog";
 import type { GeofenceCreate, GeofenceKind, GeofenceUpdate, GeofenceView, LatLng } from "@/types/domain";
 
 function sameShape(a: LatLng[], b: LatLng[]): boolean {
@@ -71,6 +72,7 @@ export default function Page() {
   const [deviceCounts, setDeviceCounts] = useState<Record<string, number>>({});
   const [deviceSearch, setDeviceSearch] = useState("");
   const [timesFor, setTimesFor] = useState<GeofenceView | null>(null);
+  const [routesFor, setRoutesFor] = useState<GeofenceView | null>(null);
 
   // Load device counts for all geofences
   useEffect(() => {
@@ -234,9 +236,14 @@ export default function Page() {
                     {t("geo.people")}: {deviceCounts[g.id] ?? 0}
                   </button>
                   {isPlaces && (
-                    <button type="button" className="btn-ghost px-2 text-[14px]" onClick={() => setTimesFor(g)}>
-                      {t("place.times")}
-                    </button>
+                    <>
+                      <button type="button" className="btn-ghost px-2 text-[14px]" onClick={() => setTimesFor(g)}>
+                        {t("place.times")}
+                      </button>
+                      <button type="button" className="btn-ghost px-2 text-[14px]" onClick={() => setRoutesFor(g)}>
+                        {t("route.title")}
+                      </button>
+                    </>
                   )}
                   <button type="button" className="btn-ghost px-2 text-[14px]" onClick={() => setEditor(g)}>
                     {t("common.edit")}
@@ -308,9 +315,14 @@ export default function Page() {
                   <td className="px-4 py-2 text-ink-800">{formatDateTime(g.createdAt, locale)}</td>
                   <td className="whitespace-nowrap px-4 py-2 text-right">
                     {isPlaces && (
-                      <button type="button" className="btn-ghost" onClick={() => setTimesFor(g)}>
-                        {t("place.times")}
-                      </button>
+                      <>
+                        <button type="button" className="btn-ghost" onClick={() => setTimesFor(g)}>
+                          {t("place.times")}
+                        </button>
+                        <button type="button" className="btn-ghost" onClick={() => setRoutesFor(g)}>
+                          {t("route.title")}
+                        </button>
+                      </>
                     )}
                     <button type="button" className="btn-ghost" onClick={() => setEditor(g)}>
                       {t("common.edit")}
@@ -359,6 +371,7 @@ export default function Page() {
       )}
 
       {timesFor && <ExpectedTimesDialog place={timesFor} onClose={() => setTimesFor(null)} />}
+      {routesFor && <RoutesDialog place={routesFor} onClose={() => setRoutesFor(null)} />}
 
       {/* Device Assignment Dialog */}
       {assigningGeofence && (

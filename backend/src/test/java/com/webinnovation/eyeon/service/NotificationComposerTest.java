@@ -26,6 +26,21 @@ class NotificationComposerTest {
     }
 
     @Test
+    void off_route_names_the_way_and_uses_the_alarm_channel() {
+        Message bn = composer.compose(alarm("ROUTE_DEVIATION", "WARNING", MORNING,
+                Map.of("geofenceName", "স্কুল", "direction", "TO")), "রাফি", Lang.BN);
+        assertEquals("🧭 রাফি অন্য পথে যাচ্ছে", bn.title());
+        assertEquals("স্কুল-এ যাওয়ার পথ · সকাল ৮:০২ · কোথায় আছে দেখতে ট্যাপ করুন", bn.body());
+        assertEquals(NotificationComposer.CHANNEL_ALARMS, bn.channelId());
+
+        Message en = composer.compose(alarm("BACK_ON_ROUTE", "INFO", MORNING,
+                Map.of("geofenceName", "School", "direction", "FROM")), "Rafi", Lang.EN);
+        assertEquals("✅ Rafi is back on the usual route", en.title());
+        assertEquals("Way back from School · 8:02 AM", en.body());
+        assertEquals(NotificationComposer.CHANNEL_ARRIVALS, en.channelId());
+    }
+
+    @Test
     void arrived_in_bengali_names_the_person_place_and_dhaka_time() {
         Message m = composer.compose(
                 alarm("PLACE_ARRIVED", "INFO", MORNING, Map.of("geofenceName", "স্কুল")), "রাফি", Lang.BN);

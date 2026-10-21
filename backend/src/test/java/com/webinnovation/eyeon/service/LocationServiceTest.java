@@ -54,6 +54,7 @@ class LocationServiceTest {
                 mock(CellLocationService.class),
                 mock(LocationBufferService.class),
                 new ParkedJitterFilter(),
+                mock(PlaceRouteService.class),
                 mock(org.springframework.beans.factory.ObjectProvider.class));
     }
 

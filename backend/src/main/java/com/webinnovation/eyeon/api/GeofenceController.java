@@ -19,6 +19,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -36,6 +37,7 @@ public class GeofenceController {
     private final AuditService audit;
     private final DeviceAccessService access;
     private final com.webinnovation.eyeon.service.ExpectedTimeService expectedTimes;
+    private final com.webinnovation.eyeon.service.PlaceRouteService routes;
 
     /** The caller's own geofences and trusted places (per user since V21). @param kind TRUSTED_PLACE or BOUNDARY */
     @GetMapping
@@ -171,6 +173,46 @@ public class GeofenceController {
         audit.record("PLACE_SCHEDULE_ADD", "geofence", id.toString(),
                 java.util.Map.of("kind", created.kind(), "time", created.localTime().toString()));
         return ResponseEntity.status(201).body(com.webinnovation.eyeon.dto.GeofenceDtos.ScheduleView.of(created));
+    }
+
+    // ---- the usual route to / from a trusted place (owner only) ----
+
+    @GetMapping("/{id}/routes")
+    public List<com.webinnovation.eyeon.dto.GeofenceDtos.RouteView> routes(@PathVariable UUID id) {
+        UUID orgId = TenantContext.requireOrgId();
+        return routes.list(orgId, TenantContext.requireUserId(), id).stream()
+                .map(com.webinnovation.eyeon.dto.GeofenceDtos.RouteView::of).toList();
+    }
+
+    @PutMapping("/{id}/routes/{direction}")
+    public com.webinnovation.eyeon.dto.GeofenceDtos.RouteView saveRoute(
+            @PathVariable UUID id, @PathVariable String direction,
+            @RequestBody com.webinnovation.eyeon.dto.GeofenceDtos.RouteSave req) {
+        UUID orgId = TenantContext.requireOrgId();
+        var saved = routes.save(orgId, TenantContext.requireUserId(), id, direction, req.mode(),
+                com.webinnovation.eyeon.dto.GeofenceDtos.pts(req.waypoints()),
+                com.webinnovation.eyeon.dto.GeofenceDtos.pts(req.path()), req.widthM());
+        audit.record("PLACE_ROUTE_SAVE", "geofence", id.toString(),
+                java.util.Map.of("direction", saved.direction(), "widthM", saved.widthM()));
+        return com.webinnovation.eyeon.dto.GeofenceDtos.RouteView.of(saved);
+    }
+
+    @DeleteMapping("/{id}/routes/{direction}")
+    public ResponseEntity<Void> deleteRoute(@PathVariable UUID id, @PathVariable String direction) {
+        UUID orgId = TenantContext.requireOrgId();
+        routes.delete(orgId, TenantContext.requireUserId(), id, direction);
+        audit.record("PLACE_ROUTE_DELETE", "geofence", id.toString(), java.util.Map.of("direction", direction));
+        return ResponseEntity.noContent().build();
+    }
+
+    /** Road line through tapped points, for the route editor. Calls a public routing service: a few seconds. */
+    @PostMapping("/routes/snap")
+    public com.webinnovation.eyeon.dto.GeofenceDtos.SnapView snapRoute(
+            @RequestBody com.webinnovation.eyeon.dto.GeofenceDtos.SnapRequest req) {
+        TenantContext.requireOrgId();
+        var s = routes.snap(com.webinnovation.eyeon.dto.GeofenceDtos.pts(req.points()), req.mode());
+        return new com.webinnovation.eyeon.dto.GeofenceDtos.SnapView(
+                com.webinnovation.eyeon.dto.GeofenceDtos.latLngs(s.path()), Math.round(s.lengthM()), s.roads());
     }
 
     @DeleteMapping("/{id}/schedules/{scheduleId}")
