@@ -53,6 +53,8 @@ export function RoutesDialog({ place, onClose }: Props) {
   const mapRef = useRef<L.Map | null>(null);
   const layersRef = useRef<L.LayerGroup | null>(null);
   const snapSeq = useRef(0);
+  /** Set when the line was copied from the other direction: keep it exactly, do not ask the road service. */
+  const skipSnap = useRef(false);
 
   const current = saved.find((r) => r.direction === direction) ?? null;
   const other = saved.find((r) => r.direction !== direction) ?? null;
@@ -144,6 +146,10 @@ export function RoutesDialog({ place, onClose }: Props) {
   // Snap the edited points to the roads; a newer edit wins over a slower answer.
   useEffect(() => {
     if (!dirty) return;
+    if (skipSnap.current) {
+      skipSnap.current = false;
+      return;
+    }
     if (waypoints.length < 2) {
       setSnap(null);
       return;
@@ -217,6 +223,20 @@ export function RoutesDialog({ place, onClose }: Props) {
       map.fitBounds(L.latLngBounds(pts.map((p) => [p.lat, p.lng] as [number, number])), { padding: [30, 30] });
     }
   }, [current, other, dirty]);
+
+  /** The other direction's road, reversed: the usual case of coming back the way they went. */
+  const copyOther = () => {
+    if (!other) return;
+    const otherTaps = other.direction === "TO" ? other.waypoints.slice(0, -1) : other.waypoints.slice(1);
+    snapSeq.current++;
+    skipSnap.current = true;
+    setSnapping(false);
+    setTaps([...otherTaps].reverse());
+    setMode(other.mode);
+    setWidth(other.widthM);
+    setSnap({ path: [...other.path].reverse(), lengthM: other.lengthM, roads: true });
+    setDirty(true);
+  };
 
   const save = async () => {
     if (!snap || waypoints.length < 2) {
@@ -350,6 +370,12 @@ export function RoutesDialog({ place, onClose }: Props) {
               ))}
             </select>
           </label>
+
+          {other && (
+            <button type="button" className="btn-secondary mt-3 w-full" disabled={busy} onClick={copyOther}>
+              {t(other.direction === "TO" ? "route.sameTO" : "route.sameFROM")}
+            </button>
+          )}
 
           <div className="mt-3 flex flex-wrap gap-2">
             <button

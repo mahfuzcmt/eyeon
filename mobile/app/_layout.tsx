@@ -73,6 +73,15 @@ export default function RootLayout() {
             }}
           />
           <Stack.Screen
+            name="place-route"
+            options={{
+              headerShown: true,
+              headerTitle: "",
+              headerStyle: { backgroundColor: colors.header },
+              headerTintColor: colors.onHeader,
+            }}
+          />
+          <Stack.Screen
             name="place-times"
             options={{
               headerShown: true,

@@ -332,6 +332,29 @@ export interface StaysResult {
 
 // ----- Expected times of a trusted place (/geofences/:id/schedules) -----
 export type PlaceScheduleKind = "ARRIVE_BY" | "LEAVE_BY";
+/** TO: the way to the place (checked around its arrival time); FROM: the way back after leaving it. */
+export type RouteDirection = "TO" | "FROM";
+/** WALK snaps to footpaths, VEHICLE (rickshaw, van, car, bus) to roads. */
+export type RouteMode = "WALK" | "VEHICLE";
+
+export interface PlaceRoute {
+  id: string;
+  direction: RouteDirection;
+  mode: RouteMode;
+  waypoints: LatLng[];
+  path: LatLng[];
+  widthM: number;
+  lengthM: number;
+  active: boolean;
+}
+
+export interface RouteSnap {
+  path: LatLng[];
+  lengthM: number;
+  /** False when the road service had no answer: straight lines between the points. */
+  roads: boolean;
+}
+
 export interface PlaceSchedule {
   id: string;
   kind: PlaceScheduleKind;

@@ -55,6 +55,10 @@ interface Props {
   baseLayer?: "street" | "satellite" | "google";
   /** Circle overlay (geofence preview); null clears it. */
   circle?: MapCircle | null;
+  /** A second, dashed grey line as [lng, lat] pairs (e.g. the other direction of a usual route); [] clears it. */
+  ghostRoute?: [number, number][];
+  /** Numbered points (1, 2, ...) such as the turns tapped on a route; [] clears them. */
+  pins?: MapPoint[];
   fitRoute?: boolean;
   /** Auto-fit map to show all vehicles; bump `nonce` to re-trigger. */
   fitVehicles?: { nonce: number } | null;
@@ -188,6 +192,8 @@ ${googleScripts}
   let moving = null;         // playback marker
   let route = null;          // trip polyline
   let circle = null;         // geofence preview
+  let ghost = null;          // dashed second line
+  let pins = [];             // numbered points
 
   function esc(s){ return String(s==null?'':s).replace(/[<>&]/g,''); }
 
@@ -386,6 +392,18 @@ ${googleScripts}
       if(route){ route.setLatLngs(latlngs); }
       else { route = L.polyline(latlngs, {color:'${colors.brand}', weight:3, opacity:0.85}).addTo(map); }
     },
+    setGhost(coords){
+      if(ghost){ ghost.remove(); ghost = null; }
+      if(coords && coords.length > 1){
+        ghost = L.polyline(coords.map(c => [c[1], c[0]]), {color:'#637370', weight:3, opacity:0.7, dashArray:'6 8'}).addTo(map);
+      }
+    },
+    setPins(list){
+      pins.forEach(m => m.remove());
+      pins = (list || []).map((p, i) => L.marker([p.lat, p.lng], {interactive:false, icon: L.divIcon({className:'',
+        html:'<div style="width:26px;height:26px;border-radius:13px;background:${colors.brand};color:#fff;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.35);display:flex;align-items:center;justify-content:center;font:600 13px/1 sans-serif">'+(i+1)+'</div>',
+        iconSize:[26,26], iconAnchor:[13,13]})}).addTo(map));
+    },
     setMoving(pt){
       if(!pt){ if(moving){moving.remove(); moving=null;} return; }
       if(moving){ moving.setLatLng([pt.lat,pt.lng]); rotate(moving, pt.course); }
@@ -459,6 +477,8 @@ export default function WebMap({
   zoomStep,
   baseLayer,
   circle,
+  ghostRoute,
+  pins,
   fitRoute,
   fitVehicles,
   showTraffic,
@@ -528,6 +548,14 @@ export default function WebMap({
   useEffect(() => {
     if (circle !== undefined) run(`window.MLMap.setCircle(${JSON.stringify(circle ?? null)})`);
   }, [circle, run]);
+
+  useEffect(() => {
+    if (ghostRoute) run(`window.MLMap.setGhost(${JSON.stringify(ghostRoute)})`);
+  }, [ghostRoute, run]);
+
+  useEffect(() => {
+    if (pins) run(`window.MLMap.setPins(${JSON.stringify(pins.map((p) => ({ lat: p.lat, lng: p.lng })))})`);
+  }, [pins, run]);
 
   useEffect(() => {
     if (showTraffic !== undefined) run(`window.MLMap.setTraffic(${showTraffic ? "true" : "false"})`);

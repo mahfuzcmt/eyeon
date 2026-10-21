@@ -458,6 +458,8 @@ const STRINGS = {
   "route.width": { en: "Allowed distance from the line", bn: "পথ থেকে সর্বোচ্চ দূরত্ব" },
   "route.points": { en: "{n} points", bn: "{n}টি বিন্দু" },
   "route.length": { en: "{km} km", bn: "{km} কিমি" },
+  "route.sameTO": { en: "Same road as the way there (reversed)", bn: "যাওয়ার পথের মতোই (উল্টো দিকে)" },
+  "route.sameFROM": { en: "Same road as the way back (reversed)", bn: "ফেরার পথের মতোই (উল্টো দিকে)" },
   "route.undo": { en: "Undo", bn: "আগেরটা মুছুন" },
   "route.clear": { en: "Start again", bn: "আবার শুরু" },
   "route.snapping": { en: "Following the roads…", bn: "রাস্তা ধরে আঁকা হচ্ছে…" },

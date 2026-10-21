@@ -44,8 +44,12 @@ import type {
   LoginResponse,
   NightRestView,
   OrgSummary,
+  PlaceRoute,
   PlaceSchedule,
   PlaceScheduleKind,
+  RouteDirection,
+  RouteMode,
+  RouteSnap,
   PlaceType,
   StaysResult,
   TrackerSettingItem,
@@ -334,6 +338,31 @@ export async function createPlaceSchedule(geofenceId: string, req: { kind: Place
 
 export async function deletePlaceSchedule(geofenceId: string, scheduleId: string): Promise<void> {
   await api.delete(`/geofences/${geofenceId}/schedules/${scheduleId}`);
+}
+
+// ----- Usual route to / from a trusted place -----
+export async function listPlaceRoutes(geofenceId: string): Promise<PlaceRoute[]> {
+  const r = await api.get<PlaceRoute[]>(`/geofences/${geofenceId}/routes`);
+  return r.data;
+}
+
+export async function savePlaceRoute(
+  geofenceId: string,
+  direction: RouteDirection,
+  req: { mode: RouteMode; waypoints: LatLng[]; path: LatLng[]; widthM: number },
+): Promise<PlaceRoute> {
+  const r = await api.put<PlaceRoute>(`/geofences/${geofenceId}/routes/${direction}`, req);
+  return r.data;
+}
+
+export async function deletePlaceRoute(geofenceId: string, direction: RouteDirection): Promise<void> {
+  await api.delete(`/geofences/${geofenceId}/routes/${direction}`);
+}
+
+/** Road line through tapped points (a public routing service: a few seconds). */
+export async function snapRoute(points: LatLng[], mode: RouteMode): Promise<RouteSnap> {
+  const r = await api.post<RouteSnap>("/geofences/routes/snap", { points, mode });
+  return r.data;
 }
 
 // ----- Tracker settings -----

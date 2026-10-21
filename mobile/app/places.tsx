@@ -100,6 +100,15 @@ export default function PlacesScreen() {
                 <Ionicons name="alarm-outline" size={22} color={colors.brand} />
               </Pressable>
               <Pressable
+                onPress={() => router.push({ pathname: "/place-route", params: { id: item.id, name: item.name } })}
+                hitSlop={8}
+                style={styles.deleteBtn}
+                accessibilityRole="button"
+                accessibilityLabel={t("route.title")}
+              >
+                <Ionicons name="git-branch-outline" size={22} color={colors.brand} />
+              </Pressable>
+              <Pressable
                 onPress={() => confirmDelete(item)}
                 hitSlop={8}
                 style={styles.deleteBtn}
