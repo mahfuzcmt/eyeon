@@ -46,7 +46,7 @@ export function loadDevicePhoto(imei: string, version: string): Promise<string |
 }
 
 /** imei -> data URI for every listed person who has a photo. Updates as photos finish loading. */
-export function useDevicePhotos(devices: Array<Pick<DeviceView, "imei" | "photoUpdatedAt">>): Record<string, string> {
+export function useDevicePhotos(devices: Pick<DeviceView, "imei" | "photoUpdatedAt">[]): Record<string, string> {
   const [photos, setPhotos] = useState<Record<string, string>>({});
   // Only the (imei, version) pairs matter; the device list itself is re-fetched every 10 s.
   const signature = devices.map((d) => `${d.imei}|${d.photoUpdatedAt ?? ""}`).join(",");
@@ -56,7 +56,7 @@ export function useDevicePhotos(devices: Array<Pick<DeviceView, "imei" | "photoU
     const wanted = signature
       .split(",")
       .map((s) => s.split("|"))
-      .filter(([imei, version]) => imei && version) as Array<[string, string]>;
+      .filter(([imei, version]) => imei && version) as [string, string][];
 
     // Start from what is already cached, dropping people whose photo was removed.
     const initial: Record<string, string> = {};

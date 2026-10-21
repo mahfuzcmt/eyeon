@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback, useRef } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useParams } from "next/navigation";
 import dynamic from "next/dynamic";
 import type { SharedLocationView, SharedHistoryPoint } from "@/types/domain";
@@ -28,7 +28,6 @@ export default function SharedLocationPage() {
   const [historyLoaded, setHistoryLoaded] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-  const wsRef = useRef<WebSocket | null>(null);
 
   // Fetch initial location data
   const fetchLocation = useCallback(async () => {
@@ -67,19 +66,14 @@ export default function SharedLocationPage() {
     }
   }, [location?.showHistory, fetchHistory]);
 
-  // WebSocket for realtime updates
+  // Realtime updates
   useEffect(() => {
     if (!location?.allowRealtime) return;
 
     // Public viewers have no STOMP credentials, so poll every 10 s instead.
     const interval = setInterval(fetchLocation, 10000);
 
-    return () => {
-      clearInterval(interval);
-      if (wsRef.current) {
-        wsRef.current.close();
-      }
-    };
+    return () => clearInterval(interval);
   }, [location?.allowRealtime, fetchLocation]);
 
   if (loading) {

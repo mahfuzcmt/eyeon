@@ -35,7 +35,9 @@ export default function TrackTab({ imei, orgId }: { imei: string; orgId: string 
   }, [loc]);
 
   // The hook wants a stable list: one person here, or nobody while the device is loading.
-  const photoOf = useMemo(() => (device ? [{ imei: device.imei, photoUpdatedAt: device.photoUpdatedAt }] : []), [device?.imei, device?.photoUpdatedAt]);
+  const photoImei = device?.imei;
+  const photoVersion = device?.photoUpdatedAt;
+  const photoOf = useMemo(() => (photoImei ? [{ imei: photoImei, photoUpdatedAt: photoVersion }] : []), [photoImei, photoVersion]);
   const photos = useDevicePhotos(photoOf);
 
   const vehicles = useMemo<MapVehicle[]>(() => {

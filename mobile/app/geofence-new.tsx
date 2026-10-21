@@ -65,7 +65,7 @@ export default function GeofenceNewScreen() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [startLat]);
 
   const byImei = useMemo(() => new Map(devices.map((d) => [d.imei, d])), [devices]);
   const vehicles = useMemo<MapVehicle[]>(

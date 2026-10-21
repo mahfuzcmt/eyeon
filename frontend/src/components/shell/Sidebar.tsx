@@ -106,7 +106,8 @@ export function Sidebar({ mobile = false, onNavigate }: SidebarProps = {}) {
   // Auto-select section based on active route
   useEffect(() => {
     for (const section of NAV_SECTIONS) {
-      if (section.href && isActive(section.href)) {
+      const href = section.href;
+      if (href && (href === "/dashboard" ? pathname === "/dashboard" : pathname.startsWith(href))) {
         setActiveSection(section.id);
         break;
       }

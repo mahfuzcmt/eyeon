@@ -973,6 +973,9 @@ export function FleetMap({ devices, locations, selectedImei, onSelect, onRefresh
     if (mapRef.current || !containerRef.current) return;
 
     const container = containerRef.current;
+    const glides = glidesRef.current;
+    const markers = markersRef.current;
+    const iconStates = iconStateRef.current;
 
     const map = L.map(container, {
       center: DHAKA_CENTER,
@@ -1034,12 +1037,12 @@ export function FleetMap({ devices, locations, selectedImei, onSelect, onRefresh
       clearTimeout(timer);
       resizeObserver.disconnect();
       map.off("zoomstart viewreset", finishGlides);
-      glidesRef.current.clear();
+      glides.clear();
       clusterGroup.clearLayers();
       clusterGroupRef.current = null;
-      for (const marker of markersRef.current.values()) marker.remove();
-      markersRef.current.clear();
-      iconStateRef.current.clear();
+      for (const marker of markers.values()) marker.remove();
+      markers.clear();
+      iconStates.clear();
       // A new map instance (StrictMode double-mount, remount) must fit the fleet again.
       initialFitDoneRef.current = false;
       map.remove();
@@ -1539,6 +1542,8 @@ export function FleetMap({ devices, locations, selectedImei, onSelect, onRefresh
   useEffect(() => {
     const map = mapRef.current;
     if (!map) return;
+    const trails = trailsRef.current;
+    const predictiveMarkers = predictiveMarkersRef.current;
 
     let running = true;
     let frameCount = 0;
@@ -1757,16 +1762,16 @@ export function FleetMap({ devices, locations, selectedImei, onSelect, onRefresh
         animationFrameRef.current = null;
       }
       // Cleanup trails and predictive markers
-      for (const trail of trailsRef.current.values()) {
+      for (const trail of trails.values()) {
         trail.remove();
       }
-      trailsRef.current.clear();
-      for (const pred of predictiveMarkersRef.current.values()) {
+      trails.clear();
+      for (const pred of predictiveMarkers.values()) {
         pred.remove();
       }
-      predictiveMarkersRef.current.clear();
+      predictiveMarkers.clear();
     };
-  }, [onAdvanceAnimations]); // Only restart if onAdvanceAnimations changes (it shouldn't)
+  }, [onAdvanceAnimations, glidePosition, drawAt, placeSilently]); // all stable: the loop starts once
 
   // Address search (Nominatim; biased to the current viewport). Free, no key —
   // matches the OSM fallback strategy of lib/leaflet.ts.

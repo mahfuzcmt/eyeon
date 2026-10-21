@@ -28,8 +28,10 @@ export function LiveTrackingPanel({ device, location, onClose }: Props) {
   };
 
   // Reverse geocode to get address
+  const lat = location?.latitude;
+  const lng = location?.longitude;
   useEffect(() => {
-    if (!location) {
+    if (lat === undefined || lng === undefined) {
       setAddress("No location data");
       return;
     }
@@ -38,24 +40,24 @@ export function LiveTrackingPanel({ device, location, onClose }: Props) {
       setAddressLoading(true);
       try {
         const res = await fetch(
-          `https://nominatim.openstreetmap.org/reverse?format=json&lat=${location.latitude}&lon=${location.longitude}&zoom=18&addressdetails=1`,
+          `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`,
           { headers: { Accept: "application/json" } }
         );
         const data = await res.json();
         if (data.display_name) {
           setAddress(data.display_name);
         } else {
-          setAddress(`${location.latitude.toFixed(6)}, ${location.longitude.toFixed(6)}`);
+          setAddress(`${lat.toFixed(6)}, ${lng.toFixed(6)}`);
         }
       } catch {
-        setAddress(`${location.latitude.toFixed(6)}, ${location.longitude.toFixed(6)}`);
+        setAddress(`${lat.toFixed(6)}, ${lng.toFixed(6)}`);
       } finally {
         setAddressLoading(false);
       }
     };
 
     fetchAddress();
-  }, [location?.latitude, location?.longitude]);
+  }, [lat, lng]);
 
   const currentSpeed = filterSpeed(location?.speed, location?.valid);
   const isMoving = currentSpeed > 0;
