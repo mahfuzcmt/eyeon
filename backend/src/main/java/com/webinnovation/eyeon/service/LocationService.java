@@ -98,9 +98,12 @@ public class LocationService {
             }
             if (loc.isValid()) {
                 // The raw fix is stored above; from here on a still tracker's wobble shows as one spot.
-                ParkedJitterFilter.Position shown = parkedJitter.apply(loc.getImei(), loc.getLatitude(), loc.getLongitude(), loc.getSpeed());
-                loc.setLatitude(shown.latitude());
-                loc.setLongitude(shown.longitude());
+                ParkedJitterFilter.Result shown = parkedJitter.apply(loc.getImei(), loc.getLatitude(), loc.getLongitude(), loc.getSpeed(),
+                        loc.getTimestamp(), "WIFI".equals(loc.getPositionSource()) ? loc.getAccuracyMeters() : null);
+                loc.setLatitude(shown.position().latitude());
+                loc.setLongitude(shown.position().longitude());
+                // A held position is a still tracker: its few km/h are noise and must not read as "moving".
+                if (shown.held()) loc.setSpeed(0);
             }
             if (loc.isValid()) {
                 deviceRepo.updateLastPosition(

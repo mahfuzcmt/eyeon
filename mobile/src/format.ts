@@ -1,25 +1,25 @@
 import { colors } from "./theme";
 import type { DeviceView, LocationView, MotionStatus } from "./types";
 
-/** Speeds below this threshold (kph) are considered GPS noise and displayed as 0. */
-const SPEED_NOISE_THRESHOLD = 3;
+/** Speeds at or below this (kph) are considered GPS noise and displayed as 0 (same as the web). */
+const SPEED_NOISE_THRESHOLD = 5;
 
 /**
  * Filter out unreliable speed readings:
  * 1. When GPS fix is invalid (valid=false), speed is meaningless - show 0
- * 2. Speeds below 3 kph are typically GPS drift when stationary - show 0
+ * 2. Speeds of 5 kph or less are typically GPS drift when stationary - show 0
  */
 export function filterSpeed(speed: number | null | undefined, valid?: boolean | null): number {
   if (speed == null) return 0;
   // When GPS fix is invalid, speed is unreliable (cell tower can't measure speed)
   if (valid === false) return 0;
-  return speed < SPEED_NOISE_THRESHOLD ? 0 : speed;
+  return speed <= SPEED_NOISE_THRESHOLD ? 0 : speed;
 }
 
 /**
  * Derive the UI motion state the AutoNemo-style screens show.
  *
- * For stopped vehicles (speed ≤ 3):
+ * For stopped vehicles (speed ≤ 5):
  * - ACC ON → IDLE (engine running, traffic jam, waiting at signal)
  * - ACC OFF or unknown → STOPPED (parked, engine off)
  */
