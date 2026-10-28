@@ -179,6 +179,30 @@ public class DeviceRepository {
                 """, params);
     }
 
+    /** The position and speed the map shows: what {@code ParkedJitterFilter} let through, not the raw fix. */
+    public record ShownPosition(double latitude, double longitude, int speed) {}
+
+    private static final RowMapper<java.util.Map.Entry<String, ShownPosition>> SHOWN_MAPPER = (rs, rn) ->
+            java.util.Map.entry(rs.getString("imei"), new ShownPosition(
+                    rs.getDouble("last_lat"), rs.getDouble("last_lng"), rs.getInt("last_speed")));
+
+    private static final String SHOWN_SELECT = """
+            SELECT imei, ST_Y(last_location::geometry) AS last_lat, ST_X(last_location::geometry) AS last_lng,
+                   COALESCE(last_speed, 0) AS last_speed
+            FROM devices WHERE last_location IS NOT NULL
+            """;
+
+    public java.util.Map<String, ShownPosition> shownPositions(UUID orgId) {
+        return jdbc.query(SHOWN_SELECT + " AND org_id = :orgId", new MapSqlParameterSource("orgId", orgId), SHOWN_MAPPER)
+                .stream()
+                .collect(java.util.stream.Collectors.toMap(java.util.Map.Entry::getKey, java.util.Map.Entry::getValue));
+    }
+
+    public Optional<ShownPosition> shownPosition(String imei) {
+        return jdbc.query(SHOWN_SELECT + " AND imei = :imei", new MapSqlParameterSource("imei", imei), SHOWN_MAPPER)
+                .stream().findFirst().map(java.util.Map.Entry::getValue);
+    }
+
     /**
      * Apply a location packet that carries NO valid GPS fix.
      *

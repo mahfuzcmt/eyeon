@@ -40,9 +40,13 @@ public class LocationController {
         access.requireVisible(imei);
         // Coordinates of the last fix, like /devices/locations/last: a packet without a fix
         // carries a stale or made-up position that would pull the marker away.
-        return locationRepo.findLastKnownWithFix(imei)
+        // ...and at the spot the live feed shows (a still tracker's wobble held), not the raw fix.
+        LocationView view = locationRepo.findLastKnownWithFix(imei)
                 .map(f -> LocationView.ofLastKnown(f.latest(), f.lastValid()))
                 .orElseThrow(() -> new NotFoundException("location", imei));
+        return deviceRepo.shownPosition(imei)
+                .map(s -> view.withShown(s.latitude(), s.longitude(), s.speed()))
+                .orElse(view);
     }
 
     @GetMapping

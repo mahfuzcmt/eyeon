@@ -1,6 +1,7 @@
 package com.webinnovation.eyeon.api;
 
 import com.webinnovation.eyeon.dto.LocationDtos.LocationView;
+import com.webinnovation.eyeon.repository.DeviceRepository;
 import com.webinnovation.eyeon.repository.LocationRepository;
 import com.webinnovation.eyeon.security.TenantContext;
 import com.webinnovation.eyeon.service.DeviceAccessService;
@@ -23,6 +24,7 @@ import java.util.UUID;
 public class BulkLocationController {
 
     private final LocationRepository locationRepo;
+    private final DeviceRepository deviceRepo;
     private final DeviceAccessService access;
 
     /**
@@ -38,9 +40,15 @@ public class BulkLocationController {
     public List<LocationView> allLastKnown() {
         UUID orgId = TenantContext.requireOrgId();
         java.util.Set<String> visible = access.visibleForCurrentUser();
+        // Plotted where the live feed shows it, a still tracker's wobble held (LocationView.withShown).
+        java.util.Map<String, DeviceRepository.ShownPosition> shown = deviceRepo.shownPositions(orgId);
         return locationRepo.findAllLastKnownWithFixForOrg(orgId).stream()
                 .filter(f -> DeviceAccessService.canSee(visible, f.latest().deviceImei()))
-                .map(f -> LocationView.ofLastKnown(f.latest(), f.lastValid()))
+                .map(f -> {
+                    LocationView v = LocationView.ofLastKnown(f.latest(), f.lastValid());
+                    DeviceRepository.ShownPosition s = shown.get(v.imei());
+                    return s == null ? v : v.withShown(s.latitude(), s.longitude(), s.speed());
+                })
                 .filter(LocationView::hasPosition)
                 .toList();
     }

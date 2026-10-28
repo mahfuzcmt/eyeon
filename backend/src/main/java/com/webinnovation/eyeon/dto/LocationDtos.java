@@ -35,6 +35,19 @@ public final class LocationDtos {
             return of(l, l.valid() ? l.ts() : null);
         }
 
+        /**
+         * The same view at the position the live feed shows ({@code devices.last_location} / {@code last_speed},
+         * after {@code ParkedJitterFilter}). The raw last fix still carries a still tracker's wobble and its few
+         * km/h of noise; a client that polls this endpoint between live batches would make the marker jump back
+         * and forth and read as moving. Left as is when the tracker never had a fix.
+         */
+        public LocationView withShown(double shownLatitude, double shownLongitude, int shownSpeed) {
+            if (lastValidTs == null) return this;
+            return new LocationView(id, imei, ts, shownLatitude, shownLongitude, shownSpeed, course, altitude,
+                    satellites, valid, accOn, voltageMv, mileageM, gsmSignal, engineHoursSeconds, lastValidTs,
+                    source, accuracyM);
+        }
+
         /** False for a packet without a fix whose coordinates are the (0,0) placeholder. */
         public boolean hasPosition() {
             return valid || lastValidTs != null || latitude != 0 || longitude != 0;
