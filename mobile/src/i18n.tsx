@@ -40,7 +40,8 @@ const STRINGS = {
   "auth.password": { en: "Password", bn: "পাসওয়ার্ড" },
   "auth.loginFailed": { en: "Invalid email or password", bn: "ভুল ইমেইল বা পাসওয়ার্ড" },
   "auth.signOut": { en: "Sign out", bn: "সাইন আউট" },
-  "auth.tagline": { en: "Family safety tracking", bn: "পরিবারের নিরাপত্তায়" },
+  "auth.tagline": { en: "Keep an eye on them, wherever they are.", bn: "চোখে চোখে রাখুন, ও যেখানেই থাকুক।" },
+  "auth.subtitle": { en: "Live location, safe-zone alerts and SOS for your family", bn: "লাইভ লোকেশন, সেফ জোন অ্যালার্ট ও SOS — আপনার পরিবারের জন্য" },
 
   // ── Home ──────────────────────────────────────────────────────────
   "home.fleetStatus": { en: "Overview", bn: "সারসংক্ষেপ" },
