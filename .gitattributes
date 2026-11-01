@@ -1,5 +1,2 @@
 backend/mvnw text eol=lf
 backend/mvnw.cmd text eol=crlf
-# Vector artwork: .ai is PDF-based (byte offsets), keep bytes untouched
-docs/brand/logo/*.ai binary
-docs/brand/logo/*.eps -text
