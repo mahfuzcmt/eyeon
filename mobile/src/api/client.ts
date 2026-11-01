@@ -55,27 +55,55 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
-// Single-flight refresh: concurrent 401s share one refresh call.
-let refreshing: Promise<string | null> | null = null;
+/**
+ * Result of a refresh attempt. "rejected" means the server definitively refused the refresh
+ * token (revoked, expired, unknown) and the user must sign in again; "unavailable" means the
+ * server could not be reached or failed (no network, timeout, 5xx, 429), which says nothing
+ * about the session. Until 2026-11-01 both signed the user out, so a parent whose phone was on
+ * a weak connection when the hourly access token ran out was logged out of the app.
+ */
+type RefreshOutcome = { ok: true; accessToken: string } | { ok: false; rejected: boolean };
 
-async function refreshAccessToken(): Promise<string | null> {
-  if (!tokens.refreshToken) return null;
+// Single-flight refresh: concurrent 401s share one refresh call.
+let refreshing: Promise<RefreshOutcome> | null = null;
+
+const REFRESH_ATTEMPTS = 3;
+
+function isDefinitiveRejection(err: unknown): boolean {
+  if (!axios.isAxiosError(err) || !err.response) return false;
+  const s = err.response.status;
+  return s >= 400 && s < 500 && s !== 408 && s !== 429;
+}
+
+async function refreshOnce(refreshToken: string): Promise<TokenPair> {
+  const r = await axios.post<TokenPair>(
+    `${baseURL}/auth/refresh`,
+    { refreshToken },
+    { headers: { "Content-Type": "application/json" }, timeout: 20_000 },
+  );
+  return r.data;
+}
+
+async function refreshAccessToken(): Promise<RefreshOutcome> {
+  const refreshToken = tokens.refreshToken;
+  if (!refreshToken) return { ok: false, rejected: true };
   if (!refreshing) {
-    refreshing = axios
-      .post<TokenPair>(
-        `${baseURL}/auth/refresh`,
-        { refreshToken: tokens.refreshToken },
-        { headers: { "Content-Type": "application/json" } },
-      )
-      .then((r) => {
-        tokenStore.set(r.data);
-        onTokens(r.data);
-        return r.data.accessToken;
-      })
-      .catch(() => null)
-      .finally(() => {
-        refreshing = null;
-      });
+    refreshing = (async (): Promise<RefreshOutcome> => {
+      for (let attempt = 0; attempt < REFRESH_ATTEMPTS; attempt++) {
+        try {
+          const pair = await refreshOnce(refreshToken);
+          tokenStore.set(pair);
+          onTokens(pair);
+          return { ok: true, accessToken: pair.accessToken };
+        } catch (err) {
+          if (isDefinitiveRejection(err)) return { ok: false, rejected: true };
+          if (attempt < REFRESH_ATTEMPTS - 1) await new Promise((res) => setTimeout(res, 1500 * (attempt + 1)));
+        }
+      }
+      return { ok: false, rejected: false };
+    })().finally(() => {
+      refreshing = null;
+    });
   }
   return refreshing;
 }
@@ -104,7 +132,15 @@ export async function freshAccessToken(): Promise<string | null> {
     const exp = jwtExpiry(current);
     if (exp === null || exp * 1000 - Date.now() > 60_000) return current;
   }
-  return (await refreshAccessToken()) ?? tokens.accessToken;
+  if (!tokens.refreshToken) return tokens.accessToken; // signed out (or signing out)
+  const r = await refreshAccessToken();
+  if (r.ok) return r.accessToken;
+  if (r.rejected) {
+    tokenStore.clear();
+    onAuthLost();
+    return null;
+  }
+  return tokens.accessToken;
 }
 
 api.interceptors.response.use(
@@ -115,13 +151,17 @@ api.interceptors.response.use(
 
     if (status === 401 && original && !original._retried && tokens.refreshToken) {
       original._retried = true;
-      const fresh = await refreshAccessToken();
-      if (fresh) {
-        original.headers.set("Authorization", `Bearer ${fresh}`);
+      const r = await refreshAccessToken();
+      if (r.ok) {
+        original.headers.set("Authorization", `Bearer ${r.accessToken}`);
         return api.request(original);
       }
-      tokenStore.clear();
-      onAuthLost();
+      // Only a definitive refusal ends the session; a network failure keeps the tokens so the
+      // next request (the app polls every 10 s) tries again.
+      if (r.rejected) {
+        tokenStore.clear();
+        onAuthLost();
+      }
     }
     return Promise.reject(error);
   },

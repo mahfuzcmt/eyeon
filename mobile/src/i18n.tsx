@@ -945,6 +945,18 @@ const STRINGS = {
   "share.hoursLeft": { en: "hours left", bn: "ঘণ্টা বাকি" },
   "share.minutesLeft": { en: "min left", bn: "মিনিট বাকি" },
   "share.message": { en: "live location on EyeOn:", bn: "EyeOn-এ এখনকার অবস্থান:" },
+  "person.navigate": { en: "Navigate", bn: "পথ দেখুন" },
+  "homev.title": { en: "At places today", bn: "আজ কোন জায়গায় কতক্ষণ" },
+  "homev.hint": { en: "Arrival and leaving times at trusted places and boundaries, and how long they stayed.", bn: "বিশ্বস্ত জায়গা ও সীমানায় কখন পৌঁছেছে, কখন বের হয়েছে, এবং কতক্ষণ ছিল।" },
+  "homev.none": { en: "No arrivals or departures at places today.", bn: "আজ কোনো জায়গায় আসা-যাওয়ার তথ্য নেই।" },
+  "homev.arrived": { en: "Arrived", bn: "পৌঁছেছে" },
+  "homev.left": { en: "Left", bn: "বের হয়েছে" },
+  "homev.stillThere": { en: "still there", bn: "এখনও আছে" },
+  "homev.beforeToday": { en: "before today", bn: "আজকের আগে থেকে" },
+  "homev.stayed": { en: "Stayed", bn: "ছিল" },
+  "homev.inside": { en: "Inside", bn: "ভেতরে" },
+  "homev.boundary": { en: "Boundary", bn: "সীমানা" },
+  "homev.loading": { en: "Loading places…", bn: "জায়গার তথ্য লোড হচ্ছে…" },
 } as const;
 
 export type StringKey = keyof typeof STRINGS;

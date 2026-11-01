@@ -10,6 +10,7 @@ export function useCurrentStay(imei: string | null): StayView | null {
   const [stay, setStay] = useState<StayView | null>(null);
 
   useEffect(() => {
+    setStay(null);
     if (!imei) return;
     let cancelled = false;
     const load = async () => {

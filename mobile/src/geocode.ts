@@ -50,3 +50,31 @@ export function restingUntil(rest: Pick<NightRestView, "from" | "to"> | undefine
   const inside = from < to ? now >= from && now < to : now >= from || now < to;
   return inside ? rest.to : null;
 }
+
+const reverseCache = new Map<string, string | null>();
+const reverseInflight = new Map<string, Promise<string | null>>();
+
+/**
+ * Street / area name of a point, through Nominatim's reverse lookup (same source as the web
+ * popup's address). Cached per ~110 m cell and language, so a person standing still is looked
+ * up once; null when nothing is known or the lookup fails.
+ */
+export function reverseAddress(lat: number, lng: number, lang = "en"): Promise<string | null> {
+  const key = `${lang}|${lat.toFixed(3)},${lng.toFixed(3)}`;
+  if (reverseCache.has(key)) return Promise.resolve(reverseCache.get(key) ?? null);
+  const running = reverseInflight.get(key);
+  if (running) return running;
+  const url = `https://nominatim.openstreetmap.org/reverse?format=json&zoom=18&addressdetails=0&accept-language=${encodeURIComponent(lang)}&lat=${lat}&lon=${lng}`;
+  const p = fetch(url, { headers: { Accept: "application/json", "User-Agent": "EyeOn mobile (https://eyeon.motolinkgps.com)" } })
+    .then(async (res) => {
+      if (!res.ok) return null;
+      const data = (await res.json()) as { display_name?: string };
+      const name = data.display_name?.split(",").slice(0, 3).join(",").trim() || null;
+      reverseCache.set(key, name);
+      return name;
+    })
+    .catch(() => null)
+    .finally(() => reverseInflight.delete(key));
+  reverseInflight.set(key, p);
+  return p;
+}
