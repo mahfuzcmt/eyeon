@@ -1,0 +1,16 @@
+-- ============================================================
+-- V31__refresh_rotation_grace.sql
+--
+-- When a refresh token is exchanged it is revoked and a new pair is issued. If the reply never
+-- reaches the phone (connection dropped mid-request, app killed before it saved the new pair),
+-- the phone still holds only the old, now revoked token, and its next refresh failed with
+-- REFRESH_REVOKED: the parent was signed out (client feedback 2026-11-01, "the app session
+-- does not remain logged in for very long").
+--
+-- rotated_at marks a token revoked *by rotation* (as opposed to a password change / reset).
+-- AuthService accepts such a token once more within a short grace window and issues a new pair.
+-- revokeAllForUser clears rotated_at, so a password change ends the grace at once.
+--
+-- Rollback: ALTER TABLE refresh_tokens DROP COLUMN rotated_at;
+-- ============================================================
+alter table refresh_tokens add column rotated_at timestamptz;

@@ -6,12 +6,15 @@ import { useDevices } from "@/hooks/useDevices";
 import { useLiveLocations } from "@/hooks/useLiveLocations";
 import { useKpis } from "@/hooks/useKpis";
 import { useDeviceTodayStats } from "@/hooks/useDeviceTodayStats";
+import { useTodayPlaceVisits } from "@/hooks/useTodayPlaceVisits";
+import { Ionicons } from "@expo/vector-icons";
+import { PLACE_ICON } from "@/places";
 import { Chip, Loading } from "@/ui";
 import { LanguageToggle } from "@/components/LanguageToggle";
-import { fmtDistance, fmtDuration, motionColor, motionOf, subscriptionExpired } from "@/format";
+import { fmtDistance, fmtDuration, fmtTime, motionColor, motionOf, subscriptionExpired } from "@/format";
 import { useI18n } from "@/i18n";
 import { colors, radius, space } from "@/theme";
-import type { DeviceView, LocationView, MotionStatus } from "@/types";
+import type { DeviceView, LocationView, MotionStatus, PlaceType } from "@/types";
 
 /** Home status buckets: the four motion states plus the two the web home also counts. */
 type HomeState = MotionStatus | "NO_DATA" | "EXPIRED";
@@ -103,7 +106,10 @@ export default function HomeScreen() {
             ))}
           </ScrollView>
           {selectedImei ? (
-            <SingleVehicleStats imei={selectedImei} onOpen={() => router.push({ pathname: "/device/[imei]", params: { imei: selectedImei } })} />
+            <>
+              <SingleVehicleStats imei={selectedImei} onOpen={() => router.push({ pathname: "/device/[imei]", params: { imei: selectedImei } })} />
+              <PlaceVisitsCard imei={selectedImei} onAll={() => router.push({ pathname: "/stays", params: { imei: selectedImei } })} />
+            </>
           ) : null}
         </>
       ) : (
@@ -129,6 +135,68 @@ function SingleVehicleStats({ imei, onOpen }: { imei: string; onOpen: () => void
       )}
       <Text style={styles.openLink} onPress={onOpen}>
         {t("home.openVehicle")}
+      </Text>
+    </View>
+  );
+}
+
+/**
+ * Arrival / leaving times at the person's places and boundaries today and how long they
+ * stayed (client feedback 2026-11-01), paired from PLACE_ARRIVED/LEFT and GEOFENCE_ENTER/EXIT.
+ * Place alarms only reach the place's owner, so each parent sees their own places.
+ */
+function PlaceVisitsCard({ imei, onAll }: { imei: string; onAll: () => void }) {
+  const { t } = useI18n();
+  const { visits, loading } = useTodayPlaceVisits(imei);
+  const length = (seconds: number): string => {
+    const mins = Math.max(1, Math.round(seconds / 60));
+    const h = Math.floor(mins / 60);
+    const m = mins % 60;
+    const parts: string[] = [];
+    if (h > 0) parts.push(`${h} ${t("stays.unit.h")}`);
+    if (m > 0) parts.push(`${m} ${t("stays.unit.min")}`);
+    return parts.join(" ");
+  };
+  return (
+    <View style={styles.statsCard}>
+      <View>
+        <Text style={styles.linkTitle}>{t("homev.title")}</Text>
+        <Text style={styles.linkSub}>{t("homev.hint")}</Text>
+      </View>
+      {loading && visits.length === 0 ? (
+        <Text style={styles.loadingText}>{t("homev.loading")}</Text>
+      ) : visits.length === 0 ? (
+        <Text style={styles.loadingText}>{t("homev.none")}</Text>
+      ) : (
+        visits.map((v, i) => {
+          const boundary = v.kind === "BOUNDARY";
+          const icon = boundary ? "shield-outline" : PLACE_ICON[(v.placeType as PlaceType) ?? "OTHER"] ?? "location-outline";
+          return (
+            <View key={`${v.geofenceId}-${v.from ?? "start"}-${i}`} style={styles.visit}>
+              <View style={[styles.visitIcon, !v.to && { backgroundColor: colors.brand }]}>
+                <Ionicons name={icon} size={18} color={v.to ? colors.brand : colors.onBrand} />
+              </View>
+              <View style={{ flex: 1, minWidth: 0 }}>
+                <Text style={styles.visitName} numberOfLines={1}>
+                  {v.name}
+                  {boundary ? <Text style={styles.visitKind}> · {t("homev.boundary")}</Text> : null}
+                </Text>
+                <Text style={styles.visitTimes}>
+                  {t("homev.arrived")} {v.from ? fmtTime(v.from) : t("homev.beforeToday")}
+                  {"  →  "}
+                  {v.to ? `${t("homev.left")} ${fmtTime(v.to)}` : t("homev.stillThere")}
+                </Text>
+              </View>
+              <View style={styles.visitLen}>
+                <Text style={styles.visitLenValue}>{length(v.seconds)}</Text>
+                <Text style={styles.visitLenLabel}>{v.to ? t("homev.stayed") : t("homev.inside")}</Text>
+              </View>
+            </View>
+          );
+        })
+      )}
+      <Text style={styles.openLink} onPress={onAll}>
+        {t("stays.title")} →
       </Text>
     </View>
   );
@@ -239,6 +307,22 @@ const styles = StyleSheet.create({
   metricValue: { color: colors.text, fontSize: 16, fontWeight: "700" },
   metricLabel: { color: colors.textFaint, fontSize: 12, marginTop: 2 },
   openLink: { color: colors.brand, fontWeight: "600", fontSize: 14 },
+  visit: { flexDirection: "row", alignItems: "center", gap: space.md },
+  visitIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    borderWidth: 1.5,
+    borderColor: colors.brand,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  visitName: { color: colors.text, fontSize: 15, fontWeight: "700" },
+  visitKind: { color: colors.textFaint, fontSize: 13, fontWeight: "400" },
+  visitTimes: { color: colors.textDim, fontSize: 13, marginTop: 2 },
+  visitLen: { alignItems: "flex-end" },
+  visitLenValue: { color: colors.text, fontSize: 15, fontWeight: "700" },
+  visitLenLabel: { color: colors.textFaint, fontSize: 12 },
   loadingText: { color: colors.textFaint, fontSize: 14 },
   empty: { color: colors.textFaint, fontSize: 15 },
 });

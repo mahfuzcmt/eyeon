@@ -93,7 +93,7 @@ public class AuthService {
         RefreshTokenRow row = refreshRepo.findByHash(hash)
                 .orElseThrow(() -> new DomainException("INVALID_REFRESH", "Refresh token not recognized"));
 
-        if (row.revokedAt() != null) {
+        if (row.revokedAt() != null && !withinRotationGrace(row, Instant.now())) {
             throw new DomainException("REFRESH_REVOKED", "Refresh token has been revoked");
         }
         if (row.expiresAt().isBefore(Instant.now())) {
@@ -103,9 +103,20 @@ public class AuthService {
         User user = userRepo.findById(row.userId())
                 .orElseThrow(() -> new DomainException("USER_NOT_FOUND", "User no longer exists"));
 
-        // Rotate: revoke old, issue new
-        refreshRepo.revoke(row.id());
+        // Rotate: revoke old (keeping it usable for ROTATION_GRACE), issue new
+        refreshRepo.markRotated(row.id());
         return issueTokens(user.id(), user.orgId(), user.role());
+    }
+
+    /**
+     * How long a refresh token stays usable after it was exchanged. Covers a reply that never
+     * reached the phone (weak mobile data, app killed before saving the new pair), which used
+     * to sign the user out on the next refresh. A password change ends it at once (V31).
+     */
+    static final java.time.Duration ROTATION_GRACE = java.time.Duration.ofMinutes(2);
+
+    static boolean withinRotationGrace(RefreshTokenRow row, Instant now) {
+        return row.rotatedAt() != null && !row.rotatedAt().plus(ROTATION_GRACE).isBefore(now);
     }
 
     /**

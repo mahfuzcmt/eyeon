@@ -8,20 +8,12 @@ import { useAuth } from "@/auth/AuthContext";
 import { useLiveLocations } from "@/hooks/useLiveLocations";
 import { useDevices } from "@/hooks/useDevices";
 import WebMap, { MapVehicle } from "@/components/WebMap";
-import { batteryColor, filterSpeed, fmtAgo, fmtSince, motionColor, motionOf } from "@/format";
-import { Pill } from "@/ui";
-import type { MotionStatus } from "@/types";
+import PersonDetails from "@/components/PersonDetails";
+import { filterSpeed, motionColor, motionOf } from "@/format";
 import { useSpeedLimits } from "@/hooks/useSpeedLimits";
 import { useDevicePhotos } from "@/photos";
 import { useI18n, type StringKey } from "@/i18n";
 import { colors, space } from "@/theme";
-
-const MOTION_KEY: Record<MotionStatus, StringKey> = {
-  MOVING: "state.moving",
-  IDLE: "state.idle",
-  STOPPED: "state.stopped",
-  OFFLINE: "state.offline",
-};
 
 const VIEW_LABEL: Record<"street" | "satellite" | "google", StringKey> = {
   street: "map.normal",
@@ -93,7 +85,7 @@ export default function MapScreen() {
     const { status } = await Location.requestForegroundPermissionsAsync();
     if (status !== "granted") return;
     const pos = await Location.getCurrentPositionAsync({});
-    setCenter({ lat: pos.coords.latitude, lng: pos.coords.longitude, zoom: 14, nonce: Date.now() });
+    setCenter({ lat: pos.coords.latitude, lng: pos.coords.longitude, zoom: 16, nonce: Date.now() });
   }, []);
 
   const zoomBy = useCallback((dir: 1 | -1) => {
@@ -122,7 +114,7 @@ export default function MapScreen() {
         onSelect={(imei) => {
           setSelected(imei);
           const l = locations.get(imei);
-          if (l) setCenter({ lat: l.latitude, lng: l.longitude, zoom: 17, nonce: Date.now() });
+          if (l) setCenter({ lat: l.latitude, lng: l.longitude, zoom: 18, nonce: Date.now() });
         }}
         onMapPress={() => setSelected(null)}
       />
@@ -179,7 +171,6 @@ export default function MapScreen() {
         if (!d) return null;
         const motion = motionOf(d, l);
         const overspeed = speedLimits.isOverspeed(selected, l?.speed ?? 0);
-        const parked = (motion === "STOPPED" || motion === "OFFLINE") && d.parkedSince;
         const photo = photos[selected] ?? null;
         return (
           <View style={styles.card}>
@@ -187,21 +178,13 @@ export default function MapScreen() {
               {photo ? <Image source={{ uri: photo }} style={[styles.avatar, { borderColor: motionColor(motion) }]} /> : null}
               <View style={{ flex: 1, minWidth: 0 }}>
                 <Text style={styles.cardName} numberOfLines={1}>{d.name ?? d.vehiclePlate ?? d.imei}</Text>
-                <Text style={styles.cardSeen} numberOfLines={1}>
-                  {parked ? `${t("veh.parkedFor")} ${fmtSince(d.parkedSince)}` : `${t("veh.lastSeen")} ${fmtAgo(d.lastSeenAt)}`}
-                </Text>
+                {d.name && d.vehiclePlate ? <Text style={styles.cardSeen} numberOfLines={1}>{d.vehiclePlate}</Text> : null}
               </View>
               <Pressable onPress={() => setSelected(null)} hitSlop={12} accessibilityRole="button" accessibilityLabel={t("common.close")}>
                 <Ionicons name="close" size={24} color={colors.textDim} />
               </Pressable>
             </View>
-            <View style={styles.cardPills}>
-              <Pill label={overspeed ? t("state.overspeed") : t(MOTION_KEY[motion])} color={overspeed ? colors.danger : motionColor(motion)} />
-              <Pill label={`${l?.speed ?? d.lastSpeed ?? 0} ${t("veh.kmh")}`} color={colors.textDim} />
-              {d.batteryPercent != null ? (
-                <Pill label={`${t("veh.battery")} ${Math.round(d.batteryPercent)}%`} color={batteryColor(d.batteryPercent)} />
-              ) : null}
-            </View>
+            <PersonDetails device={d} loc={l} overspeed={overspeed} />
             <Pressable
               onPress={() => router.push({ pathname: "/device/[imei]", params: { imei: selected } })}
               style={({ pressed }) => [styles.cardButton, pressed && { opacity: 0.8 }]}
@@ -345,7 +328,6 @@ const styles = StyleSheet.create({
   avatar: { width: 48, height: 48, borderRadius: 24, borderWidth: 3, backgroundColor: colors.surfaceAlt },
   cardName: { color: colors.text, fontSize: 18, fontWeight: "800" },
   cardSeen: { color: colors.textFaint, fontSize: 13, marginTop: 2 },
-  cardPills: { flexDirection: "row", flexWrap: "wrap", gap: space.sm },
   cardButton: { backgroundColor: colors.brand, borderRadius: 12, minHeight: 48, alignItems: "center", justifyContent: "center" },
   cardButtonText: { color: colors.onBrand, fontSize: 16, fontWeight: "700" },
 });

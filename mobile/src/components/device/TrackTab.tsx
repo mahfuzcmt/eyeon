@@ -4,10 +4,10 @@ import { useRouter } from "expo-router";
 import { useDeviceLive } from "@/hooks/useDeviceLive";
 import { useTodayRoute } from "@/hooks/useTodayRoute";
 import WebMap, { MapVehicle } from "@/components/WebMap";
+import PersonDetails from "@/components/PersonDetails";
 import { Loading, Metric, Section } from "@/ui";
 import {
   filterSpeed,
-  fmtSince,
   motionColor,
   motionOf,
   subscriptionDaysLeft,
@@ -30,7 +30,7 @@ export default function TrackTab({ imei, orgId }: { imei: string; orgId: string 
   useEffect(() => {
     if (loc && !centered.current) {
       centered.current = true;
-      setCenter({ lat: loc.latitude, lng: loc.longitude, zoom: 17, nonce: 1 });
+      setCenter({ lat: loc.latitude, lng: loc.longitude, zoom: 18, nonce: 1 });
     }
   }, [loc]);
 
@@ -66,8 +66,6 @@ export default function TrackTab({ imei, orgId }: { imei: string; orgId: string 
   const expired = device ? subscriptionExpired(device) : false;
   const daysLeft = device ? subscriptionDaysLeft(device) : null;
   const expiringSoon = !expired && daysLeft != null && daysLeft <= 7;
-  const motion = device ? motionOf(device, loc) : "OFFLINE";
-  const parked = (motion === "STOPPED" || motion === "OFFLINE") && device?.parkedSince;
 
   return (
     <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
@@ -90,10 +88,10 @@ export default function TrackTab({ imei, orgId }: { imei: string; orgId: string 
         </View>
       </View>
 
-      {parked ? (
-        <Text style={styles.parked}>
-          {t("veh.parkedFor")} {fmtSince(device?.parkedSince)}
-        </Text>
+      {device ? (
+        <View style={styles.details}>
+          <PersonDetails device={device} loc={loc} overspeed={overspeeding} />
+        </View>
       ) : null}
       {loc && (
         <Pressable
@@ -136,7 +134,14 @@ const styles = StyleSheet.create({
   },
   bannerTitle: { fontSize: 14, fontWeight: "800" },
   bannerNote: { color: colors.textDim, fontSize: 13 },
-  parked: { color: colors.textDim, fontSize: 13, paddingHorizontal: space.md },
+  details: {
+    marginHorizontal: space.md,
+    backgroundColor: colors.surface,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: space.md,
+  },
   addZone: { alignSelf: "flex-start", marginHorizontal: space.md, paddingHorizontal: space.lg, paddingVertical: 10, borderRadius: radius.sm, borderWidth: 1, borderColor: colors.brand },
   addZoneText: { color: colors.brand, fontWeight: "700", fontSize: 15 },
   speedo: {

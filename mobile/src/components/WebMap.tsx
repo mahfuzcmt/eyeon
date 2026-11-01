@@ -119,7 +119,7 @@ ${googleScripts}
   const post = (o) => RN && RN.postMessage(JSON.stringify(o));
   const map = L.map('map', {
     center:[${DEFAULT.lat},${DEFAULT.lng}], zoom:${DEFAULT.zoom},
-    zoomControl:false, attributionControl:true
+    zoomControl:false, attributionControl:true, maxZoom:20
   });
   map.attributionControl.setPrefix(false);
 
@@ -156,9 +156,9 @@ ${googleScripts}
     }
     return kind==='satellite'
       ? L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-          {maxZoom:19, attribution:'Tiles &copy; Esri'})
+          {maxNativeZoom:19, maxZoom:20, attribution:'Tiles &copy; Esri'})
       : L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-          {maxZoom:19, attribution:'&copy; OpenStreetMap'});
+          {maxNativeZoom:19, maxZoom:20, attribution:'&copy; OpenStreetMap'});
   }
   let baseKind = 'street';
   let base = makeBase(baseKind);
@@ -433,15 +433,15 @@ ${googleScripts}
     fit(coords){
       if(!coords.length) return;
       const b = L.latLngBounds(coords.map(c => [c[1], c[0]]));
-      map.fitBounds(b, {padding:[60,60], maxZoom:15});
+      map.fitBounds(b, {padding:[40,40], maxZoom:17});
     },
     fitVehicles(){
       const imeis = Object.keys(markers);
       if(imeis.length === 0) return;
       const pts = imeis.map(imei => markers[imei].getLatLng());
       if(pts.length === 1){
-        // Single vehicle: zoom in close
-        map.setView(pts[0], 17, {animate:true});
+        // Single person: zoom in close (street level, houses visible)
+        map.setView(pts[0], 18, {animate:true});
       } else {
         // Multiple vehicles: calculate optimal zoom based on spread
         const b = L.latLngBounds(pts);
@@ -449,17 +449,19 @@ ${googleScripts}
         const lngSpread = b.getEast() - b.getWest();
         const maxSpread = Math.max(latSpread, lngSpread);
         // Dynamic zoom based on spread
-        let maxZoom = 15;
-        if(maxSpread < 0.002) maxZoom = 17;
-        else if(maxSpread < 0.005) maxZoom = 16;
-        else if(maxSpread < 0.02) maxZoom = 15;
-        else if(maxSpread < 0.05) maxZoom = 14;
-        else if(maxSpread < 0.1) maxZoom = 13;
-        else if(maxSpread < 0.3) maxZoom = 12;
-        else if(maxSpread < 0.6) maxZoom = 11;
-        else if(maxSpread < 1.0) maxZoom = 10;
-        else maxZoom = 9;
-        map.fitBounds(b.pad(0.1), {maxZoom:maxZoom, animate:true});
+        // One level closer than before (client feedback 2026-11-01: "zoom in a bit"),
+        // and fitted tightly: the people are inside the view, not lost in a wide margin.
+        let maxZoom = 16;
+        if(maxSpread < 0.002) maxZoom = 18;
+        else if(maxSpread < 0.005) maxZoom = 17;
+        else if(maxSpread < 0.02) maxZoom = 16;
+        else if(maxSpread < 0.05) maxZoom = 15;
+        else if(maxSpread < 0.1) maxZoom = 14;
+        else if(maxSpread < 0.3) maxZoom = 13;
+        else if(maxSpread < 0.6) maxZoom = 12;
+        else if(maxSpread < 1.0) maxZoom = 11;
+        else maxZoom = 10;
+        map.fitBounds(b, {padding:[48,48], maxZoom:maxZoom, animate:true});
       }
     }
   };
