@@ -308,6 +308,25 @@ export interface TripView {
   status: TripStatus;
 }
 
+// ----- Day route (GET /devices/:imei/route) -----
+/** TRACK = consecutive GPS fixes (solid), ESTIMATE = a Wi-Fi position or a long silence (dashed). */
+export interface RoutePiece {
+  kind: "TRACK" | "ESTIMATE";
+  from: string;
+  to: string;
+  speedKmh: number;
+  /** The coordinates follow the road (map-matched). */
+  snapped: boolean;
+  /** [lat, lng] pairs. */
+  coords: [number, number][];
+}
+
+export interface RouteData {
+  pieces: RoutePiece[];
+  /** Some pieces are still being matched to the road; ask again in a few seconds. */
+  snapPending: boolean;
+}
+
 // ----- Stays (GET /devices/:imei/stays) -----
 export interface StayView {
   from: string;

@@ -19,6 +19,28 @@ const TIMELINE_TYPES = new Set(["PLACE_ARRIVED", "PLACE_LEFT", "GEOFENCE_EXIT", 
  * "Where were they all day": the whole range as one route with playback, and under it a
  * plain-language timeline (arrived at School, left School ...). EyeOn has no trips.
  */
+/** Points this close to the previous kept one are standing-still jitter, not travel (same rule as the web map). */
+const MIN_STEP_M = 15;
+
+function metersBetween(a: LocationView, b: LocationView): number {
+  const toR = Math.PI / 180;
+  const dLat = (b.latitude - a.latitude) * toR;
+  const dLng = (b.longitude - a.longitude) * toR;
+  const x = Math.sin(dLat / 2) ** 2 + Math.cos(a.latitude * toR) * Math.cos(b.latitude * toR) * Math.sin(dLng / 2) ** 2;
+  return 6_371_000 * 2 * Math.atan2(Math.sqrt(x), Math.sqrt(1 - x));
+}
+
+/** Without this a tracker lying still drew a scribble of 10-40 m spikes on the playback. */
+function dropJitter(points: LocationView[]): LocationView[] {
+  const out: LocationView[] = [];
+  for (const p of points) {
+    const last = out[out.length - 1];
+    if (last && metersBetween(last, p) < MIN_STEP_M) continue;
+    out.push(p);
+  }
+  return out;
+}
+
 export default function HistoryTab({ imei }: { imei: string }) {
   const { t } = useI18n();
   const [range, setRange] = useState<DateRange>(() => presetRange("today"));
@@ -50,7 +72,7 @@ export default function HistoryTab({ imei }: { imei: string }) {
           deviceActivity(imei, range.fromIso, range.toIso),
         ]);
         if (!mounted) return;
-        setPoints(pts.filter((p) => p.valid).sort((a, b) => Date.parse(a.ts) - Date.parse(b.ts)));
+        setPoints(dropJitter(pts.filter((p) => p.valid).sort((a, b) => Date.parse(a.ts) - Date.parse(b.ts))));
         setEvents(alarms.filter((a) => TIMELINE_TYPES.has(a.type)).sort((a, b) => Date.parse(a.ts) - Date.parse(b.ts)));
         setActivity(act);
       } catch (e) {

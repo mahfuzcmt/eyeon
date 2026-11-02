@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { StyleSheet, View } from "react-native";
+import { AppState, StyleSheet, View } from "react-native";
 import { WebView, WebViewMessageEvent } from "react-native-webview";
 import { colors } from "@/theme";
 import { useAuth } from "@/auth/AuthContext";
@@ -34,6 +34,26 @@ export interface MapCircle {
   lat: number;
   lng: number;
   radiusM: number;
+  /** Outline/fill colour; brand teal when omitted. */
+  color?: string | null;
+}
+
+/** A saved place or boundary drawn as an overview (places / boundaries screens). */
+export interface MapZone {
+  id: string;
+  name: string;
+  color?: string | null;
+  /** CIRCLE */
+  center?: { lat: number; lng: number } | null;
+  radiusM?: number | null;
+  /** POLYGON */
+  polygon?: { lat: number; lng: number }[];
+}
+
+/** One piece of a day route (GET /devices/:imei/route): [lat, lng] pairs, dashed = an estimate. */
+export interface MapRoutePiece {
+  coords: [number, number][];
+  dashed: boolean;
 }
 
 interface Props {
@@ -55,6 +75,15 @@ interface Props {
   baseLayer?: "street" | "satellite" | "google";
   /** Circle overlay (geofence preview); null clears it. */
   circle?: MapCircle | null;
+  /** Polygon being drawn (boundary editor): 1-2 points draw a line, 3+ a filled shape; null clears it. */
+  polygon?: { color?: string | null; points: { lat: number; lng: number }[] } | null;
+  /** Saved zones shown for overview; tapping one calls onZonePress. */
+  zones?: MapZone[];
+  /** Fit the view to `zones` whenever this nonce changes. */
+  fitZones?: { nonce: number } | null;
+  onZonePress?: (id: string) => void;
+  /** Day route made of pieces (solid GPS track, dashed estimates); [] clears it. */
+  routePieces?: MapRoutePiece[];
   /** A second, dashed grey line as [lng, lat] pairs (e.g. the other direction of a usual route); [] clears it. */
   ghostRoute?: [number, number][];
   /** Numbered points (1, 2, ...) such as the turns tapped on a route; [] clears them. */
@@ -111,6 +140,9 @@ ${googleScripts}
        padding:2px 8px;border-radius:999px;border:1px solid rgba(255,255,255,.55);
        box-shadow:0 1px 4px rgba(10,25,40,.35);white-space:nowrap}
   .ovs{animation:mlblink 1s step-start infinite}
+  .zlbl{background:rgba(255,255,255,.92);border:1px solid #D2DEDA;border-radius:8px;box-shadow:none;
+        font:700 12px -apple-system,Roboto,'Noto Sans Bengali',sans-serif;color:#0B2E28;padding:2px 6px}
+  .zlbl:before{display:none}
   @keyframes mlblink{50%{opacity:.25}}
 </style></head><body>
 <div id="map"></div>
@@ -188,12 +220,18 @@ ${googleScripts}
     swapBase();
   };
 
+  // A WebView that was in the background can come back with a stale size: re-measure.
+  document.addEventListener('visibilitychange', function(){ if(!document.hidden) map.invalidateSize(); });
+
   const markers = {};       // imei -> L.Marker
   let moving = null;         // playback marker
   let route = null;          // trip polyline
   let circle = null;         // geofence preview
   let ghost = null;          // dashed second line
   let pins = [];             // numbered points
+  let poly = null;           // polygon being drawn
+  let zones = [];            // saved zones (overview)
+  let pieces = [];           // day route pieces
 
   function esc(s){ return String(s==null?'':s).replace(/[<>&]/g,''); }
 
@@ -412,13 +450,56 @@ ${googleScripts}
     },
     setCircle(c){
       if(!c){ if(circle){circle.remove(); circle=null;} return; }
-      if(circle){ circle.setLatLng([c.lat,c.lng]); circle.setRadius(c.radiusM); }
+      const col = c.color || '${colors.brand}';
+      if(circle){ circle.setLatLng([c.lat,c.lng]); circle.setRadius(c.radiusM); circle.setStyle({color:col, fillColor:col}); }
       else {
         circle = L.circle([c.lat,c.lng], {radius:c.radiusM,
-          color:'${colors.brand}', weight:2, fillColor:'${colors.brand}', fillOpacity:0.15}).addTo(map);
+          color:col, weight:2, fillColor:col, fillOpacity:0.15}).addTo(map);
       }
     },
-    center(lat,lng,zoom){ map.flyTo([lat,lng], zoom||14, {duration:0.8}); },
+    setPolygon(p){
+      if(poly){ poly.remove(); poly = null; }
+      if(!p || !p.points || !p.points.length) return;
+      const col = p.color || '${colors.brand}';
+      const ll = p.points.map(q => [q.lat, q.lng]);
+      poly = ll.length >= 3
+        ? L.polygon(ll, {color:col, weight:2, fillColor:col, fillOpacity:0.15, interactive:false}).addTo(map)
+        : L.polyline(ll, {color:col, weight:2, dashArray:'6 6', interactive:false}).addTo(map);
+    },
+    setZones(list){
+      zones.forEach(z => z.remove());
+      zones = (list || []).map(z => {
+        const col = z.color || '${colors.brand}';
+        const opt = {color:col, weight:2, fillColor:col, fillOpacity:0.15};
+        let layer = null;
+        if(z.polygon && z.polygon.length >= 3) layer = L.polygon(z.polygon.map(q => [q.lat, q.lng]), opt);
+        else if(z.center && z.radiusM) layer = L.circle([z.center.lat, z.center.lng], Object.assign({radius:z.radiusM}, opt));
+        if(!layer) return null;
+        layer.bindTooltip(esc(z.name), {permanent:true, direction:'center', className:'zlbl'});
+        layer.on('click', function(e){ L.DomEvent.stopPropagation(e); post({type:'zone', id:z.id}); });
+        return layer.addTo(map);
+      }).filter(Boolean);
+    },
+    fitZones(){
+      if(!zones.length) return;
+      let b = null;
+      zones.forEach(z => { const zb = z.getBounds(); b = b ? b.extend(zb) : L.latLngBounds(zb.getSouthWest(), zb.getNorthEast()); });
+      if(b) map.fitBounds(b, {padding:[32,32], maxZoom:18});
+    },
+    setPieces(list){
+      pieces.forEach(l => l.remove());
+      pieces = [];
+      (list || []).forEach(pc => {
+        if(!pc.coords || pc.coords.length < 2) return;
+        if(!pc.dashed) pieces.push(L.polyline(pc.coords, {color:'#fff', weight:7, opacity:0.9, interactive:false}).addTo(map));
+        pieces.push(L.polyline(pc.coords, pc.dashed
+          ? {color:'#637370', weight:3, opacity:0.8, dashArray:'6 8', interactive:false}
+          : {color:'${colors.brand}', weight:4, opacity:0.95, interactive:false}).addTo(map));
+      });
+    },
+    // Liveness check after the app comes back to the foreground (see WebMap below).
+    ping(){ map.invalidateSize(); post({type:'pong'}); },
+    center(lat,lng,zoom){ map.flyTo([lat,lng], zoom||17, {duration:0.8}); },
     zoomBy(d){ map.setZoom(map.getZoom()+d); },
     setBase(kind){
       if(kind === baseKind) return;
@@ -433,15 +514,16 @@ ${googleScripts}
     fit(coords){
       if(!coords.length) return;
       const b = L.latLngBounds(coords.map(c => [c[1], c[0]]));
-      map.fitBounds(b, {padding:[40,40], maxZoom:17});
+      map.fitBounds(b, {padding:[40,40], maxZoom:18});
     },
     fitVehicles(){
       const imeis = Object.keys(markers);
       if(imeis.length === 0) return;
       const pts = imeis.map(imei => markers[imei].getLatLng());
       if(pts.length === 1){
-        // Single person: zoom in close (street level, houses visible)
-        map.setView(pts[0], 18, {animate:true});
+        // Single person: zoom in close (street level, houses visible). 19 since 2026-11-02
+        // (client feedback, a second time: "need to zoom more"), the web's follow zoom.
+        map.setView(pts[0], 19, {animate:true});
       } else {
         // Multiple vehicles: calculate optimal zoom based on spread
         const b = L.latLngBounds(pts);
@@ -451,16 +533,17 @@ ${googleScripts}
         // Dynamic zoom based on spread
         // One level closer than before (client feedback 2026-11-01: "zoom in a bit"),
         // and fitted tightly: the people are inside the view, not lost in a wide margin.
-        let maxZoom = 16;
-        if(maxSpread < 0.002) maxZoom = 18;
-        else if(maxSpread < 0.005) maxZoom = 17;
-        else if(maxSpread < 0.02) maxZoom = 16;
-        else if(maxSpread < 0.05) maxZoom = 15;
-        else if(maxSpread < 0.1) maxZoom = 14;
-        else if(maxSpread < 0.3) maxZoom = 13;
-        else if(maxSpread < 0.6) maxZoom = 12;
-        else if(maxSpread < 1.0) maxZoom = 11;
-        else maxZoom = 10;
+        // And one more on 2026-11-02 ("need to zoom more").
+        let maxZoom = 17;
+        if(maxSpread < 0.002) maxZoom = 19;
+        else if(maxSpread < 0.005) maxZoom = 18;
+        else if(maxSpread < 0.02) maxZoom = 17;
+        else if(maxSpread < 0.05) maxZoom = 16;
+        else if(maxSpread < 0.1) maxZoom = 15;
+        else if(maxSpread < 0.3) maxZoom = 14;
+        else if(maxSpread < 0.6) maxZoom = 13;
+        else if(maxSpread < 1.0) maxZoom = 12;
+        else maxZoom = 11;
         map.fitBounds(b, {padding:[48,48], maxZoom:maxZoom, animate:true});
       }
     }
@@ -469,6 +552,11 @@ ${googleScripts}
   map.whenReady(() => post({type:'ready', google: !!GKEY}));
 </script></body></html>`;
 }
+
+/** How long the page may take to answer a ping after the app returns to the foreground. */
+const PING_TIMEOUT_MS = 3_000;
+/** Commands that move the view: replayed after everything is drawn, or a fit would find no markers. */
+const VIEW_KEYS = new Set(["center", "fitVehicles", "fitRoute", "fitZones"]);
 
 export default function WebMap({
   vehicles,
@@ -479,6 +567,11 @@ export default function WebMap({
   zoomStep,
   baseLayer,
   circle,
+  polygon,
+  zones,
+  fitZones,
+  onZonePress,
+  routePieces,
   ghostRoute,
   pins,
   fitRoute,
@@ -496,75 +589,121 @@ export default function WebMap({
   const mapLanguage: "en" | "bn" = locale === "bn" ? "bn" : "en";
 
   const ref = useRef<WebView>(null);
-  const [ready, setReady] = useState(false);
-  // Commands issued before the map's 'ready' message are queued, not dropped.
-  const pending = useRef<string[]>([]);
+  /** Bumped to throw the WebView away and build a new one (its page died in the background). */
+  const [webKey, setWebKey] = useState(0);
+  const ready = useRef(false);
+  /**
+   * The latest command of each kind, replayed in order every time the page reports 'ready'.
+   * Android may kill or reload a WebView while the app is minimized; the old code only flushed
+   * a queue once, so a reloaded page came back empty (no people, no route) - the
+   * "nothing on the map after minimizing" report of 2026-11-02.
+   */
+  const state = useRef(new Map<string, string>());
+  const pingTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  const inject = useCallback((js: string) => {
+    ref.current?.injectJavaScript(`try{${js}}catch(e){};true;`);
+  }, []);
+
+  /** `key` = kind of command; the newest one per key is remembered for replay. One-shot commands pass no key. */
   const run = useCallback(
-    (js: string) => {
-      if (ready) ref.current?.injectJavaScript(js + ";true;");
-      else pending.current.push(js);
+    (key: string | null, js: string) => {
+      if (key) {
+        state.current.delete(key); // re-insert so replay order follows the latest change
+        state.current.set(key, js);
+      }
+      if (ready.current) inject(js);
     },
-    [ready],
+    [inject],
   );
 
+  const rebuild = useCallback(() => {
+    ready.current = false;
+    if (pingTimer.current) clearTimeout(pingTimer.current);
+    pingTimer.current = null;
+    setWebKey((k) => k + 1);
+  }, []);
+
+  // Back from the background: check the page is still alive; if it does not answer, rebuild it.
   useEffect(() => {
-    if (ready && pending.current.length > 0) {
-      const queued = pending.current;
-      pending.current = [];
-      queued.forEach((js) => ref.current?.injectJavaScript(js + ";true;"));
-    }
-  }, [ready]);
+    const sub = AppState.addEventListener("change", (s) => {
+      if (s !== "active") return;
+      if (!ready.current) return; // still loading; 'ready' will replay
+      if (pingTimer.current) clearTimeout(pingTimer.current);
+      pingTimer.current = setTimeout(rebuild, PING_TIMEOUT_MS);
+      inject("window.MLMap.ping()");
+    });
+    return () => {
+      sub.remove();
+      if (pingTimer.current) clearTimeout(pingTimer.current);
+    };
+  }, [inject, rebuild]);
 
   useEffect(() => {
-    if (vehicles) run(`window.MLMap.setVehicles(${JSON.stringify(vehicles)})`);
+    if (vehicles) run("vehicles", `window.MLMap.setVehicles(${JSON.stringify(vehicles)})`);
   }, [vehicles, run]);
 
   useEffect(() => {
-    if (photos) run(`window.MLMap.setPhotos(${JSON.stringify(photos)})`);
+    if (photos) run("photos", `window.MLMap.setPhotos(${JSON.stringify(photos)})`);
   }, [photos, run]);
 
   useEffect(() => {
     if (route) {
-      run(`window.MLMap.setRoute(${JSON.stringify(route)})`);
-      if (fitRoute) run(`window.MLMap.fit(${JSON.stringify(route)})`);
+      run("route", `window.MLMap.setRoute(${JSON.stringify(route)})`);
+      if (fitRoute) run("fitRoute", `window.MLMap.fit(${JSON.stringify(route)})`);
     }
   }, [route, fitRoute, run]);
 
   useEffect(() => {
-    run(`window.MLMap.setMoving(${JSON.stringify(moving ?? null)})`);
+    if (routePieces) run("pieces", `window.MLMap.setPieces(${JSON.stringify(routePieces)})`);
+  }, [routePieces, run]);
+
+  useEffect(() => {
+    run("moving", `window.MLMap.setMoving(${JSON.stringify(moving ?? null)})`);
   }, [moving, run]);
 
   useEffect(() => {
-    if (center) run(`window.MLMap.center(${center.lat},${center.lng},${center.zoom ?? 14})`);
+    if (center) run("center", `window.MLMap.center(${center.lat},${center.lng},${center.zoom ?? 17})`);
   }, [center, run]);
 
   useEffect(() => {
-    if (zoomStep) run(`window.MLMap.zoomBy(${zoomStep.dir})`);
+    if (zoomStep) run(null, `window.MLMap.zoomBy(${zoomStep.dir})`);
   }, [zoomStep, run]);
 
   useEffect(() => {
-    if (baseLayer) run(`window.MLMap.setBase(${JSON.stringify(baseLayer)})`);
+    if (baseLayer) run("base", `window.MLMap.setBase(${JSON.stringify(baseLayer)})`);
   }, [baseLayer, run]);
 
   useEffect(() => {
-    if (circle !== undefined) run(`window.MLMap.setCircle(${JSON.stringify(circle ?? null)})`);
+    if (circle !== undefined) run("circle", `window.MLMap.setCircle(${JSON.stringify(circle ?? null)})`);
   }, [circle, run]);
 
   useEffect(() => {
-    if (ghostRoute) run(`window.MLMap.setGhost(${JSON.stringify(ghostRoute)})`);
+    if (polygon !== undefined) run("polygon", `window.MLMap.setPolygon(${JSON.stringify(polygon ?? null)})`);
+  }, [polygon, run]);
+
+  useEffect(() => {
+    if (zones) run("zones", `window.MLMap.setZones(${JSON.stringify(zones)})`);
+  }, [zones, run]);
+
+  useEffect(() => {
+    if (fitZones) run("fitZones", `window.MLMap.fitZones()`);
+  }, [fitZones, run]);
+
+  useEffect(() => {
+    if (ghostRoute) run("ghost", `window.MLMap.setGhost(${JSON.stringify(ghostRoute)})`);
   }, [ghostRoute, run]);
 
   useEffect(() => {
-    if (pins) run(`window.MLMap.setPins(${JSON.stringify(pins.map((p) => ({ lat: p.lat, lng: p.lng })))})`);
+    if (pins) run("pins", `window.MLMap.setPins(${JSON.stringify(pins.map((p) => ({ lat: p.lat, lng: p.lng })))})`);
   }, [pins, run]);
 
   useEffect(() => {
-    if (showTraffic !== undefined) run(`window.MLMap.setTraffic(${showTraffic ? "true" : "false"})`);
+    if (showTraffic !== undefined) run("traffic", `window.MLMap.setTraffic(${showTraffic ? "true" : "false"})`);
   }, [showTraffic, run]);
 
   useEffect(() => {
-    if (fitVehicles) run(`window.MLMap.fitVehicles()`);
+    if (fitVehicles) run("fitVehicles", `window.MLMap.fitVehicles()`);
   }, [fitVehicles, run]);
 
   const onMessage = useCallback(
@@ -573,19 +712,28 @@ export default function WebMap({
         const msg = JSON.parse(e.nativeEvent.data) as {
           type: string;
           imei?: string;
+          id?: string;
           lat?: number;
           lng?: number;
           google?: boolean;
           available?: boolean;
         };
         if (msg.type === "ready") {
-          setReady(true);
+          // Also after a reload of the page: draw everything again.
+          ready.current = true;
+          const entries = [...state.current.entries()];
+          for (const [k, js] of entries) if (!VIEW_KEYS.has(k)) inject(js);
+          for (const [k, js] of entries) if (VIEW_KEYS.has(k)) inject(js);
           // The map opens on free tiles: Google can be offered if a key exists, traffic only once it is shown.
           onGoogleAvailable?.(msg.google === true);
           onTrafficAvailable?.(false);
+        } else if (msg.type === "pong") {
+          if (pingTimer.current) clearTimeout(pingTimer.current);
+          pingTimer.current = null;
         } else if (msg.type === "traffic") {
           onTrafficAvailable?.(msg.available === true);
         } else if (msg.type === "select" && msg.imei) onSelect?.(msg.imei);
+        else if (msg.type === "zone" && msg.id) onZonePress?.(msg.id);
         else if (msg.type === "mapclick" && msg.lat != null && msg.lng != null) {
           onMapPress?.({ lat: msg.lat, lng: msg.lng });
         }
@@ -593,17 +741,25 @@ export default function WebMap({
         /* ignore */
       }
     },
-    [onSelect, onMapPress, onTrafficAvailable, onGoogleAvailable],
+    [inject, onSelect, onZonePress, onMapPress, onTrafficAvailable, onGoogleAvailable],
   );
 
   return (
     <View style={styles.fill}>
       <WebView
+        key={webKey}
         ref={ref}
         style={styles.fill}
         originWhitelist={["*"]}
         source={{ html: buildHtml(googleKey, mapLanguage), baseUrl: MAP_REFERRER }}
         onMessage={onMessage}
+        onLoadStart={() => {
+          ready.current = false;
+        }}
+        // Android kills the WebView's renderer to free memory while the app is minimized, which
+        // leaves a blank map; iOS does the same to its content process. Build a new one.
+        onRenderProcessGone={rebuild}
+        onContentProcessDidTerminate={rebuild}
         javaScriptEnabled
         domStorageEnabled
       />

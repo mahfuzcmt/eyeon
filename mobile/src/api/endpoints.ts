@@ -51,6 +51,7 @@ import type {
   RouteMode,
   RouteSnap,
   PlaceType,
+  RouteData,
   StaysResult,
   TrackerSettingItem,
   TrackerSettingKey,
@@ -166,7 +167,27 @@ export async function listGeofences(kind?: GeofenceKind): Promise<GeofenceView[]
   return r.data;
 }
 
-/** Circle geofence — the only shape the mobile app creates (polygon is web-only). */
+/** Polygon boundary (ordered corners, at least 3). Since 2026-11-02 the app draws these too. */
+export async function createPolygonGeofence(req: {
+  name: string;
+  polygon: LatLng[];
+  notifyOn: GeofenceNotifyOn;
+  imeis: string[];
+  color?: string;
+}): Promise<GeofenceView> {
+  const r = await api.post<GeofenceView>("/geofences", {
+    name: req.name,
+    type: "POLYGON",
+    notifyOn: req.notifyOn,
+    polygon: req.polygon,
+    imeis: req.imeis,
+    kind: "BOUNDARY",
+    color: req.color,
+  });
+  return r.data;
+}
+
+/** Circle geofence: a trusted place, or a round boundary. */
 export async function createCircleGeofence(req: {
   name: string;
   center: LatLng;
@@ -177,10 +198,12 @@ export async function createCircleGeofence(req: {
   kind?: GeofenceKind;
   placeType?: PlaceType;
   address?: string;
+  color?: string;
 }): Promise<GeofenceView> {
   const r = await api.post<GeofenceView>("/geofences", {
     name: req.name,
     type: "CIRCLE",
+    color: req.color,
     notifyOn: req.notifyOn,
     center: req.center,
     radiusM: req.radiusM,
@@ -202,6 +225,9 @@ export async function updateGeofence(
     address: string;
     center: LatLng;
     radiusM: number;
+    /** Sending a polygon turns the zone into a POLYGON; sending center + radiusM turns it back into a circle. */
+    polygon: LatLng[];
+    color: string;
   }>,
 ): Promise<GeofenceView> {
   const r = await api.patch<GeofenceView>(`/geofences/${id}`, patch);
@@ -320,6 +346,15 @@ export async function findTracker(imei: string, seconds = 20): Promise<CommandRe
 }
 
 // ----- Stays -----
+/** A person's cleaned route (jitter dropped, moving parts snapped to the road) since `fromIso`. */
+export async function deviceRoute(imei: string, fromIso: string, toIso?: string): Promise<RouteData> {
+  const r = await api.get<RouteData>(`/devices/${imei}/route`, {
+    params: { from: fromIso, ...(toIso ? { to: toIso } : {}) },
+    timeout: 30_000,
+  });
+  return r.data;
+}
+
 export async function deviceStays(imei: string, params: { from?: string; to?: string; names?: boolean; lang?: string }): Promise<StaysResult> {
   const r = await api.get<StaysResult>(`/devices/${imei}/stays`, { params });
   return r.data;

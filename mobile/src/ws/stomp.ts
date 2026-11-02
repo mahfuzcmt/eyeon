@@ -20,49 +20,43 @@ const wsUrl = process.env.EXPO_PUBLIC_WS_BASE ?? "ws://10.0.2.2:8081/ws";
 class WsClient {
   private client: StompClient | null = null;
   private connected = false;
-  private connecting: Promise<void> | null = null;
   private subs = new Map<string, StompSubscription>();
   private listeners = new Map<string, Set<Listener<unknown>>>();
 
-  private ensureConnected(): Promise<void> {
-    if (this.connected) return Promise.resolve();
-    if (this.connecting) return this.connecting;
-
-    this.connecting = new Promise<void>((resolve, reject) => {
-      const client = new StompClient({
-        brokerURL: wsUrl,
-        beforeConnect: async () => {
-          client.connectHeaders = { Authorization: `Bearer ${(await freshAccessToken()) ?? ""}` };
-        },
-        reconnectDelay: 3_000,
-        heartbeatIncoming: 10_000,
-        heartbeatOutgoing: 10_000,
-        // stompjs needs an explicit factory in React Native.
-        webSocketFactory: () => new WebSocket(wsUrl),
-        debug: () => {},
-      });
-
-      client.onConnect = () => {
-        this.connected = true;
-        for (const [dest, set] of this.listeners.entries()) {
-          if (set.size > 0 && !this.subs.has(dest)) this.attach(dest);
-        }
-        resolve();
-      };
-      client.onStompError = (frame) => reject(new Error(frame.headers.message ?? "STOMP error"));
-      client.onWebSocketError = (e) => reject(e instanceof Error ? e : new Error("WS error"));
-      client.onWebSocketClose = () => {
-        this.connected = false;
-        this.subs.clear();
-      };
-      client.activate();
-      this.client = client;
-      this.watchAppState();
-    }).finally(() => {
-      this.connecting = null;
+  /**
+   * Exactly one client, created on first use and left to reconnect by itself. (Until 2026-11-02 a
+   * failed first connect left that client retrying while every later subscriber started another
+   * one, so a phone on a bad connection could end up with several sockets.) Subscriptions are
+   * (re)attached in onConnect, so callers never wait for the socket.
+   */
+  private ensureClient(): void {
+    if (this.client) return;
+    const client = new StompClient({
+      brokerURL: wsUrl,
+      beforeConnect: async () => {
+        client.connectHeaders = { Authorization: `Bearer ${(await freshAccessToken()) ?? ""}` };
+      },
+      reconnectDelay: 3_000,
+      heartbeatIncoming: 10_000,
+      heartbeatOutgoing: 10_000,
+      // stompjs needs an explicit factory in React Native.
+      webSocketFactory: () => new WebSocket(wsUrl),
+      debug: () => {},
     });
-
-    return this.connecting;
+    client.onConnect = () => {
+      this.connected = true;
+      this.subs.clear();
+      for (const [dest, set] of this.listeners.entries()) {
+        if (set.size > 0) this.attach(dest);
+      }
+    };
+    client.onWebSocketClose = () => {
+      this.connected = false;
+      this.subs.clear();
+    };
+    this.client = client;
+    client.activate();
+    this.watchAppState();
   }
 
   private attach(destination: string): void {
@@ -88,20 +82,15 @@ class WsClient {
       this.listeners.set(destination, set);
     }
     set.add(listener as Listener<unknown>);
-
-    try {
-      await this.ensureConnected();
-      this.attach(destination);
-    } catch {
-      // Leave the listener registered; reconnect will attach it later.
-    }
+    this.ensureClient();
+    this.attach(destination);
 
     return () => {
       const s = this.listeners.get(destination);
       if (!s) return;
       s.delete(listener as Listener<unknown>);
       if (s.size === 0) {
-        this.subs.get(destination)?.unsubscribe();
+        if (this.connected) this.subs.get(destination)?.unsubscribe();
         this.subs.delete(destination);
         this.listeners.delete(destination);
       }

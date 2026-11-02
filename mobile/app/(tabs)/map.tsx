@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Image, Pressable, StyleSheet, Text, View } from "react-native";
+import { Alert, Image, Pressable, StyleSheet, Text, View } from "react-native";
 import { useRouter } from "expo-router";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
@@ -85,7 +85,7 @@ export default function MapScreen() {
     const { status } = await Location.requestForegroundPermissionsAsync();
     if (status !== "granted") return;
     const pos = await Location.getCurrentPositionAsync({});
-    setCenter({ lat: pos.coords.latitude, lng: pos.coords.longitude, zoom: 16, nonce: Date.now() });
+    setCenter({ lat: pos.coords.latitude, lng: pos.coords.longitude, zoom: 18, nonce: Date.now() });
   }, []);
 
   const zoomBy = useCallback((dir: 1 | -1) => {
@@ -114,7 +114,7 @@ export default function MapScreen() {
         onSelect={(imei) => {
           setSelected(imei);
           const l = locations.get(imei);
-          if (l) setCenter({ lat: l.latitude, lng: l.longitude, zoom: 18, nonce: Date.now() });
+          if (l) setCenter({ lat: l.latitude, lng: l.longitude, zoom: 19, nonce: Date.now() });
         }}
         onMapPress={() => setSelected(null)}
       />
@@ -185,13 +185,31 @@ export default function MapScreen() {
               </Pressable>
             </View>
             <PersonDetails device={d} loc={l} overspeed={overspeed} />
-            <Pressable
-              onPress={() => router.push({ pathname: "/device/[imei]", params: { imei: selected } })}
-              style={({ pressed }) => [styles.cardButton, pressed && { opacity: 0.8 }]}
-              accessibilityRole="button"
-            >
-              <Text style={styles.cardButtonText}>{t("home.openVehicle")}</Text>
-            </Pressable>
+            <View style={styles.cardActions}>
+              {l && (l.latitude !== 0 || l.longitude !== 0) ? (
+                <Pressable
+                  onPress={() => {
+                    const params = { lat: String(l.latitude), lng: String(l.longitude), imei: selected };
+                    Alert.alert(t("popup.addZone"), t("popup.addZoneHint"), [
+                      { text: t("common.cancel"), style: "cancel" },
+                      { text: t("popup.addBoundary"), onPress: () => router.push({ pathname: "/geofence-new", params }) },
+                      { text: t("popup.addPlace"), onPress: () => router.push({ pathname: "/place-new", params }) },
+                    ]);
+                  }}
+                  style={({ pressed }) => [styles.cardButtonAlt, pressed && { opacity: 0.8 }]}
+                  accessibilityRole="button"
+                >
+                  <Text style={styles.cardButtonAltText} numberOfLines={1}>+ {t("map.addHere")}</Text>
+                </Pressable>
+              ) : null}
+              <Pressable
+                onPress={() => router.push({ pathname: "/device/[imei]", params: { imei: selected } })}
+                style={({ pressed }) => [styles.cardButton, pressed && { opacity: 0.8 }]}
+                accessibilityRole="button"
+              >
+                <Text style={styles.cardButtonText} numberOfLines={1}>{t("home.openVehicle")}</Text>
+              </Pressable>
+            </View>
           </View>
         );
       })()}
@@ -328,6 +346,19 @@ const styles = StyleSheet.create({
   avatar: { width: 48, height: 48, borderRadius: 24, borderWidth: 3, backgroundColor: colors.surfaceAlt },
   cardName: { color: colors.text, fontSize: 18, fontWeight: "800" },
   cardSeen: { color: colors.textFaint, fontSize: 13, marginTop: 2 },
-  cardButton: { backgroundColor: colors.brand, borderRadius: 12, minHeight: 48, alignItems: "center", justifyContent: "center" },
+  cardActions: { flexDirection: "row", gap: space.sm },
+  cardButton: { flex: 1, backgroundColor: colors.brand, borderRadius: 12, minHeight: 48, alignItems: "center", justifyContent: "center", paddingHorizontal: space.sm },
+  cardButtonAlt: {
+    flex: 1,
+    borderRadius: 12,
+    minHeight: 48,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: space.sm,
+    borderWidth: 1.5,
+    borderColor: colors.brand,
+    backgroundColor: colors.surface,
+  },
+  cardButtonAltText: { color: colors.brand, fontSize: 15, fontWeight: "700" },
   cardButtonText: { color: colors.onBrand, fontSize: 16, fontWeight: "700" },
 });

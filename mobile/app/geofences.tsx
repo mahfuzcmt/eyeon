@@ -1,9 +1,11 @@
-import { useCallback, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { Alert, FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from "react-native";
 import { useFocusEffect, useRouter } from "expo-router";
 import { deleteGeofence, listGeofences } from "@/api/endpoints";
 import { extractError } from "@/api/client";
 import { EmptyState, Pill, PrimaryButton } from "@/ui";
+import WebMap, { type MapZone } from "@/components/WebMap";
+
 import { fmtDistance } from "@/format";
 import { useI18n, type StringKey } from "@/i18n";
 import { colors, radius, space } from "@/theme";
@@ -22,6 +24,12 @@ export default function GeofencesScreen() {
   const [fences, setFences] = useState<GeofenceView[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [fit, setFit] = useState<{ nonce: number } | null>(null);
+  const zones = useMemo<MapZone[]>(
+    () => fences.map((g) => ({ id: g.id, name: g.name, color: g.color, center: g.center, radiusM: g.radiusM, polygon: g.polygon })),
+    [fences],
+  );
+  const openEditor = useCallback((id: string) => router.push({ pathname: "/geofence-new", params: { id } }), [router]);
 
   const reload = useCallback(async () => {
     setLoading(true);
@@ -29,6 +37,7 @@ export default function GeofencesScreen() {
     try {
       // Trusted places have their own screen; this one is the draw-a-boundary list.
       setFences(await listGeofences("BOUNDARY"));
+      setFit({ nonce: Date.now() });
     } catch (e) {
       setError(extractError(e).message);
     } finally {
@@ -65,6 +74,14 @@ export default function GeofencesScreen() {
 
   return (
     <View style={styles.screen}>
+      {fences.length > 0 ? (
+        <View style={styles.mapBox}>
+          <WebMap zones={zones} fitZones={fit} onZonePress={openEditor} />
+          <View style={styles.mapHint} pointerEvents="none">
+            <Text style={styles.mapHintText}>{t("zones.tapToEdit")}</Text>
+          </View>
+        </View>
+      ) : null}
       <FlatList
         data={fences}
         keyExtractor={(g) => g.id}
@@ -75,7 +92,13 @@ export default function GeofencesScreen() {
         }
         ListHeaderComponent={error ? <Text style={styles.error}>{error}</Text> : null}
         renderItem={({ item }) => (
-          <View style={styles.row}>
+          <Pressable
+            onPress={() => openEditor(item.id)}
+            style={({ pressed }) => [styles.row, pressed && { opacity: 0.85 }]}
+            accessibilityRole="button"
+            accessibilityLabel={`${item.name}, ${t("geo.edit")}`}
+          >
+            <View style={[styles.swatch, { backgroundColor: item.color ?? colors.brand }]} />
             <View style={styles.rowMain}>
               <Text style={styles.name}>{item.name}</Text>
               <Text style={styles.meta}>
@@ -93,7 +116,7 @@ export default function GeofencesScreen() {
             <Pressable onPress={() => confirmDelete(item)} hitSlop={10} style={styles.deleteBtn}>
               <Text style={styles.deleteText}>✕</Text>
             </Pressable>
-          </View>
+          </Pressable>
         )}
       />
       <View style={styles.footer}>
@@ -105,6 +128,20 @@ export default function GeofencesScreen() {
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.bg },
+  mapBox: { height: 240, borderBottomWidth: 1, borderBottomColor: colors.border },
+  mapHint: {
+    position: "absolute",
+    bottom: space.sm,
+    alignSelf: "center",
+    backgroundColor: colors.surface,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    paddingHorizontal: space.md,
+    paddingVertical: space.xs,
+  },
+  mapHintText: { color: colors.text, fontSize: 13, fontWeight: "600" },
+  swatch: { width: 14, height: 14, borderRadius: 7 },
   list: { padding: space.md, gap: space.sm, flexGrow: 1 },
   row: {
     flexDirection: "row",
@@ -119,7 +156,7 @@ const styles = StyleSheet.create({
   rowMain: { flex: 1, gap: 2 },
   name: { color: colors.text, fontSize: 16, fontWeight: "700" },
   meta: { color: colors.textFaint, fontSize: 13 },
-  deleteBtn: { paddingLeft: space.xs },
+  deleteBtn: { minWidth: 44, minHeight: 44, alignItems: "center", justifyContent: "center" },
   deleteText: { color: colors.danger, fontSize: 16, fontWeight: "700" },
   footer: { padding: space.md },
   error: { color: colors.danger, fontSize: 14, marginBottom: space.sm },

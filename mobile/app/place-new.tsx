@@ -19,11 +19,18 @@ import { Chip, Field, Loading, PrimaryButton } from "@/ui";
 import { fmtDistance } from "@/format";
 import { useI18n } from "@/i18n";
 import { PLACE_DEFAULT_RADIUS, PLACE_ICON, PLACE_RADIUS_PRESETS, PLACE_TYPES, placeTypeKey } from "@/places";
-import { colors, radius, space } from "@/theme";
+import { colors, radius, space, touch } from "@/theme";
 import type { DeviceView, GeofenceNotifyOn, LatLng, LocationView, PlaceType } from "@/types";
 
 function personLabel(d: DeviceView): string {
   return d.name ?? d.vehiclePlate ?? d.imei.slice(-6);
+}
+
+/** The backend accepts trusted places of 80 m to 5 km. */
+const PLACE_MIN_M = 80;
+const PLACE_MAX_M = 5000;
+function radiusStep(r: number): number {
+  return r < 300 ? 10 : r < 1000 ? 50 : 250;
 }
 
 function toNotifyOn(arrive: boolean, leave: boolean): GeofenceNotifyOn {
@@ -50,17 +57,19 @@ export default function PlaceNewScreen() {
   const [name, setName] = useState("");
   const [center, setCenter] = useState<LatLng | null>(start);
   const [radiusM, setRadiusM] = useState(PLACE_DEFAULT_RADIUS);
+  /** Label of the searched address; cleared when the pin is moved by hand (as on the web). */
+  const [address, setAddress] = useState<string | null>(null);
   const [arrive, setArrive] = useState(true);
   const [leave, setLeave] = useState(true);
   const [imeis, setImeis] = useState<Set<string>>(new Set(startImei ? [startImei] : []));
   const [locations, setLocations] = useState<LocationView[]>([]);
-  const [mapCenter, setMapCenter] = useState<{ lat: number; lng: number; zoom: number; nonce?: number } | null>(start ? { ...start, zoom: 16 } : null);
+  const [mapCenter, setMapCenter] = useState<{ lat: number; lng: number; zoom: number; nonce?: number } | null>(start ? { ...start, zoom: 18 } : null);
   const [loadingPlace, setLoadingPlace] = useState(editing);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   // What the server had when the edit screen opened, to diff on save.
-  const original = useRef<{ center: LatLng | null; radiusM: number; imeis: Set<string> } | null>(null);
+  const original = useRef<{ center: LatLng | null; radiusM: number; address: string | null; imeis: Set<string> } | null>(null);
   const nameTouched = useRef(false);
   const imeisTouched = useRef(!!startImei);
 
@@ -85,8 +94,9 @@ export default function PlaceNewScreen() {
         setArrive(g.notifyOn === "BOTH" || g.notifyOn === "ENTER");
         setLeave(g.notifyOn === "BOTH" || g.notifyOn === "EXIT");
         setImeis(new Set(assigned));
-        original.current = { center: g.center, radiusM: g.radiusM ?? PLACE_DEFAULT_RADIUS, imeis: new Set(assigned) };
-        if (g.center) setMapCenter({ ...g.center, zoom: 16 });
+        setAddress(g.address);
+        original.current = { center: g.center, radiusM: g.radiusM ?? PLACE_DEFAULT_RADIUS, address: g.address, imeis: new Set(assigned) };
+        if (g.center) setMapCenter({ ...g.center, zoom: 17 });
       } catch (e) {
         if (!cancelled) setError(extractError(e).message);
       } finally {
@@ -118,8 +128,8 @@ export default function PlaceNewScreen() {
         const locs = await lastKnownAll();
         if (cancelled) return;
         setLocations(locs);
-        const first = locs.find((l) => l.valid);
-        if (first && !editing) setMapCenter({ lat: first.latitude, lng: first.longitude, zoom: 15 });
+        const first = locs.find((l) => l.latitude !== 0 || l.longitude !== 0);
+        if (first && !editing && !startLat) setMapCenter({ lat: first.latitude, lng: first.longitude, zoom: 17 });
       } catch {
         // Map falls back to the Bangladesh default view.
       }
@@ -127,10 +137,10 @@ export default function PlaceNewScreen() {
     return () => {
       cancelled = true;
     };
-  }, [editing]);
+  }, [editing, startLat]);
 
   const byImei = useMemo(() => new Map(devices.map((d) => [d.imei, d])), [devices]);
-  const located = useMemo(() => locations.filter((l) => l.valid && byImei.has(l.imei)), [locations, byImei]);
+  const located = useMemo(() => locations.filter((l) => (l.latitude !== 0 || l.longitude !== 0) && byImei.has(l.imei)), [locations, byImei]);
   const markers = useMemo<MapVehicle[]>(
     () =>
       located.map((l) => ({
@@ -144,10 +154,11 @@ export default function PlaceNewScreen() {
     [located, byImei],
   );
 
-  function placePin(p: LatLng, recenter: boolean) {
+  function placePin(p: LatLng, recenter: boolean, label: string | null = null) {
     setError(null);
     setCenter(p);
-    if (recenter) setMapCenter({ ...p, zoom: 16, nonce: Date.now() });
+    setAddress(label);
+    if (recenter) setMapCenter({ ...p, zoom: 18, nonce: Date.now() });
   }
 
   function toggleImei(imei: string) {
@@ -183,6 +194,7 @@ export default function PlaceNewScreen() {
           name: trimmed,
           placeType,
           notifyOn,
+          ...(address && address !== prev?.address ? { address } : {}),
           ...(moved ? { center, radiusM } : {}),
         });
         const before = prev?.imeis ?? new Set<string>();
@@ -199,6 +211,7 @@ export default function PlaceNewScreen() {
           imeis: [...imeis],
           kind: "TRUSTED_PLACE",
           placeType,
+          ...(address ? { address } : {}),
         });
       }
       router.back();
@@ -220,7 +233,7 @@ export default function PlaceNewScreen() {
           circle={center ? { ...center, radiusM } : null}
           onMapPress={(p) => placePin(p, false)}
         />
-        <AddressSearch near={center ?? mapCenter} onPick={(r) => placePin({ lat: r.lat, lng: r.lng }, true)} />
+        <AddressSearch near={center ?? mapCenter} onPick={(r) => placePin({ lat: r.lat, lng: r.lng }, true, r.label)} />
         <View style={styles.mapHint} pointerEvents="none">
           <Text style={styles.mapHintText}>
             {center ? `${t("place.pinSet")} · ${fmtDistance(radiusM)}` : t("place.tapMap")}
@@ -281,6 +294,25 @@ export default function PlaceNewScreen() {
             <Chip key={r} label={fmtDistance(r)} active={r === radiusM} onPress={() => setRadiusM(r)} />
           ))}
         </View>
+        <View style={styles.stepper}>
+          <Pressable
+            onPress={() => setRadiusM((r) => Math.max(PLACE_MIN_M, r - radiusStep(r - 1)))}
+            style={({ pressed }) => [styles.stepBtn, pressed && { opacity: 0.7 }]}
+            accessibilityRole="button"
+            accessibilityLabel={t("geo.smaller")}
+          >
+            <Ionicons name="remove" size={22} color={colors.text} />
+          </Pressable>
+          <Text style={styles.stepValue}>{fmtDistance(radiusM)}</Text>
+          <Pressable
+            onPress={() => setRadiusM((r) => Math.min(PLACE_MAX_M, r + radiusStep(r)))}
+            style={({ pressed }) => [styles.stepBtn, pressed && { opacity: 0.7 }]}
+            accessibilityRole="button"
+            accessibilityLabel={t("geo.bigger")}
+          >
+            <Ionicons name="add" size={22} color={colors.text} />
+          </Pressable>
+        </View>
         <Text style={styles.hint}>{t("place.sizeHint")}</Text>
 
         <Text style={styles.label}>{t("place.tellMe")}</Text>
@@ -310,7 +342,7 @@ export default function PlaceNewScreen() {
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.bg },
-  mapBox: { height: 280, borderBottomWidth: 1, borderBottomColor: colors.border },
+  mapBox: { height: 320, borderBottomWidth: 1, borderBottomColor: colors.border },
   mapHint: {
     position: "absolute",
     top: space.sm,
@@ -343,5 +375,17 @@ const styles = StyleSheet.create({
   typeTileOn: { backgroundColor: colors.accent, borderColor: colors.accent },
   typeText: { color: colors.textDim, fontSize: 14, fontWeight: "600" },
   chips: { flexDirection: "row", flexWrap: "wrap", gap: space.sm },
+  stepper: { flexDirection: "row", alignItems: "center", gap: space.md },
+  stepBtn: {
+    width: touch.min,
+    height: touch.min,
+    borderRadius: touch.min / 2,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  stepValue: { color: colors.text, fontSize: 17, fontWeight: "700", minWidth: 80, textAlign: "center" },
   error: { color: colors.danger, fontSize: 15, marginTop: space.sm },
 });
