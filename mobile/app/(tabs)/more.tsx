@@ -15,6 +15,8 @@ export default function MoreScreen() {
   return (
     <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
       <View style={styles.card}>
+        <MenuRow icon="people-outline" label={t("tab.vehicles")} onPress={() => router.push("/vehicles")} />
+        <View style={styles.divider} />
         <MenuRow
           icon="shield-checkmark-outline"
           label={t("home.places")}

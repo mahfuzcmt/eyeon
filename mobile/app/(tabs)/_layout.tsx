@@ -3,6 +3,7 @@ import { Pressable, Text } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useAuth } from "@/auth/AuthContext";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
+import { usePeopleCount } from "@/hooks/usePeopleCount";
 import { useI18n } from "@/i18n";
 import { colors, space } from "@/theme";
 
@@ -20,6 +21,10 @@ export default function TabsLayout() {
   const { status } = useAuth();
   const { t } = useI18n();
   usePushNotifications(status === "authed");
+  // People tab only for 2+ people (owner, 2026-11-02); with one person the map and Home cover it,
+  // and More always has a People row. Hidden until the count is known, so it never flashes in.
+  const peopleCount = usePeopleCount(status === "authed");
+  const showPeople = peopleCount != null && peopleCount > 1;
   if (status === "anon") return <Redirect href="/login" />;
 
   return (
@@ -53,6 +58,7 @@ export default function TabsLayout() {
         name="vehicles"
         options={{
           title: t("tab.vehicles"),
+          href: showPeople ? undefined : null,
           tabBarIcon: ({ color }) => <Ionicons name="people-outline" size={26} color={color} />,
           headerRight: () => <SignOut />,
         }}
