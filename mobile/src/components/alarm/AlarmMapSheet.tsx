@@ -42,7 +42,7 @@ export function AlarmMapSheet({
   }, [alarm, device?.vehicleType, who]);
 
   const center = useMemo(
-    () => (alarm && alarm.latitude != null && alarm.longitude != null ? { lat: alarm.latitude, lng: alarm.longitude, zoom: 16, nonce: Date.now() } : null),
+    () => (alarm && alarm.latitude != null && alarm.longitude != null ? { lat: alarm.latitude, lng: alarm.longitude, zoom: 18, nonce: Date.now() } : null),
     [alarm],
   );
 

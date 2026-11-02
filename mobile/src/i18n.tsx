@@ -253,6 +253,20 @@ const STRINGS = {
   },
 
   "geo.noAlerts": { en: "alerts off", bn: "অ্যালার্ট বন্ধ" },
+  "geo.edit": { en: "Edit geofence", bn: "জিও-ফেন্স সম্পাদনা" },
+  "geo.saveChanges": { en: "Save changes", bn: "পরিবর্তন সেভ করুন" },
+  "geo.shape": { en: "Shape", bn: "আকার" },
+  "geo.noneOption": { en: "No alerts", bn: "কোনো অ্যালার্ট নয়" },
+  "geo.tapVertex": { en: "Tap the map to add corners", bn: "কোণ যোগ করতে ম্যাপে ট্যাপ করুন" },
+  "geo.cornersSet": { en: "corners", bn: "টি কোণ" },
+  "geo.undoCorner": { en: "Undo last corner", bn: "শেষ কোণ বাদ দিন" },
+  "geo.clearShape": { en: "Start again", bn: "আবার শুরু করুন" },
+  "geo.errPolygon": { en: "Tap at least 3 corners on the map.", bn: "ম্যাপে অন্তত ৩টি কোণ ট্যাপ করুন।" },
+  "geo.color": { en: "Colour", bn: "রং" },
+  "geo.smaller": { en: "Smaller", bn: "ছোট করুন" },
+  "geo.bigger": { en: "Bigger", bn: "বড় করুন" },
+  "zones.tapToEdit": { en: "Tap a shape on the map to edit it", bn: "সম্পাদনা করতে ম্যাপের আকৃতিতে ট্যাপ করুন" },
+  "map.addHere": { en: "Add place / boundary", bn: "জায়গা / সীমানা যোগ করুন" },
 
   // ── Day history (route playback + timeline; EyeOn has no trips) ───
   "hist.timeline": { en: "Timeline", bn: "সারাদিনের তথ্য" },

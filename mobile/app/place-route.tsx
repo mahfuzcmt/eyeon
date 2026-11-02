@@ -73,7 +73,7 @@ export default function PlaceRouteScreen() {
       setSaved(r);
       setSchedules(s);
       setError(null);
-      if (g.center) setCenter({ lat: g.center.lat, lng: g.center.lng, zoom: 15, nonce: Date.now() });
+      if (g.center) setCenter({ lat: g.center.lat, lng: g.center.lng, zoom: 16, nonce: Date.now() });
     } catch (e) {
       setError(extractError(e).message);
     } finally {

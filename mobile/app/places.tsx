@@ -1,10 +1,12 @@
-import { useCallback, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { Alert, FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from "react-native";
 import { useFocusEffect, useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { deleteGeofence, listGeofences } from "@/api/endpoints";
 import { extractError } from "@/api/client";
 import { EmptyState, PrimaryButton } from "@/ui";
+import WebMap, { type MapZone } from "@/components/WebMap";
+
 import { fmtDistance } from "@/format";
 import { useI18n, type StringKey } from "@/i18n";
 import { PLACE_ICON, placeTypeKey } from "@/places";
@@ -17,12 +19,18 @@ export default function PlacesScreen() {
   const [places, setPlaces] = useState<GeofenceView[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [fit, setFit] = useState<{ nonce: number } | null>(null);
+  const zones = useMemo<MapZone[]>(
+    () => places.map((p) => ({ id: p.id, name: p.name, color: p.color, center: p.center, radiusM: p.radiusM, polygon: p.polygon })),
+    [places],
+  );
 
   const reload = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
       setPlaces(await listGeofences("TRUSTED_PLACE"));
+      setFit({ nonce: Date.now() });
     } catch (e) {
       setError(extractError(e).message);
     } finally {
@@ -59,6 +67,18 @@ export default function PlacesScreen() {
 
   return (
     <View style={styles.screen}>
+      {places.length > 0 ? (
+        <View style={styles.mapBox}>
+          <WebMap
+            zones={zones}
+            fitZones={fit}
+            onZonePress={(id) => router.push({ pathname: "/place-new", params: { id } })}
+          />
+          <View style={styles.mapHint} pointerEvents="none">
+            <Text style={styles.mapHintText}>{t("zones.tapToEdit")}</Text>
+          </View>
+        </View>
+      ) : null}
       <FlatList
         data={places}
         keyExtractor={(p) => p.id}
@@ -130,6 +150,19 @@ export default function PlacesScreen() {
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.bg },
+  mapBox: { height: 220, borderBottomWidth: 1, borderBottomColor: colors.border },
+  mapHint: {
+    position: "absolute",
+    bottom: space.sm,
+    alignSelf: "center",
+    backgroundColor: colors.surface,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    paddingHorizontal: space.md,
+    paddingVertical: space.xs,
+  },
+  mapHintText: { color: colors.text, fontSize: 13, fontWeight: "600" },
   list: { padding: space.md, gap: space.md, flexGrow: 1 },
   card: {
     flexDirection: "row",

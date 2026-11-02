@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useRouter } from "expo-router";
 import { useDeviceLive } from "@/hooks/useDeviceLive";
-import { useTodayRoute } from "@/hooks/useTodayRoute";
+import { useDayRoute } from "@/hooks/useDayRoute";
 import WebMap, { MapVehicle } from "@/components/WebMap";
 import PersonDetails from "@/components/PersonDetails";
 import { Loading, Metric, Section } from "@/ui";
@@ -23,14 +23,14 @@ export default function TrackTab({ imei, orgId }: { imei: string; orgId: string 
   const router = useRouter();
   const { device, loc, loading } = useDeviceLive(imei, orgId);
   const speedLimits = useSpeedLimits();
-  const route = useTodayRoute(imei, loc);
+  const routePieces = useDayRoute(imei, loc);
   const [center, setCenter] = useState<{ lat: number; lng: number; zoom: number; nonce: number } | null>(null);
   const centered = useRef(false);
 
   useEffect(() => {
     if (loc && !centered.current) {
       centered.current = true;
-      setCenter({ lat: loc.latitude, lng: loc.longitude, zoom: 18, nonce: 1 });
+      setCenter({ lat: loc.latitude, lng: loc.longitude, zoom: 19, nonce: 1 });
     }
   }, [loc]);
 
@@ -81,7 +81,7 @@ export default function TrackTab({ imei, orgId }: { imei: string; orgId: string 
       )}
 
       <View style={styles.mapBox}>
-        <WebMap vehicles={vehicles} photos={photos} center={center} route={route} />
+        <WebMap vehicles={vehicles} photos={photos} center={center} routePieces={routePieces} />
         <View style={[styles.speedo, overspeeding && { borderColor: colors.danger }]}>
           <Text style={[styles.speedoVal, overspeeding && { color: colors.danger }]}>{speed}</Text>
           <Text style={styles.speedoUnit}>{t("veh.kmh")}</Text>
