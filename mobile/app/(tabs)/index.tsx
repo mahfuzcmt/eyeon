@@ -13,22 +13,14 @@ import { Ionicons } from "@expo/vector-icons";
 import { useAuth } from "@/auth/AuthContext";
 import { listGeofences, listPlaceSchedules } from "@/api/endpoints";
 import { extractError } from "@/api/client";
-import { PLACE_ICON, placeTypeKey } from "@/places";
 import { Loading } from "@/ui";
 import { LanguageToggle } from "@/components/LanguageToggle";
-import { fmtDistance } from "@/format";
-import { useI18n, type StringKey } from "@/i18n";
+import { useI18n } from "@/i18n";
 import { colors, radius, space } from "@/theme";
-import type { GeofenceView, PlaceSchedule, PlaceType } from "@/types";
+import type { GeofenceView, PlaceSchedule } from "@/types";
 
 type IconName = React.ComponentProps<typeof Ionicons>["name"];
 
-const NOTIFY_KEY: Record<GeofenceView["notifyOn"], StringKey> = {
-  ENTER: "geo.enterOnly",
-  EXIT: "geo.exitOnly",
-  BOTH: "geo.enterExit",
-  NONE: "geo.noneOption",
-};
 
 /** Quiet retries after a failed load (a request right after resuming often fails once): 3 s, 6 s, 12 s, then stop. */
 const RETRY_MS = 3_000;
@@ -36,8 +28,8 @@ const MAX_RETRIES = 3;
 
 /**
  * Home (owner, 2026-11-02/03): what a carer sets up, nothing else. A grid of tiles in the style of
- * the old status cards - trusted places, geofences, arrival / leaving times, stays - then the
- * places, each with its expected times, and the geofences. The status counts, alarm and distance
+ * the old status cards - trusted places, geofences, arrival / leaving times, stays - and below
+ * them the space reserved for sponsor ads. The status counts, alarm and distance
  * cards and today's arrivals were removed.
  */
 export default function HomeScreen() {
@@ -196,108 +188,7 @@ export default function HomeScreen() {
             />
           </View>
 
-          {/* ── Trusted places + expected times ───────────────────────── */}
-          <SectionHeader
-            icon="home-outline"
-            title={t("home.places")}
-            onAll={() => router.push("/places")}
-          />
-          <View style={styles.group}>
-            {places.length === 0 ? (
-              <Text style={styles.empty}>{t("place.none")}</Text>
-            ) : null}
-            {places.map((p, i) => (
-              <PlaceRow
-                key={p.id}
-                first={i === 0}
-                place={p}
-                schedules={times[p.id] ?? []}
-                onEdit={() =>
-                  router.push({ pathname: "/place-new", params: { id: p.id } })
-                }
-                onTimes={() =>
-                  router.push({
-                    pathname: "/place-times",
-                    params: { id: p.id, name: p.name },
-                  })
-                }
-              />
-            ))}
-            <AddRow
-              first={places.length === 0}
-              label={t("place.add")}
-              onPress={() => router.push("/place-new")}
-            />
-          </View>
-
-          {/* ── Geofences ─────────────────────────────────────────────── */}
-          <SectionHeader
-            icon="shield-outline"
-            title={t("home.geofences")}
-            onAll={() => router.push("/geofences")}
-          />
-          <View style={styles.group}>
-            {fences.length === 0 ? (
-              <Text style={styles.empty}>{t("geo.none")}</Text>
-            ) : null}
-            {fences.map((g, i) => (
-              <Pressable
-                key={g.id}
-                onPress={() =>
-                  router.push({
-                    pathname: "/geofence-new",
-                    params: { id: g.id },
-                  })
-                }
-                style={({ pressed }) => [
-                  styles.row,
-                  i > 0 && styles.rowDivider,
-                  pressed && styles.pressed,
-                ]}
-                accessibilityRole="button"
-                accessibilityLabel={`${g.name}, ${t("geo.edit")}`}
-              >
-                <View
-                  style={[
-                    styles.rowIcon,
-                    { backgroundColor: g.color ?? colors.brand },
-                  ]}
-                >
-                  <Ionicons
-                    name={
-                      g.type === "POLYGON"
-                        ? "git-network-outline"
-                        : "radio-button-on-outline"
-                    }
-                    size={20}
-                    color={colors.onBrand}
-                  />
-                </View>
-                <View style={styles.rowMain}>
-                  <Text style={styles.name} numberOfLines={1}>
-                    {g.name}
-                  </Text>
-                  <Text style={styles.meta} numberOfLines={1}>
-                    {g.type === "POLYGON"
-                      ? t("geo.polygon")
-                      : `${t("geo.circle")}${g.radiusM != null ? ` · ${fmtDistance(g.radiusM)}` : ""}`}
-                    {"  ·  "}
-                    {t(NOTIFY_KEY[g.notifyOn])}
-                  </Text>
-                </View>
-                <Ionicons
-                  name="chevron-forward"
-                  size={20}
-                  color={colors.textFaint}
-                />
-              </Pressable>
-            ))}
-            <AddRow
-              first={fences.length === 0}
-              label={t("homez.addBoundary")}
-              onPress={() => router.push("/geofence-new")}
-            />
-          </View>
+          <SponsorBanner />
         </>
       ) : null}
     </ScrollView>
@@ -342,157 +233,22 @@ function Tile({
   );
 }
 
-function SectionHeader({
-  icon,
-  title,
-  onAll,
-}: {
-  icon: IconName;
-  title: string;
-  onAll: () => void;
-}) {
+/**
+ * Space reserved for sponsors (owner, 2026-11-03): it will become an ad slider. Until there are
+ * sponsors it is a plain placeholder, so the layout is final now.
+ */
+function SponsorBanner() {
   const { t } = useI18n();
   return (
-    <View style={styles.sectionRow}>
-      <Ionicons name={icon} size={18} color={colors.textDim} />
-      <Text style={styles.section}>{title}</Text>
-      <Pressable
-        onPress={onAll}
-        hitSlop={10}
-        style={styles.seeAll}
-        accessibilityRole="link"
-      >
-        <Text style={styles.seeAllText}>{t("homez.seeAll")}</Text>
-        <Ionicons name="chevron-forward" size={16} color={colors.brand} />
-      </Pressable>
-    </View>
-  );
-}
-
-function AddRow({
-  label,
-  onPress,
-  first,
-}: {
-  label: string;
-  onPress: () => void;
-  first: boolean;
-}) {
-  return (
-    <Pressable
-      onPress={onPress}
-      style={({ pressed }) => [
-        styles.addRow,
-        !first && styles.rowDivider,
-        pressed && styles.pressed,
-      ]}
-      accessibilityRole="button"
-      accessibilityLabel={label}
-    >
-      <Ionicons name="add-circle" size={22} color={colors.brand} />
-      <Text style={styles.addText}>{label}</Text>
-    </Pressable>
-  );
-}
-
-function PlaceRow({
-  place,
-  schedules,
-  first,
-  onEdit,
-  onTimes,
-}: {
-  place: GeofenceView;
-  schedules: PlaceSchedule[];
-  first: boolean;
-  onEdit: () => void;
-  onTimes: () => void;
-}) {
-  const { t } = useI18n();
-  const type = (place.placeType ?? "OTHER") as PlaceType;
-  const active = schedules.filter((s) => s.active !== false);
-  const arrive = active
-    .filter((s) => s.kind === "ARRIVE_BY")
-    .map((s) => s.time);
-  const leave = active.filter((s) => s.kind === "LEAVE_BY").map((s) => s.time);
-  const hasTimes = arrive.length + leave.length > 0;
-  return (
-    <View style={!first && styles.rowDivider}>
-      <Pressable
-        onPress={onEdit}
-        style={({ pressed }) => [styles.row, pressed && styles.pressed]}
-        accessibilityRole="button"
-        accessibilityLabel={`${place.name}, ${t("place.edit")}`}
-      >
-        <View style={[styles.rowIcon, { backgroundColor: colors.accent }]}>
-          <Ionicons
-            name={PLACE_ICON[type] ?? "location-outline"}
-            size={20}
-            color={colors.onAccent}
-          />
-        </View>
-        <View style={styles.rowMain}>
-          <Text style={styles.name} numberOfLines={1}>
-            {place.name}
-          </Text>
-          <Text style={styles.meta} numberOfLines={1}>
-            {place.address ?? t(placeTypeKey(type))}
-            {place.radiusM != null ? `  ·  ${fmtDistance(place.radiusM)}` : ""}
-          </Text>
-          <Text
-            style={[
-              styles.alerts,
-              place.notifyOn === "NONE" && { color: colors.textFaint },
-            ]}
-            numberOfLines={1}
-          >
-            {t(`place.alerts.${place.notifyOn}` as StringKey)}
-          </Text>
-        </View>
-        <Ionicons name="chevron-forward" size={20} color={colors.textFaint} />
-      </Pressable>
-      <Pressable
-        onPress={onTimes}
-        style={({ pressed }) => [styles.timesRow, pressed && styles.pressed]}
-        accessibilityRole="button"
-        accessibilityLabel={`${place.name}, ${t("place.times")}`}
-      >
-        <Ionicons name="alarm-outline" size={18} color={colors.brand} />
-        {hasTimes ? (
-          <View style={styles.timeChips}>
-            {arrive.map((tm, i) => (
-              <TimeChip
-                key={`a${i}`}
-                icon="log-in-outline"
-                label={`${t("homez.arrives")} ${tm}`}
-              />
-            ))}
-            {leave.map((tm, i) => (
-              <TimeChip
-                key={`l${i}`}
-                icon="log-out-outline"
-                label={`${t("homez.leaves")} ${tm}`}
-              />
-            ))}
-          </View>
-        ) : (
-          <Text style={styles.setTimes}>{t("homez.setTimes")}</Text>
-        )}
-        <Ionicons
-          name={hasTimes ? "create-outline" : "add"}
-          size={18}
-          color={colors.brand}
-        />
-      </Pressable>
-    </View>
-  );
-}
-
-function TimeChip({ icon, label }: { icon: IconName; label: string }) {
-  return (
-    <View style={styles.timeChip}>
-      <Ionicons name={icon} size={14} color={colors.brand} />
-      <Text style={styles.timeChipText}>{label}</Text>
+    <View style={styles.sponsor} accessibilityLabel={t("homez.sponsor")}>
+      <Text style={styles.sponsorTag}>{t("homez.sponsorTag")}</Text>
+      <Ionicons name="megaphone-outline" size={34} color={colors.brand} />
+      <Text style={styles.sponsorText}>{t("homez.sponsor")}</Text>
+      <View style={styles.dots}>
+        <View style={[styles.dot, styles.dotOn]} />
+        <View style={styles.dot} />
+        <View style={styles.dot} />
+      </View>
     </View>
   );
 }
@@ -568,77 +324,38 @@ const styles = StyleSheet.create({
     fontWeight: "700",
   },
 
-  sectionRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: space.sm,
-    marginTop: space.sm,
-  },
-  section: { flex: 1, color: colors.textDim, fontSize: 15, fontWeight: "800" },
-  seeAll: { flexDirection: "row", alignItems: "center", gap: 2, minHeight: 32 },
-  seeAllText: { color: colors.brand, fontSize: 14, fontWeight: "700" },
-
-  group: { ...card, overflow: "hidden" },
-  row: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: space.md,
-    padding: space.md,
-    minHeight: 64,
-  },
-  rowDivider: {
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: colors.border,
-  },
-  rowIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+  sponsor: {
+    ...card,
+    minHeight: 170,
     alignItems: "center",
     justifyContent: "center",
-  },
-  rowMain: { flex: 1, minWidth: 0 },
-  name: { color: colors.text, fontSize: 16, fontWeight: "700" },
-  meta: { color: colors.textFaint, fontSize: 13, marginTop: 2 },
-  alerts: {
-    color: colors.brand,
-    fontSize: 13,
-    marginTop: 2,
-    fontWeight: "600",
-  },
-
-  timesRow: {
-    flexDirection: "row",
-    alignItems: "center",
     gap: space.sm,
-    minHeight: 44,
-    marginHorizontal: space.md,
-    marginBottom: space.md,
-    paddingHorizontal: space.md,
-    paddingVertical: space.sm,
-    borderRadius: radius.sm,
+    padding: space.lg,
+    borderStyle: "dashed",
+    borderWidth: 1.5,
+    borderColor: colors.brand,
     backgroundColor: colors.brandSoft,
   },
-  timeChips: { flex: 1, flexDirection: "row", flexWrap: "wrap", gap: space.xs },
-  timeChip: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
+  sponsorTag: {
+    position: "absolute",
+    top: space.sm,
+    left: space.sm,
+    color: colors.textFaint,
+    fontSize: 12,
+    fontWeight: "700",
     paddingHorizontal: space.sm,
-    paddingVertical: 3,
+    paddingVertical: 2,
     borderRadius: 999,
     backgroundColor: colors.surface,
+    overflow: "hidden",
   },
-  timeChipText: { color: colors.text, fontSize: 13, fontWeight: "600" },
-  setTimes: { flex: 1, color: colors.brand, fontSize: 14, fontWeight: "700" },
-
-  addRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: space.sm,
-    padding: space.md,
-    minHeight: 52,
+  sponsorText: {
+    color: colors.brand,
+    fontSize: 17,
+    fontWeight: "800",
+    textAlign: "center",
   },
-  addText: { color: colors.brand, fontSize: 15, fontWeight: "700" },
-  empty: { color: colors.textFaint, fontSize: 14, padding: space.md },
+  dots: { flexDirection: "row", gap: 6, marginTop: space.xs },
+  dot: { width: 7, height: 7, borderRadius: 4, backgroundColor: colors.border },
+  dotOn: { width: 18, backgroundColor: colors.brand },
 });

@@ -66,6 +66,8 @@ const STRINGS = {
   },
   "homez.placesSub": { en: "Tap a place to edit it, or the clock to set arrival and leaving times", bn: "সম্পাদনা করতে জায়গায় ট্যাপ করুন, আর পৌঁছানো ও বের হওয়ার সময় দিতে ঘড়িতে" },
   "homez.timesTile": { en: "Arrival / leaving times", bn: "পৌঁছানো / বের হওয়ার সময়" },
+  "homez.sponsor": { en: "Sponsor ads will be here", bn: "এখানে স্পনসর বিজ্ঞাপন থাকবে" },
+  "homez.sponsorTag": { en: "Sponsored", bn: "স্পনসরড" },
   "homez.seeAll": { en: "See all", bn: "সব দেখুন" },
   "homez.setTimes": { en: "Set arrival / leaving times", bn: "পৌঁছানো / বের হওয়ার সময় দিন" },
   "homez.arrives": { en: "Arrives", bn: "পৌঁছাবে" },
