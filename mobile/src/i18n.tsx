@@ -65,6 +65,7 @@ const STRINGS = {
     bn: "কেউ জোনে ঢুকলে বা বের হলে সতর্কতা",
   },
   "homez.placesSub": { en: "Tap a place to edit it, or the clock to set arrival and leaving times", bn: "সম্পাদনা করতে জায়গায় ট্যাপ করুন, আর পৌঁছানো ও বের হওয়ার সময় দিতে ঘড়িতে" },
+  "homez.timesTile": { en: "Arrival / leaving times", bn: "পৌঁছানো / বের হওয়ার সময়" },
   "homez.seeAll": { en: "See all", bn: "সব দেখুন" },
   "homez.setTimes": { en: "Set arrival / leaving times", bn: "পৌঁছানো / বের হওয়ার সময় দিন" },
   "homez.arrives": { en: "Arrives", bn: "পৌঁছাবে" },
@@ -72,7 +73,7 @@ const STRINGS = {
   "homez.addBoundary": { en: "Add a geofence", bn: "নতুন জিও-ফেন্স যোগ করুন" },
   "home.noVehicles": { en: "No one added yet.", bn: "এখনও কাউকে যোগ করা হয়নি।" },
   "home.loadingToday": { en: "Loading today…", bn: "আজকের তথ্য লোড হচ্ছে…" },
-  "home.openVehicle": { en: "See details →", bn: "বিস্তারিত দেখুন →" },
+  "home.openVehicle": { en: "See details", bn: "বিস্তারিত দেখুন" },
 
   // ── Motion states ─────────────────────────────────────────────────
   "state.moving": { en: "Moving", bn: "চলছে" },

@@ -7,7 +7,7 @@ import WebMap, { MapVehicle } from "@/components/WebMap";
 import PersonDetails from "@/components/PersonDetails";
 import { Loading, Metric, Section } from "@/ui";
 import {
-  filterSpeed,
+  speedOf,
   motionColor,
   motionOf,
   subscriptionDaysLeft,
@@ -61,7 +61,7 @@ export default function TrackTab({ imei, orgId }: { imei: string; orgId: string 
 
   if (loading && !device) return <Loading label={t("track.loadingDevice")} />;
 
-  const speed = filterSpeed(loc?.speed ?? device?.lastSpeed, loc?.valid);
+  const speed = speedOf(loc, device?.lastSpeed);
   const overspeeding = speedLimits.isOverspeed(imei, speed);
   const expired = device ? subscriptionExpired(device) : false;
   const daysLeft = device ? subscriptionDaysLeft(device) : null;

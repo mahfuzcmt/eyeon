@@ -6,11 +6,19 @@ import type { LocationView } from "@/types";
 
 /**
  * A packet without a GPS fix carries a stale or made-up position (a 2G tracker indoors repeats a
- * spot ~100 m off): keep the last known position and take only the rest of the packet.
+ * spot ~100 m off): keep the last known position, speed and fix time and take only the rest of the
+ * packet. `speedOf` then shows that speed while the fix is recent and 0 after.
  */
 export function mergeLive(prev: LocationView | undefined | null, next: LocationView): LocationView {
   if (next.valid || !prev) return next;
-  return { ...next, latitude: prev.latitude, longitude: prev.longitude, course: prev.course, speed: 0 };
+  return {
+    ...next,
+    latitude: prev.latitude,
+    longitude: prev.longitude,
+    course: prev.course,
+    speed: prev.speed,
+    lastValidTs: prev.valid ? prev.ts : prev.lastValidTs ?? null,
+  };
 }
 
 /** Auto-refresh interval in milliseconds (10 seconds). */

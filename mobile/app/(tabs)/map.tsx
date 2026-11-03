@@ -9,7 +9,7 @@ import { useLiveLocations } from "@/hooks/useLiveLocations";
 import { useDevices } from "@/hooks/useDevices";
 import WebMap, { MapVehicle } from "@/components/WebMap";
 import PersonDetails from "@/components/PersonDetails";
-import { filterSpeed, motionColor, motionOf } from "@/format";
+import { motionColor, motionOf, speedOf } from "@/format";
 import { useSpeedLimits } from "@/hooks/useSpeedLimits";
 import { useDevicePhotos } from "@/photos";
 import { useI18n, type StringKey } from "@/i18n";
@@ -63,7 +63,7 @@ export default function MapScreen() {
       // Without a fix the row still carries the last known position; (0,0) means there never was one.
       if (loc.latitude === 0 && loc.longitude === 0) continue;
       const d = byImei.get(loc.imei);
-      const motion = d ? motionOf(d, loc) : filterSpeed(loc.speed, loc.valid) > 0 ? "MOVING" : "STOPPED";
+      const motion = d ? motionOf(d, loc) : speedOf(loc) > 0 ? "MOVING" : "STOPPED";
       const overspeed = speedLimits.isOverspeed(loc.imei, loc.speed);
       out.push({
         imei: loc.imei,

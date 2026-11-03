@@ -186,6 +186,8 @@ export interface LocationView {
   altitude?: number | null;
   gsmSignal?: number | null;
   engineHoursSeconds?: number | null;
+  /** When the plotted coordinates and speed were last confirmed by a GPS fix (null: never / this packet has none). */
+  lastValidTs?: string | null;
 }
 
 export type AlarmType =

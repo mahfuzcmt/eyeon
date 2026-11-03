@@ -39,7 +39,6 @@ export function useDeviceHistory({ imei, from, to, limit = 1000 }: UseDeviceHist
         if (from) params.from = from;
         if (to) params.to = to;
 
-        console.log("[useDeviceHistory] Fetching:", `/devices/${encodeURIComponent(imei)}/locations`, params);
         const r = await api.get<LocationView[]>(
           `/devices/${encodeURIComponent(imei)}/locations`,
           { params, signal: controller.signal }
@@ -47,7 +46,6 @@ export function useDeviceHistory({ imei, from, to, limit = 1000 }: UseDeviceHist
 
         if (controller.signal.aborted) return;
 
-        console.log("[useDeviceHistory] Response:", r.data?.length ?? 0, "locations");
         // Handle both array and wrapped response formats
         const data = Array.isArray(r.data) ? r.data : (r.data as unknown as { data: LocationView[] })?.data ?? [];
         setHistory(data);
