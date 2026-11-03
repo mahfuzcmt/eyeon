@@ -318,8 +318,6 @@ export function useLiveLocations(orgId: string) {
    * For CSS-transition animation, we take the latest point and update position directly.
    */
   const processBatch = useCallback((batch: LocationView[]) => {
-    // Debug: log when batch is received
-    console.log(`[useLiveLocations] Received batch of ${batch.length} locations`, batch.slice(0, 2));
     setLocations((prev) => {
       const next = new Map(prev);
       let changed = false;

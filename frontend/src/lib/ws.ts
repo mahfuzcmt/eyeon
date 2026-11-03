@@ -43,15 +43,13 @@ class WsClient {
 
       const wsUrl = getWsUrl();
 
-      console.log(`[ws] Connecting to WebSocket: ${wsUrl}`);
-
       const client = new StompClient({
         brokerURL: wsUrl,
         connectHeaders: { Authorization: `Bearer ${token}` },
         reconnectDelay: 3_000,
         heartbeatIncoming: 10_000,
         heartbeatOutgoing: 10_000,
-        debug: (msg) => console.log(`[STOMP] ${msg}`),
+        debug: () => {},
         // Force WebSocket to reconnect on error
         webSocketFactory: () => new WebSocket(wsUrl),
       });
@@ -88,7 +86,6 @@ class WsClient {
     if (this.subs.has(destination)) return;
 
     const sub = this.client.subscribe(destination, (msg: IMessage) => {
-      console.log(`[ws] Message received on ${destination}, body length: ${msg.body.length}`);
       const set = this.listeners.get(destination);
       if (!set || set.size === 0) return;
       let parsed: unknown = msg.body;
