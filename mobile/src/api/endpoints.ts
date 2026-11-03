@@ -651,3 +651,9 @@ export async function listMySubscriptions(): Promise<SubscriptionView[]> {
   const r = await api.get<SubscriptionView[]>("/billing/subscriptions");
   return r.data;
 }
+
+/** Sponsor ads for the Home slider (public, platform-wide; managed by super admins on the web). */
+export async function listSponsorAds(): Promise<import("@/types").SponsorAd[]> {
+  const r = await api.get<import("@/types").SponsorAd[]>("/public/sponsor-ads");
+  return r.data;
+}

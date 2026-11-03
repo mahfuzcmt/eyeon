@@ -2,6 +2,8 @@ import axios, { AxiosError, AxiosInstance, InternalAxiosRequestConfig } from "ax
 import type { TokenPair } from "@/types";
 
 const baseURL = process.env.EXPO_PUBLIC_API_BASE ?? "http://10.0.2.2:8081/api/v1";
+/** The API base URL, for building absolute URLs of public files (e.g. sponsor ad images). */
+export const API_BASE = baseURL;
 
 /**
  * In-memory token holder, decoupled from React so the axios interceptors can

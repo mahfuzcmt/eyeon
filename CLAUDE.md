@@ -1281,6 +1281,26 @@ GET  /billing/invoices                    → Invoice[]
 
 HTTP status codes: 200 OK, 201 Created, 204 No Content, 400 Bad Request, 401 Unauthorized, 403 Forbidden, 404 Not Found, 409 Conflict, 422 Unprocessable, 500 Internal.
 
+### 8.11 Sponsor ads (V32, 2026-11-03)
+
+The Home screen of the app has a slider of sponsor banners, set by a **SUPER_ADMIN** on the web (Super Admin → Sponsor ads). Ads are **platform-wide**: every organization sees the same ones.
+
+```
+GET    /admin/sponsor-ads              → [{ id, title, linkUrl, sortOrder, active, imageUpdatedAt, imageUrl, createdAt, updatedAt }]   SUPER_ADMIN
+POST   /admin/sponsor-ads              { title?, linkUrl?, sortOrder?, active? } → 201 ad                                              SUPER_ADMIN
+PATCH  /admin/sponsor-ads/:id          { title?, linkUrl?, sortOrder?, active? } → ad   (missing = keep, blank title/link = clear)   SUPER_ADMIN
+PUT    /admin/sponsor-ads/:id/image    body = JPEG/PNG bytes (max 3 MB) → { imageUpdatedAt }                                          SUPER_ADMIN
+DELETE /admin/sponsor-ads/:id          → 204                                                                                          SUPER_ADMIN
+GET    /public/sponsor-ads             → [{ id, title, linkUrl, imageUrl }]   no login; active ads with an image, by sortOrder
+GET    /public/sponsor-ads/:id/image   → image/jpeg 1200x600, cached 30 days (the URL carries ?v=); switched-off ads are 404
+```
+
+- `sponsor_ads` table (bytea image like `device_photos`; there is no object storage). Every upload is decoded and re-encoded, centre-cropped to 1200x600 (`DevicePhotoService.coverJpeg`, shared with person photos), so metadata never survives and the slider has one shape. The web crops to the same shape before upload, so its preview is what the app shows.
+- **Links:** only absolute `http`/`https` URLs with a host are stored (`SponsorAdService.cleanLink`); `javascript:`, `intent:`, `file:`, `tel:`, `data:` and bare domains are refused with 400, and the app checks again before `Linking.openURL`. An ad without a link is shown but tapping does nothing.
+- Ads are public on purpose: an RN `<Image>` cannot send the bearer token, and an ad is not private. `imageUrl` is relative to the API base (`/public/sponsor-ads/{id}/image?v=...`).
+- App: `components/home/SponsorSlider.tsx` - swipe or 5 s auto-advance (paused while touched or in the background), dots, a small open-link badge, "Sponsored" tag; reloaded with Home (focus, return to the app, pull to refresh). With no ad shown, the "Sponsor ads will be here" placeholder keeps the space. Managing ads is web only.
+- Audited as `SPONSOR_AD_CREATE / UPDATE / IMAGE / DELETE`. Tests: `SponsorAdServiceTest` (links, SUPER_ADMIN only, 1200x600 output, switched-off ads never served). The migration has not been run against PostgreSQL before the first deploy.
+
 ---
 
 ## 9. WebSocket Specification
