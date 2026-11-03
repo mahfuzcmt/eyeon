@@ -867,3 +867,32 @@ export interface SharedHistoryPoint {
   longitude: number;
   speed: number;
 }
+
+/** Super Admin view of a sponsor ad (GET /admin/sponsor-ads). `imageUrl` is relative to the API base. */
+export interface SponsorAdAdminView {
+  id: string;
+  title: string | null;
+  linkUrl: string | null;
+  sortOrder: number;
+  active: boolean;
+  imageUpdatedAt: string | null;
+  imageUrl: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** POST / PATCH /admin/sponsor-ads body. A blank title or link clears it; a missing field keeps it. */
+export interface SponsorAdInput {
+  title?: string;
+  linkUrl?: string;
+  sortOrder?: number;
+  active?: boolean;
+}
+
+/** GET /public/sponsor-ads: what the app's Home slider shows. */
+export interface SponsorAdShown {
+  id: string;
+  title: string | null;
+  linkUrl: string | null;
+  imageUrl: string;
+}

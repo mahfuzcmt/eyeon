@@ -6,8 +6,9 @@ import { useAdminStats, useAdminOrgs, useAdminDevices } from "@/hooks/useAdminDa
 import { useAdminBillingStats, useAdminSubscriptions } from "@/hooks/useAdminSubscriptions";
 import type { OrgAdminView, OrgCreate, DeviceAdminView, SubscriptionView, ExtendRequest, DeviceWithoutSub, CreateSubscriptionRequest } from "@/types/domain";
 import { formatRelative } from "@/lib/format";
+import { SponsorAdsTab } from "@/components/admin/SponsorAdsTab";
 
-type Tab = "orgs" | "devices" | "subscriptions";
+type Tab = "orgs" | "devices" | "subscriptions" | "ads";
 
 export default function AdminPage() {
   const { t, locale } = useLocale();
@@ -67,6 +68,12 @@ export default function AdminPage() {
           >
             Subscriptions
           </TabButton>
+          <TabButton
+            active={activeTab === "ads"}
+            onClick={() => setActiveTab("ads")}
+          >
+            Sponsor ads
+          </TabButton>
         </div>
       </div>
 
@@ -75,6 +82,7 @@ export default function AdminPage() {
         {activeTab === "orgs" && <OrgsTab />}
         {activeTab === "devices" && <DevicesTab />}
         {activeTab === "subscriptions" && <SubscriptionsTab />}
+        {activeTab === "ads" && <SponsorAdsTab />}
       </div>
     </div>
   );

@@ -678,3 +678,11 @@ export interface CreateShareLinkRequest {
   showHistory: boolean;
   allowRealtime: boolean;
 }
+
+/** GET /public/sponsor-ads: a banner of the Home slider. `imageUrl` is relative to the API base. */
+export interface SponsorAd {
+  id: string;
+  title: string | null;
+  linkUrl: string | null;
+  imageUrl: string;
+}

@@ -36,31 +36,51 @@ public class DevicePhotoService {
      * @throws IllegalArgumentException when the upload is not a readable JPEG/PNG or is too large
      */
     public byte[] normalize(byte[] upload) {
-        if (upload == null || upload.length == 0) throw new IllegalArgumentException("Photo is empty");
-        if (upload.length > MAX_UPLOAD_BYTES) throw new IllegalArgumentException("Photo is larger than 2 MB");
+        return coverJpeg(upload, SIZE, SIZE, MAX_UPLOAD_BYTES);
+    }
+
+    /**
+     * Decode an upload and re-encode it as a {@code width} x {@code height} JPEG, centre-cropped to
+     * that shape (CSS "cover"). Shared by person photos and sponsor banners (SponsorAdService).
+     *
+     * @throws IllegalArgumentException when the upload is empty, over {@code maxBytes}, not a
+     *         readable JPEG/PNG, or has absurd dimensions
+     */
+    static byte[] coverJpeg(byte[] upload, int width, int height, int maxBytes) {
+        if (upload == null || upload.length == 0) throw new IllegalArgumentException("Image is empty");
+        if (upload.length > maxBytes) {
+            throw new IllegalArgumentException("Image is larger than " + (maxBytes / (1024 * 1024)) + " MB");
+        }
         BufferedImage src;
         try {
             src = ImageIO.read(new ByteArrayInputStream(upload));
         } catch (IOException e) {
             src = null;
         }
-        if (src == null) throw new IllegalArgumentException("Photo must be a JPEG or PNG image");
+        if (src == null) throw new IllegalArgumentException("Image must be a JPEG or PNG");
         if ((long) src.getWidth() * src.getHeight() > MAX_SOURCE_PIXELS) {
-            throw new IllegalArgumentException("Photo dimensions are too large");
+            throw new IllegalArgumentException("Image dimensions are too large");
         }
 
-        int side = Math.min(src.getWidth(), src.getHeight());
-        int x = (src.getWidth() - side) / 2;
-        int y = (src.getHeight() - side) / 2;
+        // Largest region of the source with the target's aspect ratio, centred.
+        double target = (double) width / height;
+        int cropW = src.getWidth();
+        int cropH = (int) Math.round(cropW / target);
+        if (cropH > src.getHeight()) {
+            cropH = src.getHeight();
+            cropW = (int) Math.round(cropH * target);
+        }
+        int x = (src.getWidth() - cropW) / 2;
+        int y = (src.getHeight() - cropH) / 2;
 
-        BufferedImage out = new BufferedImage(SIZE, SIZE, BufferedImage.TYPE_INT_RGB);
+        BufferedImage out = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
         Graphics2D g = out.createGraphics();
         try {
             g.setColor(Color.WHITE);                 // JPEG has no alpha: transparent PNG areas become white
-            g.fillRect(0, 0, SIZE, SIZE);
+            g.fillRect(0, 0, width, height);
             g.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BICUBIC);
             g.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
-            g.drawImage(src, 0, 0, SIZE, SIZE, x, y, x + side, y + side, null);
+            g.drawImage(src, 0, 0, width, height, x, y, x + cropW, y + cropH, null);
         } finally {
             g.dispose();
         }
@@ -76,7 +96,7 @@ public class DevicePhotoService {
             stream.flush();
             return bytes.toByteArray();
         } catch (IOException e) {
-            throw new IllegalStateException("Could not encode photo", e);
+            throw new IllegalStateException("Could not encode image", e);
         } finally {
             writer.dispose();
         }

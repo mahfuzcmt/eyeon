@@ -15,12 +15,12 @@ import { listGeofences, listPlaceSchedules } from "@/api/endpoints";
 import { extractError } from "@/api/client";
 import { Loading } from "@/ui";
 import { LanguageToggle } from "@/components/LanguageToggle";
+import { SponsorSlider } from "@/components/home/SponsorSlider";
 import { useI18n } from "@/i18n";
 import { colors, radius, space } from "@/theme";
 import type { GeofenceView, PlaceSchedule } from "@/types";
 
 type IconName = React.ComponentProps<typeof Ionicons>["name"];
-
 
 /** Quiet retries after a failed load (a request right after resuming often fails once): 3 s, 6 s, 12 s, then stop. */
 const RETRY_MS = 3_000;
@@ -29,7 +29,7 @@ const MAX_RETRIES = 3;
 /**
  * Home (owner, 2026-11-02/03): what a carer sets up, nothing else. A grid of tiles in the style of
  * the old status cards - trusted places, geofences, arrival / leaving times, stays - and below
- * them the space reserved for sponsor ads. The status counts, alarm and distance
+ * them the sponsor ads slider (SponsorSlider). The status counts, alarm and distance
  * cards and today's arrivals were removed.
  */
 export default function HomeScreen() {
@@ -44,10 +44,14 @@ export default function HomeScreen() {
   const [error, setError] = useState<string | null>(null);
   const retry = useRef<ReturnType<typeof setTimeout> | null>(null);
   const attempts = useRef(0);
+  const [adsKey, setAdsKey] = useState(0);
 
   const reload = useCallback(async (quiet = false, fresh = false) => {
     if (retry.current) clearTimeout(retry.current);
-    if (fresh) attempts.current = 0;
+    if (fresh) {
+      attempts.current = 0;
+      setAdsKey((k) => k + 1);
+    }
     if (!quiet) setLoading(true);
     try {
       const [p, f] = await Promise.all([
@@ -188,7 +192,7 @@ export default function HomeScreen() {
             />
           </View>
 
-          <SponsorBanner />
+          <SponsorSlider refreshKey={adsKey} />
         </>
       ) : null}
     </ScrollView>
@@ -230,26 +234,6 @@ function Tile({
         <Ionicons name="chevron-forward" size={18} color={colors.textFaint} />
       </View>
     </Pressable>
-  );
-}
-
-/**
- * Space reserved for sponsors (owner, 2026-11-03): it will become an ad slider. Until there are
- * sponsors it is a plain placeholder, so the layout is final now.
- */
-function SponsorBanner() {
-  const { t } = useI18n();
-  return (
-    <View style={styles.sponsor} accessibilityLabel={t("homez.sponsor")}>
-      <Text style={styles.sponsorTag}>{t("homez.sponsorTag")}</Text>
-      <Ionicons name="megaphone-outline" size={34} color={colors.brand} />
-      <Text style={styles.sponsorText}>{t("homez.sponsor")}</Text>
-      <View style={styles.dots}>
-        <View style={[styles.dot, styles.dotOn]} />
-        <View style={styles.dot} />
-        <View style={styles.dot} />
-      </View>
-    </View>
   );
 }
 
@@ -323,39 +307,4 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "700",
   },
-
-  sponsor: {
-    ...card,
-    minHeight: 170,
-    alignItems: "center",
-    justifyContent: "center",
-    gap: space.sm,
-    padding: space.lg,
-    borderStyle: "dashed",
-    borderWidth: 1.5,
-    borderColor: colors.brand,
-    backgroundColor: colors.brandSoft,
-  },
-  sponsorTag: {
-    position: "absolute",
-    top: space.sm,
-    left: space.sm,
-    color: colors.textFaint,
-    fontSize: 12,
-    fontWeight: "700",
-    paddingHorizontal: space.sm,
-    paddingVertical: 2,
-    borderRadius: 999,
-    backgroundColor: colors.surface,
-    overflow: "hidden",
-  },
-  sponsorText: {
-    color: colors.brand,
-    fontSize: 17,
-    fontWeight: "800",
-    textAlign: "center",
-  },
-  dots: { flexDirection: "row", gap: 6, marginTop: space.xs },
-  dot: { width: 7, height: 7, borderRadius: 4, backgroundColor: colors.border },
-  dotOn: { width: 18, backgroundColor: colors.brand },
 });
