@@ -99,7 +99,15 @@ public class PushService {
             UUID onlyUser = owner == null ? null : UUID.fromString(owner.toString());
             List<PushTokenRepository.Target> targets =
                     tokenRepo.listTokensForOrgAndType(alarm.orgId(), alarm.type(), alarm.deviceImei(), onlyUser);
-            if (targets.isEmpty()) return;
+            if (targets.isEmpty()) {
+                // Logged so a missed notification can be traced: nobody has a registered phone
+                // that wants this type (Settings -> Notifications) and may see this person.
+                log.info("Push alarm={} type={} imei={}: no registered phone to notify",
+                        alarm.id(), alarm.type(), alarm.deviceImei());
+                return;
+            }
+            log.info("Push alarm={} type={} imei={}: sending to {} phone(s)",
+                    alarm.id(), alarm.type(), alarm.deviceImei(), targets.size());
 
             String personName = deviceRepo.findByImei(alarm.deviceImei())
                     .map(Device::name)
@@ -160,8 +168,10 @@ public class PushService {
         if (response == null || response.data() == null) return;
         List<String> dead = new ArrayList<>();
         List<ExpoPushTicket> tickets = response.data();
+        int accepted = 0;
         for (int i = 0; i < tickets.size() && i < tokens.size(); i++) {
             ExpoPushTicket t = tickets.get(i);
+            if (t != null && "ok".equals(t.status())) accepted++;
             if (t != null && "ok".equals(t.status()) && t.id() != null && pendingReceipts.size() < MAX_PENDING) {
                 pendingReceipts.put(t.id(), new Pending(tokens.get(i), Instant.now()));
             } else if (t != null && "error".equals(t.status())) {
@@ -174,6 +184,7 @@ public class PushService {
                 }
             }
         }
+        log.info("Expo accepted {} of {} push(es)", accepted, tokens.size());
         if (!dead.isEmpty()) {
             tokenRepo.deleteAll(dead);
             log.info("Purged {} unregistered push tokens", dead.size());
