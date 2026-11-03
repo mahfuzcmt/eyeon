@@ -27,8 +27,10 @@ let currentToken: string | null = null;
  * Ask for notification permission, obtain the Expo push token, and register
  * it with the backend. Best-effort: any failure (simulator, permission
  * denied, offline) resolves silently — push must never block sign-in.
+ * `askPermission` false only checks it (re-registering on return to the app must not
+ * show the permission dialog again and again).
  */
-export async function registerForAlarmPush(locale: "bn" | "en"): Promise<void> {
+export async function registerForAlarmPush(locale: "bn" | "en", askPermission = true): Promise<void> {
   try {
     if (!Device.isDevice) return; // emulators/simulators can't receive push
 
@@ -52,7 +54,7 @@ export async function registerForAlarmPush(locale: "bn" | "en"): Promise<void> {
     }
 
     let { status } = await Notifications.getPermissionsAsync();
-    if (status !== "granted") {
+    if (status !== "granted" && askPermission) {
       ({ status } = await Notifications.requestPermissionsAsync());
     }
     if (status !== "granted") return;
