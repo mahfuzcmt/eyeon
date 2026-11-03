@@ -125,7 +125,7 @@ export default function AlarmRulesScreen() {
 
 function describe(r: AlarmRuleView, t: (k: StringKey) => string): string {
   if (r.ruleType === "ACC_ON_DURING_WINDOW") {
-    return `${r.windowStart?.slice(0, 5) ?? "—"} → ${r.windowEnd?.slice(0, 5) ?? "—"}`;
+    return `${r.windowStart?.slice(0, 5) ?? "—"} – ${r.windowEnd?.slice(0, 5) ?? "—"}`;
   }
   const n = r.threshold ?? 0;
   const sign = r.ruleType === "VOLTAGE_UNDER" ? "<" : ">";

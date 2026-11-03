@@ -4,7 +4,7 @@ import { useDeviceLive } from "@/hooks/useDeviceLive";
 import { useCurrentStay } from "@/hooks/useCurrentStay";
 import { useDeviceTodayStats } from "@/hooks/useDeviceTodayStats";
 import { Loading, Metric, Section } from "@/ui";
-import { fmtAgo, fmtDistance, fmtDuration, fmtSince, fmtTime, fmtVoltage } from "@/format";
+import { fmtAgo, fmtDistance, fmtDuration, fmtSince, fmtTime, fmtVoltage, speedOf } from "@/format";
 import { useI18n, type StringKey } from "@/i18n";
 import { colors, space } from "@/theme";
 
@@ -46,7 +46,7 @@ export default function StatisticsTab({ imei, orgId }: { imei: string; orgId: st
       </Pressable>
 
       <Section title={t("stats.current")}>
-        <Metric label={t("graph.speed")} value={`${loc?.speed ?? device?.lastSpeed ?? 0} ${t("veh.kmh")}`} />
+        <Metric label={t("graph.speed")} value={`${speedOf(loc, device?.lastSpeed)} ${t("veh.kmh")}`} />
         <Metric
           label={t("stats.location")}
           width="66%"

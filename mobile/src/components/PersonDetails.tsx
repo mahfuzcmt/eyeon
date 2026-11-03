@@ -3,7 +3,7 @@ import { Linking, Pressable, StyleSheet, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useCurrentStay } from "@/hooks/useCurrentStay";
 import { reverseAddress } from "@/geocode";
-import { batteryColor, fmtAgo, fmtDateTime, fmtSince, fmtTime, motionColor, motionOf } from "@/format";
+import { batteryColor, fmtAgo, fmtDateTime, fmtSince, fmtTime, motionColor, motionOf, speedOf } from "@/format";
 import { Pill } from "@/ui";
 import { useI18n, type StringKey } from "@/i18n";
 import { colors, radius, space } from "@/theme";
@@ -60,7 +60,7 @@ export default function PersonDetails({
   const hasPos = lat != null && lng != null && !(lat === 0 && lng === 0);
   const address = useAddress(hasPos ? lat : null, hasPos ? lng : null, locale === "bn" ? "bn" : "en");
   const stay = useCurrentStay(device.imei);
-  const speed = loc?.speed ?? device.lastSpeed ?? 0;
+  const speed = speedOf(loc, device.lastSpeed);
   const reportedAt = loc?.ts ?? device.lastSeenAt;
 
   return (

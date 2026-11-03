@@ -3,7 +3,7 @@
     "name": "EyeOn",
     "slug": "eyeon",
     "scheme": "eyeon",
-    "version": "0.3.12",
+    "version": "0.3.13",
     "orientation": "portrait",
     "userInterfaceStyle": "light",
     "splash": {
@@ -27,7 +27,7 @@
         "android.permission.ACCESS_FINE_LOCATION",
         "android.permission.ACCESS_COARSE_LOCATION"
       ],
-      "versionCode": 17,
+      "versionCode": 18,
       "googleServicesFile": "./google-services.json",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",

@@ -8,7 +8,7 @@ import { useGroups } from "@/hooks/useGroups";
 import { useLiveLocations } from "@/hooks/useLiveLocations";
 import { useTicker } from "@/hooks/useTicker";
 import { Chip, EmptyState, Loading, Pill } from "@/ui";
-import { batteryColor, fmtAgo, fmtSince, motionColor, motionOf, subscriptionDaysLeft, subscriptionExpired } from "@/format";
+import { batteryColor, fmtAgo, fmtSince, motionColor, motionOf, speedOf, subscriptionDaysLeft, subscriptionExpired } from "@/format";
 import { fmtDay } from "@/localDate";
 import { useDevicePhotos } from "@/photos";
 import { useSpeedLimits } from "@/hooks/useSpeedLimits";
@@ -212,7 +212,7 @@ function VehicleCard({
   onLongPress?: () => void;
 }) {
   const { t, locale } = useI18n();
-  const speed = loc?.speed ?? device.lastSpeed ?? 0;
+  const speed = speedOf(loc, device.lastSpeed);
   const parked = (motion === "STOPPED" || motion === "OFFLINE") && device.parkedSince;
   const expired = subscriptionExpired(device);
   const daysLeft = subscriptionDaysLeft(device);

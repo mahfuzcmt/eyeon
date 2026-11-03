@@ -156,7 +156,7 @@ export default function ControlsTab({ imei, orgId }: { imei: string; orgId: stri
           </Text>
         </View>
         <Metric label={t("veh.lastSeen")} value={fmtAgo(device?.lastSeenAt)} width="50%" />
-        <Metric label={t("ctrl.motion")} value={t(`state.${motion.toLowerCase()}` as any)} width="50%" />
+        <Metric label={t("ctrl.motion")} value={t(`state.${motion.toLowerCase() as Lowercase<typeof motion>}`)} width="50%" />
       </Section>
 
       {/* Device Info */}

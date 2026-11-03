@@ -16,6 +16,25 @@ export function filterSpeed(speed: number | null | undefined, valid?: boolean | 
   return speed <= SPEED_NOISE_THRESHOLD ? 0 : speed;
 }
 
+/** A packet without a fix still shows the last fix's speed when that fix is this recent. */
+const FIX_FRESH_MS = 90_000;
+
+/**
+ * The speed to show for a position. While someone travels the tracker sends Wi-Fi scans between
+ * GPS fixes, stored without a fix; reading those as speed 0 made a moving person show as still,
+ * most often right after the app came back from the background (its first read is the REST
+ * snapshot, whose newest packet is often such a scan). A packet without a fix now keeps the speed
+ * of a fix from the last 90 s (`lastValidTs`; the server sets it on REST rows, `mergeLive` on live
+ * ones), and only then reads as 0.
+ */
+export function speedOf(live: LocationView | null | undefined, fallback?: number | null): number {
+  if (!live) return filterSpeed(fallback);
+  if (live.valid) return filterSpeed(live.speed, true);
+  const fix = live.lastValidTs ? Date.parse(live.lastValidTs) : NaN;
+  const recent = Number.isFinite(fix) && Date.parse(live.ts) - fix <= FIX_FRESH_MS;
+  return recent ? filterSpeed(live.speed, true) : 0;
+}
+
 /**
  * Derive the UI motion state the AutoNemo-style screens show.
  *
@@ -25,7 +44,7 @@ export function filterSpeed(speed: number | null | undefined, valid?: boolean | 
  */
 export function motionOf(d: DeviceView, live?: LocationView | null): MotionStatus {
   if (d.status !== "ONLINE") return "OFFLINE";
-  const speed = filterSpeed(live?.speed ?? d.lastSpeed, live?.valid);
+  const speed = speedOf(live, d.lastSpeed);
   if (speed > 0) return "MOVING";
 
   // Vehicle is stationary (speed = 0 after filtering). Only show "IDLE" if ACC is explicitly ON.
