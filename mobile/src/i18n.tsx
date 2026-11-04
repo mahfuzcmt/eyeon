@@ -59,7 +59,6 @@ const STRINGS = {
   "home.topSpeed": { en: "Top speed", bn: "সর্বোচ্চ গতি" },
   "home.trips": { en: "Trips", bn: "ট্রিপ" },
   "home.loading": { en: "Loading dashboard…", bn: "ড্যাশবোর্ড লোড হচ্ছে…" },
-  "home.fleet": { en: "Everyone", bn: "সবাই" },
   "home.geofenceSub": {
     en: "Alerts when someone enters or leaves a zone",
     bn: "কেউ জোনে ঢুকলে বা বের হলে সতর্কতা",
