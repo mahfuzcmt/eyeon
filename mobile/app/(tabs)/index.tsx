@@ -35,7 +35,7 @@ const MAX_RETRIES = 3;
  */
 export default function HomeScreen() {
   const { t } = useI18n();
-  const { org, user } = useAuth();
+  const { user } = useAuth();
   const router = useRouter();
   const [places, setPlaces] = useState<GeofenceView[]>([]);
   const [fences, setFences] = useState<GeofenceView[]>([]);
@@ -129,8 +129,9 @@ export default function HomeScreen() {
           <Ionicons name="shield-checkmark" size={26} color={colors.onAccent} />
         </View>
         <View style={{ flex: 1, minWidth: 0 }}>
+          {/* The brand, not the organization's name (owner, 2026-11-04). */}
           <Text style={styles.heroTitle} numberOfLines={1}>
-            {org?.name ?? t("home.fleet")}
+            EyeOn
           </Text>
           {user?.fullName ? (
             <Text style={styles.heroSub} numberOfLines={1}>
