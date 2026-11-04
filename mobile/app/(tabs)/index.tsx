@@ -16,6 +16,7 @@ import { extractError } from "@/api/client";
 import { Loading } from "@/ui";
 import { LanguageToggle } from "@/components/LanguageToggle";
 import { SponsorSlider } from "@/components/home/SponsorSlider";
+import { SubscriptionSummary } from "@/components/home/SubscriptionSummary";
 import { useI18n } from "@/i18n";
 import { colors, radius, space } from "@/theme";
 import type { GeofenceView, PlaceSchedule } from "@/types";
@@ -193,6 +194,7 @@ export default function HomeScreen() {
           </View>
 
           <SponsorSlider refreshKey={adsKey} />
+          <SubscriptionSummary refreshKey={adsKey} />
         </>
       ) : null}
     </ScrollView>
