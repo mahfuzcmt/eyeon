@@ -105,6 +105,7 @@ public class OrgController {
             throw new DomainException("EMAIL_TAKEN", "Email already in use");
         }
         String role = normalizeRole(body.role());
+        requireMayGrant(role);
         UUID id = userRepo.createInOrg(orgId, body.email(), body.phone(),
                 passwordEncoder.encode(body.password()), body.fullName(), role);
         User created = userRepo.findById(id).orElseThrow();
@@ -126,7 +127,16 @@ public class OrgController {
             throw new NotFoundException("user", id.toString());
         }
 
+        // A super admin account (its role, password, active flag) is managed by super admins only;
+        // otherwise an org admin could reset one's password and sign in as a super admin.
+        requireMayManage(existing);
         String role = body.role() == null ? null : normalizeRole(body.role());
+        if (role != null && !role.equals(existing.role())) {
+            if (id.equals(TenantContext.currentUserId())) {
+                throw new DomainException("SELF_ROLE_CHANGE", "You cannot change your own role");
+            }
+            requireMayGrant(role);
+        }
         userRepo.update(id, orgId, body.fullName(), body.phone(), role, body.isActive());
 
         if (body.password() != null && !body.password().isBlank()) {
@@ -153,6 +163,7 @@ public class OrgController {
             throw new DomainException("SELF_DISABLE",
                     "You cannot disable your own account");
         }
+        userRepo.findById(id).filter(u -> orgId.equals(u.orgId())).ifPresent(OrgController::requireMayManage);
         int rows = userRepo.softDelete(id, orgId);
         if (rows == 0) {
             throw new NotFoundException("user", id.toString());
@@ -323,6 +334,23 @@ public class OrgController {
         String role = TenantContext.currentRole();
         if (role == null || (!ROLE_ADMIN.equals(role) && !ROLE_SUPER.equals(role))) {
             throw new ForbiddenException("Admin role required");
+        }
+    }
+
+    /**
+     * Only a SUPER_ADMIN may make someone a SUPER_ADMIN. Until 2026-11-04 any ORG_ADMIN could, so a
+     * school or family admin could give themselves access to every organization.
+     */
+    static void requireMayGrant(String role) {
+        if (ROLE_SUPER.equals(role) && !ROLE_SUPER.equals(TenantContext.currentRole())) {
+            throw new ForbiddenException("Only a Super Admin can give the Super Admin role");
+        }
+    }
+
+    /** Only a SUPER_ADMIN may change, reset the password of, or disable a SUPER_ADMIN account. */
+    static void requireMayManage(User target) {
+        if (ROLE_SUPER.equals(target.role()) && !ROLE_SUPER.equals(TenantContext.currentRole())) {
+            throw new ForbiddenException("Only a Super Admin can change a Super Admin account");
         }
     }
 

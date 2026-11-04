@@ -127,6 +127,12 @@ function buildHtml(googleKey: string, language: "en" | "bn"): string {
 ${googleScripts}
 <style>
   html,body,#map{margin:0;height:100%;width:100%;background:${colors.bg}}
+  #mlload{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;
+          background:${colors.bg};z-index:2000;pointer-events:none;transition:opacity .35s ease}
+  #mlload.gone{opacity:0}
+  #mlload .spin{width:30px;height:30px;border-radius:50%;border:3px solid ${colors.border};
+          border-top-color:${colors.brand};animation:mlspin .8s linear infinite}
+  @keyframes mlspin{to{transform:rotate(360deg)}}
   .vwrap{position:relative;width:48px;height:48px}
   .veh{width:40px;height:40px;cursor:pointer;transform-origin:center}
   .veh svg{display:block;filter:drop-shadow(0 2px 3px rgba(10,25,40,.45))}
@@ -146,6 +152,7 @@ ${googleScripts}
   @keyframes mlblink{50%{opacity:.25}}
 </style></head><body>
 <div id="map"></div>
+<div id="mlload" aria-hidden="true"><div class="spin"></div></div>
 <script>
   const RN = window.ReactNativeWebView;
   const post = (o) => RN && RN.postMessage(JSON.stringify(o));
@@ -192,15 +199,42 @@ ${googleScripts}
       : L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
           {maxNativeZoom:19, maxZoom:20, attribution:'&copy; OpenStreetMap'});
   }
-  let baseKind = 'street';
-  let base = makeBase(baseKind);
-  base.addTo(map);
-  // Google is the default; the free map shows until it has loaded, and stays without a key.
+  // The first map shown is the one that stays (owner, 2026-11-04: opening on OpenStreetMap and
+  // then switching to Google looked unprofessional). With a Google key the page shows a plain
+  // background and a small loader until Google has loaded, then Google; only if Google cannot
+  // load within GOOGLE_WAIT_MS does it open on OpenStreetMap, and it does not switch later.
+  const GOOGLE_WAIT_MS = 8000;
+  const loader = document.getElementById('mlload');
+  function hideLoader(){ if(loader) loader.classList.add('gone'); }
+  let baseKind = GKEY ? 'google' : 'street';
+  let base = null;
+  function showFirst(){
+    base = makeBase(baseKind).addTo(map);
+    // 'load' = the first screen of tiles is in; the timer covers a layer that never reports it.
+    base.once('load', hideLoader);
+    setTimeout(hideLoader, 2500);
+    applyTraffic();
+    post({type:'traffic', available: !!(base && base.addGoogleLayer)});
+  }
   if(GKEY){
-    baseKind = 'google';
-    loadGoogle(function(){ if(baseKind === 'google') swapBase(); });
+    let settled = false;
+    const giveUp = setTimeout(function(){
+      if(settled) return;
+      settled = true;
+      if(baseKind === 'google') baseKind = 'street';
+      if(!base) showFirst();
+    }, GOOGLE_WAIT_MS);
+    loadGoogle(function(){
+      if(settled) return;
+      settled = true;
+      clearTimeout(giveUp);
+      if(!base) showFirst();   // makeBase falls back to OpenStreetMap when Google failed
+    });
+  } else {
+    showFirst();
   }
   function swapBase(){
+    if(!base) return showFirst();
     map.removeLayer(base);
     base = makeBase(baseKind).addTo(map);
     applyTraffic();
