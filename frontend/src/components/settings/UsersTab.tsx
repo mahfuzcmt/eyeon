@@ -9,6 +9,8 @@ import { extractError } from "@/lib/api";
 import type { DeviceView, UserCreate, UserDetail, UserRole, UserUpdate } from "@/types/domain";
 
 const ROLES: UserRole[] = ["ORG_ADMIN", "ORG_USER"];
+/** Only a super admin may give the Super admin role (the server refuses it from anyone else). */
+const SUPER_ROLES: UserRole[] = ["SUPER_ADMIN", "ORG_ADMIN", "ORG_USER"];
 
 export function UsersTab({ canManage }: { canManage: boolean }) {
   const { t, locale } = useLocale();
@@ -203,7 +205,11 @@ function UserDialog({
   onUpdate: (id: string, patch: UserUpdate) => Promise<void>;
 }) {
   const { t } = useLocale();
+  const { userId: selfId, role: myRole } = useSession();
   const isNew = user === null;
+  const roles = myRole === "SUPER_ADMIN" ? SUPER_ROLES : ROLES;
+  // Your own role cannot be changed (the server refuses it), so the picker is locked for yourself.
+  const isSelf = !isNew && user?.id === selfId;
 
   const [email, setEmail] = useState(user?.email ?? "");
   const [fullName, setFullName] = useState(user?.fullName ?? "");
@@ -302,8 +308,9 @@ function UserDialog({
             className="input"
             value={role}
             onChange={(e) => setRole(e.target.value as UserRole)}
+            disabled={isSelf}
           >
-            {ROLES.map((r) => (
+            {(roles.includes(role) ? roles : [role, ...roles]).map((r) => (
               <option key={r} value={r}>
                 {t(`users.role.${r}` as StringKey)}
               </option>

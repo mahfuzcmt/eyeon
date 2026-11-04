@@ -10,6 +10,8 @@ import { useI18n, type StringKey } from "@/i18n";
 import type { UserDetail, UserRole, UserUpdate } from "@/types";
 
 const ROLES: UserRole[] = ["ORG_USER", "ORG_ADMIN"];
+/** Only a super admin may give the Super admin role (the server refuses it from anyone else). */
+const SUPER_ROLES: UserRole[] = ["ORG_USER", "ORG_ADMIN", "SUPER_ADMIN"];
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 /** Add a user (no id) or edit one (id): name, phone, role, password, active; disable. */
@@ -61,6 +63,10 @@ export default function UserEditScreen() {
 
   const isSelf = original?.id === me?.id;
   const isSuper = original?.role === "SUPER_ADMIN";
+  const iAmSuper = me?.role === "SUPER_ADMIN";
+  // A super admin account's role is changed by super admins only, and nobody changes their own.
+  const canPickRole = (!isSuper || iAmSuper) && !isSelf;
+  const roles = iAmSuper ? SUPER_ROLES : ROLES;
 
   async function save() {
     setError(null);
@@ -86,7 +92,7 @@ export default function UserEditScreen() {
         return;
       }
       const patch: UserUpdate = { fullName: fullName.trim(), phone: phone.trim() };
-      if (!isSuper) patch.role = role;
+      if (canPickRole && role !== original?.role) patch.role = role;
       if (!isSelf) patch.isActive = isActive;
       if (password) patch.password = password;
       await updateOrgUser(original!.id, patch);
@@ -138,11 +144,11 @@ export default function UserEditScreen() {
         <Hint>{t("usr.phoneHint")}</Hint>
       </Panel>
 
-      {!isSuper ? (
+      {canPickRole ? (
         <Panel>
           <Hint>{t("usr.role")}</Hint>
           <View style={kitStyles.row}>
-            {ROLES.map((r) => (
+            {roles.map((r) => (
               <Chip key={r} label={t(`usr.role.${r}` as StringKey)} active={role === r} onPress={() => setRole(r)} />
             ))}
           </View>
