@@ -91,6 +91,43 @@ export function SponsorAdsTab() {
 
   const shown = ads.filter((a) => a.active && a.imageUrl).length;
 
+  // Several images at once (owner, 2026-11-05): one ad per image, switched on, in the order picked,
+  // after the existing ones. Title and link can be added afterwards with Edit.
+  const bulkRef = useRef<HTMLInputElement>(null);
+  const [bulk, setBulk] = useState<{ done: number; total: number } | null>(null);
+  const uploadMany = async (files: File[]) => {
+    if (files.length === 0) return;
+    let order = ads.reduce((m, a) => Math.max(m, a.sortOrder + 1), 0);
+    const failed: string[] = [];
+    setError(null);
+    setBulk({ done: 0, total: files.length });
+    for (let i = 0; i < files.length; i++) {
+      const f = files[i];
+      try {
+        const jpeg = await toBannerJpeg(f);
+        const body: SponsorAdInput = { title: "", linkUrl: "", sortOrder: order, active: true };
+        const saved = (await api.post<SponsorAdAdminView>("/admin/sponsor-ads", body)).data;
+        try {
+          await api.put(`/admin/sponsor-ads/${saved.id}/image`, jpeg, {
+            headers: { "Content-Type": "image/jpeg" },
+            timeout: 30_000,
+          });
+          order++;
+        } catch (e) {
+          // Do not leave an empty ad behind.
+          await api.delete(`/admin/sponsor-ads/${saved.id}`).catch(() => {});
+          throw e;
+        }
+      } catch {
+        failed.push(f.name);
+      }
+      setBulk({ done: i + 1, total: files.length });
+    }
+    setBulk(null);
+    if (failed.length > 0) setError(`Could not upload: ${failed.join(", ")}`);
+    await load();
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-start justify-between gap-3">
@@ -98,12 +135,35 @@ export function SponsorAdsTab() {
           <h2 className="text-base font-semibold text-ink-900">Sponsor ads</h2>
           <p className="text-[14px] text-ink-500">
             The slider on the app&apos;s Home, the same for every family and school. {shown} of {ads.length} shown now.
-            Use a wide image (1200 × 600); it is cropped to that shape.
+            Use wide images (1200 × 600); they are cropped to that shape. &quot;Upload images&quot; adds one ad per image,
+            as many as you pick.
           </p>
         </div>
-        <button type="button" className="btn-primary" onClick={() => setEditing("new")}>
-          New ad
-        </button>
+        <div className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            className="btn-secondary"
+            disabled={bulk !== null}
+            onClick={() => bulkRef.current?.click()}
+          >
+            {bulk ? `Uploading ${bulk.done} of ${bulk.total}…` : "Upload images"}
+          </button>
+          <button type="button" className="btn-primary" onClick={() => setEditing("new")}>
+            New ad
+          </button>
+          <input
+            ref={bulkRef}
+            type="file"
+            accept="image/jpeg,image/png"
+            multiple
+            className="hidden"
+            onChange={(e) => {
+              const files = Array.from(e.target.files ?? []);
+              e.target.value = "";
+              void uploadMany(files);
+            }}
+          />
+        </div>
       </div>
 
       {error && <p className="rounded-lg border border-alarm-red/40 bg-white px-3 py-2 text-[14px] text-alarm-red">{error}</p>}

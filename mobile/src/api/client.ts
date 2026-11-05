@@ -16,7 +16,7 @@ interface TokenState {
 }
 const tokens: TokenState = { accessToken: null, refreshToken: null };
 
-let onTokens: (pair: TokenPair) => void = () => {};
+let onTokens: (pair: TokenPair) => void | Promise<void> = () => {};
 let onAuthLost: () => void = () => {};
 
 export const tokenStore = {
@@ -38,7 +38,7 @@ export const tokenStore = {
     return tokens.accessToken;
   },
   /** AuthContext registers persistence + sign-out reactions. */
-  bind(handlers: { onTokens: (p: TokenPair) => void; onAuthLost: () => void }) {
+  bind(handlers: { onTokens: (p: TokenPair) => void | Promise<void>; onAuthLost: () => void }) {
     onTokens = handlers.onTokens;
     onAuthLost = handlers.onAuthLost;
   },
@@ -95,7 +95,14 @@ async function refreshAccessToken(): Promise<RefreshOutcome> {
         try {
           const pair = await refreshOnce(refreshToken);
           tokenStore.set(pair);
-          onTokens(pair);
+          // Saved before anything uses the new pair, so an app killed right after a refresh
+          // reopens with the token the server expects (the server also forgives the old one
+          // while the new one is unused, V34).
+          try {
+            await onTokens(pair);
+          } catch {
+            /* keep the session in memory; the next refresh saves again */
+          }
           return { ok: true, accessToken: pair.accessToken };
         } catch (err) {
           if (isDefinitiveRejection(err)) return { ok: false, rejected: true };

@@ -93,8 +93,14 @@ public class AuthService {
         RefreshTokenRow row = refreshRepo.findByHash(hash)
                 .orElseThrow(() -> new DomainException("INVALID_REFRESH", "Refresh token not recognized"));
 
+        boolean resumeChain = false;
         if (row.revokedAt() != null && !withinRotationGrace(row, Instant.now())) {
-            throw new DomainException("REFRESH_REVOKED", "Refresh token has been revoked");
+            // The phone never got (or never saved) the pair this token was exchanged for: that
+            // replacement was never used. Continue from here instead of signing the user out.
+            resumeChain = mayResume(row) && refreshRepo.isUnused(row.replacedBy());
+            if (!resumeChain) {
+                throw new DomainException("REFRESH_REVOKED", "Refresh token has been revoked");
+            }
         }
         if (row.expiresAt().isBefore(Instant.now())) {
             throw new DomainException("REFRESH_EXPIRED", "Refresh token has expired");
@@ -103,9 +109,20 @@ public class AuthService {
         User user = userRepo.findById(row.userId())
                 .orElseThrow(() -> new DomainException("USER_NOT_FOUND", "User no longer exists"));
 
-        // Rotate: revoke old (keeping it usable for ROTATION_GRACE), issue new
-        refreshRepo.markRotated(row.id());
-        return issueTokens(user.id(), user.orgId(), user.role());
+        if (resumeChain) {
+            refreshRepo.revoke(row.replacedBy()); // retire the replacement nobody ever used
+            log.info("Refresh: resumed session of user {} from an exchanged token whose replacement was never used",
+                    user.id());
+        }
+        // Rotate: revoke old (usable for ROTATION_GRACE, and while its replacement is unused), issue new
+        Issued issued = issue(user.id(), user.orgId(), user.role());
+        refreshRepo.markRotated(row.id(), issued.refreshId());
+        return issued.pair();
+    }
+
+    /** An exchanged (not password-revoked) token that knows its replacement (V34). */
+    static boolean mayResume(RefreshTokenRow row) {
+        return row.rotatedAt() != null && row.replacedBy() != null;
     }
 
     /**
@@ -202,11 +219,17 @@ public class AuthService {
     }
 
     private TokenPair issueTokens(UUID userId, UUID orgId, String role) {
+        return issue(userId, orgId, role).pair();
+    }
+
+    private record Issued(TokenPair pair, UUID refreshId) {}
+
+    private Issued issue(UUID userId, UUID orgId, String role) {
         String access = jwtService.issueAccessToken(userId, orgId, role);
         String refresh = randomRefreshToken();
         Instant expiresAt = Instant.now().plus(jwtService.refreshTtl());
-        refreshRepo.create(userId, sha256(refresh), expiresAt);
-        return new TokenPair(access, refresh);
+        UUID id = refreshRepo.create(userId, sha256(refresh), expiresAt);
+        return new Issued(new TokenPair(access, refresh), id);
     }
 
     private static String randomRefreshToken() {

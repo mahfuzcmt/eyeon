@@ -117,7 +117,7 @@ export function SponsorSlider({ refreshKey }: { refreshKey: number }) {
                 }}
                 style={{ width, height: width / ASPECT }}
                 accessibilityRole={link ? "link" : "image"}
-                accessibilityLabel={ad.title ?? t("homez.sponsorTag")}
+                accessibilityLabel={ad.title ?? t("homez.sponsor")}
               >
                 <Image
                   source={{ uri: `${API_BASE}${ad.imageUrl}` }}
@@ -140,8 +140,13 @@ export function SponsorSlider({ refreshKey }: { refreshKey: number }) {
       ) : (
         <View style={{ aspectRatio: ASPECT }} />
       )}
-      <Text style={[styles.tag, styles.tagOver]}>{t("homez.sponsorTag")}</Text>
-      {ads.length > 1 ? (
+      {ads.length > MAX_DOTS ? (
+        <View style={styles.dotsOver} pointerEvents="none">
+          <Text style={styles.counter}>
+            {index + 1} / {ads.length}
+          </Text>
+        </View>
+      ) : ads.length > 1 ? (
         <View style={styles.dotsOver}>
           {ads.map((ad, i) => (
             <Pressable
@@ -163,9 +168,6 @@ function SponsorPlaceholder() {
   const { t } = useI18n();
   return (
     <View style={styles.placeholder} accessibilityLabel={t("homez.sponsor")}>
-      <Text style={[styles.tag, styles.tagCorner]}>
-        {t("homez.sponsorTag")}
-      </Text>
       <Ionicons name="megaphone-outline" size={34} color={colors.brand} />
       <Text style={styles.placeholderText}>{t("homez.sponsor")}</Text>
       <View style={styles.dots}>
@@ -177,7 +179,20 @@ function SponsorPlaceholder() {
   );
 }
 
+/** Past this many ads the dots would not fit; a "3 / 12" counter is shown instead. */
+const MAX_DOTS = 8;
+
 const styles = StyleSheet.create({
+  counter: {
+    color: "#fff",
+    fontSize: 12,
+    fontWeight: "700",
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 10,
+    overflow: "hidden",
+    backgroundColor: "rgba(11,46,40,0.6)",
+  },
   frame: {
     borderRadius: radius.md,
     overflow: "hidden",
@@ -197,18 +212,6 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     backgroundColor: "rgba(11,46,40,0.6)",
   },
-  tag: {
-    color: colors.textFaint,
-    fontSize: 12,
-    fontWeight: "700",
-    paddingHorizontal: space.sm,
-    paddingVertical: 2,
-    borderRadius: 999,
-    backgroundColor: colors.surface,
-    overflow: "hidden",
-  },
-  tagOver: { position: "absolute", left: space.sm, top: space.sm },
-  tagCorner: { position: "absolute", left: space.sm, top: space.sm },
   dotsOver: {
     position: "absolute",
     bottom: space.sm,

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { AppState } from "react-native";
 import { lastKnownAll } from "@/api/endpoints";
-import { subscribeLocations } from "@/ws/stomp";
+import { isWsConnected, subscribeLocations } from "@/ws/stomp";
 import type { LocationView } from "@/types";
 
 /**
@@ -84,10 +84,13 @@ export function useLiveLocations(orgId: string | null) {
         if (mounted.current) setError(e instanceof Error ? e.message : "WS failed");
       }
 
-      // Auto-refresh every 10 seconds for reliable updates
+      // REST fallback: every 5 s while the socket is down, every 10 s while it is up.
+      let tick = 0;
       intervalId = setInterval(() => {
-        if (mounted.current && AppState.currentState === "active") void refresh();
-      }, AUTO_REFRESH_INTERVAL_MS);
+        tick++;
+        if (!mounted.current || AppState.currentState !== "active") return;
+        if (!isWsConnected() || tick % 2 === 0) void refresh();
+      }, AUTO_REFRESH_INTERVAL_MS / 2);
     })();
     const appSub = AppState.addEventListener("change", (s) => {
       if (s === "active" && mounted.current) void refresh();

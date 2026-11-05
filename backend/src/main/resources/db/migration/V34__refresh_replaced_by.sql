@@ -1,0 +1,18 @@
+-- ============================================================
+-- V34__refresh_replaced_by.sql
+--
+-- Client feedback 2026-11-05 (again): the app signs out and asks for the password.
+-- V31 kept an exchanged refresh token usable for 2 minutes. That covers a reply lost on the
+-- network, but not the common Android case: the app is put in the background or killed right
+-- after a refresh, before it has saved the new pair, and is opened again hours later with the
+-- old token, long past the grace - REFRESH_REVOKED, signed out.
+--
+-- replaced_by points at the token issued in exchange. AuthService accepts an exchanged token
+-- for as long as that replacement has never been used itself (still not revoked): then the
+-- phone evidently never got it. The unused replacement is retired and a new pair is issued.
+-- Once the replacement has been used, the old token is refused as before. A password change
+-- or reset revokes the replacement too, which ends this at once.
+--
+-- Rollback: ALTER TABLE refresh_tokens DROP COLUMN replaced_by;
+-- ============================================================
+alter table refresh_tokens add column replaced_by uuid;

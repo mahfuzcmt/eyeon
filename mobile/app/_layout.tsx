@@ -64,6 +64,15 @@ export default function RootLayout() {
             }}
           />
           <Stack.Screen
+            name="support"
+            options={{
+              headerShown: true,
+              headerTitle: "",
+              headerStyle: { backgroundColor: colors.header },
+              headerTintColor: colors.onHeader,
+            }}
+          />
+          <Stack.Screen
             name="stays"
             options={{
               headerShown: true,
