@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { AppState } from "react-native";
 import { deviceLastLocation, getDevice } from "@/api/endpoints";
-import { subscribeLocations } from "@/ws/stomp";
+import { isWsConnected, subscribeLocations } from "@/ws/stomp";
 import { mergeLive } from "@/hooks/useLiveLocations";
 import type { DeviceView, LocationView } from "@/types";
 
@@ -36,9 +36,12 @@ export function useDeviceLive(imei: string, orgId: string | null) {
         /* keep prior state */
       }
     };
+    let tick = 0;
     const timer = setInterval(() => {
-      if (AppState.currentState === "active") void poll();
-    }, POLL_MS);
+      tick++;
+      if (AppState.currentState !== "active") return;
+      if (!isWsConnected() || tick % 2 === 0) void poll();
+    }, POLL_MS / 2);
     const appSub = AppState.addEventListener("change", (s) => {
       if (s === "active") void poll();
     });

@@ -70,6 +70,7 @@ public class PushTokenRepository {
      * @param onlyUserId when set, only that user's installs (the owner of the geofence / place
      *                   that raised the alarm); null = everyone who can see the tracker
      */
+    // A type added after the user last saved their settings (not in known_types, V33) is on.
     public List<Target> listTokensForOrgAndType(UUID orgId, String alarmType, String deviceImei, UUID onlyUserId) {
         return jdbc.query("""
                 SELECT pt.token, COALESCE(pt.locale, o.locale) AS locale
@@ -79,7 +80,8 @@ public class PushTokenRepository {
                   LEFT JOIN user_notification_settings s ON s.user_id = pt.user_id
                  WHERE pt.org_id = :orgId
                    AND u.is_active = true
-                   AND (s.user_id IS NULL OR :type = ANY(s.push_types))
+                   AND (s.user_id IS NULL OR :type = ANY(s.push_types)
+                        OR (s.known_types IS NOT NULL AND NOT (:type = ANY(s.known_types))))
                    AND (CAST(:onlyUser AS UUID) IS NULL OR pt.user_id = :onlyUser)
                    AND (u.role IN ('SUPER_ADMIN', 'ORG_ADMIN')
                         OR u.see_all_devices = true

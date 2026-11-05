@@ -63,6 +63,10 @@ export default function MoreScreen() {
       ) : null}
 
       <View style={styles.card}>
+        <MenuRow icon="help-buoy-outline" label={t("support.title")} onPress={() => router.push("/support")} />
+      </View>
+
+      <View style={styles.card}>
         <MenuRow icon="log-out-outline" label={t("auth.signOut")} danger onPress={() => void signOut()} />
       </View>
 

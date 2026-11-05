@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useEffect, useMemo, useRef, useState } from "react";
 import * as SecureStore from "expo-secure-store";
 import { tokenStore } from "@/api/client";
-import { getMyOrg, login as loginRequest } from "@/api/endpoints";
+import { getMe, getMyOrg, login as loginRequest } from "@/api/endpoints";
 import { unregisterAlarmPush } from "@/push";
 import { disconnectWs } from "@/ws/stomp";
 import type { OrgSummary, TokenPair, UserSummary } from "@/types";
@@ -28,9 +28,23 @@ interface AuthState {
 
 const AuthContext = createContext<AuthState | null>(null);
 
+// Refresh token first: if the app dies between the two writes, a stale access token only costs
+// one 401 and a refresh, while a stale refresh token used to cost the session.
 async function persistTokens(pair: TokenPair): Promise<void> {
-  await SecureStore.setItemAsync(K_ACCESS, pair.accessToken);
   await SecureStore.setItemAsync(K_REFRESH, pair.refreshToken);
+  await SecureStore.setItemAsync(K_ACCESS, pair.accessToken);
+}
+
+/** SecureStore reads can fail transiently on Android (keystore busy right after boot); retry. */
+async function readStore(key: string): Promise<string | null> {
+  for (let i = 0; i < 3; i++) {
+    try {
+      return await SecureStore.getItemAsync(key);
+    } catch {
+      await new Promise((r) => setTimeout(r, 400 * (i + 1)));
+    }
+  }
+  return SecureStore.getItemAsync(key);
 }
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
@@ -42,9 +56,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   if (!bound.current) {
     bound.current = true;
     tokenStore.bind({
-      onTokens: (pair) => {
-        void persistTokens(pair);
-      },
+      onTokens: (pair) => persistTokens(pair),
       onAuthLost: () => {
         void doSignOut();
       },
@@ -85,15 +97,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     (async () => {
       try {
         const [access, refresh, profileJson] = await Promise.all([
-          SecureStore.getItemAsync(K_ACCESS),
-          SecureStore.getItemAsync(K_REFRESH),
-          SecureStore.getItemAsync(K_PROFILE),
+          readStore(K_ACCESS),
+          readStore(K_REFRESH),
+          readStore(K_PROFILE),
         ]);
         if (access && refresh && profileJson) {
           tokenStore.set({ accessToken: access, refreshToken: refresh });
           setProfile(JSON.parse(profileJson) as Profile);
           setStatus("authed");
           void refreshOrg();
+        } else if (access && refresh) {
+          // Tokens saved but the profile write was lost: rebuild it instead of signing out.
+          tokenStore.set({ accessToken: access, refreshToken: refresh });
+          try {
+            const [user, org] = await Promise.all([getMe(), getMyOrg()]);
+            const prof: Profile = { user, org };
+            await SecureStore.setItemAsync(K_PROFILE, JSON.stringify(prof));
+            setProfile(prof);
+            setStatus("authed");
+          } catch {
+            tokenStore.clear();
+            setStatus("anon");
+          }
         } else {
           setStatus("anon");
         }

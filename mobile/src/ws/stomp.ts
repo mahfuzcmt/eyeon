@@ -29,6 +29,10 @@ class WsClient {
    * one, so a phone on a bad connection could end up with several sockets.) Subscriptions are
    * (re)attached in onConnect, so callers never wait for the socket.
    */
+  isConnected(): boolean {
+    return this.connected;
+  }
+
   private ensureClient(): void {
     if (this.client) return;
     const client = new StompClient({
@@ -39,6 +43,14 @@ class WsClient {
       reconnectDelay: 3_000,
       heartbeatIncoming: 10_000,
       heartbeatOutgoing: 10_000,
+      // React Native's WebSocket cuts text frames at the NULL byte that ends every STOMP frame,
+      // in both directions (stompjs docs, "React Native"). Without these two flags the CONNECT
+      // frame never completed and no message was parsed, so the app never got a live update and
+      // only moved with the 10 s REST poll - about 30 s behind the web (client feedback
+      // 2026-11-05). Binary frames keep the NULL on the way out; the second flag restores it on
+      // the way in. TextEncoder (needed for binary frames) is in Hermes since RN 0.74.
+      forceBinaryWSFrames: typeof TextEncoder !== "undefined",
+      appendMissingNULLonIncoming: true,
       // stompjs needs an explicit factory in React Native.
       webSocketFactory: () => new WebSocket(wsUrl),
       debug: () => {},
@@ -124,6 +136,12 @@ class WsClient {
 }
 
 let singleton: WsClient | null = null;
+
+/** True while the STOMP socket is up; the REST fallback polls faster when it is not. */
+export function isWsConnected(): boolean {
+  return singleton?.isConnected() ?? false;
+}
+
 function get(): WsClient {
   if (!singleton) singleton = new WsClient();
   return singleton;
