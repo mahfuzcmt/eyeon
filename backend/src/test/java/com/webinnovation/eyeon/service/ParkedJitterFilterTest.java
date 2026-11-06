@@ -262,6 +262,8 @@ class ParkedJitterFilterTest {
             if (r.position().equals(new ParkedJitterFilter.Position(p[0], p[1]))) {
                 if (followedFrom < 0) followedFrom = i;
                 assertThat(r.held()).isFalse();
+                // About 13 m per 10 s is 4-5 km/h: shown as moving although the tracker reported 0.
+                assertThat(r.walkKmh()).isBetween(4, 6);
             } else {
                 assertThat(followedFrom).as("lost the walk at fix %d", i).isLessThan(0);
             }
@@ -294,7 +296,11 @@ class ParkedJitterFilterTest {
                 {23.751384, 90.390711}, {23.751519, 90.390711}, {23.751384, 90.390711}, {23.751519, 90.390711},
                 {23.751384, 90.390711}, {23.751519, 90.390711},
         };
-        for (double[] p : zigzag) assertThat(f.apply(IMEI, p[0], p[1], 0, tick(), null).held()).isTrue();
+        for (double[] p : zigzag) {
+            ParkedJitterFilter.Result r = f.apply(IMEI, p[0], p[1], 0, tick(), null);
+            assertThat(r.held()).isTrue();
+            assertThat(r.walkKmh()).isZero();
+        }
     }
 
     @Test

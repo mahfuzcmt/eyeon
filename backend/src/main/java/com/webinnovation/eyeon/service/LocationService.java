@@ -104,6 +104,8 @@ public class LocationService {
                 loc.setLongitude(shown.position().longitude());
                 // A held position is a still tracker: its few km/h are noise and must not read as "moving".
                 if (shown.held()) loc.setSpeed(0);
+                // A walker reports 0 km/h; show the speed the filter measured so they read as moving.
+                else if (shown.walkKmh() > loc.getSpeed()) loc.setSpeed(shown.walkKmh());
             }
             if (loc.isValid()) {
                 deviceRepo.updateLastPosition(
