@@ -52,8 +52,18 @@ import java.util.concurrent.ConcurrentHashMap;
  * leaving shows once 120 m from the Wi-Fi spot, about 20 s in a vehicle (one fix in four days of
  * replay lagged more than 100 m behind).
  *
- * <p>Someone walking still moves in steps of about the radius: these trackers report speed 0
- * at walking pace. State is in memory: after a restart the first fix becomes the shown position.
+ * <p>2026-11-06 (client feedback "walking, the map does not update"): these trackers report speed 0
+ * at walking pace, so a walker was treated as still and the marker moved in 30-40 m steps every
+ * 30-40 s, and leaving a Wi-Fi spot on foot showed only 120 m out (about 90 s). Now a walk is
+ * recognised from the fixes themselves ({@link #isWalk}): {@link #WALK_STEPS} steps in a row of
+ * {@link #WALK_MIN_STEP_M}+ each, every fix farther from where the run began than the one before,
+ * the run nearly straight ({@link #WALK_STRAIGHTNESS}) and at least {@link #WALK_MIN_NET_M} long.
+ * While walking the marker follows every fix. Still-tracker wobble scatters back and forth, so it
+ * almost never forms such a run. Near a fresh Wi-Fi anchor the bar is higher - one more step, and
+ * the fix must be over {@link #WALK_ANCHOR_M} from the anchor - because indoor drift there can run
+ * outwards at believable speeds. Not yet replayed against production history.
+ *
+ * <p>State is in memory: after a restart the first fix becomes the shown position.
  */
 @Component
 public class ParkedJitterFilter {
@@ -83,7 +93,26 @@ public class ParkedJitterFilter {
     /** ...moves the marker only when the fixes there keep agreeing for this long. */
     static final long JUMP_HOLD_S = 180;
 
+    /** Steps in a row that make a walk away from a Wi-Fi anchor's surroundings. */
+    static final int WALK_STEPS = 3;
+    /** Each step of a walk at least this long (one fix per 10 s at 1.3 m/s is about 13 m). */
+    static final double WALK_MIN_STEP_M = 4;
+    /** Faster than this between two slow fixes is not walking. */
+    static final double WALK_MAX_MPS = 3.5;
+    /** Fixes further apart than this break a walk. */
+    static final long WALK_MAX_GAP_S = 30;
+    /** Straight-line distance over path length. */
+    static final double WALK_STRAIGHTNESS = 0.75;
+    /** A walk covers at least this much ground. */
+    static final double WALK_MIN_NET_M = 30;
+    /** Near a fresh Wi-Fi anchor, a walk counts only this far from it. */
+    static final double WALK_ANCHOR_M = 60;
+    /** Fixes remembered for walk detection. */
+    private static final int TRAIL_SIZE = WALK_STEPS + 2;
+
     public record Position(double latitude, double longitude) {}
+
+    private record Fix(Position position, long at) {}
 
     /** The position to show, and whether it is held (the fix was wobble, so the speed shown is 0). */
     public record Result(Position position, boolean held) {}
@@ -98,6 +127,8 @@ public class ParkedJitterFilter {
         boolean lastFast;
         Position anchor;
         long anchorAt;
+        /** The latest fixes, newest last, for walk detection; not cleared by restart(). */
+        final Deque<Fix> trail = new ArrayDeque<>();
         final Deque<Position> cluster = new ArrayDeque<>();
 
         void restart(Position fix, long at) {
@@ -127,6 +158,10 @@ public class ParkedJitterFilter {
             Position previous = s.lastFix;
             s.lastFast = fast;
             s.lastFix = fix;
+            if (wifiAccuracyM == null) {
+                s.trail.addLast(new Fix(fix, at));
+                if (s.trail.size() > TRAIL_SIZE) s.trail.removeFirst();
+            }
             if (wifiAccuracyM != null && wifiAccuracyM <= ANCHOR_ACCURACY_M) {
                 s.anchor = fix;
                 s.anchorAt = at;
@@ -144,12 +179,20 @@ public class ParkedJitterFilter {
             // it drifts 50-100 m at a believable 6-13 km/h. Leaving shows once past the radius.
             if (wifiAccuracyM == null && s.anchor != null && at - s.anchorAt <= ANCHOR_S
                     && distanceM(s.anchor, fix) <= ANCHOR_RADIUS_M) {
+                if (distanceM(s.anchor, fix) > WALK_ANCHOR_M && isWalk(s.trail, WALK_STEPS + 1)) {
+                    s.restart(fix, at);
+                    return new Result(fix, false);
+                }
                 // A spike that got the marker away from here is undone.
                 if (distanceM(s.shown, s.anchor) > RADIUS_M) s.restart(s.anchor, s.anchorAt);
                 // Not counted as seen at the shown spot: someone walking out of the house must not
                 // look like a jump once they pass the anchor radius.
                 s.pending = null;
                 return new Result(s.shown, true);
+            }
+            if (wifiAccuracyM == null && isWalk(s.trail, WALK_STEPS)) {
+                s.restart(fix, at);
+                return new Result(fix, false);
             }
             boolean stepped = previous != null && distanceM(previous, fix) >= STEP_M;
             if (fast && ((wasFast && stepped) || away > AGREE_M)) {
@@ -178,6 +221,27 @@ public class ParkedJitterFilter {
             s.pendingIsJump = away > JUMP_M && away / Math.max(1, at - s.shownAt) > JUMP_MPS;
             return new Result(s.shown, true);
         }
+    }
+
+    /** True when the last {@code steps} steps of the trail (ending at the newest fix) are a walk. */
+    static boolean isWalk(Deque<Fix> trail, int steps) {
+        if (trail.size() < steps + 1) return false;
+        Fix[] all = trail.toArray(new Fix[0]);
+        Fix[] run = java.util.Arrays.copyOfRange(all, all.length - steps - 1, all.length);
+        Position start = run[0].position();
+        double path = 0;
+        double lastAway = 0;
+        for (int i = 1; i < run.length; i++) {
+            double step = distanceM(run[i - 1].position(), run[i].position());
+            long dt = run[i].at() - run[i - 1].at();
+            if (dt <= 0 || dt > WALK_MAX_GAP_S) return false;
+            if (step < WALK_MIN_STEP_M || step / dt > WALK_MAX_MPS) return false;
+            double away = distanceM(start, run[i].position());
+            if (away <= lastAway) return false;
+            lastAway = away;
+            path += step;
+        }
+        return lastAway >= WALK_MIN_NET_M && lastAway >= WALK_STRAIGHTNESS * path;
     }
 
     public void forget(String imei) {

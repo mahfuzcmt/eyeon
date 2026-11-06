@@ -244,6 +244,59 @@ class ParkedJitterFilterTest {
         assertThat(f.apply(IMEI, 23.769900, 90.358580, 7, tick(), null).position()).isEqualTo(wifi);
     }
 
+    /** About 13 m per fix (1.3 m/s, one fix per 10 s) north-east, at speed 0 as these trackers report a walk. */
+    private static double[] walkPoint(double lat0, double lng0, int i) {
+        return new double[] {lat0 + i * 0.000085, lng0 + i * 0.000090};
+    }
+
+    /** Client feedback 2026-11-06: walking, the marker moved in jumps every 30-40 s. Now it follows every fix. */
+    @Test
+    void walkingIsFollowedFixByFix() {
+        ParkedJitterFilter f = new ParkedJitterFilter();
+        for (double[] p : PARKED) f.apply(IMEI, p[0], p[1], 0, tick(), null);
+        double lat0 = PARKED[PARKED.length - 1][0], lng0 = PARKED[PARKED.length - 1][1];
+        int followedFrom = -1;
+        for (int i = 1; i <= 12; i++) {
+            double[] p = walkPoint(lat0, lng0, i);
+            ParkedJitterFilter.Result r = f.apply(IMEI, p[0], p[1], 0, tick(), null);
+            if (r.position().equals(new ParkedJitterFilter.Position(p[0], p[1]))) {
+                if (followedFrom < 0) followedFrom = i;
+                assertThat(r.held()).isFalse();
+            } else {
+                assertThat(followedFrom).as("lost the walk at fix %d", i).isLessThan(0);
+            }
+        }
+        // Recognised within the first few fixes (about 30-40 s), then every fix is shown.
+        assertThat(followedFrom).isBetween(1, 4);
+    }
+
+    @Test
+    void walkingAwayFromTheWifiSpotIsShownSoonerThanTheAnchorRadius() {
+        ParkedJitterFilter f = new ParkedJitterFilter();
+        ParkedJitterFilter.Position wifi = f.apply(IMEI, 23.769659, 90.358588, 0, tick(), 16).position();
+        int followedAt = -1;
+        for (int i = 1; i <= 12 && followedAt < 0; i++) {
+            double[] p = walkPoint(23.769659, 90.358588, i);
+            ParkedJitterFilter.Result r = f.apply(IMEI, p[0], p[1], 0, tick(), null);
+            if (!r.position().equals(wifi)) followedAt = i;
+        }
+        double[] p = walkPoint(23.769659, 90.358588, followedAt);
+        double out = ParkedJitterFilter.distanceM(23.769659, 90.358588, p[0], p[1]);
+        assertThat(out).isGreaterThan(ParkedJitterFilter.WALK_ANCHOR_M).isLessThan(ParkedJitterFilter.ANCHOR_RADIUS_M);
+    }
+
+    @Test
+    void walkThatTurnsBackIsNotAWalk() {
+        ParkedJitterFilter f = new ParkedJitterFilter();
+        f.apply(IMEI, PARKED[0][0], PARKED[0][1], 0, tick(), null);
+        // 15 m out, 15 m out, back 15 m, out again: never three steps in a row away from the start.
+        double[][] zigzag = {
+                {23.751384, 90.390711}, {23.751519, 90.390711}, {23.751384, 90.390711}, {23.751519, 90.390711},
+                {23.751384, 90.390711}, {23.751519, 90.390711},
+        };
+        for (double[] p : zigzag) assertThat(f.apply(IMEI, p[0], p[1], 0, tick(), null).held()).isTrue();
+    }
+
     @Test
     void trackersAreIndependent() {
         ParkedJitterFilter f = new ParkedJitterFilter();
