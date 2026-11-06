@@ -65,6 +65,11 @@ export default function PersonDetails({
   const stay = useCurrentStay(device.imei);
   const speed = speedOf(loc, device.lastSpeed);
   const reportedAt = loc?.ts ?? device.lastSeenAt;
+  // The tracker is still talking but has no GPS fix (in a train or bus, indoors): the position is the
+  // last fix's. Say so, or "last seen just now" makes an old position look current.
+  const fixAt = loc ? (loc.valid ? loc.ts : loc.lastValidTs ?? null) : null;
+  const noFixFor = loc && fixAt ? (Date.parse(loc.ts) - Date.parse(fixAt)) / 1000 : 0;
+  const gpsLost = !!loc && !loc.valid && noFixFor >= 30;
 
   return (
     <View style={styles.wrap}>
@@ -89,6 +94,14 @@ export default function PersonDetails({
       {hasPos ? (
         <Row icon="location-outline">
           <Text style={styles.text}>{address ?? `${lat!.toFixed(5)}, ${lng!.toFixed(5)}`}</Text>
+        </Row>
+      ) : null}
+
+      {gpsLost ? (
+        <Row icon="cloud-offline-outline">
+          <Text style={styles.warn}>
+            {t("person.noGps")} · {t("person.lastFix")} {fmtAgo(fixAt)}
+          </Text>
         </Row>
       ) : null}
 
@@ -202,6 +215,7 @@ const styles = StyleSheet.create({
   text: { color: colors.text, fontSize: 15 },
   strong: { color: colors.text, fontSize: 15, fontWeight: "700" },
   dim: { color: colors.textDim, fontSize: 14 },
+  warn: { color: colors.warn, fontSize: 14, fontWeight: "700" },
   navigate: {
     flexDirection: "row",
     alignItems: "center",

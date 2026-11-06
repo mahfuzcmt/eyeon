@@ -1015,6 +1015,8 @@ const STRINGS = {
   "person.offline": { en: "Not connected", bn: "সংযুক্ত নয়" },
   "person.never": { en: "Never connected", bn: "কখনো সংযুক্ত হয়নি" },
   "person.follow": { en: "Follow", bn: "অনুসরণ" },
+  "person.noGps": { en: "No GPS signal", bn: "জিপিএস সিগন্যাল নেই" },
+  "person.lastFix": { en: "position from", bn: "অবস্থান" },
   "play.title": { en: "Playback", bn: "প্লেব্যাক" },
   "play.empty": { en: "No route to play back for this period.", bn: "এই সময়ে প্লেব্যাক করার মতো কোনো পথ নেই।" },
 } as const;

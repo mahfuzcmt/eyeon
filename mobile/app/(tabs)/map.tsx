@@ -57,8 +57,21 @@ export default function MapScreen() {
     }
   }, [locations.size]);
 
-  // Keep the tapped person in view as they move (pan only; the zoom stays where the user put it).
-  const selLoc = selected ? locations.get(selected) : undefined;
+  // Keep a person in view as they move (pan only; the zoom stays where the user put it): the tapped
+  // one, or - when nobody is tapped - the one person who is moving, as the web map does. Without it a
+  // child in a bus or train left the screen within seconds and the map looked frozen.
+  const autoFollow = useMemo(() => {
+    if (selected) return selected;
+    let only: string | null = null;
+    for (const l of locations.values()) {
+      const d = byImei.get(l.imei);
+      if (!d || motionOf(d, l) !== "MOVING") continue;
+      if (only) return null;
+      only = l.imei;
+    }
+    return only;
+  }, [selected, locations, byImei]);
+  const selLoc = autoFollow ? locations.get(autoFollow) : undefined;
   const selLat = selLoc?.latitude;
   const selLng = selLoc?.longitude;
   const follow = useMemo(
