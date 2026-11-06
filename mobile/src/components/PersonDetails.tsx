@@ -3,7 +3,7 @@ import { Linking, Pressable, StyleSheet, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useCurrentStay } from "@/hooks/useCurrentStay";
 import { reverseAddress } from "@/geocode";
-import { batteryColor, fmtAgo, fmtDateTime, fmtSince, fmtTime, motionColor, motionOf, speedOf } from "@/format";
+import { batteryColor, fmtAgo, fmtDateTime, fmtDistance, fmtSince, fmtTime, fmtVoltage, motionColor, motionOf, speedOf } from "@/format";
 import { Pill } from "@/ui";
 import { useI18n, type StringKey } from "@/i18n";
 import { colors, radius, space } from "@/theme";
@@ -48,10 +48,13 @@ export default function PersonDetails({
   device,
   loc,
   overspeed = false,
+  full = false,
 }: {
   device: DeviceView;
   loc: LocationView | null;
   overspeed?: boolean;
+  /** Also show the tracker's readings (the web popup's grid): used on the person's Track tab. */
+  full?: boolean;
 }) {
   const { t, locale } = useI18n();
   const motion = motionOf(device, loc);
@@ -96,6 +99,8 @@ export default function PersonDetails({
         </Text>
       </Row>
 
+      {full ? <FullGrid device={device} loc={loc} speed={speed} lat={hasPos ? lat! : null} lng={hasPos ? lng! : null} /> : null}
+
       {hasPos ? (
         <Pressable
           onPress={() => void Linking.openURL(`https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`)}
@@ -105,6 +110,76 @@ export default function PersonDetails({
           <Ionicons name="navigate-outline" size={18} color={colors.brand} />
           <Text style={styles.navigateText}>{t("person.navigate")}</Text>
         </Pressable>
+      ) : null}
+    </View>
+  );
+}
+
+const COMPASS_EN = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"];
+const COMPASS_BN = ["উত্তর", "উত্তর-পূর্ব", "পূর্ব", "দক্ষিণ-পূর্ব", "দক্ষিণ", "দক্ষিণ-পশ্চিম", "পশ্চিম", "উত্তর-পশ্চিম"];
+
+/** Everything the web popup lists about the tracker's last report, as a two-column grid. */
+function FullGrid({
+  device,
+  loc,
+  speed,
+  lat,
+  lng,
+}: {
+  device: DeviceView;
+  loc: LocationView | null;
+  speed: number;
+  lat: number | null;
+  lng: number | null;
+}) {
+  const { t, locale } = useI18n();
+  const approx = loc?.accuracyM != null ? ` (≈${loc.accuracyM >= 1000 ? `${(loc.accuracyM / 1000).toFixed(1)} km` : `${loc.accuracyM} m`})` : "";
+  const fix = !loc
+    ? "—"
+    : loc.source === "WIFI"
+      ? `${t("person.fixWifi")}${approx}`
+      : loc.source === "LBS" || !loc.valid
+        ? `${t("person.fixCell")}${approx}`
+        : t("person.fixGps");
+  const course = loc?.course ?? device.lastCourse;
+  const heading =
+    speed > 0 && course != null
+      ? `${(locale === "bn" ? COMPASS_BN : COMPASS_EN)[Math.round((((course % 360) + 360) % 360) / 45) % 8]} (${course}°)`
+      : "—";
+  const mileage = loc?.mileageM ?? loc?.mileageMeters;
+  const voltage = loc?.voltageMv ?? device.lastVoltageMv;
+  const gsm = loc?.gsmSignal ?? device.lastGsmSignal;
+  const status =
+    device.status === "ONLINE" ? t("person.online") : device.status === "OFFLINE" ? t("person.offline") : t("person.never");
+
+  const cells: [string, string][] = [
+    [t("person.speed"), `${speed} ${t("veh.kmh")}`],
+    [t("person.heading"), heading],
+    [t("person.gpsTime"), fmtDateTime(loc?.lastValidTs ?? (loc?.valid ? loc.ts : null) ?? loc?.ts)],
+    [t("person.fix"), fix],
+    [t("veh.battery"), device.batteryPercent != null ? `${Math.round(device.batteryPercent)}%` : "—"],
+    [t("person.power"), fmtVoltage(voltage)],
+    [t("person.satellites"), loc?.satellites != null ? String(loc.satellites) : "—"],
+    [t("person.signal"), gsm != null ? String(gsm) : "—"],
+    [t("person.mileage"), mileage ? fmtDistance(mileage) : "—"],
+    [t("person.status"), status],
+    [t("person.sim"), device.simMsisdn || "—"],
+    ["IMEI", device.imei],
+  ];
+
+  return (
+    <View style={styles.grid}>
+      {cells.map(([label, value]) => (
+        <View key={label} style={styles.cell}>
+          <Text style={styles.cellLabel}>{label}</Text>
+          <Text style={styles.cellValue} selectable>{value}</Text>
+        </View>
+      ))}
+      {lat != null && lng != null ? (
+        <View style={[styles.cell, { width: "100%" }]}>
+          <Text style={styles.cellLabel}>{t("person.coords")}</Text>
+          <Text style={styles.cellValue} selectable>{`${lat.toFixed(6)}, ${lng.toFixed(6)}`}</Text>
+        </View>
       ) : null}
     </View>
   );
@@ -138,5 +213,16 @@ const styles = StyleSheet.create({
     paddingHorizontal: space.md,
     minHeight: 44,
   },
+  grid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+    paddingTop: space.sm,
+    rowGap: space.sm,
+  },
+  cell: { width: "50%", paddingRight: space.sm },
+  cellLabel: { color: colors.textFaint, fontSize: 13 },
+  cellValue: { color: colors.text, fontSize: 15, fontWeight: "600", marginTop: 1 },
   navigateText: { color: colors.brand, fontSize: 15, fontWeight: "700" },
 });

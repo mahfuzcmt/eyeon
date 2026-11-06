@@ -182,7 +182,14 @@ export interface LocationView {
   satellites?: number | null;
   accOn?: boolean | null;
   voltageMv?: number | null;
+  /** Never sent: the server field is `mileageM`. Kept for old callers. */
   mileageMeters?: number | null;
+  /** Cumulative distance the tracker reports, in metres (backend `LocationView.mileageM`). */
+  mileageM?: number | null;
+  /** How the coordinates were obtained: null = GPS, "WIFI" or "LBS" (mobile tower). */
+  source?: "WIFI" | "LBS" | null;
+  /** Radius of a Wi-Fi / tower estimate in metres; null for GPS. */
+  accuracyM?: number | null;
   altitude?: number | null;
   gsmSignal?: number | null;
   engineHoursSeconds?: number | null;

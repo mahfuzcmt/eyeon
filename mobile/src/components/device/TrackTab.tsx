@@ -59,6 +59,12 @@ export default function TrackTab({ imei, orgId }: { imei: string; orgId: string 
     ];
   }, [loc, device, imei, speedLimits]);
 
+  // Keep the person in view as they move (pan only, the user's zoom is kept).
+  const follow = useMemo(
+    () => (loc && !(loc.latitude === 0 && loc.longitude === 0) ? { lat: loc.latitude, lng: loc.longitude } : null),
+    [loc?.latitude, loc?.longitude], // eslint-disable-line react-hooks/exhaustive-deps
+  );
+
   if (loading && !device) return <Loading label={t("track.loadingDevice")} />;
 
   const speed = speedOf(loc, device?.lastSpeed);
@@ -81,7 +87,7 @@ export default function TrackTab({ imei, orgId }: { imei: string; orgId: string 
       )}
 
       <View style={styles.mapBox}>
-        <WebMap vehicles={vehicles} photos={photos} center={center} routePieces={routePieces} />
+        <WebMap vehicles={vehicles} photos={photos} center={center} follow={follow} routePieces={routePieces} />
         <View style={[styles.speedo, overspeeding && { borderColor: colors.danger }]}>
           <Text style={[styles.speedoVal, overspeeding && { color: colors.danger }]}>{speed}</Text>
           <Text style={styles.speedoUnit}>{t("veh.kmh")}</Text>
@@ -90,7 +96,7 @@ export default function TrackTab({ imei, orgId }: { imei: string; orgId: string 
 
       {device ? (
         <View style={styles.details}>
-          <PersonDetails device={device} loc={loc} overspeed={overspeeding} />
+          <PersonDetails device={device} loc={loc} overspeed={overspeeding} full />
         </View>
       ) : null}
       {loc && (

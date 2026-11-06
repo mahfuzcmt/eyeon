@@ -18,17 +18,20 @@ type Tab = "track" | "controls" | "history" | "stays" | "stats";
 const TABS: { key: Tab; label: StringKey }[] = [
   { key: "track", label: "det.track" },
   { key: "controls", label: "det.controls" },
-  { key: "history", label: "det.history" },
+  // Labelled "Playback" so it can be found: it is the day's route with playback plus the timeline.
+  { key: "history", label: "person.playback" },
   { key: "stays", label: "stays.title" },
   { key: "stats", label: "det.stats" },
 ];
 
 export default function DeviceScreen() {
-  const { imei } = useLocalSearchParams<{ imei: string }>();
+  const { imei, tab: initialTab } = useLocalSearchParams<{ imei: string; tab?: string }>();
   const { org } = useAuth();
   const { t } = useI18n();
   const router = useRouter();
-  const [tab, setTab] = useState<Tab>("track");
+  const [tab, setTab] = useState<Tab>(() =>
+    TABS.some((x) => x.key === initialTab) ? (initialTab as Tab) : "track",
+  );
   const orgId = org?.id ?? null;
   const personName = usePersonName(imei);
 

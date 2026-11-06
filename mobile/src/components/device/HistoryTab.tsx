@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { FlatList, Pressable, StyleSheet, Text, View } from "react-native";
+import { FlatList, Pressable, StyleSheet, Text, View, type GestureResponderEvent } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import { alarmsForDevice, deviceActivity, locationHistory } from "@/api/endpoints";
 import { extractError } from "@/api/client";
 import WebMap, { MapPoint } from "@/components/WebMap";
@@ -11,7 +12,7 @@ import { useI18n, type StringKey } from "@/i18n";
 import { colors, radius, space } from "@/theme";
 import type { ActivitySummary, AlarmView, LocationView } from "@/types";
 
-const SPEEDS = [1, 2, 4] as const;
+const SPEEDS = [1, 2, 4, 8] as const;
 /** The events that tell the story of a day. */
 const TIMELINE_TYPES = new Set(["PLACE_ARRIVED", "PLACE_LEFT", "GEOFENCE_EXIT", "GEOFENCE_ENTER", "SOS"]);
 
@@ -112,6 +113,19 @@ export default function HistoryTab({ imei }: { imei: string }) {
   }, [playing, speed, points.length, stride]);
 
   const route = useMemo<[number, number][]>(() => points.map((p) => [p.longitude, p.latitude]), [points]);
+  const cur = points[idx];
+  // While playing, keep the marker in view (pan only, the user's zoom is kept).
+  const follow = useMemo(
+    () => (playing && cur ? { lat: cur.latitude, lng: cur.longitude } : null),
+    [playing, cur],
+  );
+  const [barW, setBarW] = useState(1);
+  const seek = (e: GestureResponderEvent) => {
+    if (points.length < 2) return;
+    const f = Math.min(1, Math.max(0, e.nativeEvent.locationX / barW));
+    setIdx(Math.round(f * (points.length - 1)));
+  };
+
   const moving = useMemo<MapPoint | null>(() => {
     const p = points[idx];
     return p ? { lat: p.latitude, lng: p.longitude, course: p.course } : null;
@@ -149,23 +163,64 @@ export default function HistoryTab({ imei }: { imei: string }) {
             <Text style={styles.rangeBtnHint}>{t("hist.change")} ▾</Text>
           </Pressable>
           <View style={styles.mapBox}>
-            <WebMap route={route} moving={moving} fitRoute={!playing} />
-            {points.length > 0 ? (
-              <View style={styles.hud} pointerEvents="box-none">
-                <View style={styles.kmphBox}>
-                  <Text style={styles.kmph}>{fmtTime(points[idx]?.ts)}</Text>
-                </View>
-                <View style={styles.playbar}>
-                  <CtlBtn label="⏮" onPress={() => setIdx(0)} />
-                  <CtlBtn label={playing ? "⏸" : "▶"} onPress={() => setPlaying((p) => !p)} big />
-                  <CtlBtn
-                    label={`${speed}×`}
-                    onPress={() => setSpeed(SPEEDS[(SPEEDS.indexOf(speed) + 1) % SPEEDS.length])}
-                  />
-                </View>
-              </View>
-            ) : null}
+            <WebMap route={route} moving={moving} fitRoute follow={follow} />
           </View>
+          {points.length > 0 ? (
+            <View style={styles.player}>
+              <View style={styles.playerTop}>
+                <Text style={styles.playTime}>{fmtTime(cur?.ts)}</Text>
+                <Text style={styles.playSpeed}>{cur ? `${cur.speed} ${t("veh.kmh")}` : ""}</Text>
+              </View>
+              <View
+                style={styles.seekHit}
+                onLayout={(e) => setBarW(Math.max(1, e.nativeEvent.layout.width))}
+                onStartShouldSetResponder={() => true}
+                onMoveShouldSetResponder={() => true}
+                onResponderGrant={(e) => {
+                  setPlaying(false);
+                  seek(e);
+                }}
+                onResponderMove={seek}
+                onResponderTerminationRequest={() => false}
+                accessibilityRole="adjustable"
+                accessibilityLabel={t("play.title")}
+              >
+                <View style={styles.seekTrack}>
+                  <View style={[styles.seekFill, { width: `${points.length > 1 ? (idx / (points.length - 1)) * 100 : 0}%` }]} />
+                </View>
+                <View
+                  style={[styles.seekKnob, { left: `${points.length > 1 ? (idx / (points.length - 1)) * 100 : 0}%` }]}
+                  pointerEvents="none"
+                />
+              </View>
+              <View style={styles.playerTop}>
+                <Text style={styles.edgeTime}>{fmtTime(points[0]?.ts)}</Text>
+                <Text style={styles.edgeTime}>{fmtTime(points[points.length - 1]?.ts)}</Text>
+              </View>
+              <View style={styles.playbar}>
+                <CtlBtn icon="play-skip-back" label="Start" onPress={() => { setPlaying(false); setIdx(0); }} />
+                <CtlBtn
+                  icon={playing ? "pause" : "play"}
+                  label={playing ? "Pause" : "Play"}
+                  onPress={() => {
+                    if (!playing && idx >= points.length - 1) setIdx(0);
+                    setPlaying((p) => !p);
+                  }}
+                  big
+                />
+                <Pressable
+                  onPress={() => setSpeed(SPEEDS[(SPEEDS.indexOf(speed) + 1) % SPEEDS.length])}
+                  style={({ pressed }) => [styles.speedBtn, pressed && { opacity: 0.7 }]}
+                  accessibilityRole="button"
+                  accessibilityLabel={`${speed}x`}
+                >
+                  <Text style={styles.speedBtnText}>{speed}×</Text>
+                </Pressable>
+              </View>
+            </View>
+          ) : !loading ? (
+            <Text style={styles.hint}>{t("play.empty")}</Text>
+          ) : null}
 
           {activity ? (
             <View style={styles.summary}>
@@ -230,10 +285,25 @@ function Stat({ label, value }: { label: string; value: string }) {
   );
 }
 
-function CtlBtn({ label, onPress, big }: { label: string; onPress: () => void; big?: boolean }) {
+function CtlBtn({
+  icon,
+  label,
+  onPress,
+  big,
+}: {
+  icon: React.ComponentProps<typeof Ionicons>["name"];
+  label: string;
+  onPress: () => void;
+  big?: boolean;
+}) {
   return (
-    <Pressable onPress={onPress} style={({ pressed }) => [styles.ctl, big && styles.ctlBig, pressed && { opacity: 0.7 }]}>
-      <Text style={[styles.ctlText, big && { fontSize: 20, color: colors.onBrand }]}>{label}</Text>
+    <Pressable
+      onPress={onPress}
+      style={({ pressed }) => [styles.ctl, big && styles.ctlBig, pressed && { opacity: 0.7 }]}
+      accessibilityRole="button"
+      accessibilityLabel={label}
+    >
+      <Ionicons name={icon} size={big ? 28 : 22} color={big ? colors.onBrand : colors.text} />
     </Pressable>
   );
 }
@@ -257,7 +327,35 @@ const styles = StyleSheet.create({
   },
   rangeBtnText: { color: colors.text, fontSize: 15, fontWeight: "700" },
   rangeBtnHint: { color: colors.brand, fontSize: 13, fontWeight: "600" },
-  mapBox: { height: 320, backgroundColor: colors.bg },
+  mapBox: { height: 340, backgroundColor: colors.bg },
+  player: {
+    marginHorizontal: space.md,
+    backgroundColor: colors.surface,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: space.md,
+    gap: space.xs,
+  },
+  playerTop: { flexDirection: "row", justifyContent: "space-between", alignItems: "baseline" },
+  playTime: { color: colors.text, fontSize: 20, fontWeight: "800" },
+  playSpeed: { color: colors.textDim, fontSize: 15, fontWeight: "700" },
+  edgeTime: { color: colors.textFaint, fontSize: 12 },
+  seekHit: { height: 32, justifyContent: "center" },
+  seekTrack: { height: 6, borderRadius: 3, backgroundColor: colors.border, overflow: "hidden" },
+  seekFill: { height: 6, backgroundColor: colors.brand },
+  seekKnob: {
+    position: "absolute",
+    width: 20,
+    height: 20,
+    marginLeft: -10,
+    borderRadius: 10,
+    backgroundColor: colors.brand,
+    borderWidth: 3,
+    borderColor: colors.surface,
+  },
+  speedBtn: { minWidth: 48, minHeight: 44, alignItems: "center", justifyContent: "center", borderRadius: 22, borderWidth: 1, borderColor: colors.border },
+  speedBtnText: { color: colors.text, fontSize: 16, fontWeight: "800" },
   hud: { position: "absolute", left: 0, right: 0, bottom: 0, padding: space.md, gap: space.sm, alignItems: "center" },
   kmphBox: {
     alignSelf: "flex-start",
@@ -276,15 +374,11 @@ const styles = StyleSheet.create({
   playbar: {
     flexDirection: "row",
     alignItems: "center",
-    gap: space.md,
-    backgroundColor: colors.surface,
-    borderRadius: 999,
-    borderWidth: 1,
-    borderColor: colors.border,
-    paddingHorizontal: space.lg,
-    paddingVertical: space.sm,
+    justifyContent: "center",
+    gap: space.xl,
+    paddingTop: space.xs,
   },
-  ctl: { minWidth: 40, alignItems: "center" },
+  ctl: { minWidth: 48, minHeight: 44, alignItems: "center", justifyContent: "center" },
   ctlBig: { width: 52, height: 52, borderRadius: 26, backgroundColor: colors.brand, alignItems: "center", justifyContent: "center" },
   ctlText: { color: colors.text, fontSize: 16, fontWeight: "700" },
   hint: { color: colors.textFaint, fontSize: 14, paddingHorizontal: space.md },
