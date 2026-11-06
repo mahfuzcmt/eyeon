@@ -3,13 +3,17 @@ import type { DeviceView, LocationView } from "@/types/domain";
 
 const TIMEZONE = "Asia/Dhaka";
 
-/** Speeds at or below this threshold (kph) are considered GPS noise and displayed as 0. */
-const SPEED_NOISE_THRESHOLD = 5;
+/**
+ * Speeds at or below this threshold (kph) are considered GPS noise and displayed as 0.
+ * 2 since 2026-11-06 (was 5): the server shows 0 for a still tracker's held position and sends the
+ * measured speed of a recognised walk (4-5 km/h; the trackers report 0 while walking).
+ */
+const SPEED_NOISE_THRESHOLD = 2;
 
 /**
  * Filter out unreliable speed readings:
  * 1. When GPS fix is invalid (valid=false), speed is meaningless - show 0
- * 2. Speeds at or below 5 kph are typically GPS drift when stationary - show 0
+ * 2. Speeds at or below 2 kph are typically GPS drift when stationary - show 0
  */
 export function filterSpeed(speed: number | null | undefined, valid?: boolean | null): number {
   if (speed == null) return 0;

@@ -122,8 +122,16 @@ public class ParkedJitterFilter {
 
     private record Fix(Position position, long at) {}
 
-    /** The position to show, and whether it is held (the fix was wobble, so the speed shown is 0). */
-    public record Result(Position position, boolean held) {}
+    /**
+     * The position to show, whether it is held (the fix was wobble, so the speed shown is 0), and the
+     * speed of a recognised walk in km/h (0 when this fix is not part of one). The trackers report 0
+     * at walking pace, so without it a walker read as still.
+     */
+    public record Result(Position position, boolean held, int walkKmh) {
+        public Result(Position position, boolean held) {
+            this(position, held, 0);
+        }
+    }
 
     private static final class State {
         Position shown;
@@ -189,7 +197,7 @@ public class ParkedJitterFilter {
                     && distanceM(s.anchor, fix) <= ANCHOR_RADIUS_M) {
                 if (distanceM(s.anchor, fix) > WALK_ANCHOR_M && isWalk(s.trail, WALK_STEPS + 2)) {
                     s.restart(fix, at);
-                    return new Result(fix, false);
+                    return new Result(fix, false, walkKmh(s.trail, WALK_STEPS + 2));
                 }
                 // A spike that got the marker away from here is undone.
                 if (distanceM(s.shown, s.anchor) > RADIUS_M) s.restart(s.anchor, s.anchorAt);
@@ -200,7 +208,7 @@ public class ParkedJitterFilter {
             }
             if (wifiAccuracyM == null && isWalk(s.trail, WALK_STEPS)) {
                 s.restart(fix, at);
-                return new Result(fix, false);
+                return new Result(fix, false, walkKmh(s.trail, WALK_STEPS));
             }
             boolean stepped = previous != null && distanceM(previous, fix) >= STEP_M;
             if (fast && ((wasFast && stepped) || away > AGREE_M)) {
@@ -258,6 +266,16 @@ public class ParkedJitterFilter {
             if (cos < WALK_MIN_COS) return false;
         }
         return true;
+    }
+
+    /** Average speed over the last {@code steps} steps of the trail, km/h, at least 1. */
+    static int walkKmh(Deque<Fix> trail, int steps) {
+        Fix[] all = trail.toArray(new Fix[0]);
+        Fix first = all[all.length - steps - 1], last = all[all.length - 1];
+        double path = 0;
+        for (int i = all.length - steps; i < all.length; i++) path += distanceM(all[i - 1].position(), all[i].position());
+        long secs = Math.max(1, last.at() - first.at());
+        return Math.max(1, (int) Math.round(path / secs * 3.6));
     }
 
     /** {east, north} metres from a to b (flat approximation, fine over a few hundred metres). */
