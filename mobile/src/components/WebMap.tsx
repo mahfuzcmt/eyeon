@@ -66,6 +66,8 @@ interface Props {
   moving?: MapPoint | null;
   /** Center command; bump `nonce` to re-issue the same center. */
   center?: { lat: number; lng: number; zoom?: number; nonce?: number } | null;
+  /** Keep this point in view by panning (never zooming) once it nears the edge; send a new object per update. */
+  follow?: { lat: number; lng: number } | null;
   /** Zoom step command (+1 / -1); bump `nonce` to re-issue. */
   zoomStep?: { dir: 1 | -1; nonce: number } | null;
   /**
@@ -534,6 +536,14 @@ ${googleScripts}
     // Liveness check after the app comes back to the foreground (see WebMap below).
     ping(){ map.invalidateSize(); post({type:'pong'}); },
     center(lat,lng,zoom){ map.flyTo([lat,lng], zoom||17, {duration:0.8}); },
+    // Keep a followed person in view without touching the zoom: pan only once they leave the
+    // middle 60 % of the map (the web's Follow rule), so the map does not twitch on every report.
+    follow(lat,lng){
+      const size = map.getSize();
+      const p = map.latLngToContainerPoint([lat,lng]);
+      const mx = size.x * 0.2, my = size.y * 0.2;
+      if(p.x < mx || p.x > size.x - mx || p.y < my || p.y > size.y - my) map.panTo([lat,lng], {animate:true, duration:0.6});
+    },
     zoomBy(d){ map.setZoom(map.getZoom()+d); },
     setBase(kind){
       if(kind === baseKind) return;
@@ -598,6 +608,7 @@ export default function WebMap({
   route,
   moving,
   center,
+  follow,
   zoomStep,
   baseLayer,
   circle,
@@ -699,6 +710,10 @@ export default function WebMap({
   useEffect(() => {
     if (center) run("center", `window.MLMap.center(${center.lat},${center.lng},${center.zoom ?? 17})`);
   }, [center, run]);
+
+  useEffect(() => {
+    if (follow) run(null, `window.MLMap.follow(${follow.lat},${follow.lng})`);
+  }, [follow, run]);
 
   useEffect(() => {
     if (zoomStep) run(null, `window.MLMap.zoomBy(${zoomStep.dir})`);

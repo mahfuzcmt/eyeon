@@ -918,7 +918,7 @@ export function FleetMap({ devices, locations, selectedImei, onSelect, onRefresh
     const power = voltage != null ? `${(voltage / 1000).toFixed(1)} V` : "—";
     // A personal tracker reports its own percentage; the voltage formula is for 12 V vehicle batteries.
     const battery = device?.batteryPercent != null ? `${Math.round(device.batteryPercent)}%` : formatBatteryPercent(voltage);
-    const mileage = location?.mileageMeters != null ? `${Math.round(location.mileageMeters / 1000).toLocaleString("en-US")} km` : "—";
+    const mileage = location?.mileageM != null ? `${Math.round(location.mileageM / 1000).toLocaleString("en-US")} km` : "—";
     const sats = location?.satellites != null ? String(location.satellites) : "—";
     const lat = location?.latitude;
     const lng = location?.longitude;

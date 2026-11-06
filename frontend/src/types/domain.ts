@@ -242,7 +242,8 @@ export interface LocationView {
   satellites?: number | null;
   accOn?: boolean | null;
   voltageMv?: number | null;
-  mileageMeters?: number | null;
+  /** Cumulative distance the tracker reports, in metres (backend `LocationView.mileageM`). */
+  mileageM?: number | null;
   altitude?: number | null;
   gsmSignal?: number | null;
   engineHoursSeconds?: number | null;

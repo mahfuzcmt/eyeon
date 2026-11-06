@@ -57,6 +57,15 @@ export default function MapScreen() {
     }
   }, [locations.size]);
 
+  // Keep the tapped person in view as they move (pan only; the zoom stays where the user put it).
+  const selLoc = selected ? locations.get(selected) : undefined;
+  const selLat = selLoc?.latitude;
+  const selLng = selLoc?.longitude;
+  const follow = useMemo(
+    () => (selLat != null && selLng != null && !(selLat === 0 && selLng === 0) ? { lat: selLat, lng: selLng } : null),
+    [selLat, selLng],
+  );
+
   const vehicles = useMemo<MapVehicle[]>(() => {
     const out: MapVehicle[] = [];
     for (const loc of locations.values()) {
@@ -102,6 +111,7 @@ export default function MapScreen() {
         vehicles={vehicles}
         photos={photos}
         center={center}
+        follow={follow}
         zoomStep={zoomStep}
         baseLayer={baseLayer}
         showTraffic={showTraffic}
@@ -186,6 +196,14 @@ export default function MapScreen() {
             </View>
             <PersonDetails device={d} loc={l} overspeed={overspeed} />
             <View style={styles.cardActions}>
+              <Pressable
+                onPress={() => router.push({ pathname: "/device/[imei]", params: { imei: selected, tab: "history" } })}
+                style={({ pressed }) => [styles.cardButtonAlt, pressed && { opacity: 0.8 }]}
+                accessibilityRole="button"
+              >
+                <Ionicons name="play-circle-outline" size={22} color={colors.brand} />
+                <Text style={styles.cardButtonAltText} numberOfLines={1}>{t("person.playback")}</Text>
+              </Pressable>
               {l && (l.latitude !== 0 || l.longitude !== 0) ? (
                 <Pressable
                   onPress={() => {
@@ -198,8 +216,10 @@ export default function MapScreen() {
                   }}
                   style={({ pressed }) => [styles.cardButtonAlt, pressed && { opacity: 0.8 }]}
                   accessibilityRole="button"
+                  accessibilityLabel={t("map.addHere")}
                 >
-                  <Text style={styles.cardButtonAltText} numberOfLines={1}>+ {t("map.addHere")}</Text>
+                  <Ionicons name="add-circle-outline" size={22} color={colors.brand} />
+                  <Text style={styles.cardButtonAltText} numberOfLines={1}>{t("act.geofence")}</Text>
                 </Pressable>
               ) : null}
               <Pressable
@@ -207,7 +227,8 @@ export default function MapScreen() {
                 style={({ pressed }) => [styles.cardButton, pressed && { opacity: 0.8 }]}
                 accessibilityRole="button"
               >
-                <Text style={styles.cardButtonText} numberOfLines={1}>{t("home.openVehicle")}</Text>
+                <Ionicons name="document-text-outline" size={22} color={colors.onBrand} />
+                <Text style={styles.cardButtonText} numberOfLines={1}>{t("person.details")}</Text>
               </Pressable>
             </View>
           </View>
@@ -215,29 +236,49 @@ export default function MapScreen() {
       })()}
 
       <SafeAreaView edges={["bottom"]} style={styles.controls} pointerEvents="box-none">
-        <Pressable onPress={refresh} style={({ pressed }) => [styles.pill, pressed && { opacity: 0.7 }]}>
-          <Ionicons name="refresh" size={16} color={colors.text} />
-          <Text style={styles.pillLabel}>{t("map.refresh")}</Text>
-        </Pressable>
-        <Pressable onPress={fitAll} style={({ pressed }) => [styles.pill, pressed && { opacity: 0.7 }]}>
-          <Ionicons name="scan-outline" size={16} color={colors.text} />
-          <Text style={styles.pillLabel}>{t("map.fitAll")}</Text>
-        </Pressable>
-        <Pressable onPress={locateMe} style={({ pressed }) => [styles.pill, pressed && { opacity: 0.7 }]}>
-          <Ionicons name="locate-outline" size={16} color={colors.text} />
-          <Text style={styles.pillLabel}>{t("map.locateMe")}</Text>
-        </Pressable>
-        <View style={styles.zoomGroup}>
-          <Pressable onPress={() => zoomBy(1)} style={({ pressed }) => [styles.zoomBtn, pressed && { opacity: 0.7 }]}>
-            <Ionicons name="add" size={20} color={colors.text} />
-          </Pressable>
-          <View style={styles.zoomDivider} />
-          <Pressable onPress={() => zoomBy(-1)} style={({ pressed }) => [styles.zoomBtn, pressed && { opacity: 0.7 }]}>
-            <Ionicons name="remove" size={20} color={colors.text} />
-          </Pressable>
+        <View style={styles.ctlGroup}>
+          <CtlButton icon="refresh" label={t("map.refresh")} onPress={refresh} />
+          <View style={styles.ctlDivider} />
+          <CtlButton icon="scan-outline" label={t("map.fitAll")} onPress={fitAll} />
+          <View style={styles.ctlDivider} />
+          <CtlButton icon="locate-outline" label={t("map.locateMe")} onPress={locateMe} />
+        </View>
+        <View style={styles.ctlGroup}>
+          <CtlButton icon="add" label="" accessibilityLabel="Zoom in" onPress={() => zoomBy(1)} />
+          <View style={styles.ctlDivider} />
+          <CtlButton icon="remove" label="" accessibilityLabel="Zoom out" onPress={() => zoomBy(-1)} />
         </View>
       </SafeAreaView>
     </View>
+  );
+}
+
+/** A map control: icon over a short label (or icon only for zoom). */
+function CtlButton({
+  icon,
+  label,
+  onPress,
+  accessibilityLabel,
+}: {
+  icon: React.ComponentProps<typeof Ionicons>["name"];
+  label: string;
+  onPress: () => void;
+  accessibilityLabel?: string;
+}) {
+  return (
+    <Pressable
+      onPress={onPress}
+      style={({ pressed }) => [label ? styles.ctlBtn : styles.zoomBtn, pressed && { opacity: 0.6 }]}
+      accessibilityRole="button"
+      accessibilityLabel={accessibilityLabel ?? label}
+    >
+      <Ionicons name={icon} size={label ? 20 : 22} color={colors.text} />
+      {label ? (
+        <Text style={styles.ctlLabel} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.85}>
+          {label}
+        </Text>
+      ) : null}
+    </Pressable>
   );
 }
 
@@ -307,31 +348,29 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
+    gap: space.sm,
   },
-  zoomGroup: {
+  ctlGroup: {
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: colors.surface,
-    borderRadius: 999,
-    paddingHorizontal: 4,
+    borderRadius: 16,
+    paddingHorizontal: 2,
     shadowColor: "#0B2E28",
     shadowOpacity: 0.15,
     shadowRadius: 6,
     shadowOffset: { width: 0, height: 2 },
     elevation: 3,
   },
-  zoomBtn: {
-    width: 40,
-    height: 40,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  zoomDivider: { width: 1, height: 20, backgroundColor: colors.border },
+  ctlBtn: { minWidth: 64, maxWidth: 92, minHeight: 52, paddingHorizontal: 6, alignItems: "center", justifyContent: "center", gap: 2 },
+  ctlLabel: { color: colors.text, fontSize: 12, fontWeight: "700" },
+  zoomBtn: { width: 44, minHeight: 52, alignItems: "center", justifyContent: "center" },
+  ctlDivider: { width: 1, height: 28, backgroundColor: colors.border },
   card: {
     position: "absolute",
     left: space.md,
     right: space.md,
-    bottom: 76,
+    bottom: 84,
     backgroundColor: colors.surface,
     borderRadius: 16,
     padding: space.lg,
@@ -347,18 +386,19 @@ const styles = StyleSheet.create({
   cardName: { color: colors.text, fontSize: 18, fontWeight: "800" },
   cardSeen: { color: colors.textFaint, fontSize: 13, marginTop: 2 },
   cardActions: { flexDirection: "row", gap: space.sm },
-  cardButton: { flex: 1, backgroundColor: colors.brand, borderRadius: 12, minHeight: 48, alignItems: "center", justifyContent: "center", paddingHorizontal: space.sm },
+  cardButton: { flex: 1, backgroundColor: colors.brand, borderRadius: 12, minHeight: 56, alignItems: "center", justifyContent: "center", paddingHorizontal: 4, gap: 2 },
   cardButtonAlt: {
     flex: 1,
     borderRadius: 12,
-    minHeight: 48,
+    minHeight: 56,
     alignItems: "center",
     justifyContent: "center",
-    paddingHorizontal: space.sm,
+    paddingHorizontal: 4,
+    gap: 2,
     borderWidth: 1.5,
     borderColor: colors.brand,
     backgroundColor: colors.surface,
   },
-  cardButtonAltText: { color: colors.brand, fontSize: 15, fontWeight: "700" },
-  cardButtonText: { color: colors.onBrand, fontSize: 16, fontWeight: "700" },
+  cardButtonAltText: { color: colors.brand, fontSize: 14, fontWeight: "700" },
+  cardButtonText: { color: colors.onBrand, fontSize: 14, fontWeight: "700" },
 });
