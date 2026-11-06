@@ -7,6 +7,7 @@ import * as Location from "expo-location";
 import { useAuth } from "@/auth/AuthContext";
 import { useLiveLocations } from "@/hooks/useLiveLocations";
 import { useDevices } from "@/hooks/useDevices";
+import { useDayRoute } from "@/hooks/useDayRoute";
 import WebMap, { MapVehicle } from "@/components/WebMap";
 import PersonDetails from "@/components/PersonDetails";
 import { motionColor, motionOf, speedOf } from "@/format";
@@ -40,6 +41,8 @@ export default function MapScreen() {
   const initialFitDone = useRef(false);
   /** Person whose status card is open (tapped on the map). */
   const [selected, setSelected] = useState<string | null>(null);
+  // Today's route of the tapped person, with direction arrows, as on the web map.
+  const routePieces = useDayRoute(selected, selected ? locations.get(selected) : null);
 
   const byImei = useMemo(() => new Map(devices.map((d) => [d.imei, d])), [devices]);
   const speedLimits = useSpeedLimits();
@@ -125,6 +128,7 @@ export default function MapScreen() {
         photos={photos}
         center={center}
         follow={follow}
+        routePieces={routePieces}
         zoomStep={zoomStep}
         baseLayer={baseLayer}
         showTraffic={showTraffic}

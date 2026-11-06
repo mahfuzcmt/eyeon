@@ -105,7 +105,12 @@ public class LocationService {
                 // A held position is a still tracker: its few km/h are noise and must not read as "moving".
                 if (shown.held()) loc.setSpeed(0);
                 // A walker reports 0 km/h; show the speed the filter measured so they read as moving.
-                else if (shown.walkKmh() > loc.getSpeed()) loc.setSpeed(shown.walkKmh());
+                else if (shown.walkKmh() > loc.getSpeed()) {
+                    loc.setSpeed(shown.walkKmh());
+                    // The tracker's course at walking pace is stale (often 0 = north, or the way it
+                    // last drove): the arrow pointed backwards. Use the direction the walk went.
+                    if (shown.walkCourse() >= 0) loc.setCourse(shown.walkCourse());
+                }
             }
             if (loc.isValid()) {
                 deviceRepo.updateLastPosition(

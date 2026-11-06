@@ -1345,7 +1345,9 @@ export function FleetMap({ devices, locations, selectedImei, onSelect, onRefresh
       const m2 = motionRef.current.get(imei);
       const fastGps = filterSpeed(loc.speed, loc.valid) > 0;
       const walking = !!m2 && m2.heading != null && nowMs < m2.until;
-      const course = fastGps ? (loc.course ?? 0) : walking ? m2!.heading! : (loc.course ?? 0);
+      // The direction the position actually moved wins over the tracker's course (as in the app):
+      // at walking pace the trackers send a stale course, which turned the arrow backwards.
+      const course = walking ? m2!.heading! : (loc.course ?? 0);
       // ADL-style: the marker body is tinted by state (green / blue / grey),
       // not by a per-device colour, so the map reads at a glance.
       const bodyColor = MARKER_BODY_COLOR[vehicleState(device, loc)];

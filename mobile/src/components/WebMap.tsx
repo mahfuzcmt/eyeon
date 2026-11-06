@@ -54,6 +54,9 @@ export interface MapZone {
 export interface MapRoutePiece {
   coords: [number, number][];
   dashed: boolean;
+  /** Start / end time in ms; colours the line from light (start of day) to deep teal (now). */
+  from?: number;
+  to?: number;
 }
 
 interface Props {
@@ -424,6 +427,37 @@ ${googleScripts}
     Object.keys(glides).forEach(function(imei){ const m = markers[imei]; if(m) m.setLatLng(glides[imei].to); delete glides[imei]; });
   });
 
+  // Day route colours and direction arrows (kept in step with the web's FleetMap).
+  var ROUTE_EST = '#6B7A77';
+  function routeColor(f){
+    f = Math.min(1, Math.max(0, f));
+    const a = [0x9b,0xe0,0xd0], b = [0x06,0x4b,0x40];
+    return 'rgb('+a.map((x,i) => Math.round(x + (b[i]-x)*f)).join(',')+')';
+  }
+  var routeArrows = [], arrowLayer = L.layerGroup().addTo(map);
+  function bearingOf(a, b){ return bearing(L.latLng(a), L.latLng(b)); }
+  function layoutRouteArrows(){
+    arrowLayer.clearLayers();
+    const SP = 90;
+    let since = SP / 2;
+    routeArrows.forEach(function(s2){
+      const pa = map.latLngToLayerPoint(s2.a), pb = map.latLngToLayerPoint(s2.b), seg = pa.distanceTo(pb);
+      if(seg < 1) return;
+      let pos = SP - since;
+      since += seg;
+      const deg = Math.round(bearingOf(s2.a, s2.b));
+      while(pos <= seg){
+        const f = pos / seg;
+        const at = [s2.a[0] + (s2.b[0]-s2.a[0])*f, s2.a[1] + (s2.b[1]-s2.a[1])*f];
+        L.marker(at, {interactive:false, keyboard:false, icon: L.divIcon({className:'', iconSize:[18,18], iconAnchor:[9,9],
+          html:'<svg width="18" height="18" viewBox="0 0 12 12" style="display:block;transform:rotate('+deg+'deg)"><path d="M6 0.8 L11 11 L6 8.2 L1 11 Z" fill="'+s2.color+'" stroke="#fff" stroke-width="1.1" stroke-linejoin="round"/></svg>'})}).addTo(arrowLayer);
+        pos += SP;
+        since = seg - (pos - SP);
+      }
+    });
+  }
+  map.on('zoomend', layoutRouteArrows);
+
   window.MLMap = {
     setVehicles(list){
       const seen = {};
@@ -522,16 +556,52 @@ ${googleScripts}
       zones.forEach(z => { const zb = z.getBounds(); b = b ? b.extend(zb) : L.latLngBounds(zb.getSouthWest(), zb.getNorthEast()); });
       if(b) map.fitBounds(b, {padding:[32,32], maxZoom:18});
     },
+    // Same drawing as the web day route (FleetMap): light teal at the start of the day deepening
+    // to dark teal now, white casing, dashed grey estimates, direction arrows every ~90 px of
+    // screen in the colour of the line under them (re-laid out on zoom) and a flag at the start.
     setPieces(list){
       pieces.forEach(l => l.remove());
       pieces = [];
-      (list || []).forEach(pc => {
-        if(!pc.coords || pc.coords.length < 2) return;
-        if(!pc.dashed) pieces.push(L.polyline(pc.coords, {color:'#fff', weight:7, opacity:0.9, interactive:false}).addTo(map));
-        pieces.push(L.polyline(pc.coords, pc.dashed
-          ? {color:'#637370', weight:3, opacity:0.8, dashArray:'6 8', interactive:false}
-          : {color:'${colors.brand}', weight:4, opacity:0.95, interactive:false}).addTo(map));
+      routeArrows = [];
+      list = (list || []).filter(pc => pc.coords && pc.coords.length >= 2);
+      if(!list.length){ layoutRouteArrows(); return; }
+      const t0 = list[0].from != null ? list[0].from : 0;
+      const tEnd = list[list.length-1].to != null ? list[list.length-1].to : 1;
+      const t1 = Math.max(tEnd, t0 + 1);
+      const fracAt = ms => (ms - t0) / (t1 - t0);
+      const add = l => { pieces.push(l.addTo(map)); };
+      list.forEach((pc, idx) => {
+        const c = pc.coords;
+        if(pc.dashed){
+          add(L.polyline(c, {color:'#fff', weight:5, opacity:0.8, interactive:false}));
+          add(L.polyline(c, {color:ROUTE_EST, weight:2.5, opacity:0.9, dashArray:'2 7', lineCap:'round', interactive:false}));
+          for(let i=1;i<c.length;i++) routeArrows.push({a:c[i-1], b:c[i], color:ROUTE_EST});
+          return;
+        }
+        const fromMs = pc.from != null ? pc.from : t0 + (t1 - t0) * idx / list.length;
+        const toMs = pc.to != null ? pc.to : t0 + (t1 - t0) * (idx + 1) / list.length;
+        // Time along the piece follows distance along it (the snapped line has no timestamps).
+        const cum = [0];
+        for(let i=1;i<c.length;i++) cum.push(cum[i-1] + L.latLng(c[i-1]).distanceTo(L.latLng(c[i])));
+        const total = cum[cum.length-1] || 1;
+        add(L.polyline(c, {color:'#fff', weight:7, opacity:0.9, interactive:false, lineJoin:'round', lineCap:'round'}));
+        let run = [c[0]], bucket = -1;
+        for(let i=1;i<c.length;i++){
+          const b = Math.round(fracAt(fromMs + (toMs - fromMs) * cum[i] / total) * 24);
+          if(bucket !== -1 && b !== bucket && run.length >= 2){
+            add(L.polyline(run, {color:routeColor(bucket/24), weight:4, opacity:1, interactive:false, lineJoin:'round', lineCap:'round'}));
+            run = [c[i-1]];
+          }
+          bucket = b;
+          run.push(c[i]);
+          routeArrows.push({a:c[i-1], b:c[i], color:routeColor(b/24)});
+        }
+        if(run.length >= 2) add(L.polyline(run, {color:routeColor(bucket/24), weight:4, opacity:1, interactive:false, lineJoin:'round', lineCap:'round'}));
       });
+      // Where the day started.
+      add(L.marker(list[0].coords[0], {interactive:false, keyboard:false, icon: L.divIcon({className:'', iconSize:[18,22], iconAnchor:[3,21],
+        html:'<svg width="18" height="22" viewBox="0 0 18 22"><path d="M3 21V2" stroke="#2B3B38" stroke-width="2" stroke-linecap="round"/><path d="M4 2h11l-3 4 3 4H4Z" fill="'+routeColor(0)+'" stroke="#2B3B38" stroke-width="1.2" stroke-linejoin="round"/></svg>'})}));
+      layoutRouteArrows();
     },
     // Liveness check after the app comes back to the foreground (see WebMap below).
     ping(){ map.invalidateSize(); post({type:'pong'}); },

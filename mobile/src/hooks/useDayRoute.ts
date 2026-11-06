@@ -18,11 +18,12 @@ const PENDING_RETRY_MS = 5_000;
  * on a table drew a star of 20-300 m spikes around the house - one of the reasons the app's
  * location "looked wrong" while the web looked right.
  */
-export function useDayRoute(imei: string, live: LocationView | null | undefined): MapRoutePiece[] {
+export function useDayRoute(imei: string | null, live: LocationView | null | undefined): MapRoutePiece[] {
   const [pieces, setPieces] = useState<RoutePiece[]>([]);
 
   useEffect(() => {
     setPieces([]);
+    if (!imei) return;
     let cancelled = false;
     let timer: ReturnType<typeof setTimeout> | undefined;
     const load = async () => {
@@ -49,15 +50,15 @@ export function useDayRoute(imei: string, live: LocationView | null | undefined)
   return useMemo(() => {
     const out: MapRoutePiece[] = pieces
       .filter((p) => p.coords.length >= 2)
-      .map((p) => ({ coords: p.coords, dashed: p.kind === "ESTIMATE" }));
+      .map((p) => ({ coords: p.coords, dashed: p.kind === "ESTIMATE", from: Date.parse(p.from), to: Date.parse(p.to) }));
     // Positions newer than the last piece: a short solid tail to where the person is now.
     const last = pieces[pieces.length - 1];
     if (live && live.valid && last && last.coords.length > 0 && Date.parse(live.ts) > Date.parse(last.to)) {
       const end = last.coords[last.coords.length - 1];
       if (end[0] !== live.latitude || end[1] !== live.longitude) {
-        out.push({ coords: [end, [live.latitude, live.longitude]], dashed: false });
+        out.push({ coords: [end, [live.latitude, live.longitude]], dashed: false, from: Date.parse(last.to), to: Date.parse(live.ts) });
       }
     }
-    return out;
-  }, [pieces, live]);
+    return imei ? out : [];
+  }, [imei, pieces, live]);
 }
