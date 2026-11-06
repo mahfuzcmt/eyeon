@@ -244,6 +244,21 @@ class ParkedJitterFilterTest {
         assertThat(f.apply(IMEI, 23.769900, 90.358580, 7, tick(), null).position()).isEqualTo(wifi);
     }
 
+    /** Client feedback 2026-11-06: the direction arrow pointed backwards. A walk south-west reports ~224 degrees. */
+    @Test
+    void walkCourseFollowsTheWayTheWalkGoes() {
+        ParkedJitterFilter f = new ParkedJitterFilter();
+        for (double[] p : PARKED) f.apply(IMEI, p[0], p[1], 0, tick(), null);
+        double lat0 = PARKED[PARKED.length - 1][0], lng0 = PARKED[PARKED.length - 1][1];
+        int course = -1;
+        for (int i = 1; i <= 12; i++) {
+            double[] p = walkPoint(lat0, lng0, -i);
+            ParkedJitterFilter.Result r = f.apply(IMEI, p[0], p[1], 0, tick(), null);
+            if (r.walkKmh() > 0) course = r.walkCourse();
+        }
+        assertThat(course).isBetween(215, 235);
+    }
+
     /** About 13 m per fix (1.3 m/s, one fix per 10 s) north-east, at speed 0 as these trackers report a walk. */
     private static double[] walkPoint(double lat0, double lng0, int i) {
         return new double[] {lat0 + i * 0.000085, lng0 + i * 0.000090};
@@ -264,6 +279,8 @@ class ParkedJitterFilterTest {
                 assertThat(r.held()).isFalse();
                 // About 13 m per 10 s is 4-5 km/h: shown as moving although the tracker reported 0.
                 assertThat(r.walkKmh()).isBetween(4, 6);
+                // Heading arrow: the walk goes north-east (~44 degrees); the tracker's own course is stale.
+                assertThat(r.walkCourse()).isBetween(35, 55);
             } else {
                 assertThat(followedFrom).as("lost the walk at fix %d", i).isLessThan(0);
             }
