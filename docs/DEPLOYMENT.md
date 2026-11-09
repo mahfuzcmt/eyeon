@@ -196,6 +196,22 @@ nohup flock -n /tmp/eyeon-smoke.lock sh -c "python3 scripts/smoke_trusted_places
 
 Never use `down -v` (it deletes the database volume `eyeon_postgres_data`).
 
+### 3G smart-watch server (since 2026-11-09)
+
+`watch-server/` runs on the same box as a systemd service, **outside Docker**: `eyeon-watch.service`
+(`/etc/systemd/system/eyeon-watch.service`), user `eyeon-watch`, `python3 /opt/eyeon/watch-server/server.py`,
+TCP **8899** public (`ufw allow 8899/tcp`). The SQLite database is `/var/lib/eyeon-watch/watch.db`, deliberately
+outside `/opt/eyeon`, because the deploy rsync runs with `--delete` and would wipe a `watch.db` in the code folder.
+No allowlist (`WATCH_ALLOWED_IDS` unset), so every watch that connects is accepted and logged.
+
+```bash
+systemctl restart eyeon-watch            # after rsyncing new watch-server code
+journalctl -u eyeon-watch -f
+sudo -u eyeon-watch WATCH_DB=/var/lib/eyeon-watch/watch.db python3 /opt/eyeon/watch-server/send_command.py <id> "UPLOAD,600"
+```
+
+Do not start it with `python3 -I`: that stops it importing its own `protocol.py`.
+
 ### HTTPS
 
 Needs a DNS `A` record for the hostname pointing at the server. Then, on the server:
