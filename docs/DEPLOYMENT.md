@@ -212,6 +212,14 @@ sudo -u eyeon-watch WATCH_DB=/var/lib/eyeon-watch/watch.db python3 /opt/eyeon/wa
 
 Do not start it with `python3 -I`: that stops it importing its own `protocol.py`.
 
+**Watches on the tracker port (2026-11-10).** The HongMi watches are set at the factory to
+`eyeon.motolinkgps.com:5024`. The backend recognises them by their first byte (`[`) and relays them to
+`host.docker.internal:8899` (`EYEON_WATCH_FORWARD`; the compose file adds `host.docker.internal:host-gateway`
+to `eyeon-backend`), so the watch server must be running for those watches to connect; if it is down the
+backend closes the watch connection and logs `cannot reach watch server`. GT06 trackers are unaffected
+either way. A relayed watch shows in `journalctl -u eyeon-watch` as `relayed connection from <watch ip>
+(via 172.26.0.x)`, and in the backend log as `Watch connection from ...`.
+
 ### HTTPS
 
 Needs a DNS `A` record for the hostname pointing at the server. Then, on the server:

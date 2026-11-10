@@ -68,6 +68,9 @@ eyeon:
     boss-threads: 1
     worker-threads: 4
     idle-read-seconds: 600
+    # Smart watches ("3G" protocol, frames start with '[') that connect to the tracker port are
+    # passed through to the watch server at this host:port. Blank = off.
+    watch-forward: ${EYEON_WATCH_FORWARD:}
   seed:
     enabled: ${EYEON_SEED_ENABLED:false}
     admin-email: ${EYEON_SEED_ADMIN_EMAIL:admin@eyeon.local}
