@@ -10,3 +10,7 @@ Separate from the EyeOn Netty/GT06 backend: it has its own SQLite database and i
 
 Env: `WATCH_HOST`, `WATCH_PORT` (8899), `WATCH_DB`, `WATCH_ALLOWED_IDS` (comma list; empty = accept all, new IDs logged).
 Protocol: LK is answered with LK, AL with AL; UD/UD2/UD_* are stored; command LEN is computed (vendor doc examples have wrong lengths).
+
+Watches can also dial EyeOn's tracker port 5024: the backend recognises them by the leading `[` and relays the
+connection here, sending a PROXY protocol v1 line first with the watch's real address. That line is only
+accepted from private/loopback peers.

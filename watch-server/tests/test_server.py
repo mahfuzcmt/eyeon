@@ -7,7 +7,7 @@ import unittest
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 from protocol import build_frame, extract_frames, parse_location  # noqa: E402
-from server import Server, Store  # noqa: E402
+from server import Server, Store, take_proxy_header, trusts_proxy  # noqa: E402
 
 UD = ("UD,120118,070625,A,22.570720,N,113.8620167,E,0.00,188.6,0.0,9,100,51,14188,0,00000010,6,255,460,0,"
       "9360,5081,156,9360,4081,129,9360,4151,128,9360,5082,127,9360,4723,122,9360,4082,120,2,"
@@ -42,6 +42,33 @@ class Codec(unittest.TestCase):
         a[4], a[6] = "S", "W"
         loc = parse_location(a)
         self.assertTrue(loc.lat < 0 and loc.lon < 0)
+
+
+class ProxyHeader(unittest.TestCase):
+    def test_strips_header_and_returns_source(self):
+        buf = bytearray(b"PROXY TCP4 37.111.200.5 172.26.0.4 40112 5024\r\n[3G*1*0002*LK]")
+        self.assertEqual(take_proxy_header(buf), ("done", "37.111.200.5"))
+        self.assertEqual(bytes(buf), b"[3G*1*0002*LK]")
+
+    def test_no_header_leaves_buffer(self):
+        buf = bytearray(b"[3G*1*0002*LK]")
+        self.assertEqual(take_proxy_header(buf), ("done", None))
+        self.assertEqual(bytes(buf), b"[3G*1*0002*LK]")
+
+    def test_partial_header_waits(self):
+        self.assertEqual(take_proxy_header(bytearray(b"PRO")), ("wait", None))
+        self.assertEqual(take_proxy_header(bytearray(b"PROXY TCP4 1.2.3.4")), ("wait", None))
+
+    def test_unknown_or_garbage_header_is_dropped(self):
+        buf = bytearray(b"PROXY UNKNOWN\r\n[3G*1*0002*LK]")
+        self.assertEqual(take_proxy_header(buf), ("done", None))
+        self.assertEqual(bytes(buf), b"[3G*1*0002*LK]")
+
+    def test_only_private_peers_are_trusted(self):
+        self.assertTrue(trusts_proxy("172.26.0.4"))
+        self.assertTrue(trusts_proxy("127.0.0.1"))
+        self.assertTrue(trusts_proxy("::ffff:172.26.0.4"))
+        self.assertFalse(trusts_proxy("45.79.207.181"))
 
 
 class EndToEnd(unittest.IsolatedAsyncioTestCase):
@@ -81,6 +108,19 @@ class EndToEnd(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(q("SELECT alarms FROM alarms"), "SOS")
         self.assertEqual(q("SELECT battery FROM devices"), 1)
         self.assertEqual(q("SELECT reply FROM commands"), "UPLOAD")
+
+    async def test_relayed_connection_records_real_ip(self):
+        r, w = await asyncio.open_connection("127.0.0.1", self.port)
+        w.write(b"PROXY TCP4 37.111.200.5 172.26.0.4 40112 5024\r\n")
+        await asyncio.sleep(0.05)  # header and first frame in separate reads
+        w.write(build_frame("8800000016", "LK,50,100,90"))
+        self.assertEqual(await asyncio.wait_for(r.readexactly(len(b"[3G*8800000016*0002*LK]")), 2),
+                         b"[3G*8800000016*0002*LK]")
+        w.close()
+        await asyncio.sleep(0.1)
+        db = sqlite3.connect(self.dbp)
+        self.assertEqual(db.execute("SELECT last_ip FROM devices WHERE id='8800000016'").fetchone()[0],
+                         "37.111.200.5")
 
     async def test_allowlist_rejects(self):
         self.srv.allowed = {"1"}

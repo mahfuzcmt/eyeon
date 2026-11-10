@@ -8,6 +8,7 @@ Commands to devices are queued in the `commands` table (see send_command.py).
 from __future__ import annotations
 
 import asyncio
+import ipaddress
 import json
 import logging
 import os
@@ -87,6 +88,42 @@ class Store:
             self.db.commit()
 
 
+def trusts_proxy(peer: str) -> bool:
+    """A PROXY header is only believed from the backend container / this host."""
+    try:
+        a = ipaddress.ip_address(peer)
+    except ValueError:
+        return False
+    if getattr(a, "ipv4_mapped", None):
+        a = a.ipv4_mapped
+    return a.is_private or a.is_loopback
+
+
+def take_proxy_header(buf: bytearray) -> tuple[str, str | None]:
+    """Strip a leading "PROXY ...\\r\\n" line from buf.
+
+    Returns ("wait", None) while a header may still be arriving, ("done", source ip) when one
+    was removed, ("done", None) when there is none (buf untouched) or it was unusable.
+    """
+    prefix = b"PROXY "
+    head = bytes(buf[: len(prefix)])
+    if not prefix.startswith(head):
+        return "done", None
+    if len(buf) < len(prefix):
+        return "wait", None
+    end = buf.find(b"\r\n")
+    if end < 0:
+        return ("wait", None) if len(buf) < 108 else ("done", None)  # v1 lines are <= 107 bytes
+    parts = bytes(buf[:end]).decode("ascii", "replace").split(" ")
+    del buf[: end + 2]
+    if len(parts) == 6 and parts[1] in ("TCP4", "TCP6"):
+        try:
+            return "done", str(ipaddress.ip_address(parts[2]))
+        except ValueError:
+            pass
+    return "done", None
+
+
 class Server:
     def __init__(self, store: Store, allowed: set[str]):
         self.store = store
@@ -97,12 +134,24 @@ class Server:
         ip = writer.get_extra_info("peername")[0]
         buf = bytearray()
         dev_id: str | None = None
+        # Watches that dial the EyeOn tracker port (5024) are relayed here by the backend, which
+        # sends their real address first as a PROXY protocol v1 line. Only trusted from private /
+        # loopback peers, so nobody on the internet can fake an address.
+        proxy_pending = trusts_proxy(ip)
         try:
             while True:
                 data = await reader.read(4096)
                 if not data:
                     break
                 buf += data
+                if proxy_pending:
+                    state, real = take_proxy_header(buf)
+                    if state == "wait":
+                        continue
+                    proxy_pending = False
+                    if real:
+                        log.info("relayed connection from %s (via %s)", real, ip)
+                        ip = real
                 if len(buf) > 1 << 20:
                     log.warning("buffer overflow from %s, dropping", ip)
                     break
