@@ -69,6 +69,15 @@ import java.util.concurrent.ConcurrentHashMap;
  * Outdoors a still tracker's marker moves a little more often (median 34 to 42 small moves an hour)
  * without straying further. Not replayed against production history.
  *
+ * <p>2026-11-13 (smart watch, "location is not updating"): every rule above that waits for the next
+ * fix assumes there is one within seconds. The HongMi watch reports only when it moves, often a
+ * single fix: carried 3.5 km and reporting once (GPS, 14 satellites) after 2 h 54 min of silence,
+ * its marker stayed at the old place until someone asked it for a position. A shown spot nobody has
+ * confirmed for {@link #SILENCE_S} is no evidence against a new fix, so the first fix after such a
+ * silence is shown as it is, like the first fix after a restart. For a tracker that then keeps
+ * reporting, a poor first fix (up to about 100 m off when the GPS has just come back) is corrected
+ * by the next two.
+ *
  * <p>State is in memory: after a restart the first fix becomes the shown position.
  */
 @Component
@@ -115,6 +124,8 @@ public class ParkedJitterFilter {
     static final double WALK_MIN_NET_M = 30;
     /** Near a fresh Wi-Fi anchor, a walk counts only this far from it. */
     static final double WALK_ANCHOR_M = 60;
+    /** No position for this long (30 min): the next one is shown without waiting for a second. */
+    static final long SILENCE_S = 1800;
     /** Fixes remembered for walk detection. */
     private static final int TRAIL_SIZE = WALK_STEPS + 3;
 
@@ -140,6 +151,8 @@ public class ParkedJitterFilter {
         long pendingSince;
         boolean pendingIsJump;
         Position lastFix;
+        /** When the latest position of any kind arrived (tracker clock, epoch seconds); 0 = none yet. */
+        long lastAt;
         boolean lastFast;
         Position anchor;
         long anchorAt;
@@ -172,8 +185,10 @@ public class ParkedJitterFilter {
             boolean fast = speedKmh >= MOVING_KMH;
             boolean wasFast = s.lastFast;
             Position previous = s.lastFix;
+            long silentFor = s.lastAt == 0 ? 0 : at - s.lastAt;
             s.lastFast = fast;
             s.lastFix = fix;
+            s.lastAt = Math.max(s.lastAt, at);
             if (wifiAccuracyM == null) {
                 s.trail.addLast(new Fix(fix, at));
                 if (s.trail.size() > TRAIL_SIZE) s.trail.removeFirst();
@@ -186,7 +201,8 @@ public class ParkedJitterFilter {
                     return new Result(fix, false);
                 }
             }
-            if (s.shown == null) {
+            if (s.shown == null || silentFor >= SILENCE_S) {
+                // Nothing to compare with, or nothing recent: the fix is where the tracker is.
                 s.restart(fix, at);
                 return new Result(fix, false);
             }
