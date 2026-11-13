@@ -77,6 +77,26 @@ public class DeviceRepository {
         }
     }
 
+    /**
+     * The device a smart watch reports for. A watch names itself by its 10-digit id - its IMEI
+     * without the first four digits and the check digit - so it matches a device stored under
+     * that id (how an unknown watch is auto-registered) or under the full 15-digit IMEI printed
+     * on it (how someone adds it by hand). The full IMEI wins when both exist.
+     */
+    public Optional<Device> findByWatchId(String watchId) {
+        List<Device> found = jdbc.query(
+                SELECT_FIELDS + """
+                         FROM devices
+                        WHERE imei = :id
+                           OR (length(imei) = 15 AND substring(imei from 5 for 10) = :id)
+                        ORDER BY length(imei) DESC, created_at
+                        LIMIT 1
+                        """,
+                new MapSqlParameterSource("id", watchId),
+                ROW_MAPPER);
+        return found.stream().findFirst();
+    }
+
     public Optional<Device> findByOrgAndImei(UUID orgId, String imei) {
         try {
             Device d = jdbc.queryForObject(

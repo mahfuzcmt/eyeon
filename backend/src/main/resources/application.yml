@@ -71,6 +71,8 @@ eyeon:
     # Smart watches ("3G" protocol, frames start with '[') that connect to the tracker port are
     # passed through to the watch server at this host:port. Blank = off.
     watch-forward: ${EYEON_WATCH_FORWARD:}
+    # Relayed watches also become EyeOn devices (device list, map, alarms). false = relay only.
+    watch-ingest: ${EYEON_WATCH_INGEST:true}
   seed:
     enabled: ${EYEON_SEED_ENABLED:false}
     admin-email: ${EYEON_SEED_ADMIN_EMAIL:admin@eyeon.local}

@@ -33,8 +33,17 @@ public final class TrackerPipeline {
      */
     public static void configure(ChannelPipeline p, ChannelHandler gt06Handler, WatchTarget watchTarget,
                                  int idleReadSeconds) {
+        configure(p, gt06Handler, watchTarget, null, idleReadSeconds);
+    }
+
+    /**
+     * @param watchIngest reads relayed watch frames into EyeOn (devices, locations, alarms);
+     *                    null = watches are relayed only
+     */
+    public static void configure(ChannelPipeline p, ChannelHandler gt06Handler, WatchTarget watchTarget,
+                                 WatchIngest watchIngest, int idleReadSeconds) {
         p.addLast(IDLE, new IdleStateHandler(idleReadSeconds, 0, 0, TimeUnit.SECONDS))
-                .addLast(SNIFF, new ProtocolSniffer(watchTarget))
+                .addLast(SNIFF, new ProtocolSniffer(watchTarget, watchIngest))
                 .addLast(FRAME, new Gt06FrameDecoder())
                 .addLast(HANDLER, gt06Handler);
     }

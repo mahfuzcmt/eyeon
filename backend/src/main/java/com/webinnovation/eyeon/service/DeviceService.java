@@ -31,6 +31,11 @@ public class DeviceService {
         return deviceRepo.findByImei(imei);
     }
 
+    /** The device a smart watch with this 10-digit id reports for, see {@link DeviceRepository#findByWatchId}. */
+    public Optional<Device> findByWatchId(String watchId) {
+        return deviceRepo.findByWatchId(watchId);
+    }
+
     public void markOnline(String imei) {
         deviceRepo.markOnline(imei, Instant.now());
     }
