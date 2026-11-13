@@ -198,14 +198,50 @@ class ParkedJitterFilterTest {
                 .isEqualTo(new ParkedJitterFilter.Position(23.772340, 90.358530));
     }
 
+    /** A gap too short to count as silence: the far fix still needs the next one, but not the jump hold. */
     @Test
-    void reappearingFarAwayAfterSilenceMovesAtOnce() {
+    void reappearingFarAwayAfterAShortGapMovesOnceTheNextFixAgrees() {
         ParkedJitterFilter f = new ParkedJitterFilter();
-        f.apply(IMEI, 23.769800, 90.358530, 0, tick(), null);
-        now = now.plusSeconds(1800);
-        f.apply(IMEI, 23.780000, 90.358530, 0, tick(), null);
+        ParkedJitterFilter.Position spot = f.apply(IMEI, 23.769800, 90.358530, 0, tick(), null).position();
+        now = now.plusSeconds(600);
+        assertThat(f.apply(IMEI, 23.780000, 90.358530, 0, tick(), null).position()).isEqualTo(spot);
         assertThat(f.apply(IMEI, 23.780050, 90.358530, 0, tick(), null).position())
                 .isEqualTo(new ParkedJitterFilter.Position(23.780050, 90.358530));
+    }
+
+    /**
+     * The HongMi watch on production, 2026-11-13: a Wi-Fi position at 15:40:40 Dhaka, then nothing
+     * until one GPS fix (14 satellites, speed 0) at 18:34:58, 3.5 km away. No second fix followed,
+     * and the marker stayed at the old place.
+     */
+    @Test
+    void theOnlyFixAfterALongSilenceIsShown() {
+        ParkedJitterFilter f = new ParkedJitterFilter();
+        now = Instant.parse("2026-11-13T09:40:40Z");
+        f.apply(IMEI, 23.7321259, 90.4201541, 0, now, 13);
+        ParkedJitterFilter.Result r = f.apply(IMEI, 23.750341, 90.391866, 0, Instant.parse("2026-11-13T12:34:58Z"), null);
+        assertThat(r.position()).isEqualTo(new ParkedJitterFilter.Position(23.750341, 90.391866));
+        assertThat(r.held()).isFalse();
+    }
+
+    /** After that first fix the usual rules apply again: wobble around it is held, a stray is ignored. */
+    @Test
+    void afterTheFirstFixFollowingASilenceTheFilterWorksAsBefore() {
+        ParkedJitterFilter f = new ParkedJitterFilter();
+        f.apply(IMEI, 23.769800, 90.358530, 0, tick(), null);
+        now = now.plusSeconds(ParkedJitterFilter.SILENCE_S);
+        ParkedJitterFilter.Position spot = f.apply(IMEI, PARKED[0][0], PARKED[0][1], 0, tick(), null).position();
+        assertThat(spot).isEqualTo(new ParkedJitterFilter.Position(PARKED[0][0], PARKED[0][1]));
+        assertThat(f.apply(IMEI, PARKED[1][0], PARKED[1][1], 0, tick(), null).held()).isTrue();
+        assertThat(f.apply(IMEI, 23.751800, 90.390711, 0, tick(), null).position()).isEqualTo(spot);   // one stray, ~61 m
+    }
+
+    /** A replayed backlog carries old times: an earlier-stamped fix is not "after a silence". */
+    @Test
+    void anOlderStampedFixDoesNotCountAsSilence() {
+        ParkedJitterFilter f = new ParkedJitterFilter();
+        ParkedJitterFilter.Position spot = f.apply(IMEI, 23.769800, 90.358530, 0, tick(), null).position();
+        assertThat(f.apply(IMEI, 23.780000, 90.358530, 0, now.minusSeconds(7200), null).position()).isEqualTo(spot);
     }
 
     /** The PL601 on production, 2026-10-26 13:05 Dhaka: indoor drift 90 m out and back at 6, 6, 13 km/h. */
