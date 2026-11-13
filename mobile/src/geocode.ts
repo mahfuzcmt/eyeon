@@ -54,22 +54,61 @@ export function restingUntil(rest: Pick<NightRestView, "from" | "to"> | undefine
 const reverseCache = new Map<string, string | null>();
 const reverseInflight = new Map<string, Promise<string | null>>();
 
+/** The parts of a Nominatim reverse answer the address line is built from. */
+interface ReverseAnswer {
+  display_name?: string;
+  address?: {
+    house_number?: string;
+    road?: string;
+    neighbourhood?: string;
+    suburb?: string;
+    residential?: string;
+    city?: string;
+    town?: string;
+    village?: string;
+    county?: string;
+    state_district?: string;
+  };
+}
+
 /**
- * Street / area name of a point, through Nominatim's reverse lookup (same source as the web
- * popup's address). Cached per ~110 m cell and language, so a person standing still is looked
- * up once; null when nothing is known or the lookup fails.
+ * Road, area, city, district - the same line the web popup shows (FleetMap's reverse lookup).
+ * Not the head of `display_name`: that starts with the nearest named thing on the map, so a
+ * person standing in the street was shown as being at the shop next door ("First Choice
+ * Travel & Tours, Outer Circular Road, Noya Paltan" for a point the web calls "Outer Circular
+ * Road, Fakirapool, Dhaka").
+ */
+export function addressLine(data: ReverseAnswer): string | null {
+  const a = data.address;
+  if (a) {
+    const parts: string[] = [];
+    if (a.house_number) parts.push(`House ${a.house_number}`);
+    if (a.road) parts.push(a.road);
+    const area = a.neighbourhood ?? a.suburb ?? a.residential;
+    if (area) parts.push(area);
+    const city = a.city ?? a.town ?? a.village ?? a.county;
+    if (city) parts.push(city);
+    if (a.state_district && a.state_district !== a.city) parts.push(a.state_district);
+    if (parts.length > 0) return parts.slice(0, 4).join(", ");
+  }
+  return data.display_name?.split(",").slice(0, 4).join(",").trim() || null;
+}
+
+/**
+ * Street / area name of a point, through Nominatim's reverse lookup (same source and wording
+ * as the web popup's address). Cached per ~110 m cell and language, so a person standing still
+ * is looked up once; null when nothing is known or the lookup fails.
  */
 export function reverseAddress(lat: number, lng: number, lang = "en"): Promise<string | null> {
   const key = `${lang}|${lat.toFixed(3)},${lng.toFixed(3)}`;
   if (reverseCache.has(key)) return Promise.resolve(reverseCache.get(key) ?? null);
   const running = reverseInflight.get(key);
   if (running) return running;
-  const url = `https://nominatim.openstreetmap.org/reverse?format=json&zoom=18&addressdetails=0&accept-language=${encodeURIComponent(lang)}&lat=${lat}&lon=${lng}`;
+  const url = `https://nominatim.openstreetmap.org/reverse?format=json&zoom=18&addressdetails=1&accept-language=${encodeURIComponent(lang)}&lat=${lat}&lon=${lng}`;
   const p = fetch(url, { headers: { Accept: "application/json", "User-Agent": "EyeOn mobile (https://eyeon.motolinkgps.com)" } })
     .then(async (res) => {
       if (!res.ok) return null;
-      const data = (await res.json()) as { display_name?: string };
-      const name = data.display_name?.split(",").slice(0, 3).join(",").trim() || null;
+      const name = addressLine((await res.json()) as ReverseAnswer);
       reverseCache.set(key, name);
       return name;
     })
