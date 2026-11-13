@@ -192,6 +192,10 @@ class Server:
                 loc = parse_location(f.args)
                 self.store.add_location(f.device_id, cmd, loc, raw)
                 log.warning("ALARM %s %s at %s,%s", f.device_id, loc.alarms, loc.lat, loc.lon)
+            elif cmd == "RYIMEI":
+                # IMEI report at power-on: the watch repeats it on every boot until told 1 (success)
+                writer.write(build_frame(f.device_id, "RYIMEI,1", f.vendor))
+                log.info("%s -> %s (acked)", f.device_id, raw[:80])
             elif cmd == "TKQ":
                 pass  # intercom request: not supported
             else:

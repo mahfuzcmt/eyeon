@@ -109,6 +109,17 @@ class EndToEnd(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(q("SELECT battery FROM devices"), 1)
         self.assertEqual(q("SELECT reply FROM commands"), "UPLOAD")
 
+    async def test_imei_report_is_acknowledged_with_success(self):
+        r, w = await asyncio.open_connection("127.0.0.1", self.port)
+        w.write(build_frame("1378748302", "RYIMEI,355913787483028"))
+        want = b"[3G*1378748302*0008*RYIMEI,1]"
+        self.assertEqual(await asyncio.wait_for(r.readexactly(len(want)), 2), want)
+        # the reply carries the header the watch used (the vendor doc writes CS, the samples send 3G)
+        w.write(build_frame("1378748302", "RYIMEI,355913787483028", "CS"))
+        want = b"[CS*1378748302*0008*RYIMEI,1]"
+        self.assertEqual(await asyncio.wait_for(r.readexactly(len(want)), 2), want)
+        w.close()
+
     async def test_relayed_connection_records_real_ip(self):
         r, w = await asyncio.open_connection("127.0.0.1", self.port)
         w.write(b"PROXY TCP4 37.111.200.5 172.26.0.4 40112 5024\r\n")
