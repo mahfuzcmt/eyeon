@@ -52,6 +52,12 @@ public final class PacketType {
     public static final int JIMI_TIME_CALIBRATION = 0x8A; // Time sync request
     public static final int JIMI_INFO_TRANSMISSION = 0x94; // Device info upload
 
+    /**
+     * Not a GT06 protocol number: marks positions that came from a "3G"-protocol smart watch
+     * (frames start with '[' = 0x5B, see WatchFrame). Never appears on the wire.
+     */
+    public static final int WATCH_3G = 0x5B;
+
     private PacketType() {}
 
     /** Check if protocol number is a location packet (GT06 or Jimi). */

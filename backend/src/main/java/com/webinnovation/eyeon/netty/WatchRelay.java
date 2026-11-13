@@ -1,6 +1,8 @@
 package com.webinnovation.eyeon.netty;
 
 import io.netty.bootstrap.Bootstrap;
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.ByteBufUtil;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
@@ -28,6 +30,9 @@ import java.util.Queue;
  * The outbound connection uses the inbound channel's event loop, so both sides are handled on
  * one thread. Reading from the watch is paused until the watch server has accepted; what
  * arrived before that (including the bytes the sniffer read) is queued and sent first.
+ *
+ * <p>With a {@link WatchIngest} the backend also reads a copy of what the watch sends, which is
+ * how the watch becomes a device on the map. The relay itself is unchanged by it.
  */
 @Slf4j
 public class WatchRelay extends ChannelInboundHandlerAdapter {
@@ -35,17 +40,28 @@ public class WatchRelay extends ChannelInboundHandlerAdapter {
     private static final int CONNECT_TIMEOUT_MS = 5_000;
 
     private final WatchTarget target;
+    private final WatchIngest ingest;
     private final Queue<Object> pending = new ArrayDeque<>();
     private Channel outbound;
     private boolean connected;
+    private WatchIngest.Connection tap;
 
     public WatchRelay(WatchTarget target) {
+        this(target, null);
+    }
+
+    /** @param ingest reads a copy of the watch's frames into EyeOn; null = relay only */
+    public WatchRelay(WatchTarget target, WatchIngest ingest) {
         this.target = target;
+        this.ingest = ingest;
     }
 
     @Override
     public void handlerAdded(ChannelHandlerContext ctx) {
         Channel inbound = ctx.channel();
+        if (ingest != null) {
+            tap = ingest.open(String.valueOf(inbound.remoteAddress()));
+        }
         inbound.config().setAutoRead(false);
         ChannelFuture f = new Bootstrap()
                 .group(inbound.eventLoop())
@@ -82,6 +98,13 @@ public class WatchRelay extends ChannelInboundHandlerAdapter {
 
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) {
+        if (tap != null && msg instanceof ByteBuf bytes) {
+            try {
+                tap.onBytes(ByteBufUtil.getBytes(bytes));  // a copy; the buffer goes on to the watch server
+            } catch (Exception e) {
+                log.warn("Watch ingest failed on connection {}: {}", ctx.channel().id(), e.getMessage());
+            }
+        }
         if (connected && outbound.isActive()) {
             outbound.writeAndFlush(msg);
         } else if (!connected && outbound != null && outbound.isOpen()) {

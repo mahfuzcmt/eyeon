@@ -60,13 +60,17 @@ class TrackerPortWatchRelayTest {
     }
 
     private int startTrackerPort(WatchTarget target) {
+        return startTrackerPort(target, null);
+    }
+
+    private int startTrackerPort(WatchTarget target, WatchIngest ingest) {
         server = new ServerBootstrap()
                 .group(group)
                 .channel(NioServerSocketChannel.class)
                 .childHandler(new ChannelInitializer<SocketChannel>() {
                     @Override
                     protected void initChannel(SocketChannel ch) {
-                        TrackerPipeline.configure(ch.pipeline(), gt06, target, 600);
+                        TrackerPipeline.configure(ch.pipeline(), gt06, target, ingest, 600);
                     }
                 })
                 .bind("127.0.0.1", 0).syncUninterruptibly().channel();
@@ -105,6 +109,44 @@ class TrackerPortWatchRelayTest {
                 relayed.close();
                 assertThat(watch.getInputStream().read()).isEqualTo(-1);
             }
+        }
+        assertThat(gt06.frames).isEmpty();
+    }
+
+    /** The relay is untouched by the ingest: the watch server still gets every byte and answers. */
+    @Test
+    void relayedWatchAlsoBecomesAnEyeOnDevice() throws Exception {
+        com.webinnovation.eyeon.service.DeviceService devices = org.mockito.Mockito.mock(com.webinnovation.eyeon.service.DeviceService.class);
+        com.webinnovation.eyeon.domain.Device device = org.mockito.Mockito.mock(com.webinnovation.eyeon.domain.Device.class);
+        org.mockito.Mockito.when(device.imei()).thenReturn("8800000015");
+        org.mockito.Mockito.when(device.orgId()).thenReturn(java.util.UUID.randomUUID());
+        org.mockito.Mockito.when(devices.findByWatchId("8800000015")).thenReturn(java.util.Optional.of(device));
+        WatchIngest ingest = new WatchIngest(devices,
+                org.mockito.Mockito.mock(com.webinnovation.eyeon.service.LocationService.class),
+                org.mockito.Mockito.mock(com.webinnovation.eyeon.service.AlarmService.class),
+                org.mockito.Mockito.mock(com.webinnovation.eyeon.service.NetworkLocationService.class),
+                new org.springframework.core.task.SimpleAsyncTaskExecutor("ingest-"));
+
+        int port = startTrackerPort(watchTarget(), ingest);
+        try (Socket watch = new Socket("127.0.0.1", port)) {
+            watch.setTcpNoDelay(true);
+            // the frame arrives in two pieces: the sniffer sees only "[" first
+            watch.getOutputStream().write(WATCH_LK, 0, 1);
+            watch.getOutputStream().flush();
+            Thread.sleep(100);
+            watch.getOutputStream().write(WATCH_LK, 1, WATCH_LK.length - 1);
+            watch.getOutputStream().flush();
+
+            try (Socket relayed = watchServer.accept()) {
+                relayed.setSoTimeout(3000);
+                readLine(relayed.getInputStream());
+                assertThat(readExactly(relayed.getInputStream(), WATCH_LK.length)).isEqualTo(WATCH_LK);
+                relayed.getOutputStream().write(WATCH_LK_REPLY);
+                relayed.getOutputStream().flush();
+                watch.setSoTimeout(3000);
+                assertThat(readExactly(watch.getInputStream(), WATCH_LK_REPLY.length)).isEqualTo(WATCH_LK_REPLY);
+            }
+            org.mockito.Mockito.verify(devices, org.mockito.Mockito.timeout(3000)).applyHeartbeatStatus("8800000015", null, 100, null);
         }
         assertThat(gt06.frames).isEmpty();
     }

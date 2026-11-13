@@ -31,9 +31,16 @@ public class ProtocolSniffer extends ByteToMessageDecoder {
     static final int WATCH_START = '[';
 
     private final WatchTarget watchTarget;
+    private final WatchIngest watchIngest;
 
     public ProtocolSniffer(WatchTarget watchTarget) {
+        this(watchTarget, null);
+    }
+
+    /** @param watchIngest also reads relayed watch frames into EyeOn; null = relay only */
+    public ProtocolSniffer(WatchTarget watchTarget, WatchIngest watchIngest) {
         this.watchTarget = watchTarget;
+        this.watchIngest = watchIngest;
     }
 
     @Override
@@ -46,7 +53,7 @@ public class ProtocolSniffer extends ByteToMessageDecoder {
         if (first == WATCH_START && watchTarget != null) {
             log.info("Watch connection from {} (id={}), relaying to {}",
                     remote(ctx), ctx.channel().id(), watchTarget);
-            p.addAfter(ctx.name(), TrackerPipeline.WATCH_RELAY, new WatchRelay(watchTarget));
+            p.addAfter(ctx.name(), TrackerPipeline.WATCH_RELAY, new WatchRelay(watchTarget, watchIngest));
             if (p.get(TrackerPipeline.FRAME) != null) p.remove(TrackerPipeline.FRAME);
             if (p.get(TrackerPipeline.HANDLER) != null) p.remove(TrackerPipeline.HANDLER);
         }
