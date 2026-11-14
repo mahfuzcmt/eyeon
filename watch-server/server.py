@@ -19,6 +19,13 @@ from protocol import Frame, build_frame, extract_frames, parse_location
 
 log = logging.getLogger("watch")
 
+# Messages of the power-on burst. The firmware wants each one acknowledged with "<name>,1"
+# (1 = success) and otherwise drops the connection 30 s after the burst and reconnects
+# (supplier, 2026-11-14). RYIMEI is also repeated on every boot until it has been acknowledged.
+# appcontacttel is part of the burst too, but its reply carries data ("appcontacttel,num,accounts")
+# whose format for a watch without contacts is not known yet, so it is not answered.
+ACK_WITH_SUCCESS = frozenset({"CONFIG", "ICCID", "RYIMEI", "APPANDFNREPORT", "DEVPWDCHECKBIND", "eicard"})
+
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS devices(
   id TEXT PRIMARY KEY, first_seen REAL, last_seen REAL, last_ip TEXT,
@@ -192,9 +199,8 @@ class Server:
                 loc = parse_location(f.args)
                 self.store.add_location(f.device_id, cmd, loc, raw)
                 log.warning("ALARM %s %s at %s,%s", f.device_id, loc.alarms, loc.lat, loc.lon)
-            elif cmd == "RYIMEI":
-                # IMEI report at power-on: the watch repeats it on every boot until told 1 (success)
-                writer.write(build_frame(f.device_id, "RYIMEI,1", f.vendor))
+            elif cmd in ACK_WITH_SUCCESS:
+                writer.write(build_frame(f.device_id, cmd + ",1", f.vendor))
                 log.info("%s -> %s (acked)", f.device_id, raw[:80])
             elif cmd == "TKQ":
                 pass  # intercom request: not supported
