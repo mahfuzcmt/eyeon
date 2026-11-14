@@ -120,6 +120,25 @@ class EndToEnd(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(await asyncio.wait_for(r.readexactly(len(want)), 2), want)
         w.close()
 
+    async def test_power_on_burst_is_acknowledged_message_by_message(self):
+        """The burst a HongMi watch sent to production on 2026-11-13, in its order."""
+        r, w = await asyncio.open_connection("127.0.0.1", self.port)
+        burst = [
+            ("CONFIG,TY:g601x,UL:10,SY:0,CM:1,WT:0,AA:1,HR:0,TB:5,CS:0,PP:0,AB:0,HH:1,TR:0,MO:", "CONFIG,1"),
+            ("ICCID,8988039910498351025F,355913787483028,470039972038946,", "ICCID,1"),
+            ("RYIMEI,355913787483028", "RYIMEI,1"),
+            ("appcontacttel", None),  # reply format not known yet: not answered
+            ("APPANDFNREPORT,16,vc01,0056006900640065006F002000630061006C006C", "APPANDFNREPORT,1"),
+            ("DEVPWDCHECKBIND", "DEVPWDCHECKBIND,1"),
+            ("eicard,355913787483028,1794477593,3a1c6184408fae", "eicard,1"),
+        ]
+        for content, _ in burst:
+            w.write(build_frame("1378748302", content))
+        w.write(build_frame("1378748302", "LK,0,0,57"))
+        want = b"".join(build_frame("1378748302", reply) for _, reply in burst if reply) + b"[3G*1378748302*0002*LK]"
+        self.assertEqual(await asyncio.wait_for(r.readexactly(len(want)), 2), want)
+        w.close()
+
     async def test_relayed_connection_records_real_ip(self):
         r, w = await asyncio.open_connection("127.0.0.1", self.port)
         w.write(b"PROXY TCP4 37.111.200.5 172.26.0.4 40112 5024\r\n")
