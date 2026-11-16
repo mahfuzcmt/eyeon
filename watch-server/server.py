@@ -3,6 +3,7 @@
 Env:
   WATCH_HOST (0.0.0.0)  WATCH_PORT (8899)  WATCH_DB (watch.db)
   WATCH_ALLOWED_IDS  comma-separated device IDs; empty = accept all (new IDs are logged)
+  WATCH_LOCATE_EVERY seconds without a position report after which the watch is asked for one (600; 0 = never)
 Commands to devices are queued in the `commands` table (see send_command.py).
 """
 from __future__ import annotations
@@ -25,6 +26,13 @@ log = logging.getLogger("watch")
 # appcontacttel is part of the burst too, but its reply carries data ("appcontacttel,num,accounts")
 # whose format for a watch without contacts is not known yet, so it is not answered.
 ACK_WITH_SUCCESS = frozenset({"CONFIG", "ICCID", "RYIMEI", "APPANDFNREPORT", "DEVPWDCHECKBIND", "eicard"})
+
+# The watch reports its position by itself only at power-on, on an alarm and, per the vendor
+# document, "in vibration state"; the HongMi sample sent 2-4 reports a day that way and none
+# while it was carried 4 km (production, 2026-11-12..16). CR makes it locate and report for
+# up to 3 minutes, so a watch that has been quiet is asked on its heartbeat.
+LOCATE_MIN_BATTERY = 15  # below this the watch is left alone: locating runs its GPS
+LOCATE_SLACK = 30  # heartbeats come every 300 s give or take; do not miss one by a second
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS devices(
@@ -77,6 +85,10 @@ class Store:
             self.db.execute("INSERT INTO alarms(device_id,received,device_time,alarms,lat,lon) VALUES(?,?,?,?,?,?)",
                             (dev, time.time(), loc.device_time, ",".join(loc.alarms), loc.lat, loc.lon))
         self.db.commit()
+
+    def last_report(self, dev: str) -> float:
+        """When the last position report of this watch arrived (0 = never)."""
+        return self.db.execute("SELECT MAX(received) FROM locations WHERE device_id=?", (dev,)).fetchone()[0] or 0
 
     def pending(self, dev: str):
         return self.db.execute("SELECT id, content FROM commands WHERE device_id=? AND sent IS NULL ORDER BY id",
@@ -132,9 +144,11 @@ def take_proxy_header(buf: bytearray) -> tuple[str, str | None]:
 
 
 class Server:
-    def __init__(self, store: Store, allowed: set[str]):
+    def __init__(self, store: Store, allowed: set[str], locate_every: float = 0):
         self.store = store
         self.allowed = allowed
+        self.locate_every = locate_every
+        self.asked: dict[str, float] = {}  # device id -> when it was last asked to locate
         self.writers: dict[str, asyncio.StreamWriter] = {}
 
     async def handle(self, reader: asyncio.StreamReader, writer: asyncio.StreamWriter):
@@ -170,6 +184,7 @@ class Server:
                         dev_id = f.device_id
                         self.writers[dev_id] = writer
                     self.process(f, ip, writer)
+                    self.maybe_locate(f, writer)
                     await self.flush_commands(dev_id, writer)
         except (ConnectionError, asyncio.IncompleteReadError):
             pass
@@ -210,6 +225,29 @@ class Server:
         except (ValueError, IndexError) as e:
             log.error("bad %s from %s: %s (%r)", cmd, f.device_id, e, raw[:120])
 
+    def maybe_locate(self, f: Frame, writer: asyncio.StreamWriter):
+        """Ask a watch that has not reported a position for `locate_every` seconds to locate now.
+
+        Only in answer to a heartbeat: the connection has just proved alive (on a mobile network
+        the watch opens a new one every few minutes and the old ones die silently), and it bounds
+        the asking to once per heartbeat.
+        """
+        if not self.locate_every or f.command != "LK":
+            return
+        try:
+            if int(f.args[2]) < LOCATE_MIN_BATTERY:
+                return
+        except (ValueError, IndexError):
+            pass  # bare LK without a battery level
+        dev, now = f.device_id, time.time()
+        quiet_since = max(self.store.last_report(dev), self.asked.get(dev, 0))
+        if now - quiet_since < self.locate_every - LOCATE_SLACK:
+            return
+        self.asked[dev] = now
+        writer.write(build_frame(dev, "CR", f.vendor))
+        log.info("asked %s to locate (no position report for %s)", dev,
+                 f"{int(now - quiet_since)} s" if quiet_since else "ever")
+
     async def flush_commands(self, dev: str, writer: asyncio.StreamWriter):
         for cid, content in self.store.pending(dev):
             writer.write(build_frame(dev, content))
@@ -231,10 +269,12 @@ class Server:
 async def main():
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
     allowed = {x.strip() for x in os.environ.get("WATCH_ALLOWED_IDS", "").split(",") if x.strip()}
-    srv = Server(Store(os.environ.get("WATCH_DB", "watch.db")), allowed)
+    locate_every = float(os.environ.get("WATCH_LOCATE_EVERY", "600"))
+    srv = Server(Store(os.environ.get("WATCH_DB", "watch.db")), allowed, locate_every)
     host, port = os.environ.get("WATCH_HOST", "0.0.0.0"), int(os.environ.get("WATCH_PORT", "8899"))
     s = await asyncio.start_server(srv.handle, host, port)
-    log.info("listening on %s:%s (allowlist=%s)", host, port, sorted(allowed) or "off")
+    log.info("listening on %s:%s (allowlist=%s, locate every %s s)", host, port, sorted(allowed) or "off",
+             int(locate_every) or "- off")
     asyncio.create_task(srv.command_pump())
     async with s:
         await s.serve_forever()

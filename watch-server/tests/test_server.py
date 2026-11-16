@@ -152,6 +152,42 @@ class EndToEnd(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(db.execute("SELECT last_ip FROM devices WHERE id='8800000016'").fetchone()[0],
                          "37.111.200.5")
 
+    async def test_quiet_watch_is_asked_to_locate_on_its_heartbeat(self):
+        self.srv.locate_every = 600
+        lk, cr = b"[3G*8800000015*0002*LK]", b"[3G*8800000015*0002*CR]"
+        r, w = await asyncio.open_connection("127.0.0.1", self.port)
+        # never reported a position: asked on the first heartbeat
+        w.write(build_frame("8800000015", "LK,0,0,79"))
+        self.assertEqual(await asyncio.wait_for(r.readexactly(len(lk + cr)), 2), lk + cr)
+        # just asked: the next heartbeat is only answered
+        w.write(build_frame("8800000015", "LK,0,0,79"))
+        self.assertEqual(await asyncio.wait_for(r.readexactly(len(lk)), 2), lk)
+        # ten minutes later still nothing: asked again
+        self.srv.asked["8800000015"] -= 600
+        w.write(build_frame("8800000015", "LK,0,0,79"))
+        self.assertEqual(await asyncio.wait_for(r.readexactly(len(lk + cr)), 2), lk + cr)
+        # it reports; ten minutes after that report it is asked again, not before
+        w.write(build_frame("8800000015", UD))
+        self.srv.asked["8800000015"] -= 600
+        w.write(build_frame("8800000015", "LK,0,0,79"))
+        self.assertEqual(await asyncio.wait_for(r.readexactly(len(lk)), 2), lk)
+        db = sqlite3.connect(self.dbp)
+        db.execute("UPDATE locations SET received = received - 600")
+        db.commit()
+        w.write(build_frame("8800000015", "LK,0,0,79"))
+        self.assertEqual(await asyncio.wait_for(r.readexactly(len(lk + cr)), 2), lk + cr)
+        w.close()
+
+    async def test_watch_low_on_battery_is_not_asked_to_locate(self):
+        self.srv.locate_every = 600
+        lk = b"[3G*8800000015*0002*LK]"
+        r, w = await asyncio.open_connection("127.0.0.1", self.port)
+        w.write(build_frame("8800000015", "LK,0,0,14"))
+        w.write(build_frame("8800000015", "LK,0,0,14"))
+        self.assertEqual(await asyncio.wait_for(r.readexactly(2 * len(lk)), 2), lk + lk)
+        self.assertEqual(self.srv.asked, {})
+        w.close()
+
     async def test_allowlist_rejects(self):
         self.srv.allowed = {"1"}
         r, w = await asyncio.open_connection("127.0.0.1", self.port)
