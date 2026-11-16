@@ -178,6 +178,40 @@ class EndToEnd(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(await asyncio.wait_for(r.readexactly(len(lk + cr)), 2), lk + cr)
         w.close()
 
+    async def test_watch_is_kept_locating_when_positions_are_wanted_every_few_seconds(self):
+        self.srv.locate_every = 10
+        dev = "8800000015"
+        lk, cr = b"[3G*8800000015*0002*LK]", b"[3G*8800000015*0002*CR]"
+        r, w = await asyncio.open_connection("127.0.0.1", self.port)
+        w.write(build_frame(dev, "LK,0,0,79"))
+        self.assertEqual(await asyncio.wait_for(r.readexactly(len(lk + cr)), 2), lk + cr)
+        pump = lambda: self.srv.maybe_locate(dev, self.srv.writers[dev])  # what command_pump does
+        # inside the 3 minutes of that CR nothing more is sent, report or no report
+        pump()
+        w.write(build_frame(dev, UD))
+        w.write(build_frame(dev, "LK,0,0,79"))
+        self.assertEqual(await asyncio.wait_for(r.readexactly(len(lk)), 2), lk)
+        # shortly before they end it is renewed without waiting for a heartbeat
+        self.srv.asked[dev] -= 170
+        pump()
+        self.assertEqual(await asyncio.wait_for(r.readexactly(len(cr)), 2), cr)
+        # a CR that brought no report within a minute is repeated on the next heartbeat
+        db = sqlite3.connect(self.dbp)
+        db.execute("UPDATE locations SET received = received - 500")
+        db.commit()
+        self.srv.asked[dev] -= 70
+        pump()
+        w.write(build_frame(dev, "LK,0,0,79"))
+        self.assertEqual(await asyncio.wait_for(r.readexactly(len(lk + cr)), 2), lk + cr)
+        # low battery ends it
+        w.write(build_frame(dev, "LK,0,0,14"))
+        self.assertEqual(await asyncio.wait_for(r.readexactly(len(lk)), 2), lk)
+        self.srv.asked[dev] -= 500
+        pump()
+        w.write(build_frame(dev, "LK,0,0,14"))
+        self.assertEqual(await asyncio.wait_for(r.readexactly(len(lk)), 2), lk)
+        w.close()
+
     async def test_watch_low_on_battery_is_not_asked_to_locate(self):
         self.srv.locate_every = 600
         lk = b"[3G*8800000015*0002*LK]"

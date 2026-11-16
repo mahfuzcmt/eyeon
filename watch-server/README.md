@@ -12,12 +12,14 @@ this database.
     python -m unittest discover -s tests                # tests
 
 Env: `WATCH_HOST`, `WATCH_PORT` (8899), `WATCH_DB`, `WATCH_ALLOWED_IDS` (comma list; empty = accept all, new IDs logged),
-`WATCH_LOCATE_EVERY` (600; seconds, 0 = off).
+`WATCH_LOCATE_EVERY` (10; seconds, 0 = off).
 
 Positions: the watch reports by itself only at power-on, on an alarm and "in vibration state" (vendor document); the
-HongMi sample sent 2-4 reports a day. So a watch with no position report for `WATCH_LOCATE_EVERY` seconds is sent `CR`
-(locate now, GPS on for up to 3 minutes) in answer to its next heartbeat, unless its battery is below 15 %. Each `CR`
-costs the watch battery; raise the interval if a watch does not last the day.
+HongMi sample sent 2-4 reports a day. `CR` makes it locate and report for 3 minutes (every 10 s per the vendor
+document; about every 50 s was measured indoors - the pace inside those 3 minutes is the watch's, not the server's).
+With `WATCH_LOCATE_EVERY` under 180 the server keeps the watch locating all the time by sending `CR` again every
+165 s; with 180 or more it sends one `CR` on a heartbeat after that many seconds without a report. Never below 15 %
+battery. Locating all the time keeps the GPS on: expect the battery to last hours, not days (not measured yet).
 Protocol: LK is answered with LK, AL with AL, the power-on messages CONFIG / ICCID / RYIMEI / APPANDFNREPORT /
 DEVPWDCHECKBIND / eicard with `<name>,1` (appcontacttel is not answered yet); UD/UD2/UD_* are stored; command LEN is computed (vendor doc examples have wrong lengths).
 
