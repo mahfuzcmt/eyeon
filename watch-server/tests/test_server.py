@@ -7,7 +7,7 @@ import unittest
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 from protocol import build_frame, extract_frames, parse_location  # noqa: E402
-from motion import Motion, Seen, moved  # noqa: E402
+from motion import MOVED, QUIET, UNSURE, Motion, Seen, verdict  # noqa: E402
 from server import Server, Store, take_proxy_header, trusts_proxy  # noqa: E402
 
 UD = ("UD,120118,070625,A,22.570720,N,113.8620167,E,0.00,188.6,0.0,9,100,51,14188,0,00000010,6,255,460,0,"
@@ -69,10 +69,31 @@ class MovingOrStill(unittest.TestCase):
     def seen(content):
         return Seen.of(parse_location(content.split(",")[1:]))
 
-    def test_wifi_decides_without_a_fix(self):
+    def test_another_cell_and_other_access_points_is_a_move(self):
         here = self.seen(home(1))
-        self.assertFalse(moved(here, self.seen(home(4))))
-        self.assertTrue(moved(here, self.seen(AWAY)))
+        self.assertEqual(verdict(here, self.seen(home(4))), QUIET)
+        self.assertEqual(verdict(here, self.seen(AWAY)), MOVED)
+
+    def test_a_hotspot_travelling_along_does_not_hide_a_move(self):
+        """Production 2026-11-16: one access point (a phone) was heard on the whole ride."""
+        ride = lambda n, cell: self.seen(scan(n, cell, ["AA:AA:AA:AA:55:4A"] + ["0%d:00:00:00:00:0%d" % (n, i)
+                                                                                 for i in range(4)]))
+        self.assertEqual(verdict(ride(1, "1197,2657539"), ride(2, "1197,3019779")), MOVED)
+
+    def test_flipping_between_two_cells_at_one_place_is_not_a_move(self):
+        here = self.seen(home(1))
+        self.assertEqual(verdict(here, self.seen(scan(2, "1164,3234999", HOME_APS[:5]))), QUIET)
+
+    def test_no_shared_access_point_in_the_same_cell_needs_a_second_report(self):
+        other = lambda n: self.seen(scan(n, "1164,3234563", ["0%d:11:11:11:11:1%d" % (n, i) for i in range(5)]))
+        self.assertEqual(verdict(self.seen(home(1)), other(2)), UNSURE)
+        m = Motion(anchor=self.seen(home(1)), since=0, moving=False)
+        self.assertFalse(m.observe(other(2), 50))       # one odd scan: nothing
+        self.assertFalse(m.observe(self.seen(home(3)), 100))
+        self.assertFalse(m.moving)
+        self.assertFalse(m.observe(other(4), 150))
+        self.assertTrue(m.observe(other(5), 200))       # two in a row: walking inside the cell
+        self.assertTrue(m.moving)
 
     def test_the_repeated_last_fix_of_a_report_without_gps_is_not_a_position(self):
         self.assertIsNone(self.seen(home(1)).fix)
@@ -80,23 +101,26 @@ class MovingOrStill(unittest.TestCase):
     def test_gps_decides_when_both_have_a_fix(self):
         fix = lambda lat, kmh: self.seen("UD,120118,070625,A,%f,N,90.4000000,E,%s,0.0,0.0,9,100,51,0,0,00000000,0,0,0.0"
                                          % (lat, kmh))
-        self.assertFalse(moved(fix(23.7500, "0.00"), fix(23.7505, "2.10")))  # 55 m of drift
-        self.assertTrue(moved(fix(23.7500, "0.00"), fix(23.7510, "0.00")))   # 111 m
-        self.assertTrue(moved(fix(23.7500, "0.00"), fix(23.7501, "18.5")))   # in a vehicle
+        self.assertEqual(verdict(fix(23.7500, "0.00"), fix(23.7505, "2.10")), QUIET)  # 55 m of drift
+        self.assertEqual(verdict(fix(23.7500, "0.00"), fix(23.7510, "0.00")), MOVED)  # 111 m
+        self.assertEqual(verdict(fix(23.7500, "0.00"), fix(23.7501, "18.5")), MOVED)  # in a vehicle
 
     def test_cell_decides_when_nothing_else_can(self):
         bare = lambda cell: self.seen(scan(1, cell, []))
-        self.assertFalse(moved(bare("1164,3234563"), bare("1164,3234563")))
-        self.assertTrue(moved(bare("1164,3234563"), bare("1166,3494914")))
+        self.assertEqual(verdict(bare("1164,3234563"), bare("1164,3234563")), QUIET)
+        self.assertEqual(verdict(bare("1164,3234563"), bare("1166,3494914")), MOVED)
 
     def test_still_needs_five_quiet_reports_over_four_minutes(self):
         m = Motion(anchor=self.seen(home(1)), since=0)
-        self.assertFalse(any(m.observe(self.seen(home(n)), 50 * n) for n in range(2, 5)))  # 4 quiet, 200 s
+        self.assertFalse(any(m.observe(self.seen(home(n)), 50 * n) for n in range(2, 6)))  # 4 quiet, 250 s
         self.assertTrue(m.moving)
-        self.assertFalse(m.observe(self.seen(home(5)), 230))  # five, but not four minutes yet
-        self.assertTrue(m.observe(self.seen(home(6)), 280))
+        self.assertTrue(m.observe(self.seen(home(6)), 300))
         self.assertFalse(m.moving)
-        # still: the anchor is everything those reports heard, so a weak-signal scan is not a move
+        m = Motion(anchor=self.seen(home(1)), since=0)
+        self.assertFalse(any(m.observe(self.seen(home(n)), 10 * n) for n in range(2, 9)))  # many, but 80 s
+        self.assertTrue(m.moving)
+        self.assertTrue(m.observe(self.seen(home(9)), 240))
+        # still: the anchor is everything heard there, so a scan of only weak ones is not a move
         self.assertFalse(m.observe(self.seen(scan(9, "1164,3234563", HOME_APS[4:9])), 900))
         self.assertTrue(m.observe(self.seen(AWAY), 950))
         self.assertTrue(m.moving)
