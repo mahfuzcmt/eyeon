@@ -12,14 +12,17 @@ this database.
     python -m unittest discover -s tests                # tests
 
 Env: `WATCH_HOST`, `WATCH_PORT` (8899), `WATCH_DB`, `WATCH_ALLOWED_IDS` (comma list; empty = accept all, new IDs logged),
-`WATCH_LOCATE_EVERY` (10; seconds, 0 = off).
+`WATCH_STILL_EVERY` (600; seconds, 0 = watches are never asked for a position).
 
 Positions: the watch reports by itself only at power-on, on an alarm and "in vibration state" (vendor document); the
-HongMi sample sent 2-4 reports a day. `CR` makes it locate and report for 3 minutes (every 10 s per the vendor
-document; about every 50 s was measured indoors - the pace inside those 3 minutes is the watch's, not the server's).
-With `WATCH_LOCATE_EVERY` under 180 the server keeps the watch locating all the time by sending `CR` again every
-165 s; with 180 or more it sends one `CR` on a heartbeat after that many seconds without a report. Never below 15 %
-battery. Locating all the time keeps the GPS on: expect the battery to last hours, not days (not measured yet).
+HongMi sample sent 2-4 reports a day. `CR` makes it locate and report for 3 minutes - every 10 s per the vendor
+document, every 45-66 s measured on production without a GPS fix; that pace is the watch's, not the server's.
+The server decides when to send `CR` (`motion.py` says whether the watch is moving, from its reports: GPS distance
+and speed, else shared Wi-Fi access points, else the serving cell, plus the step counter):
+- **moving** (and after a restart, until five reports say otherwise): `CR` again every 165 s, so it never stops;
+- **still** (five reports from one place over four minutes): one `CR` per `WATCH_STILL_EVERY`, on a heartbeat. The
+  reports of those 3 minutes are what shows that it has left, so leaving is noticed up to that long afterwards.
+Never below 15 % battery. Log lines: `asked <id> to locate (moving|still)`, `<id> is moving`, `<id> is still`.
 Protocol: LK is answered with LK, AL with AL, the power-on messages CONFIG / ICCID / RYIMEI / APPANDFNREPORT /
 DEVPWDCHECKBIND / eicard with `<name>,1` (appcontacttel is not answered yet); UD/UD2/UD_* are stored; command LEN is computed (vendor doc examples have wrong lengths).
 

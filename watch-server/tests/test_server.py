@@ -7,12 +7,32 @@ import unittest
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 from protocol import build_frame, extract_frames, parse_location  # noqa: E402
+from motion import Motion, Seen, moved  # noqa: E402
 from server import Server, Store, take_proxy_header, trusts_proxy  # noqa: E402
 
 UD = ("UD,120118,070625,A,22.570720,N,113.8620167,E,0.00,188.6,0.0,9,100,51,14188,0,00000010,6,255,460,0,"
       "9360,5081,156,9360,4081,129,9360,4151,128,9360,5082,127,9360,4723,122,9360,4082,120,2,"
       "ssid1,a0:c5:f2:b0:74:d0,-34,ssid2,92:76:9f:48:4f:20,-48,22.4")
 AL = UD.replace("UD,", "AL,", 1).replace("00000010", "00010010")
+
+# Reports without a GPS fix, as the HongMi watch sends them indoors (production, 2026-11-15/16):
+# the last fix repeated, one cell, the five strongest access points.
+NO_FIX = "UD_LTE,151126,1417%02d,V,23.750341,N,90.3918660,E,0.00,0.0,0.0,0,58,79,0,0,00000001,1,0,470,3,%s,146,5,%s,0.0"
+HOME_APS = ["5C:92:5E:74:50:D8", "34:E8:94:5C:81:A1", "8C:90:2D:F9:A6:D6", "8E:90:2D:29:A6:D6", "58:04:4F:94:0B:FA",
+            "62:62:8B:13:DC:8A", "04:D4:C4:13:99:C8", "24:7E:51:8B:45:44", "1C:3B:F3:8B:BD:62"]
+
+
+def scan(n, cell, aps):
+    return NO_FIX % (n % 60, cell, ",".join(",%s,-7%d" % (mac, i) for i, mac in enumerate(aps)))
+
+
+def home(n):
+    """The same place: the two strong access points recur, the weak ones rotate."""
+    return scan(n, "1164,3234563", HOME_APS[:2] + [HOME_APS[2 + (n + i) % 7] for i in range(3)])
+
+
+AWAY = scan(30, "1166,3494914", ["10:5A:95:EA:D1:D1", "FE:CE:DF:34:D9:2E", "DC:8E:8D:BA:AB:F8",
+                                 "5E:D4:7B:0A:F7:F9", "DA:62:34:0C:6A:26"])
 
 
 class Codec(unittest.TestCase):
@@ -42,6 +62,44 @@ class Codec(unittest.TestCase):
         a[4], a[6] = "S", "W"
         loc = parse_location(a)
         self.assertTrue(loc.lat < 0 and loc.lon < 0)
+
+
+class MovingOrStill(unittest.TestCase):
+    @staticmethod
+    def seen(content):
+        return Seen.of(parse_location(content.split(",")[1:]))
+
+    def test_wifi_decides_without_a_fix(self):
+        here = self.seen(home(1))
+        self.assertFalse(moved(here, self.seen(home(4))))
+        self.assertTrue(moved(here, self.seen(AWAY)))
+
+    def test_the_repeated_last_fix_of_a_report_without_gps_is_not_a_position(self):
+        self.assertIsNone(self.seen(home(1)).fix)
+
+    def test_gps_decides_when_both_have_a_fix(self):
+        fix = lambda lat, kmh: self.seen("UD,120118,070625,A,%f,N,90.4000000,E,%s,0.0,0.0,9,100,51,0,0,00000000,0,0,0.0"
+                                         % (lat, kmh))
+        self.assertFalse(moved(fix(23.7500, "0.00"), fix(23.7505, "2.10")))  # 55 m of drift
+        self.assertTrue(moved(fix(23.7500, "0.00"), fix(23.7510, "0.00")))   # 111 m
+        self.assertTrue(moved(fix(23.7500, "0.00"), fix(23.7501, "18.5")))   # in a vehicle
+
+    def test_cell_decides_when_nothing_else_can(self):
+        bare = lambda cell: self.seen(scan(1, cell, []))
+        self.assertFalse(moved(bare("1164,3234563"), bare("1164,3234563")))
+        self.assertTrue(moved(bare("1164,3234563"), bare("1166,3494914")))
+
+    def test_still_needs_five_quiet_reports_over_four_minutes(self):
+        m = Motion(anchor=self.seen(home(1)), since=0)
+        self.assertFalse(any(m.observe(self.seen(home(n)), 50 * n) for n in range(2, 5)))  # 4 quiet, 200 s
+        self.assertTrue(m.moving)
+        self.assertFalse(m.observe(self.seen(home(5)), 230))  # five, but not four minutes yet
+        self.assertTrue(m.observe(self.seen(home(6)), 280))
+        self.assertFalse(m.moving)
+        # still: the anchor is everything those reports heard, so a weak-signal scan is not a move
+        self.assertFalse(m.observe(self.seen(scan(9, "1164,3234563", HOME_APS[4:9])), 900))
+        self.assertTrue(m.observe(self.seen(AWAY), 950))
+        self.assertTrue(m.moving)
 
 
 class ProxyHeader(unittest.TestCase):
@@ -152,45 +210,26 @@ class EndToEnd(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(db.execute("SELECT last_ip FROM devices WHERE id='8800000016'").fetchone()[0],
                          "37.111.200.5")
 
-    async def test_quiet_watch_is_asked_to_locate_on_its_heartbeat(self):
-        self.srv.locate_every = 600
-        lk, cr = b"[3G*8800000015*0002*LK]", b"[3G*8800000015*0002*CR]"
-        r, w = await asyncio.open_connection("127.0.0.1", self.port)
-        # never reported a position: asked on the first heartbeat
-        w.write(build_frame("8800000015", "LK,0,0,79"))
-        self.assertEqual(await asyncio.wait_for(r.readexactly(len(lk + cr)), 2), lk + cr)
-        # just asked: the next heartbeat is only answered
-        w.write(build_frame("8800000015", "LK,0,0,79"))
-        self.assertEqual(await asyncio.wait_for(r.readexactly(len(lk)), 2), lk)
-        # ten minutes later still nothing: asked again
-        self.srv.asked["8800000015"] -= 600
-        w.write(build_frame("8800000015", "LK,0,0,79"))
-        self.assertEqual(await asyncio.wait_for(r.readexactly(len(lk + cr)), 2), lk + cr)
-        # it reports; ten minutes after that report it is asked again, not before
-        w.write(build_frame("8800000015", UD))
-        self.srv.asked["8800000015"] -= 600
-        w.write(build_frame("8800000015", "LK,0,0,79"))
-        self.assertEqual(await asyncio.wait_for(r.readexactly(len(lk)), 2), lk)
-        db = sqlite3.connect(self.dbp)
-        db.execute("UPDATE locations SET received = received - 600")
-        db.commit()
-        w.write(build_frame("8800000015", "LK,0,0,79"))
-        self.assertEqual(await asyncio.wait_for(r.readexactly(len(lk + cr)), 2), lk + cr)
-        w.close()
-
-    async def test_watch_is_kept_locating_when_positions_are_wanted_every_few_seconds(self):
-        self.srv.locate_every = 10
+    async def test_moving_watch_is_kept_locating_and_a_still_one_asked_now_and_then(self):
+        self.srv.still_every = 600
         dev = "8800000015"
         lk, cr = b"[3G*8800000015*0002*LK]", b"[3G*8800000015*0002*CR]"
         r, w = await asyncio.open_connection("127.0.0.1", self.port)
-        w.write(build_frame(dev, "LK,0,0,79"))
-        self.assertEqual(await asyncio.wait_for(r.readexactly(len(lk + cr)), 2), lk + cr)
+
+        async def expect(sent, want):
+            w.write(build_frame(dev, sent))
+            self.assertEqual(await asyncio.wait_for(r.readexactly(len(want)), 2), want)
+
+        async def nothing_from(call):
+            call()
+            await expect("LK,0,0,79", lk)  # the heartbeat's own answer is all that arrives
+
         pump = lambda: self.srv.maybe_locate(dev, self.srv.writers[dev])  # what command_pump does
-        # inside the 3 minutes of that CR nothing more is sent, report or no report
-        pump()
-        w.write(build_frame(dev, UD))
-        w.write(build_frame(dev, "LK,0,0,79"))
-        self.assertEqual(await asyncio.wait_for(r.readexactly(len(lk)), 2), lk)
+        # not known yet = treated as moving: asked on the first heartbeat
+        await expect("LK,0,0,79", lk + cr)
+        # inside the 3 minutes of that CR nothing more is sent
+        w.write(build_frame(dev, home(1)))
+        await nothing_from(pump)
         # shortly before they end it is renewed without waiting for a heartbeat
         self.srv.asked[dev] -= 170
         pump()
@@ -200,20 +239,53 @@ class EndToEnd(unittest.IsolatedAsyncioTestCase):
         db.execute("UPDATE locations SET received = received - 500")
         db.commit()
         self.srv.asked[dev] -= 70
+        await expect("LK,0,0,79", lk + cr)
+        # five reports from one place over four minutes: still. No more renewing ...
+        for n in range(2, 7):
+            w.write(build_frame(dev, home(n)))
+        await expect("LK,0,0,79", lk)
+        self.srv.motion[dev].since -= 300
+        w.write(build_frame(dev, home(7)))
+        await expect("LK,0,0,79", lk)
+        self.assertFalse(self.srv.motion[dev].moving)
+        self.srv.asked[dev] -= 400
+        await nothing_from(pump)
+        # ... one CR per ten minutes, on a heartbeat
+        self.srv.asked[dev] -= 200
+        await expect("LK,0,0,79", lk + cr)
+        # that CR's report comes from somewhere else: moving again, kept locating
+        w.write(build_frame(dev, AWAY))
+        await expect("LK,0,0,79", lk)
+        self.assertTrue(self.srv.motion[dev].moving)
+        self.srv.asked[dev] -= 170
         pump()
+        self.assertEqual(await asyncio.wait_for(r.readexactly(len(cr)), 2), cr)
+        w.close()
+
+    async def test_steps_on_the_heartbeat_wake_a_still_watch(self):
+        self.srv.still_every = 600
+        dev = "8800000015"
+        lk, cr = b"[3G*8800000015*0002*LK]", b"[3G*8800000015*0002*CR]"
+        r, w = await asyncio.open_connection("127.0.0.1", self.port)
         w.write(build_frame(dev, "LK,0,0,79"))
         self.assertEqual(await asyncio.wait_for(r.readexactly(len(lk + cr)), 2), lk + cr)
-        # low battery ends it
-        w.write(build_frame(dev, "LK,0,0,14"))
+        for n in range(1, 7):
+            w.write(build_frame(dev, home(n)))
+        w.write(build_frame(dev, "LK,0,0,79"))
         self.assertEqual(await asyncio.wait_for(r.readexactly(len(lk)), 2), lk)
-        self.srv.asked[dev] -= 500
-        pump()
-        w.write(build_frame(dev, "LK,0,0,14"))
+        self.srv.motion[dev].since -= 300
+        w.write(build_frame(dev, home(7)))
+        w.write(build_frame(dev, "LK,0,0,79"))
         self.assertEqual(await asyncio.wait_for(r.readexactly(len(lk)), 2), lk)
+        self.assertFalse(self.srv.motion[dev].moving)
+        self.srv.asked[dev] -= 200  # asked 200 s ago: neither a renewal nor the ten minutes is due
+        w.write(build_frame(dev, "LK,40,0,79"))
+        self.assertEqual(await asyncio.wait_for(r.readexactly(len(lk + cr)), 2), lk + cr)
+        self.assertTrue(self.srv.motion[dev].moving)
         w.close()
 
     async def test_watch_low_on_battery_is_not_asked_to_locate(self):
-        self.srv.locate_every = 600
+        self.srv.still_every = 600
         lk = b"[3G*8800000015*0002*LK]"
         r, w = await asyncio.open_connection("127.0.0.1", self.port)
         w.write(build_frame("8800000015", "LK,0,0,14"))

@@ -3,9 +3,8 @@
 Env:
   WATCH_HOST (0.0.0.0)  WATCH_PORT (8899)  WATCH_DB (watch.db)
   WATCH_ALLOWED_IDS  comma-separated device IDs; empty = accept all (new IDs are logged)
-  WATCH_LOCATE_EVERY how fresh positions should be, in seconds (10; 0 = the watch is never asked).
-                     Under 180: the watch is kept locating all the time. 180 or more: it is asked
-                     on a heartbeat once it has not reported for that long.
+  WATCH_STILL_EVERY  seconds between position requests to a watch that is not moving (600);
+                     a moving watch is kept locating all the time. 0 = watches are never asked.
 Commands to devices are queued in the `commands` table (see send_command.py).
 """
 from __future__ import annotations
@@ -18,6 +17,7 @@ import os
 import sqlite3
 import time
 
+from motion import Motion, Seen
 from protocol import Frame, build_frame, extract_frames, parse_location
 
 log = logging.getLogger("watch")
@@ -32,9 +32,11 @@ ACK_WITH_SUCCESS = frozenset({"CONFIG", "ICCID", "RYIMEI", "APPANDFNREPORT", "DE
 # The watch reports its position by itself only at power-on, on an alarm and, per the vendor
 # document, "in vibration state"; the HongMi sample sent 2-4 reports a day that way and none
 # while it was carried 4 km (production, 2026-11-12..16). CR makes it locate and report for
-# 3 minutes ("upload once every 10 seconds", vendor document; about every 50 s measured indoors).
-# How often it reports inside those 3 minutes is the watch's doing; the server can only keep
-# it locating by sending CR again before the 3 minutes are over.
+# 3 minutes: "once every 10 seconds" says the vendor document, every 45-66 s was measured on
+# production without a GPS fix. That pace is the watch's; the server only decides when to send CR:
+#   moving (motion.py) - again shortly before each 3 minutes end, so it never stops reporting;
+#   still              - once per WATCH_STILL_EVERY, on a heartbeat; the 3 minutes of reports
+#                        that follow are what shows that it has started to move.
 LOCATE_MIN_BATTERY = 15  # below this the watch is left alone: locating runs its GPS
 LOCATE_SLACK = 30  # heartbeats come every 300 s give or take; do not miss one by a second
 CR_WINDOW = 180  # seconds a watch keeps locating after one CR
@@ -155,10 +157,11 @@ def take_proxy_header(buf: bytearray) -> tuple[str, str | None]:
 
 
 class Server:
-    def __init__(self, store: Store, allowed: set[str], locate_every: float = 0):
+    def __init__(self, store: Store, allowed: set[str], still_every: float = 0):
         self.store = store
         self.allowed = allowed
-        self.locate_every = locate_every
+        self.still_every = still_every
+        self.motion: dict[str, Motion] = {}  # device id -> moving or still; forgotten on restart
         self.asked: dict[str, float] = {}  # device id -> when it was last asked to locate
         self.vendors: dict[str, str] = {}  # device id -> frame header it uses
         self.writers: dict[str, asyncio.StreamWriter] = {}
@@ -198,6 +201,7 @@ class Server:
                     self.vendors[dev_id] = f.vendor
                     self.process(f, ip, writer)
                     if f.command == "LK":
+                        self.heartbeat_steps(f)
                         self.maybe_locate(dev_id, writer, heartbeat=True)
                     await self.flush_commands(dev_id, writer)
         except (ConnectionError, asyncio.IncompleteReadError):
@@ -223,10 +227,12 @@ class Server:
                 loc = parse_location(f.args)
                 self.store.add_location(f.device_id, cmd, loc, raw)
                 self.store.touch(f.device_id, ip, battery=loc.battery, steps=loc.steps, rolls=loc.rolls)
+                self.observe(f.device_id, loc)
             elif cmd == "AL" or cmd.startswith("AL_"):
                 writer.write(build_frame(f.device_id, "AL", f.vendor))  # ack first, even if parse fails
                 loc = parse_location(f.args)
                 self.store.add_location(f.device_id, cmd, loc, raw)
+                self.observe(f.device_id, loc)
                 log.warning("ALARM %s %s at %s,%s", f.device_id, loc.alarms, loc.lat, loc.lon)
             elif cmd in ACK_WITH_SUCCESS:
                 writer.write(build_frame(f.device_id, cmd + ",1", f.vendor))
@@ -239,34 +245,51 @@ class Server:
         except (ValueError, IndexError) as e:
             log.error("bad %s from %s: %s (%r)", cmd, f.device_id, e, raw[:120])
 
-    def maybe_locate(self, dev: str, writer: asyncio.StreamWriter, heartbeat: bool = False):
-        """Send CR when the watch should be locating and is not.
+    def observe(self, dev: str, loc):
+        """Feed a position report to the moving / still decision."""
+        seen, now = Seen.of(loc), time.time()
+        m = self.motion.get(dev)
+        if m is None:
+            self.motion[dev] = Motion(anchor=seen, since=now)
+        elif m.observe(seen, now):
+            log.info("%s is %s", dev, "moving" if m.moving else "still")
 
-        locate_every under CR_WINDOW = keep it locating: CR again shortly before each 3 minutes
-        end (from the command pump), and on a heartbeat when a CR brought no report - on a
-        mobile network the watch opens a new connection every few minutes and the old ones die
-        silently, so a CR can be written into a dead one.
-        locate_every of CR_WINDOW or more = only on a heartbeat (the connection has just proved
-        alive), once nothing was reported for that long.
+    def heartbeat_steps(self, f: Frame):
+        m = self.motion.get(f.device_id)
+        try:
+            if m and m.steps_taken(int(f.args[0]), time.time()):
+                log.info("%s is moving (steps)", f.device_id)
+        except (ValueError, IndexError):
+            pass  # bare LK
+
+    def maybe_locate(self, dev: str, writer: asyncio.StreamWriter, heartbeat: bool = False):
+        """Send CR when the watch should be reporting its position and is not.
+
+        Moving (or not known yet): CR again shortly before each 3 minutes end (from the command
+        pump), and on a heartbeat when a CR brought no report - on a mobile network the watch
+        opens a new connection every few minutes and the old ones die silently, so a CR can be
+        written into a dead one.
+        Still: one CR per still_every, and only on a heartbeat, when the connection has just
+        proved alive.
         """
-        if not self.locate_every:
+        if not self.still_every:
             return
         battery = self.store.battery(dev)
         if battery is not None and battery < LOCATE_MIN_BATTERY:
             return
         now = time.time()
         asked = self.asked.get(dev, 0)
-        quiet_since = max(self.store.last_report(dev), asked)
-        if self.locate_every < CR_WINDOW:
-            due = now - asked >= CR_WINDOW - CR_RENEW_BEFORE or (heartbeat and now - quiet_since >= CR_LOST_AFTER)
+        m = self.motion.get(dev)
+        if m is None or m.moving:
+            unanswered = now - max(self.store.last_report(dev), asked) >= CR_LOST_AFTER
+            due = now - asked >= CR_WINDOW - CR_RENEW_BEFORE or (heartbeat and unanswered)
         else:
-            due = heartbeat and now - quiet_since >= self.locate_every - LOCATE_SLACK
+            due = heartbeat and now - asked >= self.still_every - LOCATE_SLACK
         if not due:
             return
         self.asked[dev] = now
         writer.write(build_frame(dev, "CR", self.vendors.get(dev, "3G")))
-        log.info("asked %s to locate (last position report %s)", dev,
-                 f"{int(now - quiet_since)} s ago" if quiet_since else "never")
+        log.info("asked %s to locate (%s)", dev, "still" if m and not m.moving else "moving")
 
     async def flush_commands(self, dev: str, writer: asyncio.StreamWriter):
         for cid, content in self.store.pending(dev):
@@ -290,12 +313,12 @@ class Server:
 async def main():
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
     allowed = {x.strip() for x in os.environ.get("WATCH_ALLOWED_IDS", "").split(",") if x.strip()}
-    locate_every = float(os.environ.get("WATCH_LOCATE_EVERY", "10"))
-    srv = Server(Store(os.environ.get("WATCH_DB", "watch.db")), allowed, locate_every)
+    still_every = float(os.environ.get("WATCH_STILL_EVERY", "600"))
+    srv = Server(Store(os.environ.get("WATCH_DB", "watch.db")), allowed, still_every)
     host, port = os.environ.get("WATCH_HOST", "0.0.0.0"), int(os.environ.get("WATCH_PORT", "8899"))
     s = await asyncio.start_server(srv.handle, host, port)
-    log.info("listening on %s:%s (allowlist=%s, positions every %s s)", host, port, sorted(allowed) or "off",
-             int(locate_every) or "- never asked")
+    log.info("listening on %s:%s (allowlist=%s, a still watch is located every %s s)", host, port,
+             sorted(allowed) or "off", int(still_every) or "- never, nor a moving one")
     asyncio.create_task(srv.command_pump())
     async with s:
         await s.serve_forever()
