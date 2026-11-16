@@ -286,6 +286,19 @@ class EndToEnd(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(await asyncio.wait_for(r.readexactly(len(cr)), 2), cr)
         w.close()
 
+    async def test_moving_watch_is_asked_again_when_it_reconnects(self):
+        self.srv.still_every = 600
+        lk, cr = b"[3G*8800000015*0002*LK]", b"[3G*8800000015*0002*CR]"
+        r, w = await asyncio.open_connection("127.0.0.1", self.port)
+        w.write(build_frame("8800000015", "LK,0,0,79"))
+        self.assertEqual(await asyncio.wait_for(r.readexactly(len(lk + cr)), 2), lk + cr)
+        # the watch changes network: a new connection, the old one never closed
+        r2, w2 = await asyncio.open_connection("127.0.0.1", self.port)
+        w2.write(build_frame("8800000015", "LK,0,0,79"))
+        self.assertEqual(await asyncio.wait_for(r2.readexactly(len(lk + cr)), 2), lk + cr)
+        w.close()
+        w2.close()
+
     async def test_steps_on_the_heartbeat_wake_a_still_watch(self):
         self.srv.still_every = 600
         dev = "8800000015"

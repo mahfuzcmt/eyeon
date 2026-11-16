@@ -198,6 +198,12 @@ class Server:
                     if dev_id != f.device_id:
                         dev_id = f.device_id
                         self.writers[dev_id] = writer
+                        # A CR written into the connection this one replaces may never have
+                        # arrived (the old one dies silently when the watch changes network):
+                        # a moving watch is asked again on its first heartbeat here.
+                        m = self.motion.get(dev_id)
+                        if m is None or m.moving:
+                            self.asked.pop(dev_id, None)
                     self.vendors[dev_id] = f.vendor
                     self.process(f, ip, writer)
                     if f.command == "LK":
