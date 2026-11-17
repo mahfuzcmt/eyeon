@@ -273,6 +273,12 @@ export async function registerPushToken(
 }
 
 /** Token goes in the query string — Expo tokens contain reserved chars like [ ]. */
+/** Sends one test notification to this phone; `accepted` false carries the push service's reason. */
+export async function sendTestPush(token: string): Promise<{ accepted: boolean; error: string | null }> {
+  const r = await api.post<{ accepted: boolean; error: string | null }>("/users/me/push-tokens/test", { token });
+  return r.data;
+}
+
 export async function unregisterPushToken(token: string): Promise<void> {
   await api.delete("/users/me/push-tokens", { params: { token } });
 }

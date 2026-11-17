@@ -29,6 +29,7 @@ public class PushTokenController {
     private static final Set<String> PLATFORMS = Set.of("ANDROID", "IOS", "UNKNOWN");
 
     private final PushTokenRepository repo;
+    private final com.webinnovation.eyeon.service.PushService pushService;
 
     /** {@code locale}: the app's current language, {@code bn} or {@code en}; optional. */
     public record RegisterPushTokenRequest(String token, String platform, String locale) {}
@@ -55,6 +56,26 @@ public class PushTokenController {
         }
         repo.upsert(orgId, userId, req.token().trim(), platform, locale);
         return ResponseEntity.noContent().build();
+    }
+
+    public record TestResult(boolean accepted, String error) {}
+
+    /**
+     * Sends one test notification to the caller's own phone. 404 when the token is not registered
+     * for this user (the app registers first, then tests).
+     */
+    @PostMapping("/test")
+    public TestResult test(@RequestBody RegisterPushTokenRequest req) {
+        TenantContext.requireOrgId();
+        UUID userId = TenantContext.currentUserId();
+        if (req.token() == null || req.token().isBlank()) {
+            throw new DomainException("INVALID_PUSH_TOKEN", "token is required");
+        }
+        String token = req.token().trim();
+        String locale = repo.localeOfUserToken(userId, token)
+                .orElseThrow(() -> new com.webinnovation.eyeon.exception.NotFoundException("Push token", "this phone"));
+        String error = pushService.sendTest(token, locale.isBlank() ? null : locale);
+        return new TestResult(error == null, error);
     }
 
     /** Token in query (not path) — Expo tokens contain reserved chars like [ ]. */

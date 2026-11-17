@@ -41,6 +41,14 @@ public class PushTokenRepository {
     /** A push destination and the language its notifications should be written in. */
     public record Target(String token, String locale) {}
 
+    /** The language registered with this user's token, or empty when the token is not theirs. */
+    public java.util.Optional<String> localeOfUserToken(UUID userId, String token) {
+        return jdbc.query(
+                "SELECT COALESCE(locale, '') FROM push_tokens WHERE user_id = :userId AND token = :token",
+                new MapSqlParameterSource("userId", userId).addValue("token", token),
+                (rs, i) -> rs.getString(1)).stream().findFirst();
+    }
+
     /** Delete a token owned by this user (sign-out). Returns true if a row was removed. */
     public boolean deleteForUser(UUID userId, String token) {
         int n = jdbc.update(

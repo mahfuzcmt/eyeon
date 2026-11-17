@@ -22,6 +22,12 @@ export interface MapVehicle {
   overspeed?: boolean;
   /** Draw the heading pointer. Only set while the person is actually moving. */
   moving?: boolean;
+  /**
+   * Radius in metres within which the person really is, for a position worked out from Wi-Fi or
+   * phone towers. Drawn as a faint circle, so a marker on the wrong side of a road reads as
+   * "somewhere in here", not as a wrong position.
+   */
+  accuracyM?: number | null;
 }
 
 export interface MapPoint {
@@ -69,6 +75,8 @@ interface Props {
   moving?: MapPoint | null;
   /** Center command; bump `nonce` to re-issue the same center. */
   center?: { lat: number; lng: number; zoom?: number; nonce?: number } | null;
+  /** This phone's own position ("Locate me"): a blue dot with its accuracy circle. null removes it. */
+  me?: { lat: number; lng: number; accuracyM?: number | null } | null;
   /** Keep this point in view by panning (never zooming) once it nears the edge; send a new object per update. */
   follow?: { lat: number; lng: number } | null;
   /** Zoom step command (+1 / -1); bump `nonce` to re-issue. */
@@ -166,7 +174,8 @@ ${googleScripts}
   if(typeof L === 'undefined') post({type:'loadfailed'});
   const map = L.map('map', {
     center:[${DEFAULT.lat},${DEFAULT.lng}], zoom:${DEFAULT.zoom},
-    zoomControl:false, attributionControl:true, maxZoom:20
+    zoomControl:false, attributionControl:true, maxZoom:20,
+    bounceAtZoomLimits:false
   });
   map.attributionControl.setPrefix(false);
 
@@ -459,10 +468,16 @@ ${googleScripts}
   }
   var routeArrows = [], arrowLayer = L.layerGroup().addTo(map);
   function bearingOf(a, b){ return bearing(L.latLng(a), L.latLng(b)); }
+  // Arrows are only made for the part of the route that is on screen (a day's route zoomed in
+  // had hundreds off screen), at most ARROW_MAX of them, and only once the map has come to rest:
+  // rebuilding them at the end of every zoom step is what made zooming stutter (client feedback
+  // 2026-11-17). While a zoom runs they are hidden, so nothing has to be scaled along.
+  var ARROW_MAX = 120, arrowTimer = null;
   function layoutRouteArrows(){
     arrowLayer.clearLayers();
     const SP = 90;
-    let since = SP / 2;
+    let since = SP / 2, made = 0;
+    const view = map.getBounds().pad(0.15);
     routeArrows.forEach(function(s2){
       const pa = map.latLngToLayerPoint(s2.a), pb = map.latLngToLayerPoint(s2.b), seg = pa.distanceTo(pb);
       if(seg < 1) return;
@@ -472,16 +487,45 @@ ${googleScripts}
       while(pos <= seg){
         const f = pos / seg;
         const at = [s2.a[0] + (s2.b[0]-s2.a[0])*f, s2.a[1] + (s2.b[1]-s2.a[1])*f];
-        L.marker(at, {interactive:false, keyboard:false, icon: L.divIcon({className:'', iconSize:[18,18], iconAnchor:[9,9],
-          html:'<svg width="18" height="18" viewBox="0 0 12 12" style="display:block;transform:rotate('+deg+'deg)"><path d="M6 0.8 L11 11 L6 8.2 L1 11 Z" fill="'+s2.color+'" stroke="#fff" stroke-width="1.1" stroke-linejoin="round"/></svg>'})}).addTo(arrowLayer);
+        if(made < ARROW_MAX && view.contains(at)){ made++; L.marker(at, {interactive:false, keyboard:false, icon: L.divIcon({className:'', iconSize:[18,18], iconAnchor:[9,9],
+          html:'<svg width="18" height="18" viewBox="0 0 12 12" style="display:block;transform:rotate('+deg+'deg)"><path d="M6 0.8 L11 11 L6 8.2 L1 11 Z" fill="'+s2.color+'" stroke="#fff" stroke-width="1.1" stroke-linejoin="round"/></svg>'})}).addTo(arrowLayer); }
         pos += SP;
         since = seg - (pos - SP);
       }
     });
   }
-  map.on('zoomend', layoutRouteArrows);
+  function layoutRouteArrowsSoon(){
+    if(arrowTimer) clearTimeout(arrowTimer);
+    arrowTimer = setTimeout(function(){ arrowTimer = null; if(!map.hasLayer(arrowLayer)) arrowLayer.addTo(map); layoutRouteArrows(); }, 180);
+  }
+  map.on('zoomstart', function(){ if(arrowTimer){ clearTimeout(arrowTimer); arrowTimer = null; } arrowLayer.clearLayers(); });
+  map.on('moveend', layoutRouteArrowsSoon);
+
+  // "Somewhere in here" for a position from Wi-Fi or phone towers (v.accuracyM), drawn under the
+  // markers. Placed at the reported position at once; the marker glides to it.
+  const accCircles = {};
+  function setAccuracy(v){
+    const c = accCircles[v.imei];
+    const r = v.accuracyM != null && v.accuracyM >= 25 ? Math.min(v.accuracyM, 800) : 0;
+    if(!r){ if(c){ c.remove(); delete accCircles[v.imei]; } return; }
+    if(c){ c.setLatLng([v.lat, v.lng]); c.setRadius(r); }
+    else accCircles[v.imei] = L.circle([v.lat, v.lng], {radius:r, color:'#0F6B5C', weight:1, opacity:0.5,
+      fillColor:'#0F6B5C', fillOpacity:0.08, interactive:false}).addTo(map);
+  }
+  // This phone's own position: a blue dot and the circle it is accurate to.
+  let meDot = null, meRing = null;
 
   window.MLMap = {
+    setMe(p){
+      if(meDot){ meDot.remove(); meDot = null; }
+      if(meRing){ meRing.remove(); meRing = null; }
+      if(!p) return;
+      if(p.accuracyM != null && p.accuracyM > 8)
+        meRing = L.circle([p.lat, p.lng], {radius: Math.min(p.accuracyM, 2000), color:'#2563EB', weight:1, opacity:0.6,
+          fillColor:'#2563EB', fillOpacity:0.10, interactive:false}).addTo(map);
+      meDot = L.circleMarker([p.lat, p.lng], {radius:8, color:'#fff', weight:3, fillColor:'#2563EB', fillOpacity:1,
+        interactive:false}).addTo(map);
+    },
     setVehicles(list){
       const seen = {};
       list.forEach(v => {
@@ -490,6 +534,7 @@ ${googleScripts}
         noteMotion(v);
         if(m){
           moveMarker(v.imei, m, v.lat, v.lng);
+          setAccuracy(v);
           m._mlV = v;
           if(m._mlSig !== vehSig(v)){ m.setIcon(vehIcon(v)); m._mlSig = vehSig(v); }
           setPointer(m, pointerState(v));
@@ -500,11 +545,12 @@ ${googleScripts}
           nm.on('click', () => post({type:'select', imei:v.imei}));
           nm.addTo(map);
           markers[v.imei] = nm;
+          setAccuracy(v);
           setPointer(nm, pointerState(v));
         }
       });
       Object.keys(markers).forEach(imei => {
-        if(!seen[imei]){ markers[imei].remove(); delete markers[imei]; delete glides[imei]; }
+        if(!seen[imei]){ markers[imei].remove(); delete markers[imei]; delete glides[imei]; setAccuracy({imei: imei}); }
       });
     },
     // Photos arrive after the markers (each is fetched with the user's token): redraw those affected.
@@ -703,6 +749,7 @@ export default function WebMap({
   route,
   moving,
   center,
+  me,
   follow,
   zoomStep,
   baseLayer,
@@ -851,6 +898,9 @@ export default function WebMap({
   useEffect(() => {
     if (center) run("center", `window.MLMap.center(${center.lat},${center.lng},${center.zoom ?? 17})`);
   }, [center, run]);
+  useEffect(() => {
+    if (me !== undefined) run("me", `window.MLMap.setMe(${JSON.stringify(me ?? null)})`);
+  }, [me, run]);
 
   useEffect(() => {
     if (follow) run(null, `window.MLMap.follow(${follow.lat},${follow.lng})`);

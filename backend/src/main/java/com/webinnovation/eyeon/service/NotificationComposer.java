@@ -21,10 +21,18 @@ public class NotificationComposer {
 
     private static final ZoneId DHAKA = ZoneId.of("Asia/Dhaka");
 
-    /** Android channel for calm arrived/left messages (default sound, normal importance). */
-    public static final String CHANNEL_ARRIVALS = "arrivals";
-    /** Android channel for everything that needs attention. */
-    public static final String CHANNEL_ALARMS = "alarms";
+    /*
+     * Android notification channels. The ids changed to *_v2 on 2026-11-17 (a user's notifications
+     * "arrive in silent mode"): Android keeps a channel's sound and importance for good once it
+     * exists, whatever the app asks for later, so a channel that an old build created differently,
+     * or that the phone turned down, can only be replaced under a new id. App 0.3.28 creates the
+     * v2 channels (both with sound and a banner). An older app does not have them and Expo then
+     * uses its own fallback channel, which is high importance with the default sound.
+     */
+    /** Arrived / left / on time and the like: good news, but still with sound and a banner. */
+    public static final String CHANNEL_ARRIVALS = "arrivals_v2";
+    /** Everything that needs attention. */
+    public static final String CHANNEL_ALARMS = "alarms_v2";
 
     public enum Lang {
         BN, EN;

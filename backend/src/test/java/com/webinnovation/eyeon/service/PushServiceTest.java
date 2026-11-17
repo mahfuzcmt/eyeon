@@ -67,7 +67,7 @@ class PushServiceTest {
                 .andExpect(method(HttpMethod.POST))
                 .andExpect(jsonPath("$[0].to").value("ExponentPushToken[aaa]"))
                 .andExpect(jsonPath("$[1].to").value("ExponentPushToken[bbb]"))
-                .andExpect(jsonPath("$[0].channelId").value("alarms"))
+                .andExpect(jsonPath("$[0].channelId").value("alarms_v2"))
                 .andExpect(jsonPath("$[0].priority").value("high"))
                 .andExpect(jsonPath("$[0].data.imei").value("864290061234567"))
                 .andExpect(jsonPath("$[0].data.severity").value("CRITICAL"))
@@ -97,12 +97,12 @@ class PushServiceTest {
         server.expect(requestTo(EXPO_URL))
                 .andExpect(jsonPath("$[0].to").value("ExponentPushToken[bangla]"))
                 .andExpect(jsonPath("$[0].title").value("📍 864290061234567 এখন School-এ"))
-                .andExpect(jsonPath("$[0].channelId").value("arrivals"))
+                .andExpect(jsonPath("$[0].channelId").value("arrivals_v2"))
                 .andRespond(withSuccess(ok, MediaType.APPLICATION_JSON));
         server.expect(requestTo(EXPO_URL))
                 .andExpect(jsonPath("$[0].to").value("ExponentPushToken[english]"))
                 .andExpect(jsonPath("$[0].title").value("📍 864290061234567 reached School"))
-                .andExpect(jsonPath("$[0].channelId").value("arrivals"))
+                .andExpect(jsonPath("$[0].channelId").value("arrivals_v2"))
                 .andRespond(withSuccess(ok, MediaType.APPLICATION_JSON));
 
         pushService.sendAlarmPush(new Alarm(UUID.randomUUID(), orgId, "864290061234567",
@@ -173,5 +173,31 @@ class PushServiceTest {
         assertThat(pushService.pendingReceiptCount()).isEqualTo(1);
         pushService.checkReceipts(Instant.now().plus(PushService.RECEIPT_TTL).plusSeconds(60));
         assertThat(pushService.pendingReceiptCount()).isZero();
+    }
+
+    @Test
+    void test_push_goes_to_one_phone_on_the_alarm_channel_and_reports_expos_answer() {
+        server.expect(requestTo(EXPO_URL))
+                .andExpect(method(HttpMethod.POST))
+                .andExpect(jsonPath("$.length()").value(1))
+                .andExpect(jsonPath("$[0].to").value("ExponentPushToken[mine]"))
+                .andExpect(jsonPath("$[0].channelId").value("alarms_v2"))
+                .andExpect(jsonPath("$[0].sound").value("default"))
+                .andExpect(jsonPath("$[0].priority").value("high"))
+                .andRespond(withSuccess("{\"data\":[{\"status\":\"ok\",\"id\":\"t1\"}]}", MediaType.APPLICATION_JSON));
+
+        org.assertj.core.api.Assertions.assertThat(pushService.sendTest("ExponentPushToken[mine]", "en")).isNull();
+        server.verify();
+    }
+
+    @Test
+    void test_push_to_a_dead_install_says_so_and_forgets_the_token() {
+        server.expect(requestTo(EXPO_URL))
+                .andRespond(withSuccess("{\"data\":[{\"status\":\"error\",\"message\":\"not registered\","
+                        + "\"details\":{\"error\":\"DeviceNotRegistered\"}}]}", MediaType.APPLICATION_JSON));
+
+        org.assertj.core.api.Assertions.assertThat(pushService.sendTest("ExponentPushToken[gone]", "bn"))
+                .isEqualTo("DeviceNotRegistered");
+        org.mockito.Mockito.verify(tokenRepo).deleteAll(List.of("ExponentPushToken[gone]"));
     }
 }
