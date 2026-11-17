@@ -1,9 +1,11 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import axios from "axios";
 import { api, extractError } from "@/lib/api";
 import { useLocale, type StringKey } from "@/lib/i18n";
-import { formatNumber } from "@/lib/format";
+import { formatClockTime, formatNumber } from "@/lib/format";
+import { useEscapeKey } from "@/hooks/useEscapeKey";
 import type { GeofenceView, PlaceSchedule, PlaceScheduleKind } from "@/types/domain";
 
 /** Shown Sunday first: the school week in Bangladesh runs Sunday to Thursday. ISO numbers, 7 = Sunday. */
@@ -34,6 +36,9 @@ export function ExpectedTimesDialog({ place, onClose }: Props) {
   const [leave, setLeave] = useState("12:00");
   const [grace, setGrace] = useState(10);
   const [days, setDays] = useState<number[]>(SCHOOL_DAYS);
+  // State updates are not immediate: a second press of Add in the same moment must not post again.
+  const adding = useRef(false);
+  useEscapeKey(onClose, !saving);
 
   const refresh = useCallback(async () => {
     setLoading(true);
@@ -54,13 +59,30 @@ export function ExpectedTimesDialog({ place, onClose }: Props) {
 
   const toggleDay = (d: number) => setDays((prev) => (prev.includes(d) ? prev.filter((x) => x !== d) : [...prev, d]));
 
+  /** Same kind, time and days as a schedule already listed: it would only alert twice. */
+  const isListed = (kind: PlaceScheduleKind, time: string) =>
+    schedules.some(
+      (s) =>
+        s.kind === kind &&
+        s.time.slice(0, 5) === time.slice(0, 5) &&
+        s.weekdays.length === days.length &&
+        days.every((d) => s.weekdays.includes(d)),
+    );
+
   const add = async () => {
+    if (adding.current) return;
+    const picked: [PlaceScheduleKind, string][] = [];
+    if (arriveOn && arrive) picked.push(["ARRIVE_BY", arrive]);
+    if (leaveOn && leave) picked.push(["LEAVE_BY", leave]);
+    const wanted = picked.filter(([kind, time]) => !isListed(kind, time));
+    if (wanted.length === 0) {
+      setError(t("place.timesDuplicate"));
+      return;
+    }
+    adding.current = true;
     setSaving(true);
     setError(null);
     try {
-      const wanted: [PlaceScheduleKind, string][] = [];
-      if (arriveOn && arrive) wanted.push(["ARRIVE_BY", arrive]);
-      if (leaveOn && leave) wanted.push(["LEAVE_BY", leave]);
       const added: PlaceSchedule[] = [];
       for (const [kind, time] of wanted) {
         const r = await api.post<PlaceSchedule>(`/geofences/${place.id}/schedules`, {
@@ -73,14 +95,19 @@ export function ExpectedTimesDialog({ place, onClose }: Props) {
       }
       setSchedules((prev) => [...prev, ...added].sort((a, b) => a.time.localeCompare(b.time)));
     } catch (err) {
-      setError(extractError(err).message);
-      void refresh();
+      const duplicate =
+        (axios.isAxiosError(err) && err.response?.status === 409) || extractError(err).code === "DUPLICATE_SCHEDULE";
+      // Reload first (it clears the message), then say what happened.
+      await refresh();
+      setError(duplicate ? t("place.timesDuplicate") : extractError(err).message);
     } finally {
+      adding.current = false;
       setSaving(false);
     }
   };
 
   const remove = async (id: string) => {
+    if (!window.confirm(t("place.timesDeleteConfirm"))) return;
     setError(null);
     try {
       await api.delete(`/geofences/${place.id}/schedules/${id}`);
@@ -115,7 +142,7 @@ export function ExpectedTimesDialog({ place, onClose }: Props) {
               <li key={s.id} className="flex items-center gap-3 px-3 py-2">
                 <div className="min-w-0 flex-1">
                   <div className="text-[15px] font-semibold text-ink-900">
-                    {t(`place.times.${s.kind}` as StringKey)} <span className="font-mono">{s.time}</span>
+                    {t(`place.times.${s.kind}` as StringKey)} <span>{formatClockTime(s.time, locale)}</span>
                     {s.graceMinutes > 0 && (
                       <span className="ml-1.5 text-[14px] font-normal text-ink-500">{graceLabel(s.graceMinutes)}</span>
                     )}

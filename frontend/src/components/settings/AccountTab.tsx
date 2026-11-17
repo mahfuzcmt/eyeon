@@ -1,7 +1,7 @@
 "use client";
 
 import { FormEvent, useState } from "react";
-import { useLocale } from "@/lib/i18n";
+import { useLocale, type StringKey } from "@/lib/i18n";
 import { useSession } from "@/lib/session-context";
 import { changePassword } from "@/lib/auth";
 
@@ -47,7 +47,11 @@ export function AccountTab() {
         </div>
         <div>
           <div className="uppercase">{t("account.role")}</div>
-          <div className="mt-0.5 font-semibold text-ink-900">{role}</div>
+          <div className="mt-0.5 font-semibold text-ink-900">
+            {role === "SUPER_ADMIN" || role === "ORG_ADMIN" || role === "ORG_USER"
+              ? t(`users.role.${role}` as StringKey)
+              : role}
+          </div>
         </div>
       </div>
 

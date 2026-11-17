@@ -1,4 +1,4 @@
-import type { Locale } from "./i18n";
+import { translate, type Locale, type StringKey } from "./i18n";
 import type { DeviceView, LocationView } from "@/types/domain";
 
 const TIMEZONE = "Asia/Dhaka";
@@ -101,34 +101,49 @@ export function formatSince(ts: string | null | undefined): string {
 }
 
 /**
- * Short elapsed duration for dense list rows: "45 s", "5 min", "1 h 12 min", "2 d 3 h".
+ * Short elapsed duration for dense list rows: "45 s", "5 min", "1 h 12 min", "2 d 3 h"
+ * ("৫ মিনিট", "১ ঘণ্টা ১২ মিনিট" in Bengali).
  * Returns "" when the timestamp is missing so callers can fall back to a label.
  */
-export function formatCompactDuration(ts: string | null | undefined): string {
+export function formatCompactDuration(ts: string | null | undefined, locale: Locale): string {
   if (!ts) return "";
   const secs = Math.max(0, Math.floor((Date.now() - new Date(ts).getTime()) / 1000));
   const d = Math.floor(secs / 86400);
   const h = Math.floor((secs % 86400) / 3600);
   const m = Math.floor((secs % 3600) / 60);
-  if (d > 0) return h > 0 ? `${d} d ${h} h` : `${d} d`;
-  if (h > 0) return m > 0 ? `${h} h ${m} min` : `${h} h`;
-  if (m > 0) return `${m} min`;
-  return `${secs} s`;
+  const part = (n: number, unit: "s" | "min" | "h" | "d") =>
+    `${formatNumber(n, locale)} ${translate(`dur.${unit}` as StringKey, locale)}`;
+  if (d > 0) return h > 0 ? `${part(d, "d")} ${part(h, "h")}` : part(d, "d");
+  if (h > 0) return m > 0 ? `${part(h, "h")} ${part(m, "min")}` : part(h, "h");
+  if (m > 0) return part(m, "min");
+  return part(secs, "s");
 }
 
+/** i18n key suffixes of the 16-point compass, clockwise from north. */
 const COMPASS_16 = [
-  "North", "North-northeast", "Northeast", "East-northeast",
-  "East", "East-southeast", "Southeast", "South-southeast",
-  "South", "South-southwest", "Southwest", "West-southwest",
-  "West", "West-northwest", "Northwest", "North-northwest",
-];
+  "N", "NNE", "NE", "ENE",
+  "E", "ESE", "SE", "SSE",
+  "S", "SSW", "SW", "WSW",
+  "W", "WNW", "NW", "NNW",
+] as const;
 
 /** Human heading for a GPS course in degrees (16-point compass). */
-export function compassLabel(course: number | null | undefined): string {
+export function compassLabel(course: number | null | undefined, locale: Locale): string {
   if (course == null || Number.isNaN(course)) return "—";
   const idx = Math.round((((course % 360) + 360) % 360) / 22.5) % 16;
-  return COMPASS_16[idx];
+  return translate(`compass.${COMPASS_16[idx]}` as StringKey, locale);
 }
+
+/**
+ * When the coordinates of a position were measured. A packet without a fix keeps the last
+ * fix's coordinates, so its own time says nothing about where the person is.
+ */
+export function positionTs(loc: Pick<LocationView, "ts" | "valid" | "lastValidTs">): string {
+  return loc.valid ? loc.ts : loc.lastValidTs ?? loc.ts;
+}
+
+/** The latest packet has had no fix for this long before the popup says so. */
+export const NO_FIX_NOTICE_MS = 30_000;
 
 /** Start of the current Asia/Dhaka day as a UTC ISO string (for "today" queries). */
 export function dhakaTodayStartIso(): string {
@@ -166,7 +181,7 @@ export function formatNumber(n: number, locale: Locale, opts?: Intl.NumberFormat
   return new Intl.NumberFormat(tag, opts).format(n);
 }
 
-export function formatDateTime(iso: string | Date, locale: Locale): string {
+export function formatDateTime(iso: string | Date, locale: Locale, opts?: { seconds?: boolean }): string {
   const tag = locale === "bn" ? "bn-BD" : "en-US";
   const d = typeof iso === "string" ? new Date(iso) : iso;
   return new Intl.DateTimeFormat(tag, {
@@ -176,7 +191,18 @@ export function formatDateTime(iso: string | Date, locale: Locale): string {
     day: "2-digit",
     hour: "2-digit",
     minute: "2-digit",
+    ...(opts?.seconds ? { second: "2-digit" as const } : {}),
   }).format(d);
+}
+
+/** A wall-clock time "HH:mm" (Asia/Dhaka, as schedules are stored) in the locale's digits. */
+export function formatClockTime(hhmm: string, locale: Locale): string {
+  const m = /^(\d{2}):(\d{2})/.exec(hhmm);
+  if (!m) return hhmm;
+  const tag = locale === "bn" ? "bn-BD" : "en-US";
+  return new Intl.DateTimeFormat(tag, { timeZone: TIMEZONE, hour: "2-digit", minute: "2-digit" }).format(
+    new Date(`2000-01-01T${m[1]}:${m[2]}:00+06:00`),
+  );
 }
 
 export function formatRelative(iso: string | null, locale: Locale): string {

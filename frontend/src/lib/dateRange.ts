@@ -36,6 +36,16 @@ export function dhakaParts(at: number = Date.now()): DayParts {
   return { y: s.getUTCFullYear(), m: s.getUTCMonth(), d: s.getUTCDate() };
 }
 
+/** "yyyy-MM-dd" of the Asia/Dhaka calendar day `daysAgo` days before today (0 = today). */
+export function dhakaDateIso(daysAgo: number = 0): string {
+  return new Date(Date.now() + DHAKA_OFFSET_MS - daysAgo * DAY_MS).toISOString().slice(0, 10);
+}
+
+/** "yyyy-MM" of the current Asia/Dhaka month. */
+export function dhakaMonthIso(): string {
+  return dhakaDateIso().slice(0, 7);
+}
+
 /** UTC instant (ms) of Asia/Dhaka midnight that begins a civil date. */
 export function dhakaMidnight(p: DayParts): number {
   return Date.UTC(p.y, p.m, p.d, 0, 0, 0) - DHAKA_OFFSET_MS;

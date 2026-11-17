@@ -6,15 +6,16 @@ import { useLocale } from "@/lib/i18n";
 import { useDevices } from "@/hooks/useDevices";
 import { formatDurationS, formatNumber } from "@/lib/format";
 import { ExportModal } from "@/components/export";
+import { dhakaDateIso } from "@/lib/dateRange";
 
+// Calendar days in Asia/Dhaka, not UTC or the browser's zone: before 06:00 Dhaka the UTC date
+// is still yesterday.
 function todayIso(): string {
-  return new Date().toISOString().slice(0, 10);
+  return dhakaDateIso();
 }
 
 function weekAgoIso(): string {
-  const d = new Date();
-  d.setDate(d.getDate() - 7);
-  return d.toISOString().slice(0, 10);
+  return dhakaDateIso(7);
 }
 
 async function downloadCsv(path: string, fallbackName: string) {

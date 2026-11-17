@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useLocale } from "@/lib/i18n";
 import { formatDateTime } from "@/lib/format";
-import { ALARM_SEVERITIES, ALARM_TYPES, alarmTypeLabel, processResultLabel, severityLabel } from "@/lib/alarmTypes";
+import { ALARM_SEVERITIES, ALARM_TYPES, alarmTitle, alarmTypeLabel, processResultLabel, severityLabel } from "@/lib/alarmTypes";
 import { AlarmMapModal } from "./AlarmMapModal";
 import { AcknowledgeDialog } from "./AcknowledgeDialog";
 import type { AlarmAcknowledgeRequest, AlarmSeverity, AlarmView, DeviceView } from "@/types/domain";
@@ -21,6 +21,9 @@ export interface AlarmCenterFilter {
 interface AlarmListProps {
   alarms: AlarmView[];
   loading: boolean;
+  /** Set when the list could not be loaded; shown instead of "nothing here". */
+  error?: string | null;
+  onRetry?: () => void;
   devices: DeviceView[];
   filter: AlarmCenterFilter;
   onFilterChange: (f: AlarmCenterFilter) => void;
@@ -35,7 +38,7 @@ const SEV_PILL: Record<AlarmSeverity, string> = {
   INFO: "bg-brand-500 text-white",
 };
 
-export function AlarmList({ alarms, loading, devices, filter, onFilterChange, onAcknowledge, onExport, exporting }: AlarmListProps) {
+export function AlarmList({ alarms, loading, error, onRetry, devices, filter, onFilterChange, onAcknowledge, onExport, exporting }: AlarmListProps) {
   const { t, locale } = useLocale();
   const [mapAlarm, setMapAlarm] = useState<AlarmView | null>(null);
   const [ackAlarm, setAckAlarm] = useState<AlarmView | null>(null);
@@ -104,7 +107,18 @@ export function AlarmList({ alarms, loading, devices, filter, onFilterChange, on
 
       <div className="flex-1 overflow-auto">
         {loading && <div className="px-3 py-4 text-[14px] text-ink-500">{t("common.loading")}</div>}
-        {!loading && alarms.length === 0 && (
+        {!loading && error && (
+          <div className="px-3 py-10 text-center text-[14px]" role="alert">
+            <div className="font-semibold text-alarm-red">{t("alarms.loadFailed")}</div>
+            <div className="mt-1 text-ink-500">{error}</div>
+            {onRetry && (
+              <button type="button" className="btn-secondary mt-3" onClick={onRetry}>
+                {t("common.retry")}
+              </button>
+            )}
+          </div>
+        )}
+        {!loading && !error && alarms.length === 0 && (
           <div className="px-3 py-12 text-center text-[14px] text-ink-500">{t("common.empty")}</div>
         )}
         {!loading && alarms.length > 0 && (
@@ -118,7 +132,7 @@ export function AlarmList({ alarms, loading, devices, filter, onFilterChange, on
                   <span className={`status-pill ${SEV_PILL[a.severity]}`}>{severityLabel(a.severity, t)}</span>
                   <span className="text-[14px] text-ink-500">{formatDateTime(a.ts, locale)}</span>
                 </div>
-                <div className="font-semibold text-ink-900">{alarmTypeLabel(a.type, t)}</div>
+                <div className="font-semibold text-ink-900">{alarmTitle(a, t)}</div>
                 <div className="text-[15px] text-ink-700">
                   {deviceName(a.deviceImei)} <span className="font-mono text-[13px] text-ink-500">{a.deviceImei}</span>
                 </div>
@@ -167,7 +181,7 @@ export function AlarmList({ alarms, loading, devices, filter, onFilterChange, on
                   <td>
                     <span className={`status-pill ${SEV_PILL[a.severity]}`}>{severityLabel(a.severity, t)}</span>
                   </td>
-                  <td className="font-semibold">{alarmTypeLabel(a.type, t)}</td>
+                  <td className="font-semibold">{alarmTitle(a, t)}</td>
                   <td>
                     <div className="text-ink-900">{deviceName(a.deviceImei)}</div>
                     <div className="font-mono text-[12px] text-ink-500">{a.deviceImei}</div>

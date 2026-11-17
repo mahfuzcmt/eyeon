@@ -3,6 +3,7 @@
 import { useState, useMemo } from "react";
 import { useExport, ExportType } from "@/hooks/useExport";
 import { useLocale } from "@/lib/i18n";
+import { dhakaDateIso, dhakaMonthIso } from "@/lib/dateRange";
 import type { DeviceView } from "@/types/domain";
 
 interface ExportModalProps {
@@ -36,16 +37,10 @@ export function ExportModal({ onClose, devices = [], defaultType, defaultDevice 
 
   const [exportType, setExportType] = useState<ExportType>(defaultType || "devices");
   const [selectedDevice, setSelectedDevice] = useState(defaultDevice || "");
-  const [fromDate, setFromDate] = useState(() => {
-    const d = new Date();
-    d.setDate(d.getDate() - 7);
-    return d.toISOString().split("T")[0];
-  });
-  const [toDate, setToDate] = useState(() => new Date().toISOString().split("T")[0]);
-  const [month, setMonth] = useState(() => {
-    const d = new Date();
-    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
-  });
+  // Asia/Dhaka calendar days and month, whatever the browser's time zone.
+  const [fromDate, setFromDate] = useState(() => dhakaDateIso(7));
+  const [toDate, setToDate] = useState(() => dhakaDateIso());
+  const [month, setMonth] = useState(() => dhakaMonthIso());
 
   const needsDevice = exportType === "monthly-summary" || exportType === "locations";
   const needsDateRange = exportType === "trips" || exportType === "alarms" || exportType === "locations";

@@ -68,6 +68,11 @@ export async function fetchMe(): Promise<AuthMeResponse> {
  */
 let cachedWsToken: { token: string; expiresAt: number } | null = null;
 
+/** Forget the cached token, e.g. after the server refused it. */
+export function clearWsToken(): void {
+  cachedWsToken = null;
+}
+
 export async function fetchWsToken(): Promise<string> {
   const now = Date.now();
   if (cachedWsToken && cachedWsToken.expiresAt > now + 30_000) {

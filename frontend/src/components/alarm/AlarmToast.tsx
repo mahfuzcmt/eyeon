@@ -9,7 +9,7 @@ import { useSession } from "@/lib/session-context";
 import { useAlarms } from "@/hooks/useAlarms";
 import { useDevices } from "@/hooks/useDevices";
 import { useNotificationSettings } from "@/hooks/useNotificationSettings";
-import { alarmTypeLabel, severityLabel } from "@/lib/alarmTypes";
+import { alarmTitle, severityLabel } from "@/lib/alarmTypes";
 import { playAlarmSound, unlockAlarmAudio } from "@/lib/alarmSound";
 import { formatDateTime } from "@/lib/format";
 import type { AlarmSeverity, AlarmView } from "@/types/domain";
@@ -35,6 +35,27 @@ export const ALARM_PREVIEW_EVENT = "eyeon:alarmPreview";
 interface Toast {
   alarm: AlarmView;
   shownAt: number;
+}
+
+/**
+ * Adds a toast, newest first, and trims to MAX_VISIBLE. A CRITICAL toast (SOS) stays until it
+ * is handled and keeps its repeating sound, so it never makes room for a lower severity: the
+ * oldest non-critical toast goes first - the new one itself when everything else is critical.
+ * Only when every toast is CRITICAL does the oldest of them go.
+ */
+function addToast(prev: Toast[], toast: Toast): Toast[] {
+  const next = [toast, ...prev.filter((x) => x.alarm.id !== toast.alarm.id)];
+  while (next.length > MAX_VISIBLE) {
+    let drop = next.length - 1;
+    for (let i = next.length - 1; i >= 0; i--) {
+      if (next[i].alarm.severity !== "CRITICAL") {
+        drop = i;
+        break;
+      }
+    }
+    next.splice(drop, 1);
+  }
+  return next;
 }
 
 /**
@@ -81,7 +102,7 @@ export function AlarmToast() {
     // Settings not loaded yet → fall back to "pop up everything but ignition".
     const popup = s ? s.popupTypes.includes(a.type) : a.type !== "ACC_ON" && a.type !== "ACC_OFF";
     if (!popup) return;
-    setToasts((prev) => [{ alarm: a, shownAt: Date.now() }, ...prev.filter((x) => x.alarm.id !== a.id)].slice(0, MAX_VISIBLE));
+    setToasts((prev) => addToast(prev, { alarm: a, shownAt: Date.now() }));
     if (s?.soundTypes.includes(a.type)) playAlarmSound(a.severity);
   }, []);
 
@@ -232,7 +253,7 @@ export function AlarmToast() {
               <div className="mt-0.5 truncate text-[16px] font-semibold text-ink-900">
                 <span className={SEV_LABEL[a.severity]}>{severityLabel(a.severity, t)}</span>
                 <span className="mx-1.5 text-ink-300">·</span>
-                {alarmTypeLabel(a.type, t)}
+                {alarmTitle(a, t)}
               </div>
               <div className="mt-0.5 truncate text-[14px] text-ink-700">
                 <span className="font-medium">{deviceName.get(a.deviceImei) ?? (a.deviceImei || t("notif.previewPopup"))}</span>

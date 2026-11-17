@@ -6,6 +6,8 @@ import "leaflet/dist/leaflet.css";
 import { DEFAULT_ZOOM, DHAKA_CENTER, createBaseLayer } from "@/lib/leaflet";
 import { SEARCH_DEBOUNCE_MS, SEARCH_MIN_CHARS, searchAddress, type GeocodeResult } from "@/lib/geocode";
 import { useLocale, type StringKey } from "@/lib/i18n";
+import { extractError } from "@/lib/api";
+import { formatNumber } from "@/lib/format";
 import type {
   GeofenceCreate,
   GeofenceKind,
@@ -64,13 +66,20 @@ export function GeofenceEditor({ kind, initial, start, onSubmit, onCancel }: Pro
   /** Set when a result was just picked, so the box's new text does not start another search. */
   const searchPicked = useRef(false);
   const [address, setAddress] = useState<string | null>(initial?.address ?? null);
+  // With alerts off the zone tells nobody anything (a customer saved a place like that and
+  // reported "geofence not working"), so that state must be confirmed before it is saved.
+  const alertsOff = notifyOn === "NONE";
+  const [silentOk, setSilentOk] = useState(false);
+  useEffect(() => {
+    if (!alertsOff) setSilentOk(false);
+  }, [alertsOff]);
 
   const canSave = useMemo(() => {
     const hasName = !!name.trim();
     const circleOk = type === "CIRCLE" ? (center !== null && radiusM >= minRadius) : true;
     const polygonOk = type === "POLYGON" ? (polygon.length >= 3) : true;
-    return hasName && (type === "CIRCLE" ? circleOk : polygonOk);
-  }, [name, type, center, radiusM, polygon, minRadius]);
+    return hasName && (type === "CIRCLE" ? circleOk : polygonOk) && (!alertsOff || silentOk);
+  }, [name, type, center, radiusM, polygon, minRadius, alertsOff, silentOk]);
 
   useEffect(() => {
     if (isPlace && !nameTouched.current) setName(t(`place.type.${placeType}` as StringKey));
@@ -283,7 +292,7 @@ export function GeofenceEditor({ kind, initial, start, onSubmit, onCancel }: Pro
       };
       await onSubmit(req);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "save failed");
+      setError(extractError(err).message);
     } finally {
       setBusy(false);
     }
@@ -413,8 +422,23 @@ export function GeofenceEditor({ kind, initial, start, onSubmit, onCancel }: Pro
           </label>
         )}
 
+        {alertsOff && (
+          <div className="rounded-lg border border-alarm-amber/60 bg-sun-100 p-3 text-[14px] text-ink-900" role="alert">
+            <p className="font-semibold">{t("place.alertsOffWarning")}</p>
+            <label className="mt-2 flex min-h-[40px] cursor-pointer items-center gap-2">
+              <input
+                type="checkbox"
+                className="h-5 w-5 shrink-0 accent-brand-500"
+                checked={silentOk}
+                onChange={(e) => setSilentOk(e.target.checked)}
+              />
+              {t("place.alertsOffConfirm")}
+            </label>
+          </div>
+        )}
+
         <label className="text-[15px]">
-          <span className="mb-1 block text-[14px] text-ink-400">Color</span>
+          <span className="mb-1 block text-[14px] text-ink-400">{t("geo.color")}</span>
           <input
             type="color"
             className="h-8 w-full cursor-pointer rounded border border-surface-300/30 bg-surface-100"
@@ -433,7 +457,7 @@ export function GeofenceEditor({ kind, initial, start, onSubmit, onCancel }: Pro
             className="btn-ghost text-[14px]"
             onClick={() => setPolygon((prev) => prev.slice(0, -1))}
           >
-            Undo last vertex ({polygon.length})
+            {t("geo.undoVertex").replace("{n}", formatNumber(polygon.length, locale))}
           </button>
         )}
 

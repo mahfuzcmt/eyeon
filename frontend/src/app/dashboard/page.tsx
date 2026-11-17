@@ -139,7 +139,15 @@ export default function DashboardPage() {
   const selectedDevice = selectedImei ? devices.find((d) => d.imei === selectedImei) ?? null : null;
 
   // Today's route of whoever is selected, drawn on the map as a thin line with arrows.
-  const todayStartIso = useMemo(() => dhakaTodayStartIso(), []);
+  // Re-checked every half minute: a tab left open past midnight (Dhaka) moves on to the new day.
+  const [todayStartIso, setTodayStartIso] = useState(dhakaTodayStartIso);
+  useEffect(() => {
+    const id = window.setInterval(() => {
+      const now = dhakaTodayStartIso();
+      setTodayStartIso((prev) => (prev === now ? prev : now));
+    }, 30_000);
+    return () => window.clearInterval(id);
+  }, []);
   const { pieces: routeToday, stays: staysToday } = useDayRoute(selectedImei, todayStartIso);
 
   const visibleLocations = useMemo(() => {

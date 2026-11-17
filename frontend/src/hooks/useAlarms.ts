@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { api } from "@/lib/api";
+import { api, extractError } from "@/lib/api";
 import { subscribeAlarms } from "@/lib/ws";
 import type { AlarmAcknowledgeRequest, AlarmView } from "@/types/domain";
 
@@ -62,7 +62,8 @@ export function useAlarms(orgId: string, opts: Options = {}) {
   const [alarms, setAlarms] = useState<AlarmView[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const mounted = useRef(true);
+  // Bumped by reload() to run the load again with the same filters.
+  const [reloadKey, setReloadKey] = useState(0);
   const onNewRef = useRef(onNew);
   const queryRef = useRef<AlarmQuery & { allowedImeis?: Set<string> | null }>({ type, severity, imei, from, to, allowedImeis });
   onNewRef.current = onNew;
@@ -86,10 +87,16 @@ export function useAlarms(orgId: string, opts: Options = {}) {
     return r.data;
   }, [upsert]);
 
+  const reload = useCallback(() => setReloadKey((k) => k + 1), []);
+
   useEffect(() => {
-    mounted.current = true;
+    // Per run, not per component: a slow answer for an earlier filter must not replace the
+    // list of the filter chosen after it.
+    let cancelled = false;
     let unsub: (() => void) | null = null;
     const known = new Set<string>();
+    setLoading(true);
+    setError(null);
 
     (async () => {
       try {
@@ -101,19 +108,23 @@ export function useAlarms(orgId: string, opts: Options = {}) {
         if (from) params.from = from;
         if (to) params.to = to;
         const r = await api.get<AlarmView[]>("/alarms", { params });
-        if (mounted.current) {
+        if (!cancelled) {
           for (const a of r.data) known.add(a.id);
           setAlarms(r.data);
         }
       } catch (err) {
-        if (mounted.current) setError(err instanceof Error ? err.message : "Failed to load alarms");
+        if (!cancelled) {
+          setAlarms([]);
+          setError(extractError(err).message);
+        }
       } finally {
-        if (mounted.current) setLoading(false);
+        if (!cancelled) setLoading(false);
       }
+      if (cancelled) return;
 
       try {
-        unsub = await subscribeAlarms(orgId, (raw) => {
-          if (!mounted.current) return;
+        const off = await subscribeAlarms(orgId, (raw) => {
+          if (cancelled) return;
           const a = normalizeLive(raw);
           if (!matches(a, queryRef.current)) return;
           const isNew = !known.has(a.id);
@@ -121,16 +132,19 @@ export function useAlarms(orgId: string, opts: Options = {}) {
           upsert(a);
           if (isNew) onNewRef.current?.(a);
         });
-      } catch (err) {
-        if (mounted.current) setError(err instanceof Error ? err.message : "WS subscribe failed");
+        // The filter changed while subscribing: this listener belongs to nobody.
+        if (cancelled) off();
+        else unsub = off;
+      } catch {
+        // Live updates are extra; the loaded list stays usable without them.
       }
     })();
 
     return () => {
-      mounted.current = false;
+      cancelled = true;
       unsub?.();
     };
-  }, [orgId, unackedOnly, limit, type, severity, imei, from, to, upsert]);
+  }, [orgId, unackedOnly, limit, type, severity, imei, from, to, upsert, reloadKey]);
 
-  return { alarms, loading, error, acknowledge };
+  return { alarms, loading, error, reload, acknowledge };
 }

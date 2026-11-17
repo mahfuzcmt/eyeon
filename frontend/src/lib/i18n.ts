@@ -900,9 +900,87 @@ const STRINGS = {
   // ── Testimonials ─────────────────────────────────────────────────
 
   // ── Common marketing ─────────────────────────────────────────────
+  // ── Dialog safety, warnings and formats (2026-11-17) ─────────────
+  "common.selectAll": { en: "Select all", bn: "সব বাছুন" },
+  "common.deselectAll": { en: "Deselect all", bn: "সব বাদ দিন" },
+  "common.deleteConfirm": { en: "Delete \"{name}\"?", bn: "\"{name}\" মুছে ফেলবেন?" },
+  "common.deleteFailed": { en: "Could not delete", bn: "মোছা যায়নি" },
+  "users.count": { en: "{n} users", bn: "{n} জন ব্যবহারকারী" },
+  "users.countOne": { en: "{n} user", bn: "{n} জন ব্যবহারকারী" },
+  "users.passwordTooShort": { en: "Password must be at least 8 characters", bn: "পাসওয়ার্ড কমপক্ষে ৮ অক্ষরের হতে হবে" },
+  "users.devicesLoadFailed": {
+    en: "Could not load who this user sees. Nothing can be saved until it loads.",
+    bn: "এই ব্যবহারকারীর সদস্যদের তালিকা লোড হয়নি। লোড না হলে সংরক্ষণ করা যাবে না।",
+  },
+  "alarms.loadFailed": { en: "Could not load the alarms", bn: "অ্যালার্ম লোড করা যায়নি" },
+  "place.badgeAlertsOff": { en: "Alerts off", bn: "অ্যালার্ট বন্ধ" },
+  "place.badgeNobody": { en: "Nobody assigned", bn: "কোনো সদস্য নেই" },
+  "place.alertsOffWarning": {
+    en: "Alerts are off. You will not be told when someone arrives here or leaves.",
+    bn: "অ্যালার্ট বন্ধ। কেউ এখানে পৌঁছালে বা বের হলে কোনো বার্তা আসবে না।",
+  },
+  "place.alertsOffConfirm": { en: "Yes, save without alerts", bn: "হ্যাঁ, অ্যালার্ট ছাড়াই সংরক্ষণ" },
+  "place.timesDeleteConfirm": { en: "Delete this expected time?", bn: "এই নির্ধারিত সময়টি মুছে ফেলবেন?" },
+  "place.timesDuplicate": { en: "This time is already in the list.", bn: "এই সময়টি আগে থেকেই তালিকায় আছে।" },
+  "route.deleteConfirm": {
+    en: "Delete this route? Alerts for leaving it will stop.",
+    bn: "এই পথটি মুছে ফেলবেন? পথ ছাড়ার অ্যালার্ট আর আসবে না।",
+  },
+  "geo.color": { en: "Color", bn: "রং" },
+  "geo.unitM": { en: "m", bn: "মি" },
+  "geo.undoVertex": { en: "Undo last point ({n})", bn: "শেষ বিন্দু মুছুন ({n})" },
+  "geo.assignAfterCreate": {
+    en: "Saved. Now choose who this is for - with nobody chosen, no alert is sent.",
+    bn: "সংরক্ষিত। এবার সদস্য বেছে নিন — কাউকে না বাছলে কোনো অ্যালার্ট আসবে না।",
+  },
+  "geo.assignFailed": {
+    en: "Saved, but the person could not be added. Choose them here.",
+    bn: "সংরক্ষিত, কিন্তু সদস্য যোগ করা যায়নি। এখানে বেছে নিন।",
+  },
+  "geo.assignSaveFailed": { en: "Could not save the people.", bn: "সদস্যদের তালিকা সংরক্ষণ করা যায়নি।" },
+  "geo.assignLoadFailed": { en: "Could not load the people.", bn: "সদস্যদের তালিকা লোড করা যায়নি।" },
+  "fleet.nextUpdate": { en: "Next update in {n} s", bn: "পরের আপডেট {n} সেকেন্ডে" },
+  "popup.noGps": { en: "No GPS signal · position from {ago}", bn: "জিপিএস সংকেত নেই · এই অবস্থান {ago} পাওয়া" },
+  "ts.unread": {
+    en: "Not read from the tracker yet, so its current setting is not known.",
+    bn: "ট্র্যাকার থেকে এখনও পড়া হয়নি, তাই এখনকার সেটিং জানা নেই।",
+  },
+  "ts.unreadSet": { en: "Set it anyway", bn: "তবুও সেট করুন" },
+  "ts.NIGHT_REST.factory": {
+    en: "New trackers come with night rest on, 00:00-07:00.",
+    bn: "নতুন ট্র্যাকারে রাতের বিশ্রাম চালু থাকে, ০০:০০–০৭:০০।",
+  },
+  "dur.s": { en: "s", bn: "সে." },
+  "dur.min": { en: "min", bn: "মিনিট" },
+  "dur.h": { en: "h", bn: "ঘণ্টা" },
+  "dur.d": { en: "d", bn: "দিন" },
+  "compass.N": { en: "North", bn: "উত্তর" },
+  "compass.NNE": { en: "North-northeast", bn: "উত্তর-উত্তর-পূর্ব" },
+  "compass.NE": { en: "Northeast", bn: "উত্তর-পূর্ব" },
+  "compass.ENE": { en: "East-northeast", bn: "পূর্ব-উত্তর-পূর্ব" },
+  "compass.E": { en: "East", bn: "পূর্ব" },
+  "compass.ESE": { en: "East-southeast", bn: "পূর্ব-দক্ষিণ-পূর্ব" },
+  "compass.SE": { en: "Southeast", bn: "দক্ষিণ-পূর্ব" },
+  "compass.SSE": { en: "South-southeast", bn: "দক্ষিণ-দক্ষিণ-পূর্ব" },
+  "compass.S": { en: "South", bn: "দক্ষিণ" },
+  "compass.SSW": { en: "South-southwest", bn: "দক্ষিণ-দক্ষিণ-পশ্চিম" },
+  "compass.SW": { en: "Southwest", bn: "দক্ষিণ-পশ্চিম" },
+  "compass.WSW": { en: "West-southwest", bn: "পশ্চিম-দক্ষিণ-পশ্চিম" },
+  "compass.W": { en: "West", bn: "পশ্চিম" },
+  "compass.WNW": { en: "West-northwest", bn: "পশ্চিম-উত্তর-পশ্চিম" },
+  "compass.NW": { en: "Northwest", bn: "উত্তর-পশ্চিম" },
+  "compass.NNW": { en: "North-northwest", bn: "উত্তর-উত্তর-পশ্চিম" },
 } as const;
 
 export type StringKey = keyof typeof STRINGS;
+
+/**
+ * A string for code that runs outside React (formatters in lib/format.ts, popup HTML): the
+ * caller passes the locale it got from `useLocale()`.
+ */
+export function translate(key: StringKey, locale: Locale): string {
+  return STRINGS[key]?.[locale] ?? key;
+}
 
 interface LocaleCtx {
   locale: Locale;

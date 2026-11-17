@@ -31,10 +31,15 @@ import {
   MARKER_BODY_COLOR,
   type VehicleState,
   formatBatteryPercent,
+  formatDateTime,
+  formatNumber,
+  formatRelative,
+  positionTs,
+  NO_FIX_NOTICE_MS,
 } from "@/lib/format";
 import { buildPersonSvg, getIconDimensions, noseOffset, personPhotoUrl } from "@/lib/personIcons";
 import { useSpeedLimits } from "@/hooks/useSpeedLimits";
-import { useLocale } from "@/lib/i18n";
+import { useLocale, type Locale, type StringKey } from "@/lib/i18n";
 import { api } from "@/lib/api";
 import { restingUntil } from "@/lib/nightRest";
 import { SEARCH_DEBOUNCE_MS, SEARCH_MIN_CHARS, searchAddress, type GeocodeResult } from "@/lib/geocode";
@@ -200,20 +205,21 @@ function loadCurrentStay(imei: string): Promise<CurrentStay | null> {
   return request;
 }
 
-/** "14:40" for today, "01/10 22:29" for an earlier day (Asia/Dhaka, 24 h like the rest of the card). */
-function staySince(iso: string): string {
+/** "14:40" for today, "01/10 22:29" for an earlier day (Asia/Dhaka, 24 h like the rest of the card), in the locale's digits. */
+function staySince(iso: string, locale: Locale): string {
+  const tag = locale === "bn" ? "bn-BD" : "en-GB";
   const date = new Date(iso);
-  const day = (d: Date) => d.toLocaleDateString("en-GB", { timeZone: "Asia/Dhaka", day: "2-digit", month: "2-digit" });
-  const time = date.toLocaleTimeString("en-GB", { timeZone: "Asia/Dhaka", hour: "2-digit", minute: "2-digit", hour12: false });
+  const day = (d: Date) => d.toLocaleDateString(tag, { timeZone: "Asia/Dhaka", day: "2-digit", month: "2-digit" });
+  const time = date.toLocaleTimeString(tag, { timeZone: "Asia/Dhaka", hour: "2-digit", minute: "2-digit", hour12: false });
   return day(date) === day(new Date()) ? time : `${day(date)} ${time}`;
 }
 
-function stayLine(stay: CurrentStay | null | undefined, t: (k: "popup.hereFor" | "popup.hereForMore" | "popup.since") => string): string {
+function stayLine(stay: CurrentStay | null | undefined, t: (k: "popup.hereFor" | "popup.hereForMore" | "popup.since") => string, locale: Locale): string {
   if (!stay) return "";
-  const length = formatCompactDuration(stay.from);
+  const length = formatCompactDuration(stay.from, locale);
   return stay.openStart
     ? `${t("popup.hereForMore")} ${length}`
-    : `${t("popup.hereFor")} ${length} · ${t("popup.since")} ${staySince(stay.from)}`;
+    : `${t("popup.hereFor")} ${length} · ${t("popup.since")} ${staySince(stay.from, locale)}`;
 }
 
 /** Reverse geocode coordinates to address using Nominatim */
@@ -319,13 +325,14 @@ async function reverseGeocode(lat: number, lng: number): Promise<string> {
 // street / satellite stay one tap away in the layer menu when a key is configured.
 const getDefaultLayer = (): BaseLayerKind => DEFAULT_BASE_LAYER;
 
-const STATE_TEXT: Record<VehicleState, string> = {
-  moving: "Moving",
-  idle: "Idle",
-  stopped: "Stopped",
-  offline: "Offline",
-  expired: "Expired",
-  nodata: "No Data",
+/** The same words as the people list (lib/i18n.ts). */
+const STATE_KEY: Record<VehicleState, StringKey> = {
+  moving: "veh.moving",
+  idle: "veh.idle",
+  stopped: "veh.stopped",
+  offline: "veh.offline",
+  expired: "veh.expired",
+  nodata: "veh.nodata",
 };
 
 /** Screen distance between direction arrows on the route line. */
@@ -340,23 +347,6 @@ const FOLLOW_ZOOM = 19;
 const GLIDE_MAX_M = 3000;
 const GLIDE_MIN_MS = 800;
 const GLIDE_MAX_MS = 12_000;
-
-function formatDateTime(ts: string | null | undefined): string {
-  if (!ts) return "—";
-  const date = new Date(ts);
-  return date
-    .toLocaleString("en-GB", {
-      timeZone: "Asia/Dhaka",
-      day: "2-digit",
-      month: "2-digit",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-      second: "2-digit",
-      hour12: false,
-    })
-    .replace(",", "");
-}
 
 // Marker color follows the shared 6-state model, so the map matches the
 // Vehicles screen and the live list.
@@ -606,6 +596,7 @@ function getFreshnessStatusFromAge(secondsAgo: number): FreshnessStatus {
 
 /** Countdown timer for next batch update */
 function BatchCountdown({ lastRefreshAt }: { lastRefreshAt: Date | null }) {
+  const { t, locale } = useLocale();
   const [secondsLeft, setSecondsLeft] = useState(10);
 
   useEffect(() => {
@@ -633,7 +624,7 @@ function BatchCountdown({ lastRefreshAt }: { lastRefreshAt: Date | null }) {
       <div
         className={`h-1.5 w-1.5 rounded-full ${secondsLeft <= 2 ? "animate-pulse bg-brand-500" : "bg-emerald-500"}`}
       />
-      <span>Next update in {secondsLeft}s</span>
+      <span>{t("fleet.nextUpdate").replace("{n}", formatNumber(secondsLeft, locale))}</span>
     </div>
   );
 }
@@ -691,7 +682,7 @@ export function FleetMap({ devices, locations, selectedImei, onSelect, onRefresh
   const [, setTick] = useState(0); // Force re-render every second for freshness timer
 
   const speedLimits = useSpeedLimits();
-  const { t } = useLocale();
+  const { t, locale } = useLocale();
 
   // The floating vehicle panel covers the left edge; popups and fit-to-bounds
   // must pad past it. Kept in a ref so marker callbacks see the latest value.
@@ -766,7 +757,7 @@ export function FleetMap({ devices, locations, selectedImei, onSelect, onRefresh
         const row = container.querySelector<HTMLElement>(".pp-card-stay");
         const text = row?.querySelector<HTMLElement>(".pp-card-stay-text");
         if (!row || !text || row.dataset.imei !== imei) return;
-        const line = stayLine(stay, t);
+        const line = stayLine(stay, t, locale);
         text.textContent = line;
         row.style.display = line ? "" : "none";
       });
@@ -779,7 +770,7 @@ export function FleetMap({ devices, locations, selectedImei, onSelect, onRefresh
         window.dispatchEvent(new CustomEvent("vehicleAction", { detail: { action: btn.dataset.action, imei } }));
       };
     });
-  }, [t]);
+  }, [t, locale]);
 
   /** Where a gliding marker is drawn right now. */
   const glidePosition = useCallback((imei: string, now: number): L.LatLng | null => {
@@ -898,13 +889,13 @@ export function FleetMap({ devices, locations, selectedImei, onSelect, onRefresh
     const state: VehicleState = device ? vehicleState(device, location) : "offline";
     const overspeed = device != null && speedLimits.isOverspeed(device.imei, location?.speed);
     const stateColor = overspeed ? OVERSPEED_COLOR : VEHICLE_STATE_COLOR[state];
-    const stateLabel = overspeed ? t("popup.overspeed") : STATE_TEXT[state];
+    const stateLabel = overspeed ? t("popup.overspeed") : t(STATE_KEY[state]);
 
     let statusLine: string;
-    if (speed > 0) statusLine = `${speed} km/h (${compassLabel(location?.course)}, ${stateLabel})`;
-    else if ((state === "stopped" || state === "idle") && device?.parkedSince) statusLine = `${stateLabel} · ${formatCompactDuration(device.parkedSince)}`;
+    if (speed > 0) statusLine = `${formatNumber(speed, locale)} ${t("rules.unit.kph")} (${compassLabel(location?.course, locale)}, ${stateLabel})`;
+    else if ((state === "stopped" || state === "idle") && device?.parkedSince) statusLine = `${stateLabel} · ${formatCompactDuration(device.parkedSince, locale)}`;
     else if (state === "offline" && restingUntil(restByImei?.get(imei))) statusLine = `${t("veh.resting")} ${restingUntil(restByImei?.get(imei))}`;
-    else if (state === "offline" && device?.lastSeenAt) statusLine = `${stateLabel} · ${formatCompactDuration(device.lastSeenAt)}`;
+    else if (state === "offline" && device?.lastSeenAt) statusLine = `${stateLabel} · ${formatCompactDuration(device.lastSeenAt, locale)}`;
     else statusLine = stateLabel;
 
     const approx = location?.accuracyM != null
@@ -913,7 +904,8 @@ export function FleetMap({ devices, locations, selectedImei, onSelect, onRefresh
     const fix = !location ? "—"
       : location.source === "WIFI" ? `Wi-Fi${approx}`
       : location.source === "LBS" ? `${t("fleet.cellFallback")}${approx}`
-      : location.valid ? "GPS" : t("fleet.cellFallback");
+      // Without a fix the marker is still on the last one, which came from GPS.
+      : location.valid || location.lastValidTs ? "GPS" : t("fleet.cellFallback");
     const voltage = location?.voltageMv ?? device?.lastVoltageMv;
     const power = voltage != null ? `${(voltage / 1000).toFixed(1)} V` : "—";
     // A personal tracker reports its own percentage; the voltage formula is for 12 V vehicle batteries.
@@ -926,7 +918,14 @@ export function FleetMap({ devices, locations, selectedImei, onSelect, onRefresh
     const coords = hasPos ? `${lat.toFixed(6)}, ${lng.toFixed(6)}` : "—";
     const address = hasPos ? addressCache.get(addressCacheKey(lat, lng)) ?? t("popup.loadingAddress") : "—";
     // Whatever we last learned; refreshPopupDom() asks the server and fills it in.
-    const stay = stayLine(currentStayCache.get(imei)?.stay, t);
+    const stay = stayLine(currentStayCache.get(imei)?.stay, t, locale);
+    // The marker stays on the last fix while packets arrive without one: the time shown is that
+    // fix's, and after half a minute the card says that the position is not current.
+    const shownTs = location ? positionTs(location) : null;
+    const noFix =
+      location != null && !location.valid && shownTs != null && Date.now() - new Date(shownTs).getTime() >= NO_FIX_NOTICE_MS
+        ? t("popup.noGps").replace("{ago}", formatRelative(shownTs, locale))
+        : "";
 
     const cell = (icon: string, label: string, value: string, color?: string) =>
       `<div class="pp-card-cell">${icon}<div class="pp-card-cell-body"><div class="pp-card-cell-label">${label}</div><div class="pp-card-cell-value"${color ? ` style="color:${color}"` : ""}>${value}</div></div></div>`;
@@ -945,13 +944,14 @@ export function FleetMap({ devices, locations, selectedImei, onSelect, onRefresh
           <span class="pp-card-dot" style="background:${stateColor}"></span>
         </div>
         <div class="pp-card-grid">
-          ${cell(ICON.clock, t("popup.gpsTime"), formatDateTime(location?.ts))}
+          ${cell(ICON.clock, t("popup.gpsTime"), shownTs ? esc(formatDateTime(shownTs, locale, { seconds: true })) : "—")}
           ${cell(ICON.signal, t("popup.fix"), fix)}
           ${cell(ICON.plug, t("popup.power"), power)}
           ${cell(ICON.battery, t("popup.battery"), battery)}
           ${cell(ICON.road, t("popup.mileage"), mileage)}
           ${cell(ICON.sat, t("popup.satellites"), sats)}
         </div>
+        ${noFix ? `<div class="pp-card-row" style="color:#B45309;font-weight:600">${ICON.signal}<span>${esc(noFix)}</span></div>` : ""}
         <div class="pp-card-row pp-card-stay" data-imei="${imei}"${stay ? "" : ' style="display:none"'}>${ICON.clock}<span class="pp-card-stay-text">${esc(stay)}</span></div>
         <div class="pp-card-row">${ICON.globe}<span class="pp-card-coords">${coords}</span></div>
         <div class="pp-card-row pp-card-addr">${ICON.pin}<span class="pp-card-address-text" data-lat="${hasPos ? lat : ""}" data-lng="${hasPos ? lng : ""}">${esc(address)}</span></div>
@@ -966,7 +966,7 @@ export function FleetMap({ devices, locations, selectedImei, onSelect, onRefresh
           ${action("details", ICON.doc, t("act.details"))}
         </div>
       </div>`;
-  }, [speedLimits, t, restByImei]);
+  }, [speedLimits, t, locale, restByImei]);
 
   // Init map once
   useEffect(() => {
@@ -1867,7 +1867,8 @@ export function FleetMap({ devices, locations, selectedImei, onSelect, onRefresh
             <input
               type="search"
               className="min-w-0 flex-1 bg-transparent px-3 py-2 text-[14px] text-ink-900 outline-none placeholder:text-ink-400"
-              placeholder="Search address…"
+              placeholder={t("geo.searchAddress")}
+              aria-label={t("geo.searchAddress")}
               value={searchQ}
               onChange={(e) => setSearchQ(e.target.value)}
               onKeyDown={(e) => {
@@ -1880,7 +1881,8 @@ export function FleetMap({ devices, locations, selectedImei, onSelect, onRefresh
               onClick={() => void runSearch()}
               disabled={searching || !searchQ.trim()}
               className="px-3 text-ink-500 transition hover:text-ink-900 disabled:opacity-50"
-              title="Search"
+              title={t("common.search")}
+              aria-label={t("common.search")}
             >
               <svg
                 width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
