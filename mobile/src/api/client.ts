@@ -55,9 +55,15 @@ export const api: AxiosInstance = axios.create({
   headers: { Accept: "application/json" },
 });
 
-api.interceptors.request.use((config) => {
-  if (tokens.accessToken) {
-    config.headers.set("Authorization", `Bearer ${tokens.accessToken}`);
+// The access token lives an hour. It is renewed here, before a request goes out with one that
+// has run out or is about to (shared with every request waiting at that moment), so a signed-in
+// user never sees a refused request because of it. The 401 handling below stays as the net for
+// a token the server no longer accepts for another reason. When the server cannot be reached
+// the request goes out with the token there is; it would have failed either way.
+api.interceptors.request.use(async (config) => {
+  const token = await freshAccessToken();
+  if (token) {
+    config.headers.set("Authorization", `Bearer ${token}`);
   }
   return config;
 });
@@ -228,6 +234,9 @@ api.interceptors.response.use(
       // next request (the app polls every 10 s) tries again.
       if (r.rejected) endSession();
     }
+    // Several screens show `error.message` as it is; make it the server's own words or a plain
+    // sentence, never "Request failed with status code 403".
+    error.message = extractError(error).message;
     return Promise.reject(error);
   },
 );
@@ -267,7 +276,9 @@ export function extractError(err: unknown): ApiError {
         status,
       };
     }
-    return { code: "NETWORK", message: nonEmpty(err.message) ?? fallback, status };
+    // Never axios's own "Request failed with status code 403" / "Network Error": say it in the
+    // user's language.
+    return { code: "NETWORK", message: err.response ? fallback : translate("common.offline"), status };
   }
   return { code: "UNKNOWN", message: nonEmpty(err instanceof Error ? err.message : String(err)) ?? fallback };
 }
