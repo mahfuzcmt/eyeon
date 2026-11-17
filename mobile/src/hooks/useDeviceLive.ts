@@ -7,6 +7,8 @@ import type { DeviceView, LocationView } from "@/types";
 
 /** REST fallback while the socket is down or slow: the server's last-known position. */
 const POLL_MS = 10_000;
+/** The device row (online / offline, battery, last seen) is read again this often while the app is open. */
+const DEVICE_RELOAD_MS = 30_000;
 
 /** One device with its last-known position, kept live over the WS stream with a REST fallback. */
 export function useDeviceLive(imei: string, orgId: string | null) {
@@ -36,14 +38,28 @@ export function useDeviceLive(imei: string, orgId: string | null) {
         /* keep prior state */
       }
     };
+    // The device row was loaded once, so on the Track and Statistics tabs the online / offline
+    // state, the state pill, the marker colour and the battery stayed as they were when the
+    // screen opened. It never comes over the socket: read it again on a timer and on resume.
+    const loadDevice = async () => {
+      try {
+        const d = await getDevice(imei);
+        if (mounted) setDevice(d);
+      } catch {
+        /* keep prior state */
+      }
+    };
     let tick = 0;
     const timer = setInterval(() => {
       tick++;
       if (AppState.currentState !== "active") return;
       if (!isWsConnected() || tick % 2 === 0) void poll();
+      if (tick % (DEVICE_RELOAD_MS / (POLL_MS / 2)) === 0) void loadDevice();
     }, POLL_MS / 2);
     const appSub = AppState.addEventListener("change", (s) => {
-      if (s === "active") void poll();
+      if (s !== "active") return;
+      void poll();
+      void loadDevice();
     });
 
     (async () => {

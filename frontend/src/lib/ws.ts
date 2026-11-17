@@ -1,84 +1,81 @@
 "use client";
 
 import { Client as StompClient, IMessage, StompSubscription } from "@stomp/stompjs";
-import { fetchWsToken } from "./auth";
+import { clearWsToken, fetchWsToken } from "./auth";
 import type { AlarmView, LocationView } from "@/types/domain";
 
 type Listener<T> = (msg: T) => void;
 
 /**
- * Single shared STOMP client per browser tab. Reconnects with exponential
- * backoff. The CONNECT frame carries the JWT in its Authorization native
- * header — see CLAUDE.md §9 and StompAuthChannelInterceptor.
+ * Single shared STOMP client per browser tab, created on first use and left to reconnect by
+ * itself. The CONNECT frame carries the JWT in its Authorization native header — see
+ * CLAUDE.md §9 and StompAuthChannelInterceptor.
+ *
+ * The token is fetched again before every (re)connect: the one from the first connect expires
+ * after an hour and every later reconnect was refused. Subscriptions are dropped on every
+ * socket close and re-attached on every connect; stompjs calls onDisconnect only for a
+ * graceful disconnect, so after a network drop the socket used to come back with none.
  */
+function wsUrl(): string {
+  if (process.env.NEXT_PUBLIC_WS_BASE) {
+    return process.env.NEXT_PUBLIC_WS_BASE;
+  }
+  // In browser, derive from current location
+  if (typeof window !== "undefined") {
+    const proto = window.location.protocol === "https:" ? "wss:" : "ws:";
+    const host = window.location.host;
+    // WebSocket connects to backend on port 8081 with /api/v1 context path
+    const backendHost = host.replace(/:3001$/, ":8081");
+    return `${proto}//${backendHost}/api/v1/ws`;
+  }
+  return "ws://localhost:8081/api/v1/ws";
+}
+
 class WsClient {
   private client: StompClient | null = null;
   private connected = false;
-  private connecting: Promise<void> | null = null;
   private subs = new Map<string, StompSubscription>();
   private listeners = new Map<string, Set<Listener<unknown>>>();
 
-  private async ensureConnected(): Promise<void> {
-    if (this.connected) return;
-    if (this.connecting) return this.connecting;
-
-    this.connecting = (async () => {
-      const token = await fetchWsToken();
-
-      // Dynamically determine WebSocket URL based on current page location
-      const getWsUrl = (): string => {
-        if (process.env.NEXT_PUBLIC_WS_BASE) {
-          return process.env.NEXT_PUBLIC_WS_BASE;
+  private ensureClient(): void {
+    if (this.client) return;
+    const url = wsUrl();
+    const client = new StompClient({
+      brokerURL: url,
+      beforeConnect: async () => {
+        // A failed token fetch must not throw here (stompjs would stop reconnecting): connect
+        // without one, the server refuses it and the next attempt asks again.
+        let token = "";
+        try {
+          token = await fetchWsToken();
+        } catch {
+          token = "";
         }
-        // In browser, derive from current location
-        if (typeof window !== "undefined") {
-          const proto = window.location.protocol === "https:" ? "wss:" : "ws:";
-          const host = window.location.host;
-          // WebSocket connects to backend on port 8081 with /api/v1 context path
-          const backendHost = host.replace(/:3001$/, ":8081");
-          return `${proto}//${backendHost}/api/v1/ws`;
-        }
-        return "ws://localhost:8081/api/v1/ws";
-      };
-
-      const wsUrl = getWsUrl();
-
-      const client = new StompClient({
-        brokerURL: wsUrl,
-        connectHeaders: { Authorization: `Bearer ${token}` },
-        reconnectDelay: 3_000,
-        heartbeatIncoming: 10_000,
-        heartbeatOutgoing: 10_000,
-        debug: () => {},
-        // Force WebSocket to reconnect on error
-        webSocketFactory: () => new WebSocket(wsUrl),
-      });
-
-      await new Promise<void>((resolve, reject) => {
-        client.onConnect = () => {
-          this.connected = true;
-          for (const [dest, listenerSet] of this.listeners.entries()) {
-            if (listenerSet.size > 0 && !this.subs.has(dest)) {
-              this.attach(dest);
-            }
-          }
-          resolve();
-        };
-        client.onStompError = (frame) => reject(new Error(frame.headers.message ?? "STOMP error"));
-        client.onWebSocketError = (e) => reject(e instanceof Error ? e : new Error("WS error"));
-        client.onDisconnect = () => {
-          this.connected = false;
-          this.subs.clear();
-        };
-        client.activate();
-      });
-
-      this.client = client;
-    })().finally(() => {
-      this.connecting = null;
+        client.connectHeaders = { Authorization: `Bearer ${token}` };
+      },
+      reconnectDelay: 3_000,
+      heartbeatIncoming: 10_000,
+      heartbeatOutgoing: 10_000,
+      debug: () => {},
+      webSocketFactory: () => new WebSocket(url),
     });
-
-    return this.connecting;
+    client.onConnect = () => {
+      this.connected = true;
+      this.subs.clear();
+      for (const [dest, listenerSet] of this.listeners.entries()) {
+        if (listenerSet.size > 0) this.attach(dest);
+      }
+    };
+    client.onWebSocketClose = () => {
+      this.connected = false;
+      this.subs.clear();
+    };
+    // A refused CONNECT (expired or revoked token): never reuse the cached token.
+    client.onStompError = () => {
+      clearWsToken();
+    };
+    this.client = client;
+    client.activate();
   }
 
   private attach(destination: string): void {
@@ -108,7 +105,7 @@ class WsClient {
     }
     set.add(listener as Listener<unknown>);
 
-    await this.ensureConnected();
+    this.ensureClient();
     this.attach(destination);
 
     return () => {
@@ -116,8 +113,7 @@ class WsClient {
       if (!s) return;
       s.delete(listener as Listener<unknown>);
       if (s.size === 0) {
-        const sub = this.subs.get(destination);
-        sub?.unsubscribe();
+        if (this.connected) this.subs.get(destination)?.unsubscribe();
         this.subs.delete(destination);
         this.listeners.delete(destination);
       }

@@ -2,6 +2,7 @@ import { Redirect, Tabs } from "expo-router";
 import { Pressable, Text } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useAuth } from "@/auth/AuthContext";
+import { confirmSignOut } from "@/auth/confirmSignOut";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
 import { usePeopleCount } from "@/hooks/usePeopleCount";
 import { useI18n } from "@/i18n";
@@ -11,7 +12,7 @@ function SignOut() {
   const { signOut } = useAuth();
   const { t } = useI18n();
   return (
-    <Pressable onPress={() => void signOut()} hitSlop={12} style={{ paddingHorizontal: space.md }}>
+    <Pressable onPress={() => confirmSignOut(t, signOut)} hitSlop={12} accessibilityRole="button" style={{ paddingHorizontal: space.md }}>
       <Text style={{ color: colors.onHeader, fontSize: 14, fontWeight: "600" }}>{t("auth.signOut")}</Text>
     </Pressable>
   );

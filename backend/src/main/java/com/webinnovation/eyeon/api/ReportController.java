@@ -37,8 +37,9 @@ public class ReportController {
             @RequestParam(name = "to") String toIso) {
         UUID orgId = TenantContext.requireOrgId();
         access.requireSeesAll();
-        LocalDate from = LocalDate.parse(fromIso);
-        LocalDate to = LocalDate.parse(toIso);
+        LocalDate from = parseDate(fromIso, "from");
+        LocalDate to = parseDate(toIso, "to");
+        requireRange(from, to);
         byte[] body = service.tripsCsv(orgId, from, to).getBytes(StandardCharsets.UTF_8);
         return csv(body, "trips_" + from + "_" + to + ".csv");
     }
@@ -49,8 +50,9 @@ public class ReportController {
             @RequestParam(name = "to") String toIso) {
         UUID orgId = TenantContext.requireOrgId();
         access.requireSeesAll();
-        LocalDate from = LocalDate.parse(fromIso);
-        LocalDate to = LocalDate.parse(toIso);
+        LocalDate from = parseDate(fromIso, "from");
+        LocalDate to = parseDate(toIso, "to");
+        requireRange(from, to);
         byte[] body = service.alarmsCsv(orgId, from, to).getBytes(StandardCharsets.UTF_8);
         return csv(body, "alarms_" + from + "_" + to + ".csv");
     }
@@ -73,6 +75,27 @@ public class ReportController {
         YearMonth ym = parseMonth(month);
         byte[] body = service.monthlySummaryCsv(orgId, imei, ym).getBytes(StandardCharsets.UTF_8);
         return csv(body, "monthly_" + ym + "_" + imei + ".csv");
+    }
+
+    /** The CSV is built in memory, so a report covers a quarter at most. */
+    static final int MAX_RANGE_DAYS = 93;
+
+    private static LocalDate parseDate(String value, String name) {
+        try {
+            return LocalDate.parse(value);
+        } catch (DateTimeParseException e) {
+            throw new DomainException("INVALID_DATE", name + " must be yyyy-MM-dd format");
+        }
+    }
+
+    private static void requireRange(LocalDate from, LocalDate to) {
+        if (from.isAfter(to)) {
+            throw new DomainException("INVALID_DATE_RANGE", "from date must be before or equal to to date");
+        }
+        if (from.plusDays(MAX_RANGE_DAYS).isBefore(to)) {
+            throw new DomainException("DATE_RANGE_TOO_LARGE",
+                    "Report range cannot exceed " + MAX_RANGE_DAYS + " days. Please select a smaller range.");
+        }
     }
 
     private static YearMonth parseMonth(String month) {

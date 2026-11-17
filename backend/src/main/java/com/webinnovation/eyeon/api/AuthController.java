@@ -13,6 +13,8 @@ import com.webinnovation.eyeon.exception.NotFoundException;
 import com.webinnovation.eyeon.repository.UserRepository;
 import com.webinnovation.eyeon.security.TenantContext;
 import com.webinnovation.eyeon.service.AuthService;
+import com.webinnovation.eyeon.util.ClientIp;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -33,8 +35,8 @@ public class AuthController {
     private final UserRepository userRepo;
 
     @PostMapping("/login")
-    public LoginResponse login(@Valid @RequestBody LoginRequest req) {
-        return authService.login(req);
+    public LoginResponse login(@Valid @RequestBody LoginRequest req, HttpServletRequest http) {
+        return authService.login(req, ClientIp.of(http));
     }
 
     @PostMapping("/refresh")

@@ -69,6 +69,12 @@ public class SponsorAdService {
         return ad;
     }
 
+    /** Reads a banner upload: super admin only, and never more than {@link #MAX_UPLOAD_BYTES}. */
+    public byte[] readUpload(java.io.InputStream body, long declaredLength) throws java.io.IOException {
+        requireSuperAdmin();
+        return DevicePhotoService.readLimited(body, declaredLength, MAX_UPLOAD_BYTES);
+    }
+
     public Instant setImage(UUID id, byte[] upload) {
         requireSuperAdmin();
         byte[] jpeg = DevicePhotoService.coverJpeg(upload, WIDTH, HEIGHT, MAX_UPLOAD_BYTES);

@@ -5,6 +5,7 @@ import { createPortal } from "react-dom";
 import { api, extractError } from "@/lib/api";
 import { useLocale, type StringKey } from "@/lib/i18n";
 import { formatDateTime } from "@/lib/format";
+import { useEscapeKey } from "@/hooks/useEscapeKey";
 import type {
   DeviceView,
   TrackerSettingItem,
@@ -29,7 +30,11 @@ interface Props {
 const POLL_MS = 2500;
 const MAX_POLLS = 16;
 
-/** Shown until the tracker has been read; the factory values of the PL601. */
+/**
+ * Where an edit starts for a setting that was never read from the tracker. Never shown as the
+ * tracker's own value: until it is read, the card says "not read yet" (a tracker's real night
+ * rest is ON 00:00-07:00 from the factory, while this starting point is off).
+ */
 const DEFAULTS: Record<TrackerSettingKey, TrackerSettingValue> = {
   SOS_NUMBERS: { numbers: [] },
   SOS_ALARM: { enabled: true, method: 0 },
@@ -82,6 +87,7 @@ export function TrackerSettingsPanel({ device, onClose }: Props) {
   const [saving, setSaving] = useState<TrackerSettingKey | null>(null);
   const [cardError, setCardError] = useState<Partial<Record<TrackerSettingKey, string>>>({});
   const polls = useRef(0);
+  useEscapeKey(onClose, saving === null);
 
   const load = useCallback(async () => {
     try {
@@ -212,6 +218,9 @@ export function TrackerSettingsPanel({ device, onClose }: Props) {
   const card = (key: TrackerSettingKey, title: string, children: ReactNode, hint?: string) => {
     const item = items.get(key);
     const status: TrackerSettingStatus = item?.status ?? "UNKNOWN";
+    const asked = item != null && (item.status === "PENDING" || item.status === "FAILED") && item.wanted != null;
+    // Nothing is known about this setting: neither read from the tracker nor asked for.
+    const unread = status !== "UNSUPPORTED" && !drafts[key] && !asked && item?.applied == null;
     return (
       <div key={key} className="rounded-xl bg-white p-4 ring-1 ring-surface-300" data-setting={key}>
         <div className="flex flex-wrap items-start justify-between gap-2">
@@ -221,9 +230,19 @@ export function TrackerSettingsPanel({ device, onClose }: Props) {
           </span>
         </div>
         {hint && <p className="mt-0.5 text-[14px] text-ink-500">{hint}</p>}
-        <fieldset className="mt-3 space-y-3" disabled={status === "UNSUPPORTED"}>
-          {children}
-        </fieldset>
+        {unread ? (
+          <div className="mt-3 rounded-lg bg-surface-100 px-3 py-2.5 text-[14px] text-ink-700" data-unread>
+            <p>{t("ts.unread")}</p>
+            {key === "NIGHT_REST" && <p className="mt-1 font-semibold text-ink-900">{t("ts.NIGHT_REST.factory")}</p>}
+            <button type="button" className="btn-secondary mt-2" onClick={() => replace(key, DEFAULTS[key])}>
+              {t("ts.unreadSet")}
+            </button>
+          </div>
+        ) : (
+          <fieldset className="mt-3 space-y-3" disabled={status === "UNSUPPORTED"}>
+            {children}
+          </fieldset>
+        )}
         {status === "FAILED" && item?.trackerReply && (
           <p className="mt-2 break-words font-mono text-[12px] text-red-700">{item.trackerReply}</p>
         )}

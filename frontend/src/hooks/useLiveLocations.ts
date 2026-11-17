@@ -351,6 +351,7 @@ export function useLiveLocations(orgId: string) {
             next.set(imei, {
               ...current,
               ...loc,
+              lastValidTs: loc.lastValidTs ?? loc.ts,
               prevLatitude: current.latitude,
               prevLongitude: current.longitude,
               targetLatitude: loc.latitude,
@@ -358,15 +359,28 @@ export function useLiveLocations(orgId: string) {
               waypointQueue: [],
               justUpdated: true,
             });
-          } else {
-            // Same position or invalid - just update telemetry
+          } else if (loc.valid) {
+            // Same position - just update telemetry
             next.set(imei, {
               ...current,
               ...loc,
-              // Keep position unchanged if not valid
-              latitude: loc.valid ? loc.latitude : current.latitude,
-              longitude: loc.valid ? loc.longitude : current.longitude,
-              speed: loc.valid ? loc.speed : 0,
+              lastValidTs: loc.lastValidTs ?? loc.ts,
+              justUpdated: true,
+            });
+          } else {
+            // No fix: the telemetry is new, but the marker stays on the last fix. Everything
+            // that describes that position stays with it - its time (lastValidTs), how it was
+            // obtained and its accuracy - so the popup does not present an old place as current.
+            next.set(imei, {
+              ...current,
+              ...loc,
+              latitude: current.latitude,
+              longitude: current.longitude,
+              course: current.course,
+              speed: 0,
+              lastValidTs: loc.lastValidTs ?? current.lastValidTs ?? (current.valid ? current.ts : null),
+              source: current.source ?? null,
+              accuracyM: current.accuracyM ?? null,
               justUpdated: true,
             });
           }

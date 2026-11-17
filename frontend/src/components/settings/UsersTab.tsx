@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useLocale, type StringKey } from "@/lib/i18n";
 import { useUsers, useOrgDevices } from "@/hooks/useUsers";
 import { useSession } from "@/lib/session-context";
-import { formatDateTime } from "@/lib/format";
+import { formatDateTime, formatNumber } from "@/lib/format";
+import { useEscapeKey } from "@/hooks/useEscapeKey";
 import { extractError } from "@/lib/api";
 import type { DeviceView, UserCreate, UserDetail, UserRole, UserUpdate } from "@/types/domain";
 
@@ -64,7 +65,7 @@ export function UsersTab({ canManage }: { canManage: boolean }) {
     <div>
       <div className="mb-3 flex items-center justify-between">
         <div className="text-[15px] text-ink-400">
-          {users.length} {users.length === 1 ? "user" : "users"}
+          {t(users.length === 1 ? "users.countOne" : "users.count").replace("{n}", formatNumber(users.length, locale))}
         </div>
         {canManage && (
           <button type="button" className="btn-primary text-[15px]" onClick={() => setEditing("new")}>
@@ -97,7 +98,7 @@ export function UsersTab({ canManage }: { canManage: boolean }) {
               <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-[14px] text-ink-700">
                 <span>{t(roleKey)}</span>
                 <span>
-                  {t("users.devices")}: {isAdminRole || u.seeAllDevices ? "All" : u.assignedDeviceCount}
+                  {t("users.devices")}: {isAdminRole || u.seeAllDevices ? t("veh.all") : formatNumber(u.assignedDeviceCount, locale)}
                 </span>
                 <span className="text-ink-500">
                   {t("users.lastLogin")}: {u.lastLoginAt ? formatDateTime(u.lastLoginAt, locale) : "—"}
@@ -136,9 +137,9 @@ export function UsersTab({ canManage }: { canManage: boolean }) {
                 <td className="px-3 py-2 text-ink-900">{t(roleKey)}</td>
                 <td className="px-3 py-2">
                   {isAdminRole || u.seeAllDevices ? (
-                    <span className="text-[14px] text-ink-500">All</span>
+                    <span className="text-[14px] text-ink-500">{t("veh.all")}</span>
                   ) : (
-                    <span className="text-ink-900">{u.assignedDeviceCount}</span>
+                    <span className="text-ink-900">{formatNumber(u.assignedDeviceCount, locale)}</span>
                   )}
                 </td>
                 <td className="px-3 py-2 text-ink-700">
@@ -219,6 +220,7 @@ function UserDialog({
   const [isActive, setIsActive] = useState(user?.isActive ?? true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  useEscapeKey(onCancel, !busy);
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -227,7 +229,7 @@ function UserDialog({
     try {
       if (isNew) {
         if (password.length < 8) {
-          throw new Error("Password must be at least 8 characters");
+          throw new Error(t("users.passwordTooShort"));
         }
         await onCreate({
           email: email.trim(),
@@ -379,21 +381,42 @@ function DeviceAssignmentDialog({
   setUserDevices: (userId: string, imeis: string[]) => Promise<string[]>;
   updateSeeAllDevices: (userId: string, seeAll: boolean) => Promise<UserDetail>;
 }) {
-  const { t } = useLocale();
+  const { t, locale } = useLocale();
   const { devices, loading: devicesLoading } = useOrgDevices();
   const [assignedImeis, setAssignedImeis] = useState<Set<string>>(new Set());
   const [seeAll, setSeeAll] = useState(user.seeAllDevices);
   const [loading, setLoading] = useState(true);
+  // Save sends the whole list, so it is only allowed once the current list has really loaded:
+  // saving before that (or after a failed load) removed every person from this user.
+  const [loaded, setLoaded] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
+  useEscapeKey(onClose, !saving);
 
-  useEffect(() => {
+  const loadAssigned = useCallback(() => {
+    let cancelled = false;
+    setLoading(true);
+    setLoadError(null);
     getUserDevices(user.id)
-      .then((imeis) => setAssignedImeis(new Set(imeis)))
-      .catch((err) => setError(extractError(err).message))
-      .finally(() => setLoading(false));
+      .then((imeis) => {
+        if (cancelled) return;
+        setAssignedImeis(new Set(imeis));
+        setLoaded(true);
+      })
+      .catch((err) => {
+        if (!cancelled) setLoadError(extractError(err).message);
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [user.id, getUserDevices]);
+
+  useEffect(() => loadAssigned(), [loadAssigned]);
 
   // Filter devices based on search
   const filteredDevices = devices.filter((d) => {
@@ -418,17 +441,23 @@ function DeviceAssignmentDialog({
     });
   };
 
+  // Select all / Deselect all act on the people the search currently shows.
   const selectAll = () => {
-    setAssignedImeis(new Set(devices.map((d) => d.imei)));
+    setAssignedImeis((prev) => new Set([...prev, ...filteredDevices.map((d) => d.imei)]));
   };
 
   const deselectAll = () => {
-    setAssignedImeis(new Set());
+    setAssignedImeis((prev) => {
+      const next = new Set(prev);
+      for (const d of filteredDevices) next.delete(d.imei);
+      return next;
+    });
   };
 
-  const allSelected = devices.length > 0 && assignedImeis.size === devices.length;
+  const allSelected = filteredDevices.length > 0 && filteredDevices.every((d) => assignedImeis.has(d.imei));
 
   const handleSave = async () => {
+    if (!loaded) return;
     setSaving(true);
     setError(null);
     try {
@@ -487,19 +516,19 @@ function DeviceAssignmentDialog({
               <div className="text-[14px] uppercase tracking-wide text-ink-400">
                 {t("users.selectDevices")}
               </div>
-              {!loading && !devicesLoading && devices.length > 0 && (
+              {loaded && !loading && !devicesLoading && filteredDevices.length > 0 && (
                 <button
                   type="button"
-                  className="text-[14px] text-brand-500 hover:text-brand-400"
+                  className="text-[14px] text-brand-600 hover:text-brand-500"
                   onClick={allSelected ? deselectAll : selectAll}
                 >
-                  {allSelected ? "Deselect All" : "Select All"}
+                  {allSelected ? t("common.deselectAll") : t("common.selectAll")}
                 </button>
               )}
             </div>
 
             {/* Search Box */}
-            {!loading && !devicesLoading && devices.length > 0 && (
+            {loaded && !loading && !devicesLoading && devices.length > 0 && (
               <input
                 type="text"
                 className="input mb-2 text-[15px]"
@@ -511,10 +540,10 @@ function DeviceAssignmentDialog({
 
             {loading || devicesLoading ? (
               <div className="text-[15px] text-ink-400 py-4 text-center">{t("common.loading")}</div>
-            ) : devices.length === 0 ? (
+            ) : !loaded ? null : devices.length === 0 ? (
               <div className="text-[15px] text-ink-400 py-4 text-center">{t("fleet.noDevices")}</div>
             ) : filteredDevices.length === 0 ? (
-              <div className="text-[15px] text-ink-500 py-4 text-center">No devices match your search</div>
+              <div className="text-[15px] text-ink-500 py-4 text-center">{t("veh.none")}</div>
             ) : (
               <div className="max-h-60 overflow-y-auto space-y-1 border border-surface-200 rounded-lg p-2 bg-surface-50">
                 {filteredDevices.map((d) => (
@@ -544,15 +573,27 @@ function DeviceAssignmentDialog({
                           : "bg-surface-200 text-ink-500"
                       }`}
                     >
-                      {d.status}
+                      {t(d.status === "ONLINE" ? "fleet.online" : d.status === "OFFLINE" ? "fleet.offline" : "fleet.neverConnected")}
                     </span>
                   </label>
                 ))}
               </div>
             )}
-            <div className="text-[14px] text-ink-500 mt-2">
-              {assignedImeis.size} / {devices.length} {t("users.deviceCount")}
-            </div>
+            {loaded && (
+              <div className="text-[14px] text-ink-500 mt-2">
+                {formatNumber(assignedImeis.size, locale)} / {formatNumber(devices.length, locale)} {t("users.deviceCount")}
+              </div>
+            )}
+          </div>
+        )}
+
+        {loadError && !loading && (
+          <div className="mb-3 rounded-lg border border-alarm-red/40 bg-alarm-red/5 p-3 text-[14px] text-alarm-red" role="alert">
+            <div>{t("users.devicesLoadFailed")}</div>
+            <div className="mt-0.5 text-ink-700">{loadError}</div>
+            <button type="button" className="btn-ghost mt-2 px-3 text-[14px]" onClick={loadAssigned}>
+              {t("common.retry")}
+            </button>
           </div>
         )}
 
@@ -566,7 +607,7 @@ function DeviceAssignmentDialog({
             type="button"
             className="btn-primary flex-1"
             onClick={handleSave}
-            disabled={saving}
+            disabled={saving || !loaded}
           >
             {saving ? t("common.loading") : t("common.save")}
           </button>

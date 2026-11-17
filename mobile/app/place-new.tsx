@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useLocalSearchParams, useNavigation, useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import {
@@ -171,8 +171,9 @@ export default function PlaceNewScreen() {
     });
   }
 
-  async function submit() {
-    const trimmed = name.trim() || t(placeTypeKey(placeType));
+  // A place with both alerts off never tells anyone anything; a customer saved one that way
+  // without noticing and reported that the place "does not work". Saving it needs a clear yes.
+  function submit() {
     if (!center) {
       setError(t("place.errPin"));
       return;
@@ -181,6 +182,18 @@ export default function PlaceNewScreen() {
       setError(t("place.errWho"));
       return;
     }
+    if (!arrive && !leave) {
+      Alert.alert(t("place.noAlertsTitle"), t("place.noAlertsWarn"), [
+        { text: t("common.cancel"), style: "cancel" },
+        { text: t("place.saveAnyway"), style: "destructive", onPress: () => void save(center) },
+      ]);
+      return;
+    }
+    void save(center);
+  }
+
+  async function save(center: LatLng) {
+    const trimmed = name.trim() || t(placeTypeKey(placeType));
     setSubmitting(true);
     setError(null);
     try {
@@ -194,7 +207,9 @@ export default function PlaceNewScreen() {
           name: trimmed,
           placeType,
           notifyOn,
-          ...(address && address !== prev?.address ? { address } : {}),
+          // Also when it was cleared (the pin was moved by hand): blank removes the old searched
+          // address on the server, which otherwise stayed under the place's name.
+          ...((address ?? null) !== (prev?.address ?? null) ? { address: address ?? "" } : {}),
           ...(moved ? { center, radiusM } : {}),
         });
         const before = prev?.imeis ?? new Set<string>();
@@ -320,6 +335,12 @@ export default function PlaceNewScreen() {
           <Chip label={t("place.arrive")} active={arrive} onPress={() => setArrive((v) => !v)} />
           <Chip label={t("place.leave")} active={leave} onPress={() => setLeave((v) => !v)} />
         </View>
+        {!arrive && !leave ? (
+          <View style={styles.warnBox} accessibilityRole="alert">
+            <Ionicons name="notifications-off" size={18} color={colors.warn} />
+            <Text style={styles.warnText}>{t("place.noAlertsWarn")}</Text>
+          </View>
+        ) : null}
 
         <Text style={styles.label}>{t("place.who")}</Text>
         <View style={styles.chips}>
@@ -332,7 +353,7 @@ export default function PlaceNewScreen() {
         {error ? <Text style={styles.error}>{error}</Text> : null}
         <PrimaryButton
           label={editing ? t("place.saveChanges") : t("place.save")}
-          onPress={() => void submit()}
+          onPress={submit}
           loading={submitting}
         />
       </ScrollView>
@@ -388,4 +409,15 @@ const styles = StyleSheet.create({
   },
   stepValue: { color: colors.text, fontSize: 17, fontWeight: "700", minWidth: 80, textAlign: "center" },
   error: { color: colors.danger, fontSize: 15, marginTop: space.sm },
+  warnBox: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: space.sm,
+    borderWidth: 1,
+    borderColor: colors.warn,
+    borderRadius: radius.sm,
+    backgroundColor: colors.surface,
+    padding: space.md,
+  },
+  warnText: { flex: 1, color: colors.warn, fontSize: 14, fontWeight: "600" },
 });

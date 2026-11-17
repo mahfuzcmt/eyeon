@@ -8,6 +8,8 @@ import com.webinnovation.eyeon.exception.NotFoundException;
 import com.webinnovation.eyeon.repository.DeviceRepository;
 import com.webinnovation.eyeon.repository.LocationRepository;
 import com.webinnovation.eyeon.repository.ShareLocationLinkRepository;
+import com.webinnovation.eyeon.repository.UserRepository;
+import com.webinnovation.eyeon.domain.User;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -29,6 +31,8 @@ public class ShareLocationService {
     private final ShareLocationLinkRepository linkRepo;
     private final DeviceRepository deviceRepo;
     private final LocationRepository locationRepo;
+    private final UserRepository userRepo;
+    private final DeviceAccessService access;
 
     @Value("${eyeon.share.base-url:}")
     private String shareBaseUrl;
@@ -118,12 +122,13 @@ public class ShareLocationService {
         if (!link.isValid()) {
             throw new NotFoundException("Share link has expired");
         }
+        requireCreatorStillAllowed(link);
 
         // Record access
         linkRepo.recordAccess(link.id(), ipAddress, userAgent);
 
-        // Get device info
-        Device device = deviceRepo.findByImei(link.deviceImei())
+        // Get device info (within the link's organization: requireCreatorStillAllowed checked it is there)
+        Device device = deviceRepo.findByOrgAndImei(link.orgId(), link.deviceImei())
                 .orElseThrow(() -> new NotFoundException("Device not found"));
 
         // Determine online status (seen in last 10 minutes)
@@ -155,6 +160,7 @@ public class ShareLocationService {
         if (!link.isValid()) {
             throw new NotFoundException("Share link has expired");
         }
+        requireCreatorStillAllowed(link);
 
         if (!link.showHistory()) {
             throw new ForbiddenException("Route history is not enabled for this share link");
@@ -183,12 +189,32 @@ public class ShareLocationService {
         if (!link.isValid()) {
             throw new ForbiddenException("Share link has expired");
         }
+        requireCreatorStillAllowed(link);
 
         if (!link.allowRealtime()) {
             throw new ForbiddenException("Real-time updates not enabled for this share link");
         }
 
         return link;
+    }
+
+    /**
+     * A link is only as good as the person who made it: it stops working when that user was
+     * disabled, left the organization, or can no longer see the child (unassigned by an admin),
+     * and when the tracker moved to another organization. Same 404 as an expired link, so the
+     * holder of the link learns nothing about why.
+     */
+    private void requireCreatorStillAllowed(ShareLocationLink link) {
+        User creator = link.createdBy() == null ? null : userRepo.findById(link.createdBy()).orElse(null);
+        boolean allowed = creator != null
+                && creator.isActive()
+                && link.orgId().equals(creator.orgId())
+                && deviceRepo.findByOrgAndImei(link.orgId(), link.deviceImei()).isPresent()
+                && DeviceAccessService.canSee(access.visibleImeis(creator.id(), creator.role()), link.deviceImei());
+        if (!allowed) {
+            log.info("Share link {} refused: its creator is disabled or may no longer see the tracker", link.id());
+            throw new NotFoundException("Share link has expired");
+        }
     }
 
     private String generateToken() {

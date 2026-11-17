@@ -46,6 +46,7 @@ class ExpectedTimeServiceTest {
     private AlarmService alarms;
     private DeviceCommandService commands;
     private ExpectedTimeService service;
+    private GeofenceService geofences;
     private com.webinnovation.eyeon.repository.TrackerSettingsRepository restRepo;
 
     @BeforeEach
@@ -57,7 +58,37 @@ class ExpectedTimeServiceTest {
         commands = mock(DeviceCommandService.class);
         DeviceRepository devices = mock(DeviceRepository.class);
         when(devices.findByImei(IMEI)).thenReturn(Optional.empty());
-        service = new ExpectedTimeService(repo, mock(GeofenceService.class), alarms, devices, commands, restRepo);
+        geofences = mock(GeofenceService.class);
+        service = new ExpectedTimeService(repo, geofences, alarms, devices, commands, restRepo);
+    }
+
+    @Test
+    void the_same_expected_time_cannot_be_added_twice_to_a_place() {
+        com.webinnovation.eyeon.domain.Geofence place = mock(com.webinnovation.eyeon.domain.Geofence.class);
+        when(place.kind()).thenReturn("TRUSTED_PLACE");
+        when(geofences.getOrThrow(orgId, ownerId, placeId)).thenReturn(place);
+        UUID newId = UUID.randomUUID();
+        var existing = new PlaceScheduleRepository.Schedule(scheduleId, placeId, "ARRIVE_BY", LocalTime.of(8, 15),
+                List.of(1, 2, 3, 4, 7), 10, true, Instant.now());
+        var added = new PlaceScheduleRepository.Schedule(newId, placeId, "LEAVE_BY", LocalTime.of(8, 15),
+                List.of(1, 2, 3, 4, 7), 10, true, Instant.now());
+        java.util.concurrent.atomic.AtomicBoolean inserted = new java.util.concurrent.atomic.AtomicBoolean();
+        when(repo.listForGeofence(placeId))
+                .thenAnswer(inv -> inserted.get() ? List.of(existing, added) : List.of(existing));
+        when(repo.insert(any(), any(), anyString(), any(), any(), anyInt())).thenAnswer(inv -> {
+            inserted.set(true);
+            return newId;
+        });
+
+        // Same kind, time and days (in another order, with another grace): refused with its own code.
+        var duplicate = org.junit.jupiter.api.Assertions.assertThrows(
+                com.webinnovation.eyeon.exception.DomainException.class,
+                () -> service.create(orgId, ownerId, placeId, "arrive_by", "08:15", List.of(7, 1, 2, 3, 4, 4), 0));
+        assertEquals("DUPLICATE_SCHEDULE", duplicate.getCode());
+        verify(repo, never()).insert(any(), any(), anyString(), any(), any(), anyInt());
+
+        // Another kind at the same time is a different expectation.
+        assertEquals(newId, service.create(orgId, ownerId, placeId, "LEAVE_BY", "08:15", List.of(1, 2, 3, 4, 7), 10).id());
     }
 
     private Due row(String kind, Boolean inside) {

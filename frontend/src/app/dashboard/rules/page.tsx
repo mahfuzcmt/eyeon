@@ -5,6 +5,7 @@ import { useLocale, type StringKey } from "@/lib/i18n";
 import { useAlarmRules } from "@/hooks/useAlarmRules";
 import { useDevices } from "@/hooks/useDevices";
 import { formatNumber } from "@/lib/format";
+import { extractError } from "@/lib/api";
 import type {
   AlarmRuleRequest,
   AlarmRuleType,
@@ -42,6 +43,21 @@ export default function RulesPage() {
   const { t, locale } = useLocale();
   const { rules, loading, error, create, remove, update } = useAlarmRules();
   const [editing, setEditing] = useState<AlarmRuleView | "new" | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
+
+  const handleDelete = async (r: AlarmRuleView) => {
+    if (!window.confirm(t("common.deleteConfirm").replace("{name}", r.name))) return;
+    setDeletingId(r.id);
+    setActionError(null);
+    try {
+      await remove(r.id);
+    } catch (err) {
+      setActionError(`${t("common.deleteFailed")} "${r.name}": ${extractError(err).message}`);
+    } finally {
+      setDeletingId(null);
+    }
+  };
 
   return (
     <div className="flex h-full flex-col">
@@ -56,6 +72,14 @@ export default function RulesPage() {
       <div className="flex-1 overflow-auto">
         {loading && <div className="px-4 py-6 text-[15px] text-ink-400">{t("common.loading")}</div>}
         {error && <div className="px-4 py-6 text-[15px] text-alarm-red">{error}</div>}
+        {actionError && (
+          <div className="flex items-start justify-between gap-3 border-b border-alarm-red/30 bg-alarm-red/5 px-4 py-2.5 text-[15px] text-alarm-red" role="alert">
+            <span>{actionError}</span>
+            <button type="button" className="btn-icon shrink-0 text-[18px]" aria-label={t("common.close")} onClick={() => setActionError(null)}>
+              ×
+            </button>
+          </div>
+        )}
         {!loading && rules.length === 0 && (
           <div className="px-4 py-12 text-center text-[15px] text-ink-400">{t("rules.empty")}</div>
         )}
@@ -93,8 +117,8 @@ export default function RulesPage() {
                   <button type="button" className="btn-ghost px-2 text-[14px]" onClick={() => setEditing(r)}>
                     {t("users.edit")}
                   </button>
-                  <button type="button" className="btn-ghost px-2 text-[14px] text-alarm-red" onClick={() => remove(r.id)}>
-                    {t("common.delete")}
+                  <button type="button" className="btn-ghost px-2 text-[14px] text-alarm-red" disabled={deletingId === r.id} onClick={() => handleDelete(r)}>
+                    {deletingId === r.id ? t("common.loading") : t("common.delete")}
                   </button>
                 </div>
               </li>
@@ -146,8 +170,9 @@ export default function RulesPage() {
                       {t("users.edit")}
                     </button>
                     <button type="button" className="btn-ghost px-2 py-1 text-[14px] text-alarm-red"
-                            onClick={() => remove(r.id)}>
-                      {t("common.delete")}
+                            disabled={deletingId === r.id}
+                            onClick={() => handleDelete(r)}>
+                      {deletingId === r.id ? t("common.loading") : t("common.delete")}
                     </button>
                   </td>
                 </tr>

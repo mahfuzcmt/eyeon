@@ -3,6 +3,8 @@ package com.webinnovation.eyeon.service;
 import com.webinnovation.eyeon.domain.ScheduledCommand;
 import com.webinnovation.eyeon.dto.ScheduledCommandDtos.ScheduleRequest;
 import com.webinnovation.eyeon.exception.DomainException;
+import com.webinnovation.eyeon.exception.NotFoundException;
+import com.webinnovation.eyeon.repository.DeviceRepository;
 import com.webinnovation.eyeon.repository.ScheduledCommandRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -32,9 +34,15 @@ public class ScheduledCommandService {
 
     private final ScheduledCommandRepository repo;
     private final DeviceCommandService deviceCommandService;
+    private final DeviceRepository deviceRepo;
 
     public UUID schedule(UUID orgId, UUID userId, ScheduleRequest req) {
         validate(req);
+        // The tracker must belong to the caller's organization; 404 so another organization's
+        // IMEI looks the same as one that does not exist.
+        if (deviceRepo.findByOrgAndImei(orgId, req.deviceImei()).isEmpty()) {
+            throw new NotFoundException("device", req.deviceImei());
+        }
         String commandText = renderCommandText(req);
         Instant nextRun = computeFirstRunAt(req);
         return repo.insert(

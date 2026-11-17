@@ -5,6 +5,7 @@ import { useLocale } from "@/lib/i18n";
 import { useSession } from "@/lib/session-context";
 import { useAuditLog } from "@/hooks/useAuditLog";
 import { formatDateTime } from "@/lib/format";
+import { dhakaDateIso } from "@/lib/dateRange";
 
 const KNOWN_ACTIONS = [
   "AUTH_LOGIN",
@@ -23,14 +24,14 @@ const KNOWN_ACTIONS = [
   "DEVICE_CMD_RAW",
 ];
 
+// Calendar days in Asia/Dhaka, not UTC or the browser's zone: before 06:00 Dhaka the UTC date
+// is still yesterday.
 function todayIso(): string {
-  return new Date().toISOString().slice(0, 10);
+  return dhakaDateIso();
 }
 
 function weekAgoIso(): string {
-  const d = new Date();
-  d.setDate(d.getDate() - 7);
-  return d.toISOString().slice(0, 10);
+  return dhakaDateIso(7);
 }
 
 export default function Page() {
@@ -42,8 +43,9 @@ export default function Page() {
   const [to, setTo] = useState(todayIso());
   const [action, setAction] = useState("");
 
-  const fromIso = useMemo(() => `${from}T00:00:00Z`, [from]);
-  const toIso = useMemo(() => `${to}T23:59:59Z`, [to]);
+  // The pickers hold Dhaka calendar days; the server gets the matching instants.
+  const fromIso = useMemo(() => (from ? new Date(`${from}T00:00:00+06:00`).toISOString() : ""), [from]);
+  const toIso = useMemo(() => (to ? new Date(`${to}T23:59:59+06:00`).toISOString() : ""), [to]);
 
   const { entries, loading, error } = useAuditLog({
     fromIso,

@@ -2,6 +2,7 @@ package com.webinnovation.eyeon.api;
 
 import com.webinnovation.eyeon.repository.SponsorAdRepository.SponsorAd;
 import com.webinnovation.eyeon.service.SponsorAdService;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.CacheControl;
 import org.springframework.http.HttpStatus;
@@ -18,6 +19,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.io.IOException;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
@@ -60,7 +62,9 @@ public class SponsorAdController {
     /** Body: the raw image (JPEG or PNG, at most 3 MB). Stored centre-cropped as a 1200x600 JPEG. */
     @PutMapping(value = "/{id}/image",
             consumes = {MediaType.IMAGE_JPEG_VALUE, MediaType.IMAGE_PNG_VALUE, MediaType.APPLICATION_OCTET_STREAM_VALUE})
-    public Map<String, Instant> image(@PathVariable UUID id, @RequestBody byte[] body) {
+    public Map<String, Instant> image(@PathVariable UUID id, HttpServletRequest request) throws IOException {
+        // Role and declared size are checked before the body is read; see DevicePhotoController.
+        byte[] body = service.readUpload(request.getInputStream(), request.getContentLengthLong());
         return Map.of("imageUpdatedAt", service.setImage(id, body));
     }
 

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useRouter } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
 import { useDeviceLive } from "@/hooks/useDeviceLive";
 import { useDayRoute } from "@/hooks/useDayRoute";
 import WebMap, { MapVehicle } from "@/components/WebMap";
@@ -27,12 +28,17 @@ export default function TrackTab({ imei, orgId }: { imei: string; orgId: string 
   const [center, setCenter] = useState<{ lat: number; lng: number; zoom: number; nonce: number } | null>(null);
   const centered = useRef(false);
 
+  // Without a fix the row still carries the last known position; (0,0) means there never was
+  // one (same rule as the map tab). Centring there opened the map on empty ocean.
+  const hasFix = !!loc && !(loc.latitude === 0 && loc.longitude === 0);
+  const waitingForGps = !!loc && !hasFix;
+
   useEffect(() => {
-    if (loc && !centered.current) {
+    if (loc && hasFix && !centered.current) {
       centered.current = true;
       setCenter({ lat: loc.latitude, lng: loc.longitude, zoom: 19, nonce: 1 });
     }
-  }, [loc]);
+  }, [loc, hasFix]);
 
   // The hook wants a stable list: one person here, or nobody while the device is loading.
   const photoImei = device?.imei;
@@ -41,7 +47,7 @@ export default function TrackTab({ imei, orgId }: { imei: string; orgId: string 
   const photos = useDevicePhotos(photoOf);
 
   const vehicles = useMemo<MapVehicle[]>(() => {
-    if (!loc || !device) return [];
+    if (!loc || !device || !hasFix) return [];
     const overspeed = speedLimits.isOverspeed(imei, loc.speed);
     return [
       {
@@ -57,7 +63,7 @@ export default function TrackTab({ imei, orgId }: { imei: string; orgId: string 
         moving: motionOf(device, loc) === "MOVING",
       },
     ];
-  }, [loc, device, imei, speedLimits]);
+  }, [loc, hasFix, device, imei, speedLimits]);
 
   // Keep the person in view as they move (pan only, the user's zoom is kept).
   const follow = useMemo(
@@ -86,20 +92,27 @@ export default function TrackTab({ imei, orgId }: { imei: string; orgId: string 
         </View>
       )}
 
-      <View style={styles.mapBox}>
-        <WebMap vehicles={vehicles} photos={photos} center={center} follow={follow} routePieces={routePieces} />
-        <View style={[styles.speedo, overspeeding && { borderColor: colors.danger }]}>
-          <Text style={[styles.speedoVal, overspeeding && { color: colors.danger }]}>{speed}</Text>
-          <Text style={styles.speedoUnit}>{t("veh.kmh")}</Text>
+      {waitingForGps ? (
+        <View style={styles.waiting}>
+          <Ionicons name="navigate-circle-outline" size={36} color={colors.textFaint} />
+          <Text style={styles.waitingText}>{t("track.waitingGps")}</Text>
         </View>
-      </View>
+      ) : (
+        <View style={styles.mapBox}>
+          <WebMap vehicles={vehicles} photos={photos} center={center} follow={follow} routePieces={routePieces} />
+          <View style={[styles.speedo, overspeeding && { borderColor: colors.danger }]}>
+            <Text style={[styles.speedoVal, overspeeding && { color: colors.danger }]}>{speed}</Text>
+            <Text style={styles.speedoUnit}>{t("veh.kmh")}</Text>
+          </View>
+        </View>
+      )}
 
       {device ? (
         <View style={styles.details}>
           <PersonDetails device={device} loc={loc} overspeed={overspeeding} full />
         </View>
       ) : null}
-      {loc && (
+      {loc && hasFix && (
         <Pressable
           onPress={() =>
             Alert.alert(t("popup.addZone"), t("popup.addZoneHint"), [
@@ -129,6 +142,20 @@ const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.bg },
   content: { gap: space.md, paddingBottom: space.xl },
   mapBox: { height: 440, backgroundColor: colors.bg },
+  waiting: {
+    marginHorizontal: space.md,
+    marginTop: space.md,
+    minHeight: 200,
+    alignItems: "center",
+    justifyContent: "center",
+    gap: space.sm,
+    padding: space.xl,
+    backgroundColor: colors.surface,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  waitingText: { color: colors.textDim, fontSize: 15, textAlign: "center" },
   banner: {
     marginHorizontal: space.md,
     marginTop: space.md,

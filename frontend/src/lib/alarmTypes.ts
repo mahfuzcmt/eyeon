@@ -1,5 +1,5 @@
 import type { StringKey } from "@/lib/i18n";
-import type { AlarmProcessResult, AlarmSeverity, AlarmType } from "@/types/domain";
+import type { AlarmProcessResult, AlarmSeverity, AlarmType, AlarmView } from "@/types/domain";
 
 /** Same order as backend AlarmType so the settings matrix reads like the enum. */
 export const ALARM_TYPES: AlarmType[] = [
@@ -51,6 +51,16 @@ export function alarmTypeLabel(type: string, t: (k: StringKey) => string): strin
     .split("_")
     .map((w) => w.charAt(0) + w.slice(1).toLowerCase())
     .join(" ");
+}
+
+/**
+ * The alarm's type plus the place it is about, when the alarm carries one ("Arrived · School").
+ * Place, geofence, expected-time and route alarms have `metadata.geofenceName`.
+ */
+export function alarmTitle(alarm: Pick<AlarmView, "type" | "metadata">, t: (k: StringKey) => string): string {
+  const label = alarmTypeLabel(alarm.type, t);
+  const place = alarm.metadata?.geofenceName;
+  return typeof place === "string" && place.trim() ? `${label} · ${place.trim()}` : label;
 }
 
 export function severityLabel(sev: string, t: (k: StringKey) => string): string {

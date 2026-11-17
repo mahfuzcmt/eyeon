@@ -1,3 +1,4 @@
+import { translate } from "./i18n";
 import { colors } from "./theme";
 import type { DeviceView, LocationView, MotionStatus } from "./types";
 
@@ -23,6 +24,15 @@ export function filterSpeed(speed: number | null | undefined, valid?: boolean | 
 
 /** A packet without a fix still shows the last fix's speed when that fix is this recent. */
 const FIX_FRESH_MS = 90_000;
+/** A position whose newest packet is older than this says nothing about the speed now. */
+// Three minutes: a watch reports about once a minute while moving, sometimes 100 s apart, and a
+// tighter limit made it flip between moving and still from one report to the next.
+const SPEED_STALE_MS = 180_000;
+
+function olderThan(iso: string | null | undefined, ms: number): boolean {
+  const at = iso ? Date.parse(iso) : NaN;
+  return Number.isFinite(at) && Date.now() - at > ms;
+}
 
 /**
  * The speed to show for a position. While someone travels the tracker sends Wi-Fi scans between
@@ -31,9 +41,15 @@ const FIX_FRESH_MS = 90_000;
  * snapshot, whose newest packet is often such a scan). A packet without a fix now keeps the speed
  * of a fix from the last 90 s (`lastValidTs`; the server sets it on REST rows, `mergeLive` on live
  * ones), and only then reads as 0.
+ *
+ * A tracker that went silent (tunnel, flat battery, no network) keeps its last packet, and that
+ * packet's speed, until the server marks it offline minutes later: the person stayed "Moving ·
+ * 40 km/h" and was auto-followed all that time. So when the newest packet, with a fix or not, is
+ * older than 3 minutes the speed reads as 0. Compared with this phone's clock.
  */
 export function speedOf(live: LocationView | null | undefined, fallback?: number | null): number {
   if (!live) return filterSpeed(fallback);
+  if (olderThan(live.ts, SPEED_STALE_MS)) return 0;
   if (live.valid) return filterSpeed(live.speed, true);
   const fix = live.lastValidTs ? Date.parse(live.lastValidTs) : NaN;
   const recent = Number.isFinite(fix) && Date.parse(live.ts) - fix <= FIX_FRESH_MS;
@@ -49,7 +65,9 @@ export function speedOf(live: LocationView | null | undefined, fallback?: number
  */
 export function motionOf(d: DeviceView, live?: LocationView | null): MotionStatus {
   if (d.status !== "ONLINE") return "OFFLINE";
-  const speed = speedOf(live, d.lastSpeed);
+  // Without a position row the device's own last speed is used; the same 90 s rule applies to it
+  // (`lastSeenAt` is the newest packet of any kind).
+  const speed = !live && olderThan(d.lastSeenAt, SPEED_STALE_MS) ? 0 : speedOf(live, d.lastSpeed);
   if (speed > 0) return "MOVING";
 
   // Vehicle is stationary (speed = 0 after filtering). Only show "IDLE" if ACC is explicitly ON.
@@ -64,7 +82,9 @@ export function motionColor(m: MotionStatus): string {
     case "IDLE":
       return colors.warn;
     case "STOPPED":
-      return colors.danger;
+      // Blue as on the web (status.stopped). It was the alarm red, so a child sitting in class
+      // looked like an alert.
+      return colors.stopped;
     case "OFFLINE":
       return colors.offline;
   }
@@ -145,7 +165,12 @@ export function dhakaTodayStartIso(): string {
   return new Date(shifted.getTime() - DHAKA_OFFSET_MS).toISOString();
 }
 
-/** Elapsed "2d 4h" / "2h 5m" / "18m" since a timestamp — parking duration. */
+/** "2 d" / "5 h" / "18 min" in the app language, with the units the Stays screen uses. */
+function withUnit(n: number, unit: "d" | "h" | "min"): string {
+  return `${n} ${translate(`stays.unit.${unit}`)}`;
+}
+
+/** Elapsed "2 d 4 h" / "2 h 5 min" / "18 min" since a timestamp, in the app language. */
 export function fmtSince(iso: string | null | undefined): string {
   if (!iso) return "—";
   const then = new Date(iso).getTime();
@@ -153,9 +178,9 @@ export function fmtSince(iso: string | null | undefined): string {
   const secs = Math.max(0, Math.floor((Date.now() - then) / 1000));
   const h = Math.floor(secs / 3600);
   const m = Math.floor((secs % 3600) / 60);
-  if (h >= 24) return `${Math.floor(h / 24)}d ${h % 24}h`;
-  if (h > 0) return `${h}h ${m}m`;
-  return `${m}m`;
+  if (h >= 24) return `${withUnit(Math.floor(h / 24), "d")} ${withUnit(h % 24, "h")}`;
+  if (h > 0) return `${withUnit(h, "h")} ${withUnit(m, "min")}`;
+  return withUnit(m, "min");
 }
 
 /** True if the device's subscription has lapsed — mirrors web isSubscriptionExpired. */
@@ -177,16 +202,27 @@ export function subscriptionDaysLeft(d: DeviceView): number | null {
   return Math.round((due - today) / 86_400_000);
 }
 
-/** "3m ago" relative time for last-seen / alarm timestamps. */
+/** "3 min ago" / "3 মিনিট আগে" relative time for last-seen / alarm timestamps, in the app language. */
 export function fmtAgo(iso: string | null | undefined): string {
   if (!iso) return "—";
   const then = new Date(iso).getTime();
   if (Number.isNaN(then)) return "—";
   const diff = Math.max(0, Date.now() - then) / 1000;
-  if (diff < 60) return "just now";
-  if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
-  if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
-  return `${Math.floor(diff / 86400)}d ago`;
+  if (diff < 60) return translate("time.justNow");
+  const span =
+    diff < 3600 ? withUnit(Math.floor(diff / 60), "min")
+    : diff < 86400 ? withUnit(Math.floor(diff / 3600), "h")
+    : withUnit(Math.floor(diff / 86400), "d");
+  return translate("time.ago").replace("{t}", span);
+}
+
+/** The later of two ISO times (either may be missing or unreadable), or null. */
+export function laterOf(a: string | null | undefined, b: string | null | undefined): string | null {
+  const ta = a ? Date.parse(a) : NaN;
+  const tb = b ? Date.parse(b) : NaN;
+  if (!Number.isFinite(ta)) return Number.isFinite(tb) ? b ?? null : null;
+  if (!Number.isFinite(tb)) return a ?? null;
+  return tb > ta ? b ?? null : a ?? null;
 }
 
 /** Same thresholds as the web: red needs charging now, amber soon, green fine. */

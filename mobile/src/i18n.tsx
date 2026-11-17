@@ -25,6 +25,9 @@ const STRINGS = {
   "common.on": { en: "ON", bn: "চালু" },
   "common.off": { en: "OFF", bn: "বন্ধ" },
   "common.live": { en: "live", bn: "লাইভ" },
+  "common.requestFailed": { en: "Something went wrong. Please try again.", bn: "কিছু একটা সমস্যা হয়েছে। আবার চেষ্টা করুন।" },
+  "time.justNow": { en: "just now", bn: "এইমাত্র" },
+  "time.ago": { en: "{t} ago", bn: "{t} আগে" },
 
   // ── Tabs ──────────────────────────────────────────────────────────
   "tab.home": { en: "Home", bn: "হোম" },
@@ -52,6 +55,10 @@ const STRINGS = {
   "auth.password": { en: "Password", bn: "পাসওয়ার্ড" },
   "auth.loginFailed": { en: "Invalid email or password", bn: "ভুল ইমেইল বা পাসওয়ার্ড" },
   "auth.signOut": { en: "Sign out", bn: "সাইন আউট" },
+  "auth.signOutConfirm": {
+    en: "Sign out on this phone? You will not get alerts here until you sign in again.",
+    bn: "এই ফোন থেকে সাইন আউট করবেন? আবার সাইন ইন না করা পর্যন্ত এখানে অ্যালার্ট আসবে না।",
+  },
   "auth.tagline": { en: "Keep an eye on them, wherever they are.", bn: "চোখে চোখে রাখুন, ও যেখানেই থাকুক।" },
   "auth.subtitle": { en: "Live location, safe-zone alerts and SOS for your family", bn: "লাইভ লোকেশন, সেফ জোন অ্যালার্ট ও SOS — আপনার পরিবারের জন্য" },
 
@@ -356,6 +363,16 @@ const STRINGS = {
   "place.alerts.ENTER": { en: "Alerts: arrive only", bn: "অ্যালার্ট: শুধু পৌঁছালে" },
   "place.alerts.EXIT": { en: "Alerts: leave only", bn: "অ্যালার্ট: শুধু বের হলে" },
   "place.alerts.NONE": { en: "Alerts off", bn: "অ্যালার্ট বন্ধ" },
+  "place.noAlertsWarn": {
+    en: "Both are off: you will not be told when they arrive at or leave this place.",
+    bn: "দুটোই বন্ধ: এই জায়গায় পৌঁছালে বা বের হলে আপনাকে জানানো হবে না।",
+  },
+  "place.noAlertsTitle": { en: "Save without alerts?", bn: "অ্যালার্ট ছাড়া সংরক্ষণ করবেন?" },
+  "place.saveAnyway": { en: "Save without alerts", bn: "অ্যালার্ট ছাড়াই সংরক্ষণ" },
+  "geo.noAlertsWarn": {
+    en: "Alerts are off: you will not be told when they enter or leave this boundary.",
+    bn: "অ্যালার্ট বন্ধ: এই সীমানায় ঢুকলে বা বের হলে আপনাকে জানানো হবে না।",
+  },
 
   // ── Alert labels for zone events ──────────────────────────────────
   "alarm.PLACE_ARRIVED": { en: "Arrived", bn: "পৌঁছানো" },
@@ -381,6 +398,12 @@ const STRINGS = {
   "map.normal": { en: "Normal", bn: "সাধারণ" },
   "map.satellite": { en: "Satellite", bn: "স্যাটেলাইট" },
   "map.google": { en: "Google Maps", bn: "গুগল ম্যাপ" },
+  "map.loadFailed": { en: "Map could not load. Check your internet.", bn: "ম্যাপ লোড হয়নি। ইন্টারনেট সংযোগ দেখুন।" },
+  "map.connectionLost": { en: "Connection lost - showing last known positions", bn: "সংযোগ নেই - সর্বশেষ জানা অবস্থান দেখানো হচ্ছে" },
+  "track.waitingGps": {
+    en: "Waiting for GPS. They will appear on the map once the tracker gets its first position.",
+    bn: "জিপিএসের অপেক্ষায়। ট্র্যাকার প্রথম অবস্থান পেলে ম্যাপে দেখা যাবে।",
+  },
 
   // ── Statistics tab ────────────────────────────────────────────────
   "stats.loading": { en: "Loading statistics…", bn: "পরিসংখ্যান লোড হচ্ছে…" },
@@ -476,6 +499,8 @@ const STRINGS = {
   "place.timesLeave": { en: "Leaves at", bn: "বের হওয়ার সময়" },
   "place.timesGrace": { en: "Grace time (minutes)", bn: "অতিরিক্ত সময় (মিনিট)" },
   "place.timesGraceShort": { en: "+{n} min", bn: "+{n} মিনিট" },
+  "place.timesBadTime": { en: "Write the time in 24-hour form, like 08:15 or 16:30.", bn: "সময় ২৪ ঘণ্টার হিসাবে লিখুন, যেমন 08:15 বা 16:30।" },
+  "place.timesDuplicate": { en: "This time is already in the list for these days.", bn: "এই দিনগুলোর জন্য এই সময়টি তালিকায় আগে থেকেই আছে।" },
   "day.1": { en: "Mon", bn: "সোম" },
   "day.2": { en: "Tue", bn: "মঙ্গল" },
   "day.3": { en: "Wed", bn: "বুধ" },
@@ -641,6 +666,11 @@ const STRINGS = {
   "acct.tooShort": { en: "Use at least 8 characters.", bn: "কমপক্ষে ৮ অক্ষর দিন।" },
   "acct.failed": { en: "The password was not changed. Check your current password.", bn: "পাসওয়ার্ড পরিবর্তন হয়নি। বর্তমান পাসওয়ার্ড ঠিক আছে কি না দেখুন।" },
   "nt.title": { en: "Alarm notifications", bn: "অ্যালার্ম বিজ্ঞপ্তি" },
+  "nt.blocked": {
+    en: "Notifications are off for this phone, so no alert can reach you here. Allow notifications for EyeOn in the phone settings.",
+    bn: "এই ফোনে নোটিফিকেশন বন্ধ, তাই এখানে কোনো অ্যালার্ট আসবে না। ফোনের সেটিংসে EyeOn-এর নোটিফিকেশন চালু করুন।",
+  },
+  "nt.openSettings": { en: "Open phone settings", bn: "ফোনের সেটিংস খুলুন" },
   "nt.intro": { en: "Choose which alarms are sent to this phone. Popup and sound apply to the web dashboard. These settings are yours only; other users have their own.", bn: "কোন অ্যালার্ম এই ফোনে পাঠানো হবে তা বেছে নিন। পপআপ ও শব্দ ওয়েব ড্যাশবোর্ডের জন্য। এই সেটিংস শুধু আপনার; অন্য ব্যবহারকারীদের নিজস্ব সেটিংস আছে।" },
   "nt.defaults": { en: "You are on the default settings. Save to keep your own.", bn: "আপনি ডিফল্ট সেটিংসে আছেন। নিজের সেটিংস রাখতে সংরক্ষণ করুন।" },
   "nt.push": { en: "Phone", bn: "ফোন" },
@@ -1035,6 +1065,18 @@ const STRINGS = {
 
 export type StringKey = keyof typeof STRINGS;
 
+/**
+ * The language the app is showing, for code outside React (src/format.ts, src/api/client.ts).
+ * LocaleProvider keeps it in step; components that show such text already re-render on a
+ * language change because they use `useI18n`.
+ */
+let activeLocale: Locale = "bn";
+
+/** `t` for code that cannot use the hook. */
+export function translate(k: StringKey): string {
+  return STRINGS[k][activeLocale];
+}
+
 interface LocaleCtx {
   locale: Locale;
   setLocale: (l: Locale) => void;
@@ -1050,6 +1092,7 @@ const LocaleContext = createContext<LocaleCtx>({
 export function LocaleProvider({ children }: { children: ReactNode }) {
   // Bengali first: the product promise is a fully Bengali app. A saved choice still wins.
   const [locale, setLocaleState] = useState<Locale>("bn");
+  activeLocale = locale;
 
   useEffect(() => {
     SecureStore.getItemAsync(STORE_KEY)

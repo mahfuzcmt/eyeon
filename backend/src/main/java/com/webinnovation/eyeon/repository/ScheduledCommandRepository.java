@@ -85,12 +85,15 @@ public class ScheduledCommandRepository {
         return id;
     }
 
+    /** Largest page {@link #listForOrg} hands out, whatever the caller asks for. */
+    static final int MAX_PAGE = 200;
+
     public List<ScheduledCommand> listForOrg(UUID orgId, int limit, int offset) {
         return jdbc.query(
                 SELECT_FIELDS + " WHERE org_id = :orgId ORDER BY created_at DESC LIMIT :limit OFFSET :offset",
                 new MapSqlParameterSource("orgId", orgId)
-                        .addValue("limit", limit)
-                        .addValue("offset", offset),
+                        .addValue("limit", Math.max(1, Math.min(limit, MAX_PAGE)))
+                        .addValue("offset", Math.max(0, offset)),
                 ROW_MAPPER);
     }
 

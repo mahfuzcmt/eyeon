@@ -106,9 +106,14 @@ export default function PlacesScreen() {
                   {item.address ?? t(placeTypeKey(type))}
                   {item.radiusM != null ? `  ·  ${fmtDistance(item.radiusM)}` : ""}
                 </Text>
-                <Text style={[styles.alerts, item.notifyOn === "NONE" && { color: colors.textFaint }]}>
-                  {t(`place.alerts.${item.notifyOn}` as StringKey)}
-                </Text>
+                {item.notifyOn === "NONE" ? (
+                  <View style={styles.alertsOff}>
+                    <Ionicons name="notifications-off" size={14} color={colors.onBrand} />
+                    <Text style={styles.alertsOffText}>{t("place.alerts.NONE")}</Text>
+                  </View>
+                ) : (
+                  <Text style={styles.alerts}>{t(`place.alerts.${item.notifyOn}` as StringKey)}</Text>
+                )}
               </View>
               <Pressable
                 onPress={() => router.push({ pathname: "/place-times", params: { id: item.id, name: item.name } })}
@@ -186,6 +191,17 @@ const styles = StyleSheet.create({
   name: { color: colors.text, fontSize: 18, fontWeight: "700" },
   meta: { color: colors.textDim, fontSize: 14 },
   alerts: { color: colors.brand, fontSize: 14, fontWeight: "600" },
+  alertsOff: {
+    flexDirection: "row",
+    alignItems: "center",
+    alignSelf: "flex-start",
+    gap: 4,
+    backgroundColor: colors.warn,
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    paddingVertical: 3,
+  },
+  alertsOffText: { color: colors.onBrand, fontSize: 13, fontWeight: "700" },
   deleteBtn: { width: touch.min, height: touch.min, alignItems: "center", justifyContent: "center" },
   footer: { padding: space.md },
   error: { color: colors.danger, fontSize: 15, marginBottom: space.sm },

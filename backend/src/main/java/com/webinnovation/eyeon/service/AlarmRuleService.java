@@ -80,6 +80,7 @@ public class AlarmRuleService {
 
     public UUID create(UUID orgId, UUID ownerUserId, AlarmRuleRequest req) {
         validate(req, true);
+        requireVisibleAssignments(req);
         UUID id = repo.insert(
                 orgId,
                 ownerUserId,
@@ -88,7 +89,7 @@ public class AlarmRuleService {
                 req.threshold(),
                 req.windowStart(),
                 req.windowEnd(),
-                defaultIfNull(req.cooldownSeconds(), STATE_RULE_TYPES.contains(req.ruleType()) ? 3600 : 300),
+                cooldown(req.cooldownSeconds(), STATE_RULE_TYPES.contains(req.ruleType()) ? 3600 : 300),
                 defaultIfNull(req.severity(), "WARNING"),
                 defaultIfNull(req.active(), true),
                 defaultIfNull(req.appliesToAll(), true)
@@ -103,8 +104,13 @@ public class AlarmRuleService {
 
     public void update(UUID ownerUserId, UUID id, AlarmRuleRequest req) {
         validate(req, false);
+        // The type cannot be changed, so a new threshold is checked against the rule as stored
+        // (a PATCH need not repeat ruleType, and then validate() above checked nothing).
+        AlarmRule existing = getOrThrow(ownerUserId, id);
+        if (req.threshold() != null) requireThreshold(existing.ruleType(), req.threshold());
+        requireVisibleAssignments(req);
         if (!repo.update(ownerUserId, id, req.name(), req.threshold(),
-                req.windowStart(), req.windowEnd(), req.cooldownSeconds(),
+                req.windowStart(), req.windowEnd(), cooldown(req.cooldownSeconds(), null),
                 req.severity(), req.active(), req.appliesToAll())) {
             throw new NotFoundException("Alarm rule not found: " + id);
         }
@@ -113,6 +119,46 @@ public class AlarmRuleService {
             for (String imei : req.assignedImeis()) {
                 if (imei != null && !imei.isBlank()) repo.assignDevice(id, imei);
             }
+        }
+    }
+
+    /** Shortest time between two alarms of one rule for one person; below this a rule is an alarm storm. */
+    static final int MIN_COOLDOWN_SECONDS = 30;
+
+    /**
+     * A rule may only name children its author can see (CLAUDE.md §11.2a). Until 2026-11-17 any
+     * IMEI was stored as sent, so a parent could point a rule at another family's child and be
+     * told about that child's speed, battery and movements. 404, as for every other IMEI endpoint.
+     */
+    private void requireVisibleAssignments(AlarmRuleRequest req) {
+        if (req.assignedImeis() == null) return;
+        for (String imei : req.assignedImeis()) {
+            if (imei != null && !imei.isBlank()) access.requireVisible(imei);
+        }
+    }
+
+    /** Negative is refused; anything shorter than {@link #MIN_COOLDOWN_SECONDS} is raised to it. */
+    private static Integer cooldown(Integer requested, Integer fallback) {
+        if (requested == null) return fallback;
+        if (requested < 0) {
+            throw new DomainException("VALIDATION", "cooldownSeconds must not be negative");
+        }
+        return Math.max(requested, MIN_COOLDOWN_SECONDS);
+    }
+
+    private static void requireThreshold(String ruleType, Double threshold) {
+        switch (ruleType) {
+            case "SPEED_OVER", "VOLTAGE_UNDER" -> {
+                if (threshold == null || threshold.isNaN() || threshold.isInfinite() || threshold <= 0) {
+                    throw new DomainException("VALIDATION", "threshold (positive) required for " + ruleType);
+                }
+            }
+            case "PARKING_TIMEOUT", "OFFLINE_TIMEOUT", "IDLE_TIMEOUT" -> {
+                if (threshold == null || threshold.isNaN() || threshold.isInfinite() || threshold < 1) {
+                    throw new DomainException("VALIDATION", "threshold (minutes, >= 1) required for " + ruleType);
+                }
+            }
+            default -> { }   // ACC_ON_DURING_WINDOW has no threshold
         }
     }
 
@@ -294,26 +340,20 @@ public class AlarmRuleService {
         }
         if (req.ruleType() != null) {
             switch (req.ruleType()) {
-                case "SPEED_OVER", "VOLTAGE_UNDER" -> {
-                    if (req.threshold() == null || req.threshold() <= 0) {
-                        throw new DomainException("VALIDATION",
-                                "threshold (positive) required for " + req.ruleType());
-                    }
-                }
+                case "SPEED_OVER", "VOLTAGE_UNDER" -> requireThreshold(req.ruleType(), req.threshold());
                 case "ACC_ON_DURING_WINDOW" -> {
                     if (req.windowStart() == null || req.windowEnd() == null) {
                         throw new DomainException("VALIDATION",
                                 "windowStart and windowEnd required for ACC_ON_DURING_WINDOW");
                     }
                 }
-                case "PARKING_TIMEOUT", "OFFLINE_TIMEOUT", "IDLE_TIMEOUT" -> {
-                    if (req.threshold() == null || req.threshold() < 1) {
-                        throw new DomainException("VALIDATION",
-                                "threshold (minutes, >= 1) required for " + req.ruleType());
-                    }
-                }
+                case "PARKING_TIMEOUT", "OFFLINE_TIMEOUT", "IDLE_TIMEOUT" ->
+                        requireThreshold(req.ruleType(), req.threshold());
                 default -> throw new DomainException("VALIDATION", "Unknown ruleType: " + req.ruleType());
             }
+        }
+        if (req.cooldownSeconds() != null && req.cooldownSeconds() < 0) {
+            throw new DomainException("VALIDATION", "cooldownSeconds must not be negative");
         }
         if (req.severity() != null) {
             try {

@@ -4,8 +4,11 @@ import org.springframework.stereotype.Service;
 
 import javax.imageio.IIOImage;
 import javax.imageio.ImageIO;
+import javax.imageio.ImageReadParam;
+import javax.imageio.ImageReader;
 import javax.imageio.ImageWriteParam;
 import javax.imageio.ImageWriter;
+import javax.imageio.stream.ImageInputStream;
 import javax.imageio.stream.MemoryCacheImageOutputStream;
 import java.awt.Color;
 import java.awt.Graphics2D;
@@ -14,6 +17,8 @@ import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.util.Iterator;
 
 /**
  * Turns an uploaded picture into the one shape EyeOn stores: a square 256x256 JPEG.
@@ -46,21 +51,67 @@ public class DevicePhotoService {
      * @throws IllegalArgumentException when the upload is empty, over {@code maxBytes}, not a
      *         readable JPEG/PNG, or has absurd dimensions
      */
+    /**
+     * Reads a request body without ever holding more than {@code maxBytes} of it. The declared
+     * length is refused before a byte is read; a body without one (chunked) is cut off at the limit.
+     *
+     * @throws IllegalArgumentException when the body is larger than {@code maxBytes}
+     */
+    public static byte[] readLimited(InputStream body, long declaredLength, int maxBytes) throws IOException {
+        String tooLarge = "Image is larger than " + (maxBytes / (1024 * 1024)) + " MB";
+        if (declaredLength > maxBytes) throw new IllegalArgumentException(tooLarge);
+        byte[] bytes = body.readNBytes(maxBytes + 1);
+        if (bytes.length > maxBytes) throw new IllegalArgumentException(tooLarge);
+        return bytes;
+    }
+
+    /**
+     * Decodes an upload for a {@code width} x {@code height} result. The dimensions are read from
+     * the header first and anything over {@link #MAX_SOURCE_PIXELS} is refused before a single
+     * pixel is decoded: a few kilobytes can declare 30000 x 30000, and {@code ImageIO.read}
+     * allocated all of it before the old check ran. A large picture is then decoded subsampled
+     * (every n-th pixel, still at least twice the target size), so even a legitimate 40-megapixel
+     * photo costs a few megabytes instead of ~160.
+     */
+    private static BufferedImage decode(byte[] upload, int width, int height) {
+        IllegalArgumentException unreadable = new IllegalArgumentException("Image must be a JPEG or PNG");
+        try (ImageInputStream in = ImageIO.createImageInputStream(new ByteArrayInputStream(upload))) {
+            if (in == null) throw unreadable;
+            Iterator<ImageReader> readers = ImageIO.getImageReaders(in);
+            if (!readers.hasNext()) throw unreadable;
+            ImageReader reader = readers.next();
+            try {
+                reader.setInput(in, true, true);
+                int w = reader.getWidth(0);
+                int h = reader.getHeight(0);
+                if (w <= 0 || h <= 0) throw unreadable;
+                if ((long) w * h > MAX_SOURCE_PIXELS) {
+                    throw new IllegalArgumentException("Image dimensions are too large");
+                }
+                ImageReadParam param = reader.getDefaultReadParam();
+                int step = Math.max(1, Math.min(w / (2 * width), h / (2 * height)));
+                param.setSourceSubsampling(step, step, 0, 0);
+                BufferedImage image = reader.read(0, param);
+                if (image == null) throw unreadable;
+                return image;
+            } finally {
+                reader.dispose();
+            }
+        } catch (IOException | RuntimeException e) {
+            if (e instanceof IllegalArgumentException known && known.getMessage() != null
+                    && known.getMessage().startsWith("Image ")) {
+                throw known;
+            }
+            throw unreadable;   // truncated or corrupt file: the decoders throw all sorts of things
+        }
+    }
+
     static byte[] coverJpeg(byte[] upload, int width, int height, int maxBytes) {
         if (upload == null || upload.length == 0) throw new IllegalArgumentException("Image is empty");
         if (upload.length > maxBytes) {
             throw new IllegalArgumentException("Image is larger than " + (maxBytes / (1024 * 1024)) + " MB");
         }
-        BufferedImage src;
-        try {
-            src = ImageIO.read(new ByteArrayInputStream(upload));
-        } catch (IOException e) {
-            src = null;
-        }
-        if (src == null) throw new IllegalArgumentException("Image must be a JPEG or PNG");
-        if ((long) src.getWidth() * src.getHeight() > MAX_SOURCE_PIXELS) {
-            throw new IllegalArgumentException("Image dimensions are too large");
-        }
+        BufferedImage src = decode(upload, width, height);
 
         // Largest region of the source with the target's aspect ratio, centred.
         double target = (double) width / height;

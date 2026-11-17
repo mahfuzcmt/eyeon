@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { AppState, StyleSheet, View } from "react-native";
+import { AppState, Pressable, StyleSheet, Text, View } from "react-native";
 import { WebView, WebViewMessageEvent } from "react-native-webview";
-import { colors } from "@/theme";
+import { colors, radius, space, touch } from "@/theme";
 import { useAuth } from "@/auth/AuthContext";
 import { useI18n } from "@/i18n";
 
@@ -161,6 +161,9 @@ ${googleScripts}
 <script>
   const RN = window.ReactNativeWebView;
   const post = (o) => RN && RN.postMessage(JSON.stringify(o));
+  // Leaflet comes from the network. When it did not arrive (offline when the map was opened) the
+  // next line throws and this page never reports 'ready': say so at once, the app offers Retry.
+  if(typeof L === 'undefined') post({type:'loadfailed'});
   const map = L.map('map', {
     center:[${DEFAULT.lat},${DEFAULT.lng}], zoom:${DEFAULT.zoom},
     zoomControl:false, attributionControl:true, maxZoom:20
@@ -689,6 +692,8 @@ ${googleScripts}
 
 /** How long the page may take to answer a ping after the app returns to the foreground. */
 const PING_TIMEOUT_MS = 3_000;
+/** How long the page may take to report 'ready' after it started loading before Retry is offered. */
+const LOAD_TIMEOUT_MS = 12_000;
 /** Commands that move the view: replayed after everything is drawn, or a fit would find no markers. */
 const VIEW_KEYS = new Set(["center", "fitVehicles", "fitRoute", "fitZones"]);
 
@@ -719,7 +724,7 @@ export default function WebMap({
 }: Props) {
   // Org-owned Google key (settings on the web dashboard) beats the build-time default.
   const { org } = useAuth();
-  const { locale } = useI18n();
+  const { locale, t } = useI18n();
   const googleKey = org?.googleMapsApiKey?.trim() || GOOGLE_MAPS_API_KEY;
   const mapLanguage: "en" | "bn" = locale === "bn" ? "bn" : "en";
 
@@ -735,6 +740,36 @@ export default function WebMap({
    */
   const state = useRef(new Map<string, string>());
   const pingTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  /**
+   * The page never reported 'ready' (Leaflet could not be downloaded: offline when the map was
+   * opened, or the page failed to load). Nothing else notices that - the foreground check only
+   * pings a page that was ready - so the map stayed blank until the app was killed. A small
+   * "Map could not load - Retry" card is shown; Retry, and the next return to the foreground,
+   * build a new WebView. A page that does become ready later (slow network) clears it.
+   */
+  const [loadFailed, setLoadFailed] = useState(false);
+  const loadFailedRef = useRef(false);
+  const loadTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const markLoadFailed = useCallback((failed: boolean) => {
+    loadFailedRef.current = failed;
+    setLoadFailed(failed);
+  }, []);
+
+  const armLoadWatchdog = useCallback(() => {
+    if (loadTimer.current) clearTimeout(loadTimer.current);
+    loadTimer.current = setTimeout(() => {
+      loadTimer.current = null;
+      if (!ready.current) markLoadFailed(true);
+    }, LOAD_TIMEOUT_MS);
+  }, [markLoadFailed]);
+
+  const pageFailed = useCallback(() => {
+    if (ready.current) return; // a page that works is never covered
+    if (loadTimer.current) clearTimeout(loadTimer.current);
+    loadTimer.current = null;
+    markLoadFailed(true);
+  }, [markLoadFailed]);
 
   const inject = useCallback((js: string) => {
     ref.current?.injectJavaScript(`try{${js}}catch(e){};true;`);
@@ -756,14 +791,30 @@ export default function WebMap({
     ready.current = false;
     if (pingTimer.current) clearTimeout(pingTimer.current);
     pingTimer.current = null;
+    markLoadFailed(false);
     setWebKey((k) => k + 1);
-  }, []);
+  }, [markLoadFailed]);
+
+  // Every WebView (the first one and each rebuilt one) gets the load watchdog.
+  useEffect(() => {
+    armLoadWatchdog();
+    return () => {
+      if (loadTimer.current) clearTimeout(loadTimer.current);
+      loadTimer.current = null;
+    };
+  }, [webKey, armLoadWatchdog]);
 
   // Back from the background: check the page is still alive; if it does not answer, rebuild it.
   useEffect(() => {
     const sub = AppState.addEventListener("change", (s) => {
       if (s !== "active") return;
-      if (!ready.current) return; // still loading; 'ready' will replay
+      if (!ready.current) {
+        // Never became ready: try again with a new page if it failed, otherwise it is still
+        // loading ('ready' will replay) - make sure the watchdog is running for it.
+        if (loadFailedRef.current) rebuild();
+        else if (!loadTimer.current) armLoadWatchdog();
+        return;
+      }
       if (pingTimer.current) clearTimeout(pingTimer.current);
       pingTimer.current = setTimeout(rebuild, PING_TIMEOUT_MS);
       inject("window.MLMap.ping()");
@@ -772,7 +823,7 @@ export default function WebMap({
       sub.remove();
       if (pingTimer.current) clearTimeout(pingTimer.current);
     };
-  }, [inject, rebuild]);
+  }, [inject, rebuild, armLoadWatchdog]);
 
   useEffect(() => {
     if (vehicles) run("vehicles", `window.MLMap.setVehicles(${JSON.stringify(vehicles)})`);
@@ -860,12 +911,17 @@ export default function WebMap({
         if (msg.type === "ready") {
           // Also after a reload of the page: draw everything again.
           ready.current = true;
+          if (loadTimer.current) clearTimeout(loadTimer.current);
+          loadTimer.current = null;
+          markLoadFailed(false);
           const entries = [...state.current.entries()];
           for (const [k, js] of entries) if (!VIEW_KEYS.has(k)) inject(js);
           for (const [k, js] of entries) if (VIEW_KEYS.has(k)) inject(js);
           // The map opens on free tiles: Google can be offered if a key exists, traffic only once it is shown.
           onGoogleAvailable?.(msg.google === true);
           onTrafficAvailable?.(false);
+        } else if (msg.type === "loadfailed") {
+          pageFailed();
         } else if (msg.type === "pong") {
           if (pingTimer.current) clearTimeout(pingTimer.current);
           pingTimer.current = null;
@@ -880,7 +936,7 @@ export default function WebMap({
         /* ignore */
       }
     },
-    [inject, onSelect, onZonePress, onMapPress, onTrafficAvailable, onGoogleAvailable],
+    [inject, onSelect, onZonePress, onMapPress, onTrafficAvailable, onGoogleAvailable, markLoadFailed, pageFailed],
   );
 
   return (
@@ -894,7 +950,10 @@ export default function WebMap({
         onMessage={onMessage}
         onLoadStart={() => {
           ready.current = false;
+          armLoadWatchdog();
         }}
+        onError={pageFailed}
+        onHttpError={pageFailed}
         // Android kills the WebView's renderer to free memory while the app is minimized, which
         // leaves a blank map; iOS does the same to its content process. Build a new one.
         onRenderProcessGone={rebuild}
@@ -902,8 +961,46 @@ export default function WebMap({
         javaScriptEnabled
         domStorageEnabled
       />
+      {loadFailed ? (
+        <View style={styles.failedWrap} pointerEvents="box-none">
+          <View style={styles.failed} accessibilityRole="alert">
+            <Text style={styles.failedText}>{t("map.loadFailed")}</Text>
+            <Pressable
+              onPress={rebuild}
+              accessibilityRole="button"
+              style={({ pressed }) => [styles.retry, pressed && { opacity: 0.85 }]}
+            >
+              <Text style={styles.retryText}>{t("common.retry")}</Text>
+            </Pressable>
+          </View>
+        </View>
+      ) : null}
     </View>
   );
 }
 
-const styles = StyleSheet.create({ fill: { flex: 1, backgroundColor: colors.bg } });
+const styles = StyleSheet.create({
+  fill: { flex: 1, backgroundColor: colors.bg },
+  failedWrap: { ...StyleSheet.absoluteFillObject, alignItems: "center", justifyContent: "center", padding: space.lg },
+  failed: {
+    maxWidth: 300,
+    alignItems: "center",
+    gap: space.md,
+    backgroundColor: colors.surface,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: space.lg,
+  },
+  failedText: { color: colors.text, fontSize: 15, fontWeight: "600", textAlign: "center" },
+  retry: {
+    minHeight: touch.min,
+    minWidth: 120,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: colors.brand,
+    borderRadius: radius.sm,
+    paddingHorizontal: space.lg,
+  },
+  retryText: { color: colors.onBrand, fontSize: 16, fontWeight: "700" },
+});

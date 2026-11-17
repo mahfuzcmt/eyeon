@@ -1,5 +1,7 @@
 package com.webinnovation.eyeon.security;
 
+import com.webinnovation.eyeon.exception.ForbiddenException;
+
 import java.util.UUID;
 
 /**
@@ -48,6 +50,17 @@ public final class TenantContext {
             throw new IllegalStateException("No user in context — request not authenticated");
         }
         return id;
+    }
+
+    /**
+     * Organization administrators only (ORG_ADMIN or SUPER_ADMIN). A parent (ORG_USER) gets 403,
+     * also one flagged "see all devices": that flag widens what they can read, not what they manage.
+     */
+    public static void requireAdmin() {
+        String role = currentRole();
+        if (!"ORG_ADMIN".equals(role) && !"SUPER_ADMIN".equals(role)) {
+            throw new ForbiddenException("Admin role required");
+        }
     }
 
     public static void clear() {

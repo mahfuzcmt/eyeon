@@ -68,7 +68,7 @@ export default function Page() {
     }),
     [filter],
   );
-  const { alarms, loading, acknowledge } = useAlarms(orgId, { ...query, allowedImeis });
+  const { alarms, loading, error, reload, acknowledge } = useAlarms(orgId, { ...query, allowedImeis });
 
   return (
     <div className="flex h-full flex-col bg-white">
@@ -110,6 +110,8 @@ export default function Page() {
           <AlarmList
             alarms={alarms}
             loading={loading}
+            error={error}
+            onRetry={reload}
             devices={devices}
             filter={filter}
             onFilterChange={setFilter}

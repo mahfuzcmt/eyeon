@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react";
-import { StyleSheet, Text, View } from "react-native";
+import { Linking, StyleSheet, Text, View } from "react-native";
 import { getNotificationSettings, saveNotificationSettings } from "@/api/endpoints";
 import { extractError } from "@/api/client";
 import { alarmTypeLabel } from "@/alarmCenter";
-import { CheckBox, ErrorText, FormScreen, Heading, Hint, OkText, Panel } from "@/components/settings/kit";
+import { CheckBox, ErrorText, FormScreen, Heading, Hint, OkText, Panel, SecondaryButton } from "@/components/settings/kit";
 import { Loading, PrimaryButton } from "@/ui";
+import { usePushPermissionDenied } from "@/hooks/usePushNotifications";
 import { useI18n, type StringKey } from "@/i18n";
 import { colors, space } from "@/theme";
 import type { NotificationSettings } from "@/types";
@@ -32,6 +33,7 @@ const HIDDEN = new Set([
 /** Per-user alarm notification matrix (alarm type x phone / popup / sound), as on the web. */
 export default function NotificationsScreen() {
   const { t } = useI18n();
+  const pushBlocked = usePushPermissionDenied();
   const [settings, setSettings] = useState<NotificationSettings | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [sets, setSets] = useState<Record<Channel, Set<string>>>({ push: new Set(), popup: new Set(), sound: new Set() });
@@ -97,6 +99,14 @@ export default function NotificationsScreen() {
 
   return (
     <FormScreen title={t("set.notifications")}>
+      {pushBlocked ? (
+        <Panel style={styles.blocked}>
+          <Text style={styles.blockedText} accessibilityRole="alert">
+            {t("nt.blocked")}
+          </Text>
+          <SecondaryButton label={t("nt.openSettings")} icon="settings-outline" onPress={() => void Linking.openSettings()} />
+        </Panel>
+      ) : null}
       <View style={{ gap: space.xs }}>
         <Heading>{t("nt.title")}</Heading>
         <Hint>{t("nt.intro")}</Hint>
@@ -157,6 +167,8 @@ const CELL = 56;
 
 const styles = StyleSheet.create({
   note: { color: colors.brand, fontSize: 13, fontWeight: "600" },
+  blocked: { borderColor: colors.danger, gap: space.md },
+  blockedText: { color: colors.danger, fontSize: 15, fontWeight: "700" },
   table: { padding: 0, gap: 0, overflow: "hidden" },
   row: { flexDirection: "row", alignItems: "center", paddingLeft: space.md, paddingRight: space.xs, minHeight: 52 },
   rowAlt: { backgroundColor: colors.surfaceAlt },

@@ -176,6 +176,28 @@ class Gt06HandlerLoginRaceTest {
     }
 
     @Test
+    void a_second_login_as_another_imei_on_the_same_connection_is_ignored() {
+        String other = "864290069999999";
+        channel.writeInbound(frame(0x01, bcdImei(IMEI), 1));
+        channel.writeInbound(frame(0x01, bcdImei(other), 2));
+        channel.writeInbound(frame(0x01, bcdImei(IMEI), 3));   // a tracker repeating its own login is fine
+
+        int acks = 0;
+        while (channel.readOutbound() != null) acks++;
+        assertEquals(2, acks, "only the logins as the connection's own IMEI are answered");
+
+        lookupMayFinish.countDown();
+        channel.writeInbound(frame(0x22, locationV3(), 4));
+
+        ArgumentCaptor<LocationData> saved = ArgumentCaptor.forClass(LocationData.class);
+        verify(locationService, timeout(3000)).saveAndBroadcast(saved.capture());
+        assertEquals(IMEI, saved.getValue().getImei(), "the connection still reports as the tracker it logged in as");
+        verify(deviceService, never()).findByImei(other);
+        verify(deviceService, never()).autoRegister(other);
+        assertEquals(IMEI, channel.attr(ChannelKeys.IMEI_KEY).get());
+    }
+
+    @Test
     void a_location_on_a_connection_that_never_logged_in_is_dropped() {
         channel.writeInbound(frame(0x22, locationV3(), 1));
         assertTrue(channel.readOutbound() != null, "still ACKed so the tracker does not reconnect-loop");

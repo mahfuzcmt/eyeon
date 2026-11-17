@@ -16,5 +16,11 @@ public final class ChannelKeys {
     /** Holds packets that arrive while the login lookup is still running (see {@link LoginGate}). */
     public static final AttributeKey<LoginGate> LOGIN_GATE_KEY = AttributeKey.valueOf("eyeon.loginGate");
 
+    /**
+     * The IMEI of the first LOGIN on this connection, set on the event loop before the lookup
+     * starts. A connection speaks for one tracker only; a later LOGIN with another IMEI is ignored.
+     */
+    public static final AttributeKey<String> LOGIN_IMEI_KEY = AttributeKey.valueOf("eyeon.loginImei");
+
     private ChannelKeys() {}
 }

@@ -2,10 +2,11 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { useLocale, type StringKey } from "@/lib/i18n";
+import { useLocale, type Locale, type StringKey } from "@/lib/i18n";
 import {
   filterSpeed,
   formatCompactDuration,
+  formatNumber,
   vehicleState,
   VEHICLE_STATE_COLOR,
   batteryGlyphSvg,
@@ -110,27 +111,27 @@ function inTab(state: VehicleState, tab: Tab): boolean {
   }
 }
 
-function rowStatus(row: Row, t: (k: StringKey) => string, rest?: NightRestView): { text: string; color: string; hint?: string } {
+function rowStatus(row: Row, t: (k: StringKey) => string, locale: Locale, rest?: NightRestView): { text: string; color: string; hint?: string } {
   const { device, state, speed, overspeed } = row;
   if (!row.located && ONLINE_STATES.has(state)) {
     return { text: t("veh.noGps"), color: VEHICLE_STATE_COLOR.nodata, hint: t("veh.noGpsHint") };
   }
   switch (state) {
     case "moving":
-      return { text: `${speed} km/h`, color: overspeed ? OVERSPEED_COLOR : VEHICLE_STATE_COLOR.moving };
+      return { text: `${formatNumber(speed, locale)} ${t("rules.unit.kph")}`, color: overspeed ? OVERSPEED_COLOR : VEHICLE_STATE_COLOR.moving };
     case "idle": {
-      const d = formatCompactDuration(device.parkedSince ?? device.lastSeenAt);
+      const d = formatCompactDuration(device.parkedSince ?? device.lastSeenAt, locale);
       return { text: d ? `${t("veh.idle")} ${d}` : t("veh.idle"), color: VEHICLE_STATE_COLOR.idle };
     }
     case "stopped": {
-      const d = formatCompactDuration(device.parkedSince ?? device.lastSeenAt);
+      const d = formatCompactDuration(device.parkedSince ?? device.lastSeenAt, locale);
       return { text: d || t("veh.stopped"), color: VEHICLE_STATE_COLOR.stopped };
     }
     case "offline": {
       // Switched off on purpose for the night: say when it wakes instead of "Offline 6 h".
       const wakes = restingUntil(rest);
       if (wakes) return { text: `${t("veh.resting")} ${wakes}`, color: VEHICLE_STATE_COLOR.offline, hint: t("ts.NIGHT_REST.warning") };
-      const d = formatCompactDuration(device.lastSeenAt);
+      const d = formatCompactDuration(device.lastSeenAt, locale);
       return { text: d ? `${t("veh.offline")} ${d}` : t("veh.offline"), color: VEHICLE_STATE_COLOR.offline };
     }
     case "expired":
@@ -480,7 +481,8 @@ interface VehicleRowProps {
 
 function VehicleRow({ row, selected, visible, onSelect, onToggleVisible, onAction, groups, onMoveToGroup, rest, t }: VehicleRowProps) {
   const { device, state, overspeed } = row;
-  const status = rowStatus(row, t, rest);
+  const { locale } = useLocale();
+  const status = rowStatus(row, t, locale, rest);
   const iconColor = overspeed ? OVERSPEED_COLOR : VEHICLE_STATE_COLOR[state];
   const online = ONLINE_STATES.has(state);
   const icon = useMemo(

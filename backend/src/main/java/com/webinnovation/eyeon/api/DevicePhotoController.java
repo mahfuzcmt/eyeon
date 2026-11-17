@@ -6,6 +6,7 @@ import com.webinnovation.eyeon.security.TenantContext;
 import com.webinnovation.eyeon.service.AuditService;
 import com.webinnovation.eyeon.service.DeviceAccessService;
 import com.webinnovation.eyeon.service.DevicePhotoService;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.CacheControl;
 import org.springframework.http.MediaType;
@@ -14,10 +15,10 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.io.IOException;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Map;
@@ -43,9 +44,13 @@ public class DevicePhotoController {
 
     /** Body: the raw image bytes (JPEG or PNG, at most 2 MB). Stored as a 256x256 JPEG. */
     @PutMapping(consumes = {MediaType.IMAGE_JPEG_VALUE, MediaType.IMAGE_PNG_VALUE, MediaType.APPLICATION_OCTET_STREAM_VALUE})
-    public Map<String, Instant> upload(@PathVariable String imei, @RequestBody byte[] body) {
+    public Map<String, Instant> upload(@PathVariable String imei, HttpServletRequest request) throws IOException {
         UUID orgId = TenantContext.requireOrgId();
+        // Access first, then the declared size, and only then is the body read (never more than the
+        // limit). Bound as byte[] it was read in full before either check ran.
         access.requireVisible(imei);
+        byte[] body = DevicePhotoService.readLimited(request.getInputStream(), request.getContentLengthLong(),
+                DevicePhotoService.MAX_UPLOAD_BYTES);
         byte[] jpeg = photoService.normalize(body);   // IllegalArgumentException -> 400 VALIDATION
         Instant version = deviceRepo.savePhoto(orgId, imei, MediaType.IMAGE_JPEG_VALUE, jpeg);
         audit.record("DEVICE_PHOTO_SET", "device", imei, Map.of("bytes", jpeg.length));

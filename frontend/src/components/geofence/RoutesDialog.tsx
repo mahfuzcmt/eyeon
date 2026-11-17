@@ -7,6 +7,7 @@ import { api, extractError } from "@/lib/api";
 import { DHAKA_CENTER, createBaseLayer } from "@/lib/leaflet";
 import { formatNumber } from "@/lib/format";
 import { useLocale, type StringKey } from "@/lib/i18n";
+import { useEscapeKey } from "@/hooks/useEscapeKey";
 import type {
   GeofenceView,
   LatLng,
@@ -48,6 +49,8 @@ export function RoutesDialog({ place, onClose }: Props) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [dirty, setDirty] = useState(false);
+
+  useEscapeKey(onClose, !busy);
 
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<L.Map | null>(null);
@@ -261,6 +264,7 @@ export function RoutesDialog({ place, onClose }: Props) {
   };
 
   const remove = async () => {
+    if (!window.confirm(t("route.deleteConfirm"))) return;
     setBusy(true);
     setError(null);
     try {

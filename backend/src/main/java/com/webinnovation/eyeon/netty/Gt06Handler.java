@@ -154,6 +154,14 @@ public class Gt06Handler extends SimpleChannelInboundHandler<ByteBuf> {
             return;
         }
         String imei = packetDecoder.decodeLoginImei(content);
+        String bound = ctx.channel().attr(ChannelKeys.LOGIN_IMEI_KEY).setIfAbsent(imei);
+        if (bound != null && !bound.equals(imei)) {
+            // One connection is one tracker. Accepting this would let a connected device start
+            // reporting as any other IMEI (another child) without a new connection.
+            log.warn("Ignoring LOGIN as IMEI={} on channel={} already logged in as IMEI={}",
+                    imei, ctx.channel().id(), bound);
+            return;
+        }
         log.info("Login from IMEI={} channel={}", imei, ctx.channel().id());
 
         // ACK first — devices disconnect after 5s without a response

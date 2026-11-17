@@ -16,6 +16,7 @@ import com.webinnovation.eyeon.exception.ForbiddenException;
 import com.webinnovation.eyeon.exception.NotFoundException;
 import com.webinnovation.eyeon.repository.DeviceRepository;
 import com.webinnovation.eyeon.repository.OrganizationRepository;
+import com.webinnovation.eyeon.repository.RefreshTokenRepository;
 import com.webinnovation.eyeon.repository.UserDeviceRepository;
 import com.webinnovation.eyeon.repository.UserRepository;
 import com.webinnovation.eyeon.security.TenantContext;
@@ -44,7 +45,6 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class OrgController {
 
-    private static final String ROLE_ADMIN = "ORG_ADMIN";
     private static final String ROLE_SUPER = "SUPER_ADMIN";
 
     private final OrganizationRepository orgRepo;
@@ -54,6 +54,7 @@ public class OrgController {
     private final DeviceRepository deviceRepo;
     private final PasswordEncoder passwordEncoder;
     private final AuditService audit;
+    private final RefreshTokenRepository refreshRepo;
 
     @GetMapping("/me")
     public OrgView getMyOrg() {
@@ -90,6 +91,8 @@ public class OrgController {
 
     @GetMapping("/me/users")
     public List<UserView> listUsers() {
+        // Names, emails and phone numbers of every member: admin screens only.
+        requireAdmin();
         UUID orgId = TenantContext.requireOrgId();
         return userRepo.listByOrg(orgId).stream()
                 .map(u -> UserView.of(u, userDeviceRepo.countByUser(u.id())))
@@ -145,6 +148,12 @@ public class OrgController {
             }
             userRepo.updatePassword(id, orgId, passwordEncoder.encode(body.password()));
         }
+        // An admin-set password or a switched-off account ends that user's sessions: without this
+        // a stolen or shared phone kept working on its refresh token for weeks.
+        boolean passwordSet = body.password() != null && !body.password().isBlank();
+        if (passwordSet || Boolean.FALSE.equals(body.isActive())) {
+            refreshRepo.revokeAllForUser(id);
+        }
 
         User updated = userRepo.findById(id).orElseThrow();
         liveAudience.invalidate(TenantContext.requireOrgId());
@@ -168,6 +177,7 @@ public class OrgController {
         if (rows == 0) {
             throw new NotFoundException("user", id.toString());
         }
+        refreshRepo.revokeAllForUser(id);   // a disabled account must not keep refreshing its session
         liveAudience.invalidate(TenantContext.requireOrgId());
         audit.record("USER_DISABLE", "user", id.toString(), null);
         return ResponseEntity.noContent().build();
@@ -331,10 +341,7 @@ public class OrgController {
     }
 
     private static void requireAdmin() {
-        String role = TenantContext.currentRole();
-        if (role == null || (!ROLE_ADMIN.equals(role) && !ROLE_SUPER.equals(role))) {
-            throw new ForbiddenException("Admin role required");
-        }
+        TenantContext.requireAdmin();
     }
 
     /**
