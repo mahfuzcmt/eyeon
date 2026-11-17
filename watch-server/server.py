@@ -34,13 +34,16 @@ ACK_WITH_SUCCESS = frozenset({"CONFIG", "ICCID", "RYIMEI", "APPANDFNREPORT", "DE
 # while it was carried 4 km (production, 2026-11-12..16). CR makes it locate and report for
 # 3 minutes: "once every 10 seconds" says the vendor document, every 45-66 s was measured on
 # production without a GPS fix. That pace is the watch's; the server only decides when to send CR:
-#   moving (motion.py) - again shortly before each 3 minutes end, so it never stops reporting;
+#   moving (motion.py) - again every MOVING_ASK_EVERY, so that it reports about once a minute.
+#                        Inside the 3 minutes the watch reports about 6, 54 and 102 s after a
+#                        CR and then goes quiet: asking only every 165 s gave gaps of 48, 48 and
+#                        70 s, and of 115 s when the third report was missing (production,
+#                        2026-11-16/17). A CR every 100 s brings the next report before that;
 #   still              - once per WATCH_STILL_EVERY, on a heartbeat; the 3 minutes of reports
 #                        that follow are what shows that it has started to move.
 LOCATE_MIN_BATTERY = 15  # below this the watch is left alone: locating runs its GPS
 LOCATE_SLACK = 30  # heartbeats come every 300 s give or take; do not miss one by a second
-CR_WINDOW = 180  # seconds a watch keeps locating after one CR
-CR_RENEW_BEFORE = 15  # CR is sent again this long before the window ends
+MOVING_ASK_EVERY = 100  # seconds between CRs to a moving watch
 CR_LOST_AFTER = 60  # asked, alive (heartbeat) and still no report after this: the CR never arrived
 
 SCHEMA = """
@@ -271,8 +274,8 @@ class Server:
     def maybe_locate(self, dev: str, writer: asyncio.StreamWriter, heartbeat: bool = False):
         """Send CR when the watch should be reporting its position and is not.
 
-        Moving (or not known yet): CR again shortly before each 3 minutes end (from the command
-        pump), and on a heartbeat when a CR brought no report - on a mobile network the watch
+        Moving (or not known yet): CR again every MOVING_ASK_EVERY (from the command pump), and
+        on a heartbeat when a CR brought no report - on a mobile network the watch
         opens a new connection every few minutes and the old ones die silently, so a CR can be
         written into a dead one.
         Still: one CR per still_every, and only on a heartbeat, when the connection has just
@@ -288,7 +291,7 @@ class Server:
         m = self.motion.get(dev)
         if m is None or m.moving:
             unanswered = now - max(self.store.last_report(dev), asked) >= CR_LOST_AFTER
-            due = now - asked >= CR_WINDOW - CR_RENEW_BEFORE or (heartbeat and unanswered)
+            due = now - asked >= MOVING_ASK_EVERY or (heartbeat and unanswered)
         else:
             due = heartbeat and now - asked >= self.still_every - LOCATE_SLACK
         if not due:

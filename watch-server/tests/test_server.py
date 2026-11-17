@@ -251,11 +251,12 @@ class EndToEnd(unittest.IsolatedAsyncioTestCase):
         pump = lambda: self.srv.maybe_locate(dev, self.srv.writers[dev])  # what command_pump does
         # not known yet = treated as moving: asked on the first heartbeat
         await expect("LK,0,0,79", lk + cr)
-        # inside the 3 minutes of that CR nothing more is sent
+        # for the next 100 seconds nothing more is sent
         w.write(build_frame(dev, home(1)))
+        self.srv.asked[dev] -= 90
         await nothing_from(pump)
-        # shortly before they end it is renewed without waiting for a heartbeat
-        self.srv.asked[dev] -= 170
+        # then it is asked again without waiting for a heartbeat
+        self.srv.asked[dev] -= 15
         pump()
         self.assertEqual(await asyncio.wait_for(r.readexactly(len(cr)), 2), cr)
         # a CR that brought no report within a minute is repeated on the next heartbeat

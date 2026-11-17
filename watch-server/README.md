@@ -19,7 +19,7 @@ HongMi sample sent 2-4 reports a day. `CR` makes it locate and report for 3 minu
 document, every 45-66 s measured on production without a GPS fix; that pace is the watch's, not the server's.
 The server decides when to send `CR` (`motion.py` says whether the watch is moving, from its reports: GPS distance
 and speed, else a new serving cell with at most one shared Wi-Fi access point, plus the step counter):
-- **moving** (and after a restart, until five reports say otherwise): `CR` again every 165 s, so it never stops;
+- **moving** (and after a restart, until five reports say otherwise): `CR` again every 100 s, which brings a report about once a minute (every 165 s left gaps of 70-115 s);
 - **still** (five reports from one place over four minutes): one `CR` per `WATCH_STILL_EVERY`, on a heartbeat. The
   reports of those 3 minutes are what shows that it has left, so leaving is noticed up to that long afterwards.
 Never below 15 % battery. Log lines: `asked <id> to locate (moving|still)`, `<id> is moving`, `<id> is still`.
