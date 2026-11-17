@@ -139,6 +139,40 @@ public class PushService {
         }
     }
 
+    /**
+     * One notification to one phone, on the alarm channel, so its owner can see whether this
+     * phone gets them at all (Settings -> Notifications -> Send a test). Waits for Expo's answer.
+     *
+     * @return null when Expo accepted it, otherwise why not
+     */
+    public String sendTest(String token, String locale) {
+        boolean bn = locale == null || locale.startsWith("bn");
+        Map<String, Object> m = new LinkedHashMap<>();
+        m.put("to", token);
+        m.put("title", bn ? "EyeOn পরীক্ষা" : "EyeOn test");
+        m.put("body", bn ? "এই ফোনে নোটিফিকেশন ঠিকমতো আসছে।" : "Notifications reach this phone.");
+        m.put("data", Map.of("type", "TEST"));
+        m.put("sound", "default");
+        m.put("priority", "high");
+        m.put("channelId", NotificationComposer.CHANNEL_ALARMS);
+        try {
+            ExpoPushResponse response = restClient.post().body(List.of(m)).retrieve().body(ExpoPushResponse.class);
+            ExpoPushTicket ticket = response == null || response.data() == null || response.data().isEmpty()
+                    ? null : response.data().get(0);
+            if (ticket != null && "ok".equals(ticket.status())) {
+                return null;
+            }
+            String error = ticket == null || ticket.details() == null ? null : ticket.details().error();
+            if ("DeviceNotRegistered".equals(error)) {
+                tokenRepo.deleteAll(List.of(token));
+            }
+            return error != null ? error : ticket != null && ticket.message() != null ? ticket.message() : "No answer from the push service";
+        } catch (Exception e) {
+            log.warn("Expo test push failed for token …{}: {}", tail(token), e.getMessage());
+            return "The push service could not be reached";
+        }
+    }
+
     private void sendChunk(List<String> tokens, NotificationComposer.Message msg, Map<String, Object> data) {
         List<Map<String, Object>> messages = new ArrayList<>(tokens.size());
         for (String token : tokens) {

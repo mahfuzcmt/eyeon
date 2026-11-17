@@ -30,6 +30,43 @@ Notifications.setNotificationHandler({
 /** Token registered with the backend for this session, if any. */
 let currentToken: string | null = null;
 
+const CHANNEL_ALARMS = "alarms_v2";
+const CHANNEL_ARRIVALS = "arrivals_v2";
+
+/** The token this phone is registered with, or null when it is not (yet). */
+export function registeredPushToken(): string | null {
+  return currentToken;
+}
+
+/** How this phone treats our notifications, as far as the app can see it. */
+export interface PushHealth {
+  /** Notifications are allowed for the app. */
+  allowed: boolean;
+  /** This phone is registered with the server. */
+  registered: boolean;
+  /** A channel was switched off or turned down to silent in the phone's settings (Android). */
+  quiet: boolean;
+}
+
+export async function pushHealth(): Promise<PushHealth> {
+  let allowed = false;
+  let quiet = false;
+  try {
+    allowed = (await Notifications.getPermissionsAsync()).status === "granted";
+    if (Platform.OS === "android") {
+      for (const id of [CHANNEL_ALARMS, CHANNEL_ARRIVALS]) {
+        const ch = await Notifications.getNotificationChannelAsync(id);
+        // Below "default" a notification makes no sound; a channel can also keep its importance
+        // and have its sound taken away.
+        if (ch && (ch.importance < Notifications.AndroidImportance.DEFAULT || ch.sound === null)) quiet = true;
+      }
+    }
+  } catch {
+    // Keep what could be read.
+  }
+  return { allowed, registered: currentToken !== null, quiet };
+}
+
 /**
  * "ok" = the backend has this phone's token. "denied" = notifications are not allowed for the app
  * (the user must change that in the phone settings). "unsupported" = an emulator. "failed" =
@@ -82,22 +119,37 @@ export async function registerForAlarmPush(locale: "bn" | "en", askPermission = 
     if (!Device.isDevice) return "unsupported"; // emulators/simulators can't receive push
 
     if (Platform.OS === "android") {
-      // Backend sends channelId "alarms" — the channel must exist client-side.
-      await Notifications.setNotificationChannelAsync("alarms", {
+      // The backend sends channelId "alarms_v2" / "arrivals_v2"; the channels must exist here.
+      // They are the second generation (2026-11-17, "notifications arrive in silent mode"):
+      // Android keeps a channel's sound and importance from the moment it is first created,
+      // whatever a later build asks for, and remembers them even when the channel is deleted
+      // and made again under the same id. So a phone on which "alarms" or "arrivals" was created
+      // differently by an old build, or turned down, could only be put right under new ids.
+      await Notifications.setNotificationChannelAsync(CHANNEL_ALARMS, {
         name: "Urgent alerts",
         importance: Notifications.AndroidImportance.MAX,
         sound: "default",
         vibrationPattern: [0, 250, 250, 250],
         lightColor: "#0F6B5C",
       });
-      // "Reached School" / "left School": good news, so a normal-importance channel
-      // with the default sound rather than the alarm treatment.
-      await Notifications.setNotificationChannelAsync("arrivals", {
+      // "Reached School" / "left School": good news, but parents want to hear it and see it
+      // come in, so high importance (sound and a banner) with a short buzz; it was normal
+      // importance, which on many phones shows no banner at all.
+      await Notifications.setNotificationChannelAsync(CHANNEL_ARRIVALS, {
         name: "Arrivals and departures",
-        importance: Notifications.AndroidImportance.DEFAULT,
+        importance: Notifications.AndroidImportance.HIGH,
         sound: "default",
+        vibrationPattern: [0, 200],
         lightColor: "#0F6B5C",
       });
+      // The first generation is no longer used by the backend; take it off the phone's list.
+      for (const old of ["alarms", "arrivals"]) {
+        try {
+          await Notifications.deleteNotificationChannelAsync(old);
+        } catch {
+          // Never created on this phone.
+        }
+      }
     }
 
     let { status } = await Notifications.getPermissionsAsync();

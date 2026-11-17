@@ -22,6 +22,15 @@ const VIEW_LABEL: Record<"street" | "satellite" | "google", StringKey> = {
   google: "map.google",
 };
 
+/** How long a person who changed position keeps being followed on the map. */
+const FOLLOW_AFTER_MOVE_MS = 150_000;
+
+function metersBetween(lat1: number, lng1: number, lat2: number, lng2: number): number {
+  const dy = (lat2 - lat1) * 111_320;
+  const dx = (lng2 - lng1) * 111_320 * Math.cos(((lat1 + lat2) / 2) * (Math.PI / 180));
+  return Math.hypot(dx, dy);
+}
+
 export default function MapScreen() {
   const { t } = useI18n();
   const { org } = useAuth();
@@ -70,12 +79,30 @@ export default function MapScreen() {
   // Keep a person in view as they move (pan only; the zoom stays where the user put it): the tapped
   // one, or - when nobody is tapped - the one person who is moving, as the web map does. Without it a
   // child in a bus or train left the screen within seconds and the map looked frozen.
+  //
+  // "Moving" is not only what the tracker says. A watch indoors or in a vehicle is located from
+  // Wi-Fi and reports speed 0, so it never counted as moving and the map stayed where it was while
+  // the marker walked off the screen ("location updates, but the map does not", client feedback
+  // 2026-11-17). A person whose position changed by 25 m or more counts as moving for the next
+  // FOLLOW_AFTER_MOVE_MS.
+  const lastSpot = useRef(new Map<string, { lat: number; lng: number }>());
+  const movedAt = useRef(new Map<string, number>());
   const autoFollow = useMemo(() => {
+    const now = Date.now();
+    for (const l of locations.values()) {
+      if (l.latitude === 0 && l.longitude === 0) continue;
+      const prev = lastSpot.current.get(l.imei);
+      if (prev && metersBetween(prev.lat, prev.lng, l.latitude, l.longitude) >= 25) movedAt.current.set(l.imei, now);
+      if (!prev || prev.lat !== l.latitude || prev.lng !== l.longitude) {
+        lastSpot.current.set(l.imei, { lat: l.latitude, lng: l.longitude });
+      }
+    }
     if (selected) return selected;
     let only: string | null = null;
     for (const l of locations.values()) {
       const d = byImei.get(l.imei);
-      if (!d || motionOf(d, l) !== "MOVING") continue;
+      const moved = now - (movedAt.current.get(l.imei) ?? 0) < FOLLOW_AFTER_MOVE_MS;
+      if (!moved && (!d || motionOf(d, l) !== "MOVING")) continue;
       if (only) return null;
       only = l.imei;
     }
@@ -108,16 +135,40 @@ export default function MapScreen() {
         iconColor: d?.iconColor,
         overspeed,
         moving: motion === "MOVING",
+        // Only for the person whose route is shown, and only for a position worked out from
+        // Wi-Fi or phone towers: how far off it may be.
+        accuracyM: loc.imei === routeImei && loc.source ? loc.accuracyM ?? null : null,
       });
     }
     return out;
-  }, [locations, byImei, speedLimits]);
+  }, [locations, byImei, speedLimits, routeImei]);
 
+  /**
+   * "Locate me". It used to centre the map on a position asked for at the default (balanced)
+   * accuracy, which indoors is a Wi-Fi / tower estimate that can be 100 m and more out, and drew
+   * nothing - so the map could show the user "on the opposite side" with no hint of how sure it
+   * was (client feedback 2026-11-17). Now: the last known position at once, then a GPS-grade fix,
+   * each drawn as a blue dot with the circle it is accurate to.
+   */
+  const [me, setMe] = useState<{ lat: number; lng: number; accuracyM: number | null } | null>(null);
   const locateMe = useCallback(async () => {
     const { status } = await Location.requestForegroundPermissionsAsync();
     if (status !== "granted") return;
-    const pos = await Location.getCurrentPositionAsync({});
-    setCenter({ lat: pos.coords.latitude, lng: pos.coords.longitude, zoom: 18, nonce: Date.now() });
+    const show = (pos: Location.LocationObject, zoom: number) => {
+      setMe({ lat: pos.coords.latitude, lng: pos.coords.longitude, accuracyM: pos.coords.accuracy ?? null });
+      setCenter({ lat: pos.coords.latitude, lng: pos.coords.longitude, zoom, nonce: Date.now() });
+    };
+    try {
+      const last = await Location.getLastKnownPositionAsync({ maxAge: 60_000 });
+      if (last) show(last, 17);
+    } catch {
+      // No cached position: wait for the fix below.
+    }
+    try {
+      show(await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High }), 18);
+    } catch {
+      // Location is switched off or no fix came: keep what is shown.
+    }
   }, []);
 
   const zoomBy = useCallback((dir: 1 | -1) => {
@@ -134,6 +185,7 @@ export default function MapScreen() {
         vehicles={vehicles}
         photos={photos}
         center={center}
+        me={me}
         follow={follow}
         routePieces={routePieces}
         zoomStep={zoomStep}
