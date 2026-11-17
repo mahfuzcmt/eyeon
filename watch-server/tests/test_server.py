@@ -314,6 +314,34 @@ class EndToEnd(unittest.IsolatedAsyncioTestCase):
         w.close()
         w2.close()
 
+    async def test_still_watch_is_asked_every_three_minutes_without_waiting_for_a_heartbeat(self):
+        self.srv.still_every = 180
+        dev = "8800000015"
+        lk, cr = b"[3G*8800000015*0002*LK]", b"[3G*8800000015*0002*CR]"
+        r, w = await asyncio.open_connection("127.0.0.1", self.port)
+        w.write(build_frame(dev, "LK,0,0,79"))
+        self.assertEqual(await asyncio.wait_for(r.readexactly(len(lk + cr)), 2), lk + cr)
+        for n in range(1, 7):
+            w.write(build_frame(dev, home(n)))
+        w.write(build_frame(dev, "LK,0,0,79"))
+        self.assertEqual(await asyncio.wait_for(r.readexactly(len(lk)), 2), lk)
+        self.srv.motion[dev].since -= 300
+        w.write(build_frame(dev, home(7)))
+        w.write(build_frame(dev, "LK,0,0,79"))
+        self.assertEqual(await asyncio.wait_for(r.readexactly(len(lk)), 2), lk)
+        self.assertFalse(self.srv.motion[dev].moving)
+        pump = lambda: self.srv.maybe_locate(dev, self.srv.writers[dev])  # what command_pump does
+        # two minutes after the last request: not yet (a moving watch would have been asked at 100 s)
+        self.srv.asked[dev] -= 120
+        pump()
+        w.write(build_frame(dev, "LK,0,0,79"))
+        self.assertEqual(await asyncio.wait_for(r.readexactly(len(lk)), 2), lk)
+        # three minutes: asked from the pump, no heartbeat needed
+        self.srv.asked[dev] -= 60
+        pump()
+        self.assertEqual(await asyncio.wait_for(r.readexactly(len(cr)), 2), cr)
+        w.close()
+
     async def test_steps_on_the_heartbeat_wake_a_still_watch(self):
         self.srv.still_every = 600
         dev = "8800000015"

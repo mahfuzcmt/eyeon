@@ -12,7 +12,7 @@ this database.
     python -m unittest discover -s tests                # tests
 
 Env: `WATCH_HOST`, `WATCH_PORT` (8899), `WATCH_DB`, `WATCH_ALLOWED_IDS` (comma list; empty = accept all, new IDs logged),
-`WATCH_STILL_EVERY` (600; seconds, 0 = watches are never asked for a position).
+`WATCH_STILL_EVERY` (180; seconds, 0 = watches are never asked for a position).
 
 Positions: the watch reports by itself only at power-on, on an alarm and "in vibration state" (vendor document); the
 HongMi sample sent 2-4 reports a day. `CR` makes it locate and report for 3 minutes - every 10 s per the vendor
@@ -20,8 +20,9 @@ document, every 45-66 s measured on production without a GPS fix; that pace is t
 The server decides when to send `CR` (`motion.py` says whether the watch is moving, from its reports: GPS distance
 and speed, else a new serving cell with at most one shared Wi-Fi access point, plus the step counter):
 - **moving** (and after a restart, until five reports say otherwise): `CR` again every 100 s, which brings a report about once a minute (every 165 s left gaps of 70-115 s);
-- **still** (five reports from one place over four minutes): one `CR` per `WATCH_STILL_EVERY`, on a heartbeat. The
-  reports of those 3 minutes are what shows that it has left, so leaving is noticed up to that long afterwards.
+- **still** (five reports from one place over four minutes): one `CR` per `WATCH_STILL_EVERY` (180 s; from 300 s up it waits for
+  the 5-minute heartbeat). The reports that follow are what shows that it has left, so leaving is noticed about a minute
+  and a half afterwards. It was 600 s until 2026-11-17: a watch that left just after a check went unnoticed for 10 minutes.
 Never below 15 % battery. Log lines: `asked <id> to locate (moving|still)`, `<id> is moving`, `<id> is still`.
 Protocol: LK is answered with LK, AL with AL, the power-on messages CONFIG / ICCID / RYIMEI / APPANDFNREPORT /
 DEVPWDCHECKBIND / eicard with `<name>,1` (appcontacttel is not answered yet); UD/UD2/UD_* are stored; command LEN is computed (vendor doc examples have wrong lengths).

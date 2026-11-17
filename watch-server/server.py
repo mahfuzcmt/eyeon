@@ -3,8 +3,9 @@
 Env:
   WATCH_HOST (0.0.0.0)  WATCH_PORT (8899)  WATCH_DB (watch.db)
   WATCH_ALLOWED_IDS  comma-separated device IDs; empty = accept all (new IDs are logged)
-  WATCH_STILL_EVERY  seconds between position requests to a watch that is not moving (600);
-                     a moving watch is kept locating all the time. 0 = watches are never asked.
+  WATCH_STILL_EVERY  seconds between position requests to a watch that is not moving (180);
+                     a moving watch is asked every 100 s. Under 300 the request does not wait for
+                     the watch's 5-minute heartbeat. 0 = watches are never asked.
 Commands to devices are queued in the `commands` table (see send_command.py).
 """
 from __future__ import annotations
@@ -39,11 +40,19 @@ ACK_WITH_SUCCESS = frozenset({"CONFIG", "ICCID", "RYIMEI", "APPANDFNREPORT", "DE
 #                        CR and then goes quiet: asking only every 165 s gave gaps of 48, 48 and
 #                        70 s, and of 115 s when the third report was missing (production,
 #                        2026-11-16/17). A CR every 100 s brings the next report before that;
-#   still              - once per WATCH_STILL_EVERY, on a heartbeat; the 3 minutes of reports
-#                        that follow are what shows that it has started to move.
+#   still              - once per WATCH_STILL_EVERY; the reports that follow are what shows that
+#                        it has started to move, so this interval is how late a departure is
+#                        noticed. It was 600 s, tied to the heartbeat ("after 6 minutes at rest
+#                        nothing updates for 10 minutes even when it starts moving", owner,
+#                        2026-11-17). At 180 s the watch reports about 6, 54 and 102 s after each
+#                        request, so a departure shows within about a minute and a half. The
+#                        battery cost of asking all day was small where measured: about 6.5-7 %
+#                        an hour at rest with 10-minute checks against 7.5-8 % kept locating
+#                        (2026-11-16/17, one watch).
 LOCATE_MIN_BATTERY = 15  # below this the watch is left alone: locating runs its GPS
 LOCATE_SLACK = 30  # heartbeats come every 300 s give or take; do not miss one by a second
 MOVING_ASK_EVERY = 100  # seconds between CRs to a moving watch
+HEARTBEAT_EVERY = 300  # the watch's LK; a still interval of at least this waits for one
 CR_LOST_AFTER = 60  # asked, alive (heartbeat) and still no report after this: the CR never arrived
 
 SCHEMA = """
@@ -278,8 +287,8 @@ class Server:
         on a heartbeat when a CR brought no report - on a mobile network the watch
         opens a new connection every few minutes and the old ones die silently, so a CR can be
         written into a dead one.
-        Still: one CR per still_every, and only on a heartbeat, when the connection has just
-        proved alive.
+        Still: one CR per still_every - from the pump when that is shorter than a heartbeat,
+        otherwise only on a heartbeat, when the connection has just proved alive.
         """
         if not self.still_every:
             return
@@ -292,6 +301,11 @@ class Server:
         if m is None or m.moving:
             unanswered = now - max(self.store.last_report(dev), asked) >= CR_LOST_AFTER
             due = now - asked >= MOVING_ASK_EVERY or (heartbeat and unanswered)
+        elif self.still_every < HEARTBEAT_EVERY:
+            # Too short to wait for a heartbeat: asked from the pump like a moving watch. The
+            # reports every minute or so keep the connection alive in between.
+            unanswered = now - max(self.store.last_report(dev), asked) >= max(CR_LOST_AFTER, self.still_every)
+            due = now - asked >= self.still_every or (heartbeat and unanswered)
         else:
             due = heartbeat and now - asked >= self.still_every - LOCATE_SLACK
         if not due:
@@ -322,7 +336,7 @@ class Server:
 async def main():
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
     allowed = {x.strip() for x in os.environ.get("WATCH_ALLOWED_IDS", "").split(",") if x.strip()}
-    still_every = float(os.environ.get("WATCH_STILL_EVERY", "600"))
+    still_every = float(os.environ.get("WATCH_STILL_EVERY", "180"))
     srv = Server(Store(os.environ.get("WATCH_DB", "watch.db")), allowed, still_every)
     host, port = os.environ.get("WATCH_HOST", "0.0.0.0"), int(os.environ.get("WATCH_PORT", "8899"))
     s = await asyncio.start_server(srv.handle, host, port)
