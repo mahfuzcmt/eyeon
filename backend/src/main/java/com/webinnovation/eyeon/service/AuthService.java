@@ -47,6 +47,7 @@ public class AuthService {
     private final AuditService audit;
     private final PasswordResetRepository resetRepo;
     private final SmsService smsService;
+    private final AuthThrottle throttle;
 
     private static final SecureRandom RNG = new SecureRandom();
     private static final Duration RESET_CODE_TTL = Duration.ofMinutes(15);
@@ -54,15 +55,23 @@ public class AuthService {
     private static final int RESET_MAX_CODES_PER_WINDOW = 3;
     private static final Duration RESET_WINDOW = Duration.ofMinutes(15);
 
-    public LoginResponse login(LoginRequest req) {
-        User user = userRepo.findByEmail(req.email())
-                .orElseThrow(() -> new DomainException("INVALID_CREDENTIALS", "Email or password is incorrect"));
-
+    /**
+     * @param clientIp the caller's address for the attempt limit (null when unknown)
+     */
+    public LoginResponse login(LoginRequest req, String clientIp) {
+        if (throttle.loginBlocked(req.email(), clientIp)) {
+            throw new DomainException("TOO_MANY_ATTEMPTS",
+                    "Too many failed sign-in attempts. Try again in 15 minutes.");
+        }
+        User user = userRepo.findByEmail(req.email()).orElse(null);
+        if (user == null || !passwordEncoder.matches(req.password(), user.passwordHash())) {
+            throttle.loginFailed(req.email(), clientIp);
+            throw new DomainException("INVALID_CREDENTIALS", "Email or password is incorrect");
+        }
+        throttle.loginSucceeded(req.email());
+        // Only after a correct password: otherwise this told anyone which emails are suspended accounts.
         if (!user.isActive()) {
             throw new DomainException("ACCOUNT_INACTIVE", "Account is suspended");
-        }
-        if (!passwordEncoder.matches(req.password(), user.passwordHash())) {
-            throw new DomainException("INVALID_CREDENTIALS", "Email or password is incorrect");
         }
         if (user.orgId() == null) {
             throw new DomainException("NO_ORG", "User is not assigned to an organization");
@@ -108,6 +117,12 @@ public class AuthService {
 
         User user = userRepo.findById(row.userId())
                 .orElseThrow(() -> new DomainException("USER_NOT_FOUND", "User no longer exists"));
+        if (!user.isActive()) {
+            // A disabled account gets no new tokens. Answered like a revoked token (401), which
+            // every client already handles by signing out.
+            refreshRepo.revokeAllForUser(user.id());
+            throw new DomainException("REFRESH_REVOKED", "Refresh token has been revoked");
+        }
 
         if (resumeChain) {
             refreshRepo.revoke(row.replacedBy()); // retire the replacement nobody ever used
@@ -176,6 +191,14 @@ public class AuthService {
             log.warn("forgot-password rate limit hit for user {}", user.id());
             return;
         }
+        if (throttle.resetLocked(user.id())) {
+            log.warn("forgot-password: user {} is locked after too many wrong codes; no code sent", user.id());
+            return;
+        }
+        if (!throttle.allowResetSms(user.phone())) {
+            log.warn("forgot-password: daily SMS cap reached for the phone of user {}; no code sent", user.id());
+            return;
+        }
         String code = PasswordResetSupport.generateCode();
         resetRepo.consumeAllForUser(user.id());
         resetRepo.create(user.id(), sha256(code), smsService.isConfigured() ? "SMS" : "LOG",
@@ -192,6 +215,9 @@ public class AuthService {
         DomainException invalid = new DomainException("INVALID_RESET_CODE",
                 "The code is invalid or has expired. Request a new one.");
         User user = userRepo.findByEmail(req.email().trim().toLowerCase()).orElseThrow(() -> invalid);
+        if (throttle.resetLocked(user.id())) {
+            throw invalid;
+        }
         ResetCodeRow row = resetRepo.findLatestUnused(user.id()).orElseThrow(() -> invalid);
         if (row.expiresAt().isBefore(Instant.now()) || row.attempts() >= RESET_MAX_ATTEMPTS) {
             throw invalid;
@@ -199,6 +225,12 @@ public class AuthService {
         if (!MessageDigest.isEqual(row.codeHash().getBytes(java.nio.charset.StandardCharsets.UTF_8),
                 sha256(req.code().trim()).getBytes(java.nio.charset.StandardCharsets.UTF_8))) {
             resetRepo.bumpAttempts(row.id());
+            if (row.attempts() + 1 >= RESET_MAX_ATTEMPTS) {
+                // This code is used up. Without the lock the next code gave five more guesses at once.
+                throttle.lockReset(user.id());
+                log.warn("reset-password: user {} locked for {} min after {} wrong codes",
+                        user.id(), AuthThrottle.RESET_LOCK.toMinutes(), RESET_MAX_ATTEMPTS);
+            }
             throw invalid;
         }
         validateNewPassword(req.newPassword(), null);

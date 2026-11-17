@@ -5,6 +5,7 @@ import com.webinnovation.eyeon.domain.Geofence;
 import com.webinnovation.eyeon.domain.enums.AlarmSeverity;
 import com.webinnovation.eyeon.domain.enums.AlarmType;
 import com.webinnovation.eyeon.domain.enums.GeofenceKind;
+import com.webinnovation.eyeon.exception.DomainException;
 import com.webinnovation.eyeon.exception.NotFoundException;
 import com.webinnovation.eyeon.repository.AlarmRepository;
 import com.webinnovation.eyeon.repository.DeviceRepository;
@@ -90,7 +91,15 @@ public class ExpectedTimeService {
             throw new IllegalArgumentException("graceMinutes must be between 0 and " + ExpectedTimeCheck.MAX_GRACE_MINUTES);
         }
         List<Integer> days = weekdays.stream().distinct().sorted().toList();
-        if (repo.listForGeofence(geofenceId).size() >= 10) {
+        List<Schedule> existing = repo.listForGeofence(geofenceId);
+        // The same expected time twice means every alert about it arrives twice.
+        boolean duplicate = existing.stream().anyMatch(s -> k.name().equals(s.kind())
+                && s.localTime() != null && at.equals(s.localTime().withSecond(0).withNano(0))
+                && s.weekdays() != null && days.equals(s.weekdays().stream().distinct().sorted().toList()));
+        if (duplicate) {
+            throw new DomainException("DUPLICATE_SCHEDULE", "This expected time already exists for this place");
+        }
+        if (existing.size() >= 10) {
             throw new IllegalArgumentException("A place can have at most 10 expected times");
         }
         UUID id = repo.insert(orgId, geofenceId, k.name(), at, days, grace);

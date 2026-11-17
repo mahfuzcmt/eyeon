@@ -30,6 +30,8 @@ public class ExportController {
     private static final MediaType XLSX = MediaType.parseMediaType(
             "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
 
+    static final int MAX_ALARM_EXPORT_DAYS = 93;
+
     private final ExcelExportService exportService;
     private final DeviceAccessService access;
     private final com.webinnovation.eyeon.service.AlarmService alarmService;
@@ -65,6 +67,11 @@ public class ExportController {
         LocalDate from = parseDate(fromIso, "from");
         LocalDate to = parseDate(toIso, "to");
         validateDateRange(from, to);
+        // The workbook is built in memory: a quarter at most, like the activity pages.
+        if (from.plusDays(MAX_ALARM_EXPORT_DAYS).isBefore(to)) {
+            throw new DomainException("DATE_RANGE_TOO_LARGE",
+                    "Alarm export is limited to " + MAX_ALARM_EXPORT_DAYS + " days. Please select a smaller range.");
+        }
 
         // Filtered to the caller: a parent exports only their own children's alerts.
         log.info("Exporting alarms to Excel for org={} from={} to={}", orgId, from, to);

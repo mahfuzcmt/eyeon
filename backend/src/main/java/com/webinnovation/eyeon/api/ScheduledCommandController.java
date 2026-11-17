@@ -21,6 +21,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+/**
+ * Timed tracker commands. Administrators only: a scheduled command (RAW included) is sent to the
+ * tracker without anyone watching, and the list shows every command of the organization.
+ */
 @RestController
 @RequestMapping("/scheduled-commands")
 @RequiredArgsConstructor
@@ -33,12 +37,14 @@ public class ScheduledCommandController {
     public List<ScheduledCommandView> list(
             @RequestParam(name = "limit", defaultValue = "100") int limit,
             @RequestParam(name = "offset", defaultValue = "0") int offset) {
+        TenantContext.requireAdmin();
         UUID orgId = TenantContext.requireOrgId();
         return service.list(orgId, limit, offset).stream().map(ScheduledCommandView::of).toList();
     }
 
     @PostMapping
     public ResponseEntity<Map<String, UUID>> create(@RequestBody ScheduleRequest req) {
+        TenantContext.requireAdmin();
         UUID orgId = TenantContext.requireOrgId();
         UUID userId = TenantContext.currentUserId();
         UUID id = service.schedule(orgId, userId, req);
@@ -49,6 +55,7 @@ public class ScheduledCommandController {
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> cancel(@PathVariable UUID id) {
+        TenantContext.requireAdmin();
         UUID orgId = TenantContext.requireOrgId();
         if (!service.cancel(orgId, id)) {
             throw new NotFoundException("Scheduled command not found or not pending: " + id);

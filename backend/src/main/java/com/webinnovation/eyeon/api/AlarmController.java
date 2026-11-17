@@ -56,6 +56,9 @@ public class AlarmController {
         }
     }
 
+    /** Same cap as the activity endpoints: the overview counts every alarm in the range. */
+    static final java.time.Duration MAX_OVERVIEW_RANGE = java.time.Duration.ofDays(93);
+
     private static final Set<String> SEVERITIES = Set.of("INFO", "WARNING", "CRITICAL");
 
     /**
@@ -108,6 +111,10 @@ public class AlarmController {
         UUID orgId = TenantContext.requireOrgId();
         if (!to.isAfter(from)) {
             throw new DomainException("INVALID_RANGE", "to must be after from");
+        }
+        if (java.time.Duration.between(from, to).compareTo(MAX_OVERVIEW_RANGE) > 0) {
+            throw new DomainException("INVALID_RANGE",
+                    "Range must not exceed " + MAX_OVERVIEW_RANGE.toDays() + " days");
         }
         return alarmService.overview(orgId, from, to, visible(), TenantContext.currentUserId());
     }

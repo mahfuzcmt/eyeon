@@ -44,6 +44,8 @@ public class GlobalExceptionHandler {
             case "INVALID_CREDENTIALS", "INVALID_REFRESH", "REFRESH_REVOKED", "REFRESH_EXPIRED" ->
                     HttpStatus.UNAUTHORIZED;
             case "ACCOUNT_INACTIVE" -> HttpStatus.FORBIDDEN;
+            case "TOO_MANY_ATTEMPTS" -> HttpStatus.TOO_MANY_REQUESTS;
+            case "DUPLICATE_SCHEDULE" -> HttpStatus.CONFLICT;
             case "NO_ORG", "ORG_NOT_FOUND", "USER_NOT_FOUND" -> HttpStatus.UNPROCESSABLE_ENTITY;
             default -> HttpStatus.BAD_REQUEST;
         };

@@ -41,7 +41,10 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/auth/login", "/auth/refresh",
                                 "/auth/forgot-password", "/auth/reset-password").permitAll()
-                        .requestMatchers("/health", "/actuator/**").permitAll()
+                        // The Docker healthcheck calls /actuator/health without a token; metrics and
+                        // anything else under /actuator are for super admins only.
+                        .requestMatchers("/health", "/actuator/health", "/actuator/health/**").permitAll()
+                        .requestMatchers("/actuator/**").hasRole("SUPER_ADMIN")
                         .requestMatchers("/ws/**").permitAll()
                         .requestMatchers("/public/**").permitAll()
                         .anyRequest().authenticated())

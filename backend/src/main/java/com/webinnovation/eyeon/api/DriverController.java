@@ -13,6 +13,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+/**
+ * Drivers are left over from the vehicle product; nothing in the family product uses them.
+ * Administrators only, so a parent cannot read or change staff records (phone, NID, licence).
+ */
 @RestController
 @RequestMapping("/drivers")
 @RequiredArgsConstructor
@@ -22,6 +26,7 @@ public class DriverController {
 
     @GetMapping
     public List<DriverView> list(@RequestParam(required = false) String status) {
+        TenantContext.requireAdmin();
         UUID orgId = TenantContext.requireOrgId();
         List<Driver> drivers = status != null && !status.isBlank()
                 ? driverService.listByStatus(orgId, status)
@@ -35,6 +40,7 @@ public class DriverController {
 
     @GetMapping("/{id}")
     public DriverView get(@PathVariable UUID id) {
+        TenantContext.requireAdmin();
         UUID orgId = TenantContext.requireOrgId();
         Driver driver = driverService.getById(orgId, id);
         Map<UUID, Integer> counts = driverService.getDeviceCounts(orgId);
@@ -44,6 +50,7 @@ public class DriverController {
     @GetMapping("/expiring-licenses")
     public List<DriverView> getExpiringLicenses(
             @RequestParam(defaultValue = "30") int daysAhead) {
+        TenantContext.requireAdmin();
         UUID orgId = TenantContext.requireOrgId();
         List<Driver> drivers = driverService.getExpiringLicenses(orgId, daysAhead);
         Map<UUID, Integer> counts = driverService.getDeviceCounts(orgId);
@@ -56,6 +63,7 @@ public class DriverController {
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public DriverView create(@Valid @RequestBody CreateDriverRequest req) {
+        TenantContext.requireAdmin();
         UUID orgId = TenantContext.requireOrgId();
         Driver driver = driverService.create(
                 orgId,
@@ -80,6 +88,7 @@ public class DriverController {
 
     @PatchMapping("/{id}")
     public DriverView update(@PathVariable UUID id, @Valid @RequestBody UpdateDriverRequest req) {
+        TenantContext.requireAdmin();
         UUID orgId = TenantContext.requireOrgId();
         Driver driver = driverService.update(
                 orgId,
@@ -108,6 +117,7 @@ public class DriverController {
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void delete(@PathVariable UUID id) {
+        TenantContext.requireAdmin();
         UUID orgId = TenantContext.requireOrgId();
         driverService.delete(orgId, id);
     }
@@ -115,6 +125,7 @@ public class DriverController {
     @PostMapping("/{id}/assign")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void assignToDevice(@PathVariable UUID id, @Valid @RequestBody AssignDriverRequest req) {
+        TenantContext.requireAdmin();
         UUID orgId = TenantContext.requireOrgId();
         driverService.assignToDevice(orgId, id, req.imei());
     }
@@ -122,6 +133,7 @@ public class DriverController {
     @DeleteMapping("/{id}/assign")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void unassignFromDevice(@PathVariable UUID id, @Valid @RequestBody AssignDriverRequest req) {
+        TenantContext.requireAdmin();
         UUID orgId = TenantContext.requireOrgId();
         driverService.unassignFromDevice(orgId, req.imei());
     }

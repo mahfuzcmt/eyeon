@@ -39,9 +39,11 @@ class OrgControllerRoleTest {
     private final UUID me = UUID.randomUUID();
     private final UserRepository users = mock(UserRepository.class);
     private final PasswordEncoder encoder = mock(PasswordEncoder.class);
+    private final com.webinnovation.eyeon.repository.RefreshTokenRepository refreshTokens =
+            mock(com.webinnovation.eyeon.repository.RefreshTokenRepository.class);
     private final OrgController controller = new OrgController(mock(OrganizationRepository.class),
             mock(LiveAudience.class), users, mock(UserDeviceRepository.class), mock(DeviceRepository.class),
-            encoder, mock(AuditService.class));
+            encoder, mock(AuditService.class), refreshTokens);
 
     private User user(UUID id, String role) {
         User u = new User(id, orgId, id + "@x.test", null, "hash", "Name", role, true, false, null,
@@ -117,6 +119,33 @@ class OrgControllerRoleTest {
 
         controller.updateUser(other, new UserUpdate(null, null, "SUPER_ADMIN", null, null));
         verify(users).update(eq(other), eq(orgId), any(), any(), eq("SUPER_ADMIN"), any());
+    }
+
+    @Test
+    void a_parent_cannot_list_the_members_of_the_organization() {
+        actingAs("ORG_USER");
+        assertThrows(ForbiddenException.class, controller::listUsers);
+        verify(users, never()).listByOrg(any());
+
+        actingAs("ORG_ADMIN");
+        controller.listUsers();
+        verify(users).listByOrg(orgId);
+    }
+
+    @Test
+    void disabling_a_user_or_setting_their_password_ends_their_sessions() {
+        actingAs("ORG_ADMIN");
+        UUID parent = UUID.randomUUID();
+        user(parent, "ORG_USER");
+        when(users.softDelete(parent, orgId)).thenReturn(1);
+
+        controller.updateUser(parent, new UserUpdate("New Name", null, null, null, null));
+        verify(refreshTokens, never()).revokeAllForUser(any());
+
+        controller.updateUser(parent, new UserUpdate(null, null, null, null, "newpassword"));
+        controller.updateUser(parent, new UserUpdate(null, null, null, false, null));
+        controller.disableUser(parent);
+        verify(refreshTokens, org.mockito.Mockito.times(3)).revokeAllForUser(parent);
     }
 
     @Test

@@ -21,8 +21,7 @@ import java.util.regex.Pattern;
  * Authenticates STOMP CONNECT frames and authorizes per-org topic subscriptions.
  *
  * CONNECT: read JWT from "Authorization: Bearer ..." native header, set principal.
- * SUBSCRIBE / SEND to /topic/org/{orgId}/...: the {orgId} segment must match
- * the authenticated user's org (CLAUDE.md §9.3).
+ * SUBSCRIBE: only the caller's own /user/queue/... destinations. SEND: always refused.
  */
 @Component
 @RequiredArgsConstructor
@@ -44,8 +43,12 @@ public class StompAuthChannelInterceptor implements ChannelInterceptor {
 
         if (cmd == StompCommand.CONNECT) {
             authenticate(accessor);
-        } else if (cmd == StompCommand.SUBSCRIBE || cmd == StompCommand.SEND) {
+        } else if (cmd == StompCommand.SUBSCRIBE) {
             authorizeDestination(accessor);
+        } else if (cmd == StompCommand.SEND) {
+            // The server only writes. No client publishes; a SEND to /user/{someone}/queue/... would
+            // otherwise be relayed by the broker into another user's private queue.
+            throw new MessagingException("Clients may not send messages");
         }
         return message;
     }
