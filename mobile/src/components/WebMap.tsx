@@ -260,7 +260,7 @@ ${googleScripts}
   };
 
   // A WebView that was in the background can come back with a stale size: re-measure.
-  document.addEventListener('visibilitychange', function(){ if(!document.hidden) map.invalidateSize(); });
+  document.addEventListener('visibilitychange', function(){ landGlides(); if(!document.hidden) map.invalidateSize(); });
 
   const markers = {};       // imei -> L.Marker
   let moving = null;         // playback marker
@@ -391,9 +391,28 @@ ${googleScripts}
   // A person's marker glides to its new position instead of jumping. The glide is kept short
   // (at most 2.5 s): gliding over a whole reporting interval, as the web map does, left the
   // marker up to 12 s behind the position the app already had. Glides are landed before a zoom, which re-lays markers out.
+  //
+  // The glide must never be the only way a marker reaches its position: an animation frame asked
+  // for while the app is minimized may not come back (Android pauses the WebView), and then
+  // glideFrame stayed set, no new frame was ever asked for, and every later position left the
+  // marker where it was - "after minimizing, the map does not update" (2026-11-17). So: no glide
+  // while the page is hidden, glides are landed when the page is hidden or shown and on the
+  // foreground ping, and a timer lands them when no frame has run for a second.
   const glides = {};
   const lastMoveAt = {};
-  let glideFrame = null;
+  let glideFrame = null, glideRan = 0, glideWatch = null;
+  function landGlides(){
+    if(glideFrame){ cancelAnimationFrame(glideFrame); glideFrame = null; }
+    Object.keys(glides).forEach(function(imei){ const m = markers[imei]; if(m) m.setLatLng(glides[imei].to); delete glides[imei]; });
+  }
+  function watchGlide(){
+    if(glideWatch) return;
+    glideWatch = setTimeout(function(){
+      glideWatch = null;
+      if(!glideFrame) return;
+      if(performance.now() - glideRan > 1000) landGlides(); else watchGlide();
+    }, 1200);
+  }
   function glidePos(g, now){
     const p = Math.min(1, (now - g.start) / g.duration);
     return L.latLng(g.from.lat + (g.to.lat - g.from.lat) * p, g.from.lng + (g.to.lng - g.from.lng) * p);
@@ -401,6 +420,7 @@ ${googleScripts}
   function glideStep(){
     glideFrame = null;
     const now = performance.now();
+    glideRan = now;
     let active = false;
     Object.keys(glides).forEach(function(imei){
       const g = glides[imei], m = markers[imei];
@@ -408,7 +428,7 @@ ${googleScripts}
       if(now - g.start >= g.duration){ m.setLatLng(g.to); delete glides[imei]; }
       else { m.setLatLng(glidePos(g, now)); active = true; }
     });
-    if(active) glideFrame = requestAnimationFrame(glideStep);
+    if(active){ glideFrame = requestAnimationFrame(glideStep); watchGlide(); }
   }
   function moveMarker(imei, m, lat, lng){
     const now = performance.now();
@@ -418,10 +438,10 @@ ${googleScripts}
     const since = lastMoveAt[imei];
     lastMoveAt[imei] = now;
     const d = from.distanceTo(to);
-    if(d < 0.5 || d > 3000){ delete glides[imei]; m.setLatLng(to); return; }
+    if(d < 0.5 || d > 3000 || document.hidden){ delete glides[imei]; m.setLatLng(to); return; }
     glides[imei] = { from: from, to: to, start: now, duration: Math.min(2500, Math.max(600, since ? now - since : 600)) };
     m.setLatLng(from);
-    if(!glideFrame) glideFrame = requestAnimationFrame(glideStep);
+    if(!glideFrame){ glideRan = now; glideFrame = requestAnimationFrame(glideStep); watchGlide(); }
   }
   map.on('zoomstart', function(){
     Object.keys(glides).forEach(function(imei){ const m = markers[imei]; if(m) m.setLatLng(glides[imei].to); delete glides[imei]; });
@@ -604,7 +624,7 @@ ${googleScripts}
       layoutRouteArrows();
     },
     // Liveness check after the app comes back to the foreground (see WebMap below).
-    ping(){ map.invalidateSize(); post({type:'pong'}); },
+    ping(){ landGlides(); map.invalidateSize(); post({type:'pong'}); },
     center(lat,lng,zoom){ map.flyTo([lat,lng], zoom||17, {duration:0.8}); },
     // Keep a followed person in view without touching the zoom: pan only once they leave the
     // middle 60 % of the map (the web's Follow rule), so the map does not twitch on every report.
