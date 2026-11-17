@@ -80,6 +80,20 @@ class MovingOrStill(unittest.TestCase):
                                                                                  for i in range(4)]))
         self.assertEqual(verdict(ride(1, "1197,2657539"), ride(2, "1197,3019779")), MOVED)
 
+    def test_a_train_whose_own_access_points_travel_along_is_not_still(self):
+        """Production 2026-11-17 10:58-11:03: a new cell on every report, 2-4 access points shared."""
+        train = ["AA:AA:AA:A3:E2:F0", "AA:AA:AA:57:6E:1E", "AA:AA:AA:B3:35:CC"]
+        ride = lambda n: self.seen(scan(n, "1197,%d" % (3400000 + 1000 * n), train + ["0%d:33:33:33:33:33" % (n % 9)]))
+        m = Motion(anchor=ride(0), since=0)
+        for n in range(1, 20):
+            m.observe(ride(n), 50 * n)
+            self.assertTrue(m.moving, "judged still on report %d" % n)
+        # the train stops: the same cell from now on
+        stop = lambda n: self.seen(scan(n, "1197,3419000", train + ["0%d:33:33:33:33:33" % (n % 9)]))
+        for n in range(20, 27):
+            m.observe(stop(n), 50 * n)
+        self.assertFalse(m.moving)
+
     def test_flipping_between_two_cells_at_one_place_is_not_a_move(self):
         here = self.seen(home(1))
         self.assertEqual(verdict(here, self.seen(scan(2, "1164,3234999", HOME_APS[:5]))), QUIET)

@@ -10,6 +10,10 @@ compared with an anchor - what the watch heard since it last moved:
     In town a cell is a few hundred metres (six cells on a 1 km ride, production 2026-11-16), and
     at one place the watch flips between two cells but keeps hearing the same access points. One
     shared access point does not count: on that ride a hotspot travelled along the whole way;
+  * NEW_CELLS_IN_A_ROW reports in a row each from a cell the anchor never heard: moved, whatever
+    the Wi-Fi says. On a train the carriage's own access points are heard all the way (two to
+    four shared per report, a new cell every 50 s: judged still in the middle of a ride,
+    production 2026-11-17 11:02). At one place the watch flips between cells it has heard before;
   * otherwise no access point shared at all, two reports in a row: moved (a walk inside one cell).
     Once is not enough - in a dense block two scans of one room can have nothing in common;
   * and always when the step counter went up by 10 or more.
@@ -27,6 +31,7 @@ MOVING_KMH = 5
 MOVED_STEPS = 10
 STILL_AFTER_REPORTS = 5
 STILL_AFTER_SECONDS = 240
+NEW_CELLS_IN_A_ROW = 3
 
 
 def meters(a: tuple[float, float], b: tuple[float, float]) -> float:
@@ -83,17 +88,23 @@ class Motion:
     moving: bool = True
     quiet: int = 0  # reports in a row since then that did not move
     unsure: bool = False  # the last report shared no access point with the anchor
+    new_cells: int = 0  # reports in a row from a cell the anchor never heard, none of which "moved"
 
     def observe(self, seen: Seen, at: float) -> bool:
         """Take in a report; True when this changed moving <-> still."""
         v = verdict(self.anchor, seen)
+        if v == QUIET:
+            new_cell = bool(self.anchor.cells and seen.serving and seen.serving not in self.anchor.cells)
+            self.new_cells = self.new_cells + 1 if new_cell else 0
+            if self.new_cells >= NEW_CELLS_IN_A_ROW:
+                v = MOVED
         if v == UNSURE and not self.unsure:
             self.unsure = True
             return False
         self.unsure = False
         if v != QUIET:
             changed = not self.moving
-            self.moving, self.since, self.anchor, self.quiet = True, at, seen, 0
+            self.moving, self.since, self.anchor, self.quiet, self.new_cells = True, at, seen, 0, 0
             return changed
         self.anchor = self.anchor.merged(seen)
         if not self.moving:
