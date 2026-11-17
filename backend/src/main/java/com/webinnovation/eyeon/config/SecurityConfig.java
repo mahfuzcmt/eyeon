@@ -1,6 +1,7 @@
 package com.webinnovation.eyeon.config;
 
 import com.webinnovation.eyeon.security.JwtFilter;
+import com.webinnovation.eyeon.security.UnauthenticatedEntryPoint;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -22,6 +23,7 @@ import java.util.List;
 public class SecurityConfig {
 
     private final JwtFilter jwtFilter;
+    private final UnauthenticatedEntryPoint unauthenticatedEntryPoint;
 
     @Value("${eyeon.cors.allowed-origins:http://localhost:3001}")
     private String allowedOrigins;
@@ -38,6 +40,8 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                // No usable token = 401 (the apps renew on it); 403 stays "signed in but not allowed".
+                .exceptionHandling(e -> e.authenticationEntryPoint(unauthenticatedEntryPoint))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/auth/login", "/auth/refresh",
                                 "/auth/forgot-password", "/auth/reset-password").permitAll()

@@ -211,7 +211,13 @@ api.interceptors.response.use(
     const original = error.config as (InternalAxiosRequestConfig & { _retried?: boolean }) | undefined;
     const status = error.response?.status;
 
-    if (status === 401 && original && !original._retried && tokens.refreshToken) {
+    // 401 = the access token is not accepted. A 403 counts the same when our access token has
+    // in fact run out: backends before 2026-11-17 answered an expired token with 403, and the
+    // app then showed "Request failed with status code 403" on every screen for half a minute.
+    const access = tokens.accessToken;
+    const exp = access ? jwtExpiry(access) : null;
+    const expired = status === 403 && (exp === null || exp * 1000 <= Date.now());
+    if ((status === 401 || expired) && original && !original._retried && tokens.refreshToken) {
       original._retried = true;
       const r = await refreshAccessToken();
       if (r.ok) {
