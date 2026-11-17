@@ -41,8 +41,15 @@ export default function MapScreen() {
   const initialFitDone = useRef(false);
   /** Person whose status card is open (tapped on the map). */
   const [selected, setSelected] = useState<string | null>(null);
-  // Today's route of the tapped person, with direction arrows, as on the web map.
-  const routePieces = useDayRoute(selected, selected ? locations.get(selected) : null);
+  /**
+   * Person whose route of today is drawn (direction arrows as on the web map): the one tapped
+   * last. It stays when the status card is closed - the card covers half the map, and closing
+   * it used to take the route away with it (client feedback 2026-11-17). With only one person
+   * to see, their route is there from the start.
+   */
+  const [routeOf, setRouteOf] = useState<string | null>(null);
+  const routeImei = routeOf ?? (devices.length === 1 ? devices[0].imei : null);
+  const routePieces = useDayRoute(routeImei, routeImei ? locations.get(routeImei) : null);
 
   const byImei = useMemo(() => new Map(devices.map((d) => [d.imei, d])), [devices]);
   const speedLimits = useSpeedLimits();
@@ -140,6 +147,7 @@ export default function MapScreen() {
         }}
         onSelect={(imei) => {
           setSelected(imei);
+          setRouteOf(imei);
           const l = locations.get(imei);
           if (l) setCenter({ lat: l.latitude, lng: l.longitude, zoom: 19, nonce: Date.now() });
         }}
