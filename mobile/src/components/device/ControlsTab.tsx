@@ -186,6 +186,16 @@ export default function ControlsTab({ imei, orgId }: { imei: string; orgId: stri
             onPress={() => router.push({ pathname: "/tracker-settings", params: { imei, name: device?.name ?? "" } })}
             fullWidth
           />
+          {device?.protocol === "WATCH" ? (
+            <CommandBtn
+              label={t("wt.title")}
+              tone="neutral"
+              icon="🕒"
+              disabled={busy !== null}
+              onPress={() => router.push({ pathname: "/watch-time", params: { imei, name: device?.name ?? "" } })}
+              fullWidth
+            />
+          ) : null}
           <CommandBtn
             label={t("pe.editButton")}
             tone="neutral"
