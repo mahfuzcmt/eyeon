@@ -25,6 +25,7 @@ const STRINGS = {
   "common.on": { en: "ON", bn: "চালু" },
   "common.off": { en: "OFF", bn: "বন্ধ" },
   "common.live": { en: "live", bn: "লাইভ" },
+  "common.offline": { en: "No connection. Check the internet and try again.", bn: "সংযোগ নেই। ইন্টারনেট দেখে আবার চেষ্টা করুন।" },
   "common.requestFailed": { en: "Something went wrong. Please try again.", bn: "কিছু একটা সমস্যা হয়েছে। আবার চেষ্টা করুন।" },
   "time.justNow": { en: "just now", bn: "এইমাত্র" },
   "time.ago": { en: "{t} ago", bn: "{t} আগে" },
