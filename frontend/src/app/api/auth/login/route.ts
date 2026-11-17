@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { backendBase, writeSession } from "@/lib/session";
+import { backendBase, writeSession, visitorAddressHeader } from "@/lib/session";
 import { jwtExpiresAtMs } from "@/lib/jwt";
 
 interface BackendUserSummary {
@@ -37,7 +37,7 @@ export async function POST(req: NextRequest) {
 
   const r = await fetch(`${backendBase()}/api/v1/auth/login`, {
     method: "POST",
-    headers: { "Content-Type": "application/json", Accept: "application/json" },
+    headers: { "Content-Type": "application/json", Accept: "application/json", ...visitorAddressHeader(req) },
     body: JSON.stringify({ email: body.email, password: body.password }),
     cache: "no-store",
   });

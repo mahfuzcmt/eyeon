@@ -45,3 +45,17 @@ export async function clearSession(): Promise<void> {
 export function backendBase(): string {
   return process.env.BACKEND_BASE ?? "http://localhost:8081";
 }
+
+/**
+ * The visitor's address for a backend call made on their behalf, as the header the backend's
+ * login and password-reset limits read (`X-Real-IP`, set by nginx in front of this app).
+ * Without it every web login reaches the backend from this container's own address and all
+ * web users share one "20 failures per address" allowance.
+ */
+export function visitorAddressHeader(req: { headers: Headers }): Record<string, string> {
+  const real = req.headers.get("x-real-ip")?.trim();
+  if (real) return { "X-Real-IP": real };
+  // nginx appends the address it saw: the last entry is the one we can trust.
+  const last = req.headers.get("x-forwarded-for")?.split(",").pop()?.trim();
+  return last ? { "X-Real-IP": last } : {};
+}

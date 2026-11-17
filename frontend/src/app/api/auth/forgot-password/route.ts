@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { backendBase } from "@/lib/session";
+import { backendBase, visitorAddressHeader } from "@/lib/session";
 
 /** Public: forwards to the backend without a session. The backend never reveals whether an email exists. */
 export async function POST(req: NextRequest) {
@@ -9,7 +9,7 @@ export async function POST(req: NextRequest) {
   }
   const r = await fetch(`${backendBase()}/api/v1/auth/forgot-password`, {
     method: "POST",
-    headers: { "Content-Type": "application/json", Accept: "application/json" },
+    headers: { "Content-Type": "application/json", Accept: "application/json", ...visitorAddressHeader(req) },
     body: JSON.stringify(body),
     cache: "no-store",
   });
