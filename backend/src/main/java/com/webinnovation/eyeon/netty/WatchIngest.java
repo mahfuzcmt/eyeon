@@ -59,12 +59,15 @@ public class WatchIngest {
     private final AlarmService alarmService;
     private final NetworkLocationService networkLocationService;
     private final AsyncTaskExecutor ingestExecutor;
+    private final WatchCommands commands;
 
     public WatchIngest(DeviceService deviceService,
                        LocationService locationService,
                        AlarmService alarmService,
                        NetworkLocationService networkLocationService,
-                       @Qualifier("ingestExecutor") AsyncTaskExecutor ingestExecutor) {
+                       @Qualifier("ingestExecutor") AsyncTaskExecutor ingestExecutor,
+                       WatchCommands commands) {
+        this.commands = commands;
         this.deviceService = deviceService;
         this.locationService = locationService;
         this.alarmService = alarmService;
@@ -74,12 +77,18 @@ public class WatchIngest {
 
     /** One per watch connection. */
     public Connection open(String remote) {
-        return new Connection(remote);
+        return new Connection(remote, null);
+    }
+
+    /** @param channel the watch's connection, so that {@link WatchCommands} can write to it */
+    public Connection open(String remote, io.netty.channel.Channel channel) {
+        return new Connection(remote, channel);
     }
 
     public final class Connection {
 
         private final String remote;
+        private final io.netty.channel.Channel channel;
         private final WatchFrame.Reader reader = new WatchFrame.Reader();
 
         /** Frames are handled one at a time, in arrival order, off the event loop. */
@@ -89,11 +98,20 @@ public class WatchIngest {
 
         // Touched only by the draining task.
         private String watchId;
-        private LoginGate.Session session;
+        private volatile LoginGate.Session session;
         private Instant retryLookupAt = Instant.MIN;
 
-        private Connection(String remote) {
+        private Connection(String remote, io.netty.channel.Channel channel) {
             this.remote = remote;
+            this.channel = channel;
+        }
+
+        /** The watch's connection is gone: commands no longer go to it. */
+        public void close() {
+            LoginGate.Session s = session;
+            if (s != null && channel != null) {
+                commands.detach(s.imei(), channel);
+            }
         }
 
         /** Called on the event loop with a copy of the bytes the watch sent. */
@@ -133,7 +151,7 @@ public class WatchIngest {
         }
 
         private void handle(WatchFrame frame) {
-            if (session == null && !identify(frame.deviceId())) {
+            if (session == null && !identify(frame.deviceId(), frame.vendor())) {
                 return;
             }
             if (!frame.deviceId().equals(watchId)) {
@@ -150,12 +168,13 @@ public class WatchIngest {
             } else if (command.equals("AL") || command.startsWith("AL_")) {
                 report(frame, true);
             } else {
+                commands.onFrame(imei, frame);  // the answer to a command, if one is waited for
                 deviceService.markOnline(imei);
             }
         }
 
         /** Resolves the watch id to a device once per connection; false while that is not possible. */
-        private boolean identify(String id) {
+        private boolean identify(String id, String vendor) {
             if (!WATCH_ID.matcher(id).matches()) {
                 log.debug("Ignoring watch frame with id '{}' from {}: not a 10-digit watch id", id, remote);
                 return false;
@@ -172,6 +191,10 @@ public class WatchIngest {
                 }
                 watchId = id;
                 session = new LoginGate.Session(device.imei(), device.orgId());
+                deviceService.markWatch(device);
+                if (channel != null) {
+                    commands.attach(device.imei(), id, vendor, channel);
+                }
                 deviceService.markOnline(device.imei());
                 log.info("Watch id={} from {} is device imei={} org={}", id, remote, device.imei(), device.orgId());
                 return true;

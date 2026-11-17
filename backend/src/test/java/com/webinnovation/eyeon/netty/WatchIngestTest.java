@@ -62,7 +62,7 @@ class WatchIngestTest {
                 .thenReturn(Optional.empty());
         // frames are handled on the calling thread, so every assertion below sees a finished frame
         WatchIngest ingest = new WatchIngest(deviceService, locationService, alarmService, networkLocationService,
-                new TaskExecutorAdapter(Runnable::run));
+                new TaskExecutorAdapter(Runnable::run), new WatchCommands());
         watch = ingest.open("/37.111.212.151:40112");
     }
 
@@ -246,5 +246,17 @@ class WatchIngestTest {
 
         verify(locationService, never()).saveAndBroadcast(any());
         verify(deviceService, times(2)).markOnline(WATCH_ID);  // once at lookup, once for the frame
+    }
+
+    @Test
+    void aDeviceThatSpeaksTheWatchProtocolIsMarkedAsAWatch() {
+        Device device = mock(Device.class);
+        when(device.imei()).thenReturn("1378748302");
+        when(device.orgId()).thenReturn(java.util.UUID.randomUUID());
+        when(deviceService.findByWatchId("1378748302")).thenReturn(Optional.of(device));
+
+        watch.onBytes("[3G*1378748302*0009*LK,0,0,57]".getBytes(java.nio.charset.StandardCharsets.ISO_8859_1));
+
+        org.mockito.Mockito.verify(deviceService).markWatch(device);
     }
 }

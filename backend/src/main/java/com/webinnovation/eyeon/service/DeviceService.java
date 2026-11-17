@@ -36,6 +36,13 @@ public class DeviceService {
         return deviceRepo.findByWatchId(watchId);
     }
 
+    /** A device that speaks the smart-watch protocol is marked as one, so the apps can offer watch settings. */
+    public void markWatch(Device device) {
+        if (!"WATCH".equals(device.protocol())) {
+            deviceRepo.markProtocol(device.imei(), "WATCH");
+        }
+    }
+
     public void markOnline(String imei) {
         deviceRepo.markOnline(imei, Instant.now());
     }
