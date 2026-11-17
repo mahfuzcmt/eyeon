@@ -125,7 +125,7 @@ class TrackerPortWatchRelayTest {
                 org.mockito.Mockito.mock(com.webinnovation.eyeon.service.LocationService.class),
                 org.mockito.Mockito.mock(com.webinnovation.eyeon.service.AlarmService.class),
                 org.mockito.Mockito.mock(com.webinnovation.eyeon.service.NetworkLocationService.class),
-                new org.springframework.core.task.SimpleAsyncTaskExecutor("ingest-"));
+                new org.springframework.core.task.SimpleAsyncTaskExecutor("ingest-"), new WatchCommands());
 
         int port = startTrackerPort(watchTarget(), ingest);
         try (Socket watch = new Socket("127.0.0.1", port)) {

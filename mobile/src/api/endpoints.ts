@@ -427,6 +427,26 @@ export async function saveTrackerSetting(imei: string, key: TrackerSettingKey, v
   return r.data;
 }
 
+/** Language and time zone of a smart watch; language / zoneHours are null until set from the app. */
+export interface WatchTimeView {
+  online: boolean;
+  language: number | null;
+  zoneHours: number | null;
+  status: "PENDING" | "SYNCED" | null;
+  syncedAt: string | null;
+}
+
+export async function getWatchTime(imei: string): Promise<WatchTimeView> {
+  const r = await api.get<WatchTimeView>(`/devices/${imei}/watch-time`);
+  return r.data;
+}
+
+/** Waits up to ~8 s for the watch to answer; PENDING means it gets the change when it next connects. */
+export async function saveWatchTime(imei: string, language: number, zoneHours: number): Promise<WatchTimeView> {
+  const r = await api.put<WatchTimeView>(`/devices/${imei}/watch-time`, { language, zoneHours }, { timeout: 30_000 });
+  return r.data;
+}
+
 /** Trackers the user can see whose night rest is on. */
 export async function listNightRest(): Promise<NightRestView[]> {
   const r = await api.get<NightRestView[]>("/devices/rest");

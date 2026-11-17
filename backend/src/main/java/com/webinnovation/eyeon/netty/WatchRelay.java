@@ -60,7 +60,7 @@ public class WatchRelay extends ChannelInboundHandlerAdapter {
     public void handlerAdded(ChannelHandlerContext ctx) {
         Channel inbound = ctx.channel();
         if (ingest != null) {
-            tap = ingest.open(String.valueOf(inbound.remoteAddress()));
+            tap = ingest.open(String.valueOf(inbound.remoteAddress()), inbound);
         }
         inbound.config().setAutoRead(false);
         ChannelFuture f = new Bootstrap()
@@ -117,6 +117,9 @@ public class WatchRelay extends ChannelInboundHandlerAdapter {
     @Override
     public void channelInactive(ChannelHandlerContext ctx) {
         log.info("Watch connection {} closed", ctx.channel().id());
+        if (tap != null) {
+            tap.close();
+        }
         drainPending();
         if (outbound != null) {
             outbound.close();

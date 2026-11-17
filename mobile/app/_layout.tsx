@@ -55,6 +55,15 @@ export default function RootLayout() {
             }}
           />
           <Stack.Screen
+            name="watch-time"
+            options={{
+              headerShown: true,
+              headerTitle: "",
+              headerStyle: { backgroundColor: colors.header },
+              headerTintColor: colors.onHeader,
+            }}
+          />
+          <Stack.Screen
             name="tracker-settings"
             options={{
               headerShown: true,

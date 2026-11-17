@@ -163,6 +163,14 @@ public class DeviceRepository {
                 ROW_MAPPER);
     }
 
+    /** Records what kind of tracker this is ("WATCH" for a smart watch); a no-op when already so. */
+    public void markProtocol(String imei, String protocol) {
+        jdbc.update("""
+                UPDATE devices SET protocol = :protocol, updated_at = now()
+                WHERE imei = :imei AND protocol IS DISTINCT FROM :protocol
+                """, new MapSqlParameterSource("imei", imei).addValue("protocol", protocol));
+    }
+
     public void markOnline(String imei, Instant ts) {
         jdbc.update("""
                 UPDATE devices
@@ -452,7 +460,7 @@ public class DeviceRepository {
             "locations", "alarms", "trips", "geofence_devices", "geofence_states",
             "user_devices", "device_group_members", "alarm_rule_devices", "alarm_rule_state",
             "driver_assignments", "share_location_links", "scheduled_commands", "device_photos",
-            "daily_checks", "route_matches", "tracker_settings");
+            "daily_checks", "route_matches", "tracker_settings", "watch_settings");
 
     /**
      * Permanently delete a device and everything recorded for it (Super Admin only).
