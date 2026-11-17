@@ -1,4 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { AppState } from "react-native";
+import { useFocusEffect } from "expo-router";
 import { acknowledgeAlarm, searchAlarms } from "@/api/endpoints";
 import { extractError } from "@/api/client";
 import { subscribeAlarms } from "@/ws/stomp";
@@ -48,10 +50,12 @@ export function useAlarmCenter(orgId: string | null, query: AlarmQuery) {
   const generation = useRef(0);
   const { type, severity, imei, from, to, unacked } = query;
 
-  const load = useCallback(async (mode: "initial" | "refresh") => {
+  // "silent" = reload in place (return to the app, tab opened again): no spinner, and a failure
+  // keeps the list that is shown.
+  const load = useCallback(async (mode: "initial" | "refresh" | "silent") => {
     const gen = ++generation.current;
     if (mode === "refresh") setRefreshing(true);
-    else setLoading(true);
+    else if (mode === "initial") setLoading(true);
     try {
       const rows = await searchAlarms({ type, severity, imei, from, to, unacked }, PAGE, 0);
       if (!mounted.current || gen !== generation.current) return;
@@ -59,7 +63,7 @@ export function useAlarmCenter(orgId: string | null, query: AlarmQuery) {
       setHasMore(rows.length === PAGE);
       setError(null);
     } catch (e) {
-      if (mounted.current && gen === generation.current) setError(extractError(e).message);
+      if (mounted.current && gen === generation.current && mode !== "silent") setError(extractError(e).message);
     } finally {
       if (mounted.current && gen === generation.current) {
         setLoading(false);
@@ -67,6 +71,8 @@ export function useAlarmCenter(orgId: string | null, query: AlarmQuery) {
       }
     }
   }, [type, severity, imei, from, to, unacked]);
+  const loadRef = useRef(load);
+  loadRef.current = load;
 
   const loadMore = useCallback(async () => {
     if (loadingMore || !hasMore || loading) return;
@@ -103,6 +109,28 @@ export function useAlarmCenter(orgId: string | null, query: AlarmQuery) {
       mounted.current = false;
     };
   }, [load]);
+
+  // The list was loaded once and after that only the socket added rows, so alarms raised while
+  // the app was in the background (the socket is closed then) were missing until a pull to
+  // refresh. Load the first page again, with the filters as they are, when the app comes back
+  // and when the tab is opened again.
+  useEffect(() => {
+    const sub = AppState.addEventListener("change", (s) => {
+      if (s === "active" && mounted.current) void loadRef.current("silent");
+    });
+    return () => sub.remove();
+  }, []);
+  const focusedBefore = useRef(false);
+  useFocusEffect(
+    useCallback(() => {
+      // The first focus is the mount, which the effect above already loads for.
+      if (!focusedBefore.current) {
+        focusedBefore.current = true;
+        return;
+      }
+      void loadRef.current("silent");
+    }, []),
+  );
 
   useEffect(() => {
     if (!orgId) return;

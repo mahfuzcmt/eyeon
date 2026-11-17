@@ -105,9 +105,13 @@ export default function GeofencesScreen() {
                 {item.type === "CIRCLE" && item.radiusM != null
                   ? `${t("geo.circle")} · ${t("geo.radius")} ${fmtDistance(item.radiusM)}`
                   : `${t("geo.polygon")} · ${item.polygon.length} ${t("geo.points")}`}
-                {"  ·  "}
-                {t(NOTIFY_KEY[item.notifyOn])}
+                {item.notifyOn === "NONE" ? "" : `  ·  ${t(NOTIFY_KEY[item.notifyOn])}`}
               </Text>
+              {item.notifyOn === "NONE" ? (
+                <View style={styles.alertsOff}>
+                  <Text style={styles.alertsOffText}>{t(NOTIFY_KEY.NONE)}</Text>
+                </View>
+              ) : null}
             </View>
             <Pill
               label={item.active ? t("geo.active") : t("geo.off")}
@@ -156,6 +160,15 @@ const styles = StyleSheet.create({
   rowMain: { flex: 1, gap: 2 },
   name: { color: colors.text, fontSize: 16, fontWeight: "700" },
   meta: { color: colors.textFaint, fontSize: 13 },
+  alertsOff: {
+    alignSelf: "flex-start",
+    marginTop: 4,
+    backgroundColor: colors.warn,
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    paddingVertical: 3,
+  },
+  alertsOffText: { color: colors.onBrand, fontSize: 13, fontWeight: "700" },
   deleteBtn: { minWidth: 44, minHeight: 44, alignItems: "center", justifyContent: "center" },
   deleteText: { color: colors.danger, fontSize: 16, fontWeight: "700" },
   footer: { padding: space.md },

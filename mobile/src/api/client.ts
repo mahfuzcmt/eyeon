@@ -1,4 +1,5 @@
 import axios, { AxiosError, AxiosInstance, InternalAxiosRequestConfig } from "axios";
+import { translate } from "@/i18n";
 import type { TokenPair } from "@/types";
 
 const baseURL = process.env.EXPO_PUBLIC_API_BASE ?? "http://10.0.2.2:8081/api/v1";
@@ -37,6 +38,10 @@ export const tokenStore = {
   getAccess(): string | null {
     return tokens.accessToken;
   },
+  /** True while a refresh token is held, i.e. the session has not been ended. */
+  hasSession(): boolean {
+    return tokens.refreshToken !== null;
+  },
   /** AuthContext registers persistence + sign-out reactions. */
   bind(handlers: { onTokens: (p: TokenPair) => void | Promise<void>; onAuthLost: () => void }) {
     onTokens = handlers.onTokens;
@@ -71,10 +76,34 @@ let refreshing: Promise<RefreshOutcome> | null = null;
 
 const REFRESH_ATTEMPTS = 3;
 
+/**
+ * The backend's own refusals of a refresh token (AuthService.refresh, GlobalExceptionHandler):
+ * 401 INVALID_REFRESH / REFRESH_REVOKED / REFRESH_EXPIRED, 403 ACCOUNT_INACTIVE, and 422
+ * USER_NOT_FOUND (the account was deleted).
+ */
+const REFRESH_REJECTED_CODES = new Set([
+  "INVALID_REFRESH",
+  "REFRESH_REVOKED",
+  "REFRESH_EXPIRED",
+  "ACCOUNT_INACTIVE",
+  "USER_NOT_FOUND",
+]);
+
+/**
+ * Only the backend saying so in its own words ends the session. Until 2026-11-17 any 4xx did,
+ * so a 400 / 404 or an HTML error page from the proxy while the backend was being deployed
+ * signed people out. Those, like 408 / 429 / 5xx, now count as "unavailable" and are retried.
+ */
 function isDefinitiveRejection(err: unknown): boolean {
   if (!axios.isAxiosError(err) || !err.response) return false;
   const s = err.response.status;
-  return s >= 400 && s < 500 && s !== 408 && s !== 429;
+  if (s !== 401 && s !== 403 && s !== 422) return false;
+  const data: unknown = err.response.data;
+  if (!data || typeof data !== "object") return false; // not the backend's JSON
+  const error: unknown = (data as { error?: unknown }).error;
+  if (!error || typeof error !== "object") return false;
+  const code: unknown = (error as { code?: unknown }).code;
+  return typeof code === "string" && REFRESH_REJECTED_CODES.has(code);
 }
 
 async function refreshOnce(refreshToken: string): Promise<TokenPair> {
@@ -83,7 +112,17 @@ async function refreshOnce(refreshToken: string): Promise<TokenPair> {
     { refreshToken },
     { headers: { "Content-Type": "application/json" }, timeout: 20_000 },
   );
-  return r.data;
+  // A 200 that is not a token pair (a proxy's page) must not replace the tokens we hold.
+  const pair: unknown = r.data;
+  if (
+    !pair ||
+    typeof pair !== "object" ||
+    typeof (pair as TokenPair).accessToken !== "string" ||
+    typeof (pair as TokenPair).refreshToken !== "string"
+  ) {
+    throw new Error("refresh answered without a token pair");
+  }
+  return pair as TokenPair;
 }
 
 async function refreshAccessToken(): Promise<RefreshOutcome> {
@@ -131,6 +170,21 @@ function jwtExpiry(token: string): number | null {
 }
 
 /**
+ * The server refused the refresh token: the session is over. The refresh token is dropped at
+ * once, so nothing tries to refresh again; an access token that has not run out yet is kept for
+ * the moment, because AuthContext.doSignOut first unregisters this phone's push token (which
+ * needs the header) and then clears everything. Until 2026-11-17 both were cleared here first,
+ * so that call got a 401 and the phone kept receiving the old account's alerts.
+ */
+function endSession(): void {
+  const access = tokens.accessToken;
+  const exp = access ? jwtExpiry(access) : null;
+  tokens.refreshToken = null;
+  if (exp === null || exp * 1000 <= Date.now()) tokens.accessToken = null;
+  onAuthLost();
+}
+
+/**
  * An access token that is still valid for at least a minute, refreshing it first when needed.
  * For the WebSocket CONNECT frame, which (unlike REST) has no 401-and-retry: a socket that
  * reconnected with the expired token from an hour ago was refused, and live updates stopped.
@@ -145,8 +199,7 @@ export async function freshAccessToken(): Promise<string | null> {
   const r = await refreshAccessToken();
   if (r.ok) return r.accessToken;
   if (r.rejected) {
-    tokenStore.clear();
-    onAuthLost();
+    endSession();
     return null;
   }
   return tokens.accessToken;
@@ -167,10 +220,7 @@ api.interceptors.response.use(
       }
       // Only a definitive refusal ends the session; a network failure keeps the tokens so the
       // next request (the app polls every 10 s) tries again.
-      if (r.rejected) {
-        tokenStore.clear();
-        onAuthLost();
-      }
+      if (r.rejected) endSession();
     }
     return Promise.reject(error);
   },
@@ -180,13 +230,38 @@ export interface ApiError {
   code: string;
   message: string;
   details?: Record<string, unknown>;
+  /** HTTP status when the server answered. */
+  status?: number;
 }
 
+function nonEmpty(v: unknown): string | null {
+  return typeof v === "string" && v.trim() ? v.trim() : null;
+}
+
+/**
+ * The error of a failed request, always with a message that can be shown. The API answers
+ * `{ error: { code, message, details } }`; tracker commands answer 409 / 504 with
+ * `{ ok: false, error: "Device offline: 123" }` (a plain string), which used to come back as
+ * if it were the object and showed an empty "Error" popup.
+ */
 export function extractError(err: unknown): ApiError {
+  const fallback = translate("common.requestFailed");
   if (axios.isAxiosError(err)) {
-    const data = err.response?.data as { error?: ApiError } | undefined;
-    if (data?.error) return data.error;
-    return { code: "NETWORK", message: err.message };
+    const status = err.response?.status;
+    const data: unknown = err.response?.data;
+    const raw: unknown = data && typeof data === "object" ? (data as { error?: unknown }).error : undefined;
+    const text = nonEmpty(raw);
+    if (text) return { code: "ERROR", message: text, status };
+    if (raw && typeof raw === "object") {
+      const e = raw as { code?: unknown; message?: unknown; details?: unknown };
+      return {
+        code: nonEmpty(e.code) ?? "ERROR",
+        message: nonEmpty(e.message) ?? fallback,
+        details: e.details && typeof e.details === "object" ? (e.details as Record<string, unknown>) : undefined,
+        status,
+      };
+    }
+    return { code: "NETWORK", message: nonEmpty(err.message) ?? fallback, status };
   }
-  return { code: "UNKNOWN", message: String(err) };
+  return { code: "UNKNOWN", message: nonEmpty(err instanceof Error ? err.message : String(err)) ?? fallback };
 }

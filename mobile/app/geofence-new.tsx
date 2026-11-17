@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useLocalSearchParams, useNavigation, useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import {
@@ -215,7 +215,8 @@ export default function GeofenceNewScreen() {
     setShape(next);
   }
 
-  async function submit() {
+  // "No alerts" saves a boundary that never tells anyone anything: ask first (as for a place).
+  function submit() {
     const trimmed = name.trim();
     if (!trimmed) {
       setError(t("geo.errName"));
@@ -233,6 +234,17 @@ export default function GeofenceNewScreen() {
       setError(t("geo.errVehicles"));
       return;
     }
+    if (notifyOn === "NONE") {
+      Alert.alert(t("place.noAlertsTitle"), t("geo.noAlertsWarn"), [
+        { text: t("common.cancel"), style: "cancel" },
+        { text: t("place.saveAnyway"), style: "destructive", onPress: () => void save(trimmed) },
+      ]);
+      return;
+    }
+    void save(trimmed);
+  }
+
+  async function save(trimmed: string) {
     setSubmitting(true);
     setError(null);
     try {
@@ -252,7 +264,8 @@ export default function GeofenceNewScreen() {
           name: trimmed,
           notifyOn,
           color,
-          ...(address && address !== prev?.address ? { address } : {}),
+          // Blank clears the old searched address after the centre was moved by hand.
+          ...((address ?? null) !== (prev?.address ?? null) ? { address: address ?? "" } : {}),
           ...geometry,
         });
         const before = prev?.imeis ?? new Set<string>();
@@ -373,6 +386,7 @@ export default function GeofenceNewScreen() {
             <Chip key={o.value} label={t(o.label)} active={o.value === notifyOn} onPress={() => setNotifyOn(o.value)} />
           ))}
         </View>
+        {notifyOn === "NONE" ? <Text style={styles.warnText}>{t("geo.noAlertsWarn")}</Text> : null}
 
         <Text style={styles.label}>{t("geo.color")}</Text>
         <View style={styles.chips}>
@@ -406,7 +420,7 @@ export default function GeofenceNewScreen() {
         {error ? <Text style={styles.error}>{error}</Text> : null}
         <PrimaryButton
           label={editing ? t("geo.saveChanges") : t("geo.create")}
-          onPress={() => void submit()}
+          onPress={submit}
           loading={submitting}
         />
       </ScrollView>
@@ -449,4 +463,5 @@ const styles = StyleSheet.create({
   swatchOn: { borderWidth: 3, borderColor: colors.text },
   dim: { color: colors.textFaint, fontSize: 14 },
   error: { color: colors.danger, fontSize: 14 },
+  warnText: { color: colors.warn, fontSize: 14, fontWeight: "600" },
 });

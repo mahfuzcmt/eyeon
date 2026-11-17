@@ -62,10 +62,10 @@ export default function ControlsTab({ imei, orgId }: { imei: string; orgId: stri
         setLastReply(done);
         await reloadDevice();
       } else {
-        Alert.alert(t("ctrl.cmdFailed"), res.error ?? t("common.error"));
+        Alert.alert(t("ctrl.cmdFailed"), res.error?.trim() || t("common.requestFailed"));
       }
     } catch (e) {
-      Alert.alert(t("common.error"), extractError(e).message);
+      Alert.alert(t("ctrl.cmdFailed"), extractError(e).message);
     } finally {
       setBusy(null);
     }
@@ -140,6 +140,10 @@ export default function ControlsTab({ imei, orgId }: { imei: string; orgId: stri
   const mColor = motionColor(motion);
   const expired = device ? subscriptionExpired(device) : false;
   const daysLeft = device ? subscriptionDaysLeft(device) : null;
+  // A smart watch speaks another protocol: Locate / Follow live / Ring, the tracker settings and
+  // Query / Reboot are commands only the tracker model understands and always failed for a watch.
+  // A watch reports by itself; its own screen is "Watch time & language".
+  const isWatch = device?.protocol === "WATCH";
 
   return (
     <ScrollView
@@ -175,18 +179,22 @@ export default function ControlsTab({ imei, orgId }: { imei: string; orgId: stri
       {/* Device Commands */}
       <Section title={t("ctrl.commands")}>
         <View style={styles.cmdGrid}>
-          <CommandBtn label={t("cmd.locate")} tone="primary" icon="📍" disabled={busy !== null} loading={busy === "locate"} onPress={() => runCommand("locate")} fullWidth />
-          <CommandBtn label={t("cmd.live")} tone="neutral" icon="▶" disabled={busy !== null} loading={busy === "live"} onPress={() => runCommand("live")} fullWidth />
-          <CommandBtn label={t("cmd.find")} tone="neutral" icon="🔔" disabled={busy !== null} loading={busy === "find"} onPress={confirmFind} fullWidth />
-          <CommandBtn
-            label={t("act.settings")}
-            tone="neutral"
-            icon="⚙️"
-            disabled={busy !== null}
-            onPress={() => router.push({ pathname: "/tracker-settings", params: { imei, name: device?.name ?? "" } })}
-            fullWidth
-          />
-          {device?.protocol === "WATCH" ? (
+          {!isWatch ? (
+            <>
+              <CommandBtn label={t("cmd.locate")} tone="primary" icon="📍" disabled={busy !== null} loading={busy === "locate"} onPress={() => runCommand("locate")} fullWidth />
+              <CommandBtn label={t("cmd.live")} tone="neutral" icon="▶" disabled={busy !== null} loading={busy === "live"} onPress={() => runCommand("live")} fullWidth />
+              <CommandBtn label={t("cmd.find")} tone="neutral" icon="🔔" disabled={busy !== null} loading={busy === "find"} onPress={confirmFind} fullWidth />
+              <CommandBtn
+                label={t("act.settings")}
+                tone="neutral"
+                icon="⚙️"
+                disabled={busy !== null}
+                onPress={() => router.push({ pathname: "/tracker-settings", params: { imei, name: device?.name ?? "" } })}
+                fullWidth
+              />
+            </>
+          ) : null}
+          {isWatch ? (
             <CommandBtn
               label={t("wt.title")}
               tone="neutral"
@@ -208,24 +216,28 @@ export default function ControlsTab({ imei, orgId }: { imei: string; orgId: stri
           {device?.photoUpdatedAt ? (
             <CommandBtn label={t("photo.remove")} tone="warn" icon="✕" disabled={busy !== null} onPress={removePhoto} fullWidth />
           ) : null}
-          <CommandBtn
-            label={t("ctrl.queryLocation")}
-            tone="neutral"
-            icon="📍"
-            disabled={busy !== null}
-            loading={busy === "query"}
-            onPress={() => runCommand("query")}
-            fullWidth
-          />
-          <CommandBtn
-            label={t("ctrl.rebootDevice")}
-            tone="warn"
-            icon="🔄"
-            disabled={busy !== null}
-            loading={busy === "reboot"}
-            onPress={confirmReboot}
-            fullWidth
-          />
+          {!isWatch ? (
+            <>
+              <CommandBtn
+                label={t("ctrl.queryLocation")}
+                tone="neutral"
+                icon="📍"
+                disabled={busy !== null}
+                loading={busy === "query"}
+                onPress={() => runCommand("query")}
+                fullWidth
+              />
+              <CommandBtn
+                label={t("ctrl.rebootDevice")}
+                tone="warn"
+                icon="🔄"
+                disabled={busy !== null}
+                loading={busy === "reboot"}
+                onPress={confirmReboot}
+                fullWidth
+              />
+            </>
+          ) : null}
         </View>
       </Section>
 

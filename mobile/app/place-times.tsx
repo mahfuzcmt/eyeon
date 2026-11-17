@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Alert, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { Stack, useLocalSearchParams } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
@@ -19,6 +19,8 @@ import type { PlaceSchedule, PlaceScheduleKind } from "@/types";
 const WEEK = [7, 1, 2, 3, 4, 5, 6];
 const SCHOOL_DAYS = [7, 1, 2, 3, 4];
 const TIME_RE = /^([01]\d|2[0-3]):[0-5]\d$/;
+/** "8:15" is what people type; the server wants "08:15". */
+const normalizeTime = (v: string) => v.trim().replace(/^(\d):/, "0$1:");
 const GRACE_CHOICES = [0, 5, 10, 15, 20, 30, 45, 60];
 const BN_DIGITS = "০১২৩৪৫৬৭৮৯";
 const digits = (n: number, bn: boolean) => (bn ? String(n).replace(/\d/g, (d) => BN_DIGITS[Number(d)]) : String(n));
@@ -30,6 +32,8 @@ export default function PlaceTimesScreen() {
   const [schedules, setSchedules] = useState<PlaceSchedule[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  /** Set at once on a tap (state arrives a render later), so a double tap cannot add twice. */
+  const adding = useRef(false);
   const [error, setError] = useState<string | null>(null);
   const [arriveOn, setArriveOn] = useState(true);
   const [arrive, setArrive] = useState("08:00");
@@ -60,26 +64,40 @@ export default function PlaceTimesScreen() {
   const toggleDay = (d: number) => setDays((prev) => (prev.includes(d) ? prev.filter((x) => x !== d) : [...prev, d]));
   const dayNames = (list: number[]) => WEEK.filter((d) => list.includes(d)).map((d) => t(`day.${d}` as StringKey)).join(" · ");
 
+  // "Add" always creates new schedules and the form opens on 08:00 / 12:00, so tapping it again
+  // stored the same times twice and every alert came twice. A time that is already listed for
+  // one of the chosen days is left out; when nothing new remains the user is told.
   const add = async () => {
+    if (adding.current) return;
     const wanted: [PlaceScheduleKind, string][] = [];
-    if (arriveOn) wanted.push(["ARRIVE_BY", arrive.trim()]);
-    if (leaveOn) wanted.push(["LEAVE_BY", leave.trim()]);
+    if (arriveOn) wanted.push(["ARRIVE_BY", normalizeTime(arrive)]);
+    if (leaveOn) wanted.push(["LEAVE_BY", normalizeTime(leave)]);
     if (wanted.some(([, time]) => !TIME_RE.test(time))) {
-      setError("HH:MM");
+      setError(t("place.timesBadTime"));
       return;
     }
+    const fresh = wanted.filter(
+      ([kind, time]) => !schedules.some((s) => s.kind === kind && s.time.slice(0, 5) === time && s.weekdays.some((d) => days.includes(d))),
+    );
+    if (fresh.length === 0) {
+      setError(t("place.timesDuplicate"));
+      return;
+    }
+    adding.current = true;
     setSaving(true);
     setError(null);
     try {
       const added: PlaceSchedule[] = [];
-      for (const [kind, time] of wanted) {
+      for (const [kind, time] of fresh) {
         added.push(await createPlaceSchedule(id, { kind, time, weekdays: days, graceMinutes: grace }));
       }
       setSchedules((prev) => [...prev, ...added].sort((a, b) => a.time.localeCompare(b.time)));
     } catch (e) {
-      setError(extractError(e).message);
+      const err = extractError(e);
+      setError(err.status === 409 ? t("place.timesDuplicate") : err.message);
       void load();
     } finally {
+      adding.current = false;
       setSaving(false);
     }
   };

@@ -28,7 +28,7 @@ export default function MapScreen() {
   const orgId = org?.id ?? null;
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { locations, refresh } = useLiveLocations(orgId);
+  const { locations, error: liveError, refresh } = useLiveLocations(orgId);
   const { devices } = useDevices();
   const [center, setCenter] = useState<{ lat: number; lng: number; zoom: number; nonce: number } | null>(null);
   const [zoomStep, setZoomStep] = useState<{ dir: 1 | -1; nonce: number } | null>(null);
@@ -200,6 +200,17 @@ export default function MapScreen() {
         )}
       </SafeAreaView>
 
+      {/* Positions could not be refreshed (offline, server away): what is drawn is the last known.
+          The hook clears the error on the next refresh that works. */}
+      {liveError ? (
+        <View style={[styles.lostWrap, { top: insets.top + 64 }]} pointerEvents="none">
+          <View style={styles.lost} accessibilityRole="alert">
+            <Ionicons name="cloud-offline-outline" size={16} color={colors.warn} />
+            <Text style={styles.lostText}>{t("map.connectionLost")}</Text>
+          </View>
+        </View>
+      ) : null}
+
       {selected && (() => {
         const d = byImei.get(selected);
         const l = locations.get(selected) ?? null;
@@ -345,6 +356,19 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   pillLabel: { color: colors.text, fontWeight: "600", fontSize: 15 },
+  lostWrap: { position: "absolute", left: space.md, right: space.md, alignItems: "center" },
+  lost: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: space.xs,
+    backgroundColor: colors.surface,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: colors.warn,
+    paddingHorizontal: space.md,
+    paddingVertical: 6,
+  },
+  lostText: { color: colors.warn, fontSize: 13, fontWeight: "700", flexShrink: 1 },
   viewMenu: {
     marginTop: space.xs,
     backgroundColor: colors.surface,

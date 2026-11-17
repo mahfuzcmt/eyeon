@@ -3,6 +3,7 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { useAuth } from "@/auth/AuthContext";
+import { confirmSignOut } from "@/auth/confirmSignOut";
 import { LanguageToggle } from "@/components/LanguageToggle";
 import { useI18n } from "@/i18n";
 import { colors, radius, space } from "@/theme";
@@ -67,7 +68,7 @@ export default function MoreScreen() {
       </View>
 
       <View style={styles.card}>
-        <MenuRow icon="log-out-outline" label={t("auth.signOut")} danger onPress={() => void signOut()} />
+        <MenuRow icon="log-out-outline" label={t("auth.signOut")} danger onPress={() => confirmSignOut(t, signOut)} />
       </View>
 
       <Text style={styles.meta}>

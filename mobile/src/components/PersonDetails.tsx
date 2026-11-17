@@ -3,7 +3,7 @@ import { Linking, Pressable, StyleSheet, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useCurrentStay } from "@/hooks/useCurrentStay";
 import { reverseAddress } from "@/geocode";
-import { batteryColor, fmtAgo, fmtDateTime, fmtDistance, fmtSince, fmtTime, fmtVoltage, motionColor, motionOf, speedOf } from "@/format";
+import { batteryColor, fmtAgo, fmtDateTime, fmtDistance, fmtSince, fmtTime, fmtVoltage, laterOf, motionColor, motionOf, speedOf } from "@/format";
 import { Pill } from "@/ui";
 import { useI18n, type StringKey } from "@/i18n";
 import { colors, radius, space } from "@/theme";
@@ -64,7 +64,10 @@ export default function PersonDetails({
   const address = useAddress(hasPos ? lat : null, hasPos ? lng : null, locale === "bn" ? "bn" : "en");
   const stay = useCurrentStay(device.imei);
   const speed = speedOf(loc, device.lastSpeed);
-  const reportedAt = loc?.ts ?? device.lastSeenAt;
+  // "Last seen" = the newest sign of life: a still tracker or a watch sends heartbeats and no
+  // positions, and read "last seen 3 h ago" while connected. The position's own age is said
+  // separately (the no-GPS line below, "Position time" in the grid).
+  const reportedAt = laterOf(loc?.ts, device.lastSeenAt);
   // The tracker is still talking but has no GPS fix (in a train or bus, indoors): the position is the
   // last fix's. Say so, or "last seen just now" makes an old position look current.
   const fixAt = loc ? (loc.valid ? loc.ts : loc.lastValidTs ?? null) : null;

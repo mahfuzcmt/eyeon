@@ -32,6 +32,7 @@ export const colors = {
   ok: "#15803D",
   warn: "#B45309",
   danger: "#D92D20",
+  stopped: "#2563EB", // a still person: the web's status.stopped (5.2:1 on white). Red is for alerts only.
   offline: "#6B7A77",
 } as const;
 
