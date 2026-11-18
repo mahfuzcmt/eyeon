@@ -62,7 +62,7 @@ class NotificationComposerTest {
         Instant afternoon = Instant.parse("2026-09-21T08:31:00Z"); // 14:31 Dhaka
         Message bn = composer.compose(
                 alarm("PLACE_LEFT", "INFO", afternoon, Map.of("geofenceName", "স্কুল")), "রাফি", Lang.BN);
-        assertEquals("🚶 রাফি আর স্কুল-এ নেই", bn.title());
+        assertEquals("🚶 রাফি স্কুল থেকে বের হয়েছে", bn.title());
         assertEquals("বের হওয়ার সময়: দুপুর ২:৩১", bn.body());
         assertEquals(NotificationComposer.CHANNEL_ARRIVALS, bn.channelId());
 
@@ -121,6 +121,11 @@ class NotificationComposerTest {
         Message late = composer.compose(alarm("LEFT_LATE", "INFO", MORNING, meta), "Rafi", Lang.EN);
         assertEquals("🕘 Rafi left School late", late.title());
         assertEquals("Left 8:02 AM · Expected to leave by 8:00 AM (+10 min)", late.body());
+
+        assertEquals("🕘 দেরিতে: রাফি School থেকে বের হয়েছে",
+                composer.compose(alarm("LEFT_LATE", "INFO", MORNING, meta), "রাফি", Lang.BN).title());
+        assertEquals("✅ সময়মতো: রাফি School থেকে বের হয়েছে",
+                composer.compose(alarm("LEFT_ON_TIME", "INFO", MORNING, meta), "রাফি", Lang.BN).title());
     }
 
     @Test
