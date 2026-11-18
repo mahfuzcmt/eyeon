@@ -60,7 +60,7 @@ public class NotificationComposer {
                     bn ? "পৌঁছানোর সময়: " + time : "Arrived at " + time,
                     CHANNEL_ARRIVALS);
             case "PLACE_LEFT" -> new Message(
-                    bn ? "🚶 " + personName + " আর " + at(place, bn) + " নেই"
+                    bn ? "🚶 " + personName + " " + from(place, bn) + " বের হয়েছে"
                        : "🚶 " + personName + " left " + orPlace(place, bn),
                     bn ? "বের হওয়ার সময়: " + time : "Left at " + time,
                     CHANNEL_ARRIVALS);
@@ -96,7 +96,7 @@ public class NotificationComposer {
                     joinDot(bn ? "পৌঁছানো: " + time : "Arrived " + time, expected(alarm, null, bn, true)),
                     CHANNEL_ARRIVALS);
             case "LEFT_ON_TIME" -> new Message(
-                    bn ? "✅ সময়মতো: " + personName + " আর " + at(place, bn) + " নেই"
+                    bn ? "✅ সময়মতো: " + personName + " " + from(place, bn) + " বের হয়েছে"
                        : "✅ " + personName + " left " + orPlace(place, bn) + " on time",
                     joinDot(bn ? "বের হওয়া: " + time : "Left " + time, expected(alarm, null, bn, false)),
                     CHANNEL_ARRIVALS);
@@ -106,7 +106,7 @@ public class NotificationComposer {
                     joinDot(bn ? "পৌঁছানো: " + time : "Arrived " + time, expected(alarm, null, bn, true)),
                     CHANNEL_ARRIVALS);
             case "LEFT_LATE" -> new Message(
-                    bn ? "🕘 দেরিতে: " + personName + " আর " + at(place, bn) + " নেই"
+                    bn ? "🕘 দেরিতে: " + personName + " " + from(place, bn) + " বের হয়েছে"
                        : "🕘 " + personName + " left " + orPlace(place, bn) + " late",
                     joinDot(bn ? "বের হওয়া: " + time : "Left " + time, expected(alarm, null, bn, false)),
                     CHANNEL_ARRIVALS);
@@ -210,6 +210,14 @@ public class NotificationComposer {
 
     private static String at(String place, boolean bn) {
         return orPlace(place, bn) + "-এ";
+    }
+
+    /**
+     * "স্কুল থেকে" - for leaving. Until 2026-11-18 a departure read "রাফি আর স্কুল-এ নেই" ("no
+     * longer at school"); the owner asked for "স্কুল থেকে বের হয়েছে" ("has left school").
+     */
+    private static String from(String place, boolean bn) {
+        return orPlace(place, bn) + " থেকে";
     }
 
     private static String orPlace(String place, boolean bn) {
