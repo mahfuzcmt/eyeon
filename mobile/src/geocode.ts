@@ -23,7 +23,7 @@ export async function searchAddress(query: string, near?: { lat: number; lng: nu
   if (hit) return hit;
   let url = `https://nominatim.openstreetmap.org/search?format=json&limit=6&countrycodes=bd&accept-language=${encodeURIComponent(lang)}&q=${encodeURIComponent(q)}`;
   if (near) url += `&viewbox=${near.lng - 0.15},${near.lat + 0.15},${near.lng + 0.15},${near.lat - 0.15}`;
-  const res = await fetch(url, { headers: { Accept: "application/json", "User-Agent": "EyeOn mobile (https://eyeon.motolinkgps.com)" }, signal });
+  const res = await fetch(url, { headers: { Accept: "application/json", "User-Agent": "EyeOn mobile (https://eyeoniot.com)" }, signal });
   if (!res.ok) throw new Error(`Address search failed (${res.status})`);
   const data = (await res.json()) as { display_name: string; lat: string; lon: string }[];
   const results = data
@@ -105,7 +105,7 @@ export function reverseAddress(lat: number, lng: number, lang = "en"): Promise<s
   const running = reverseInflight.get(key);
   if (running) return running;
   const url = `https://nominatim.openstreetmap.org/reverse?format=json&zoom=18&addressdetails=1&accept-language=${encodeURIComponent(lang)}&lat=${lat}&lon=${lng}`;
-  const p = fetch(url, { headers: { Accept: "application/json", "User-Agent": "EyeOn mobile (https://eyeon.motolinkgps.com)" } })
+  const p = fetch(url, { headers: { Accept: "application/json", "User-Agent": "EyeOn mobile (https://eyeoniot.com)" } })
     .then(async (res) => {
       if (!res.ok) return null;
       const name = addressLine((await res.json()) as ReverseAnswer);
