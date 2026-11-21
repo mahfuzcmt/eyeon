@@ -154,6 +154,8 @@ systemctl restart sshd
 
 ## Shared server (current production, since 2026-09-21)
 
+Since 2026-11-21 the site is `https://eyeoniot.com`; `eyeon.motolinkgps.com` keeps serving the API and live feed for older apps and the tracker port for devices (see CLAUDE.md). Front door: `edge-nginx` (`/root/edge/nginx/conf.d/eyeon.conf` = `infra/nginx/eyeoniot.shared.conf`), certificates by `edge-certbot` (`docker exec edge-certbot certbot certonly --webroot -w /var/www/certbot -d <name>`).
+
 EyeOn runs on `103.159.37.145` (until 2026-10-18 `ns.tracker.com` / `103.187.22.131`), a **shared** VPS that also hosts PingPath/MotoLink
 production and several unrelated apps. **Do not run `scripts/deploy_vps.sh` there**: it resets `ufw`
 (dropping WireGuard and PingPath's tracker port), expects free host ports `8081`/`3001` (both taken)
