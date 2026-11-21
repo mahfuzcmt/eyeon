@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Modal, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+import { Modal, Pressable, StyleSheet, Text, View } from "react-native";
 import {
   addDays,
   daysInMonth,
@@ -18,6 +18,7 @@ import {
 } from "@/dateRange";
 import { useI18n, type StringKey } from "@/i18n";
 import { colors, radius, space } from "@/theme";
+import { ClockTimePicker } from "@/components/ClockTimePicker";
 
 // Saturday-first weekday headers (Bangladesh week convention).
 const WD = ["Sa", "Su", "Mo", "Tu", "We", "Th", "Fr"];
@@ -44,7 +45,7 @@ export default function DateRangePicker({
   onApply: (r: DateRange) => void;
   onClose: () => void;
 }) {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const today = dhakaParts();
   const [view, setView] = useState({ y: today.y, m: today.m });
   const [start, setStart] = useState<DayParts | null>(null);
@@ -172,27 +173,11 @@ export default function DateRangePicker({
           <View style={styles.timeRow}>
             <View style={styles.timeField}>
               <Text style={styles.timeLabel}>{t("cal.startTime")}</Text>
-              <TextInput
-                value={startTime}
-                onChangeText={setStartTime}
-                placeholder="00:00"
-                placeholderTextColor={colors.textFaint}
-                style={styles.timeInput}
-                keyboardType="numbers-and-punctuation"
-                maxLength={5}
-              />
+              <ClockTimePicker value={startTime} onChange={setStartTime} bn={locale === "bn"} label={t("cal.startTime")} />
             </View>
             <View style={styles.timeField}>
               <Text style={styles.timeLabel}>{t("cal.endTime")}</Text>
-              <TextInput
-                value={endTime}
-                onChangeText={setEndTime}
-                placeholder="23:59"
-                placeholderTextColor={colors.textFaint}
-                style={styles.timeInput}
-                keyboardType="numbers-and-punctuation"
-                maxLength={5}
-              />
+              <ClockTimePicker value={endTime} onChange={setEndTime} bn={locale === "bn"} label={t("cal.endTime")} />
             </View>
           </View>
 

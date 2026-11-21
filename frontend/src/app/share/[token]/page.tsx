@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import { useParams } from "next/navigation";
 import dynamic from "next/dynamic";
 import type { SharedLocationView, SharedHistoryPoint } from "@/types/domain";
+import { formatTimeOfDay } from "@/lib/format";
 
 // Import map dynamically to avoid SSR issues
 const SharedMap = dynamic(() => import("./SharedMap"), { ssr: false });
@@ -176,7 +177,7 @@ export default function SharedLocationPage() {
               <p className="text-[14px] text-ink-400 mb-1">Last Update</p>
               <p className="text-[15px] font-medium text-white">
                 {location.lastUpdate
-                  ? new Date(location.lastUpdate).toLocaleString("en-GB", { timeZone: "Asia/Dhaka", day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })
+                  ? `${new Date(location.lastUpdate).toLocaleDateString("en-GB", { timeZone: "Asia/Dhaka", day: "2-digit", month: "short" })}, ${formatTimeOfDay(location.lastUpdate, "en")}`
                   : "N/A"}
               </p>
             </div>

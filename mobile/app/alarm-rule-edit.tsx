@@ -20,10 +20,11 @@ import { useI18n, type StringKey } from "@/i18n";
 import { colors, radius, space, touch } from "@/theme";
 import { MINUTE_RULES, OFFERED_RULE_TYPES, SEVERITIES, ruleTypeLabel, ruleUnit, severityLabel } from "@/alarmCenter";
 import type { AlarmRuleRequest, AlarmRuleType, AlarmRuleView, AlarmSeverity } from "@/types";
+import { ClockTimePicker } from "@/components/ClockTimePicker";
 
 /** Create or edit one alarm rule (web: the rule form on /dashboard/rules). `?id=` edits. */
 export default function AlarmRuleEditScreen() {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const router = useRouter();
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
@@ -157,10 +158,12 @@ export default function AlarmRuleEditScreen() {
           {isWindow ? (
             <View style={styles.twoCol}>
               <View style={styles.col}>
-                <Field label={t("arule.from")} value={windowStart} onChangeText={setWindowStart} placeholder="22:00" keyboardType="numbers-and-punctuation" maxLength={5} />
+                <Text style={styles.timeLabel}>{t("arule.from")}</Text>
+                <ClockTimePicker value={windowStart} onChange={setWindowStart} bn={locale === "bn"} label={t("arule.from")} />
               </View>
               <View style={styles.col}>
-                <Field label={t("arule.to")} value={windowEnd} onChangeText={setWindowEnd} placeholder="06:00" keyboardType="numbers-and-punctuation" maxLength={5} />
+                <Text style={styles.timeLabel}>{t("arule.to")}</Text>
+                <ClockTimePicker value={windowEnd} onChange={setWindowEnd} bn={locale === "bn"} label={t("arule.to")} />
               </View>
             </View>
           ) : (
@@ -237,6 +240,7 @@ function Group({ label, children }: { label: string; children: ReactNode }) {
 }
 
 const styles = StyleSheet.create({
+  timeLabel: { color: colors.textDim, fontSize: 14, fontWeight: "600", marginBottom: space.xs },
   screen: { flex: 1, backgroundColor: colors.bg },
   content: { padding: space.lg, paddingBottom: space.xl },
   inner: { width: "100%", maxWidth: 640, alignSelf: "center", gap: space.lg },

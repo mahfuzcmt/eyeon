@@ -4,8 +4,8 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { api } from "@/lib/api";
 import { useActivity } from "@/hooks/useActivity";
 import { useDeviceHistory } from "@/hooks/useDeviceHistory";
-import { useLocale, type StringKey } from "@/lib/i18n";
-import { formatDurationS, formatNumber } from "@/lib/format";
+import { useLocale, type Locale, type StringKey } from "@/lib/i18n";
+import { formatDurationS, formatNumber, formatTimeOfDay } from "@/lib/format";
 import { HistoryMap } from "./HistoryMap";
 import type { DetailRange } from "./types";
 import type { AlarmView } from "@/types/domain";
@@ -116,7 +116,7 @@ export default function HistoryTab({ imei, range }: { imei: string; range: Detai
         {points.length > 0 && (
           <>
             <div className="pointer-events-none absolute left-3 top-3 z-[1000] rounded-md border border-surface-300 bg-white/95 px-3 py-1.5 shadow-menu">
-              <span className="text-xl font-bold leading-none text-ink-900">{fmtTime(curTs)}</span>
+              <span className="text-xl font-bold leading-none text-ink-900">{fmtTime(curTs, locale)}</span>
             </div>
             <div className="absolute inset-x-3 bottom-3 z-[1000] flex items-center gap-2 rounded-md border border-surface-300 bg-white/95 px-3 py-2 shadow-menu">
               <button type="button" className="btn-icon" aria-label={t("hist.restart")} onClick={() => setIdx(0)}>⏮</button>
@@ -167,7 +167,7 @@ export default function HistoryTab({ imei, range }: { imei: string; range: Detai
                   }`}
                 >
                   <span className="w-[68px] shrink-0 text-[14px] font-semibold tabular-nums text-ink-900">
-                    {fmtTime(ev.ts)}
+                    {fmtTime(ev.ts, locale)}
                   </span>
                   <span className={`h-2.5 w-2.5 shrink-0 rounded-full ${urgent ? "bg-alarm-red" : "bg-brand-500"}`} />
                   <span className="min-w-0 flex-1">
@@ -186,7 +186,7 @@ export default function HistoryTab({ imei, range }: { imei: string; range: Detai
   );
 }
 
-function fmtTime(iso: string | null | undefined): string {
+function fmtTime(iso: string | null | undefined, locale: Locale): string {
   if (!iso) return "—";
-  return new Date(iso).toLocaleTimeString("en-GB", { timeZone: "Asia/Dhaka", hour: "2-digit", minute: "2-digit", hour12: true });
+  return formatTimeOfDay(iso, locale);
 }

@@ -5,7 +5,7 @@ import { api } from "@/lib/api";
 import { useLocale, type Locale, type StringKey } from "@/lib/i18n";
 import { useDevices } from "@/hooks/useDevices";
 import { addDays, dhakaMidnight, dhakaParts, type DayParts } from "@/lib/dateRange";
-import { formatNumber, vehicleState, VEHICLE_STATE_COLOR } from "@/lib/format";
+import { formatNumber, formatTimeOfDay, vehicleState, VEHICLE_STATE_COLOR } from "@/lib/format";
 import { buildPersonAvatar, personPhotoUrl } from "@/lib/personIcons";
 import type { DeviceView, StayView, StaysResult } from "@/types/domain";
 
@@ -45,7 +45,7 @@ function tag(locale: Locale): string {
 }
 
 function formatTime(iso: string, locale: Locale): string {
-  return new Intl.DateTimeFormat(tag(locale), { timeZone: TIMEZONE, hour: "numeric", minute: "2-digit" }).format(new Date(iso));
+  return formatTimeOfDay(iso, locale);
 }
 
 function dayKey(iso: string): string {

@@ -15,7 +15,7 @@ import type { UserDetail } from "@/types";
 
 /** Users of the school / family (admins only): who they are and whom they can see. */
 export default function UsersScreen() {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { user: me } = useAuth();
@@ -106,7 +106,7 @@ export default function UsersScreen() {
                   <Pill label={`${t("usr.people")}: ${people}`} color={colors.textDim} />
                 </View>
                 <Text style={styles.meta}>
-                  {t("usr.lastLogin")}: {u.lastLoginAt ? fmtDateTime(u.lastLoginAt) : t("usr.never")}
+                  {t("usr.lastLogin")}: {u.lastLoginAt ? fmtDateTime(u.lastLoginAt, locale === "bn") : t("usr.never")}
                 </Text>
               </Pressable>
             );

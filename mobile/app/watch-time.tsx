@@ -5,6 +5,7 @@ import { getWatchTime, saveWatchTime, type WatchTimeView } from "@/api/endpoints
 import { extractError } from "@/api/client";
 import { Chip, EmptyState, Loading, PrimaryButton } from "@/ui";
 import { useI18n } from "@/i18n";
+import { clock12 } from "@/format";
 import { colors, radius, space } from "@/theme";
 
 /**
@@ -40,15 +41,15 @@ export function zoneLabel(hours: number): string {
   return hours === 0 ? "UTC" : `UTC${hours > 0 ? "+" : "−"}${Math.abs(hours)}`;
 }
 
-/** "14:05" in the zone `hours` from UTC. */
-export function clockIn(hours: number, now: Date): string {
+/** "2:05 PM" (or "দুপুর ২:০৫") in the zone `hours` from UTC. */
+export function clockIn(hours: number, now: Date, bn = false): string {
   const d = new Date(now.getTime() + hours * 3_600_000);
-  return `${String(d.getUTCHours()).padStart(2, "0")}:${String(d.getUTCMinutes()).padStart(2, "0")}`;
+  return clock12(d.getUTCHours(), d.getUTCMinutes(), bn);
 }
 
 export default function WatchTime() {
   const { imei, name } = useLocalSearchParams<{ imei: string; name?: string }>();
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const [view, setView] = useState<WatchTimeView | null>(null);
   const [zone, setZone] = useState(phoneZone());
   const [language, setLanguage] = useState(0);
@@ -173,7 +174,7 @@ export default function WatchTime() {
           </Pressable>
         </View>
         <Text style={styles.now}>
-          {t("wt.timeNow")}: <Text style={styles.nowValue}>{clockIn(zone, now)}</Text>
+          {t("wt.timeNow")}: <Text style={styles.nowValue}>{clockIn(zone, now, locale === "bn")}</Text>
         </Text>
         {zone !== phone ? (
           <View style={styles.chips}>

@@ -102,9 +102,9 @@ export default function StaysView({ imei: fixedImei, initialImei }: { imei?: str
   }, [load]);
 
   const timeRange = (s: StayView, withDay: boolean): string => {
-    const start = s.openStart ? `${t("stays.before")} ${fmtTime(s.from)}` : fmtTime(s.from);
+    const start = s.openStart ? `${t("stays.before")} ${fmtTime(s.from, locale === "bn")}` : fmtTime(s.from, locale === "bn");
     const endDay = dayKey(s.to) !== dayKey(s.from) ? `${fmtDayLabel(s.to, locale)}, ` : "";
-    const end = s.ongoing ? t("stays.now") : `${endDay}${fmtTime(s.to)}`;
+    const end = s.ongoing ? t("stays.now") : `${endDay}${fmtTime(s.to, locale === "bn")}`;
     return `${withDay ? `${fmtDayLabel(s.from, locale)}, ` : ""}${start} – ${end}`;
   };
 

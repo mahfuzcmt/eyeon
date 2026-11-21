@@ -7,6 +7,7 @@ import { Chip, EmptyState, Loading, PrimaryButton } from "@/ui";
 import { useI18n, type StringKey } from "@/i18n";
 import { colors, radius, space } from "@/theme";
 import type { TrackerSettingItem, TrackerSettingKey, TrackerSettingsData, TrackerSettingStatus, TrackerSettingValue } from "@/types";
+import { ClockTimePicker } from "@/components/ClockTimePicker";
 
 /**
  * The tracker's own settings (Jimi PL601), same cards as the web panel: SOS numbers, calls,
@@ -62,7 +63,7 @@ const TIME_RE = /^([01]\d|2[0-3]):[0-5]\d$/;
 
 export default function TrackerSettingsScreen() {
   const { imei, name } = useLocalSearchParams<{ imei: string; name?: string }>();
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const [data, setData] = useState<TrackerSettingsData | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [drafts, setDrafts] = useState<Partial<Record<TrackerSettingKey, TrackerSettingValue>>>({});
@@ -236,14 +237,11 @@ export default function TrackerSettingsScreen() {
       {(["from", "to"] as const).map((f) => (
         <View key={f} style={{ flex: 1, gap: space.xs }}>
           <Text style={styles.fieldLabel}>{f === "from" ? t("ts.from") : t("ts.to")}</Text>
-          <TextInput
-            style={styles.input}
+          <ClockTimePicker
             value={str(value(key)[f], f === "from" ? fromDefault : toDefault)}
-            placeholder="HH:MM"
-            placeholderTextColor={colors.textFaint}
-            keyboardType="numbers-and-punctuation"
-            maxLength={5}
-            onChangeText={(text) => edit(key, { [f]: text })}
+            onChange={(v) => edit(key, { [f]: v })}
+            bn={locale === "bn"}
+            label={f === "from" ? t("ts.from") : t("ts.to")}
           />
         </View>
       ))}

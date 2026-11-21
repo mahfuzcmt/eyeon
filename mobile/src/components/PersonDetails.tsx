@@ -90,7 +90,7 @@ export default function PersonDetails({
             {t("popup.hereFor")} {fmtSince(stay.from)}
             {stay.openStart ? "+" : ""}
           </Text>
-          <Text style={styles.dim}> · {t("popup.since")} {fmtTime(stay.from)}</Text>
+          <Text style={styles.dim}> · {t("popup.since")} {fmtTime(stay.from, locale === "bn")}</Text>
         </Row>
       ) : null}
 
@@ -111,7 +111,7 @@ export default function PersonDetails({
       <Row icon="refresh-outline">
         <Text style={styles.dim}>
           {t("veh.lastSeen")} {fmtAgo(reportedAt)}
-          {reportedAt ? ` · ${fmtDateTime(reportedAt)}` : ""}
+          {reportedAt ? ` · ${fmtDateTime(reportedAt, locale === "bn")}` : ""}
         </Text>
       </Row>
 
@@ -171,7 +171,7 @@ function FullGrid({
   const cells: [string, string][] = [
     [t("person.speed"), `${speed} ${t("veh.kmh")}`],
     [t("person.heading"), heading],
-    [t("person.gpsTime"), fmtDateTime(loc?.lastValidTs ?? (loc?.valid ? loc.ts : null) ?? loc?.ts)],
+    [t("person.gpsTime"), fmtDateTime(loc?.lastValidTs ?? (loc?.valid ? loc.ts : null) ?? loc?.ts, locale === "bn")],
     [t("person.fix"), fix],
     [t("veh.battery"), device.batteryPercent != null ? `${Math.round(device.batteryPercent)}%` : "—"],
     [t("person.power"), fmtVoltage(voltage)],
