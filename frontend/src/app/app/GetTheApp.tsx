@@ -38,7 +38,7 @@ function detectPlatform(): Platform {
 
 function readLang(): Lang {
   try {
-    const saved = window.localStorage.getItem("eyeon.lang");
+    const saved = window.localStorage.getItem("eyeon-lang");
     if (saved === "en" || saved === "bn") return saved;
   } catch {
     // Private mode or blocked storage: fall back to the browser language.
@@ -81,7 +81,7 @@ export function GetTheApp({
   const switchLang = (next: Lang) => {
     setLang(next);
     try {
-      window.localStorage.setItem("eyeon.lang", next);
+      window.localStorage.setItem("eyeon-lang", next);
     } catch {
       // Not remembered; the page still switches.
     }

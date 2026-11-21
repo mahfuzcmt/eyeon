@@ -24,7 +24,7 @@ const translations: Record<string, { en: string; bn: string }> = {
   // Navigation
   "nav.home": { en: "Home", bn: "হোম" },
   "nav.features": { en: "Features", bn: "ফিচার" },
-  "nav.products": { en: "The tracker", bn: "ট্র্যাকার" },
+  "nav.products": { en: "Products", bn: "পণ্য" },
   "nav.solutions": { en: "Who it's for", bn: "কাদের জন্য" },
   "nav.pricing": { en: "Price & pre-order", bn: "দাম ও প্রি-অর্ডার" },
   "nav.about": { en: "About", bn: "আমাদের কথা" },
@@ -346,6 +346,72 @@ const translations: Record<string, { en: string; bn: string }> = {
   "solutions.elderly.f4": { en: "Simple Bengali app for the family", bn: "পরিবারের জন্য সহজ বাংলা অ্যাপ" },
 
   // Products page - one product
+  "productsPage.watchBadge": { en: "New", bn: "নতুন" },
+  "productsPage.watchName": { en: "EyeOn AI Watch", bn: "EyeOn AI ঘড়ি" },
+  "productsPage.watchDesc": {
+    en: "A watch for your child: live location, alerts when they leave or reach home and school, and calls like a phone.",
+    bn: "সন্তানের জন্য ঘড়ি: লাইভ লোকেশন, বাসা ও স্কুল থেকে বের হলে বা পৌঁছালে নোটিফিকেশন, আর মোবাইলের মতো কথা বলা।",
+  },
+  "productsPage.watchMore": { en: "See the watch", bn: "ঘড়িটি দেখুন" },
+  // ---- EyeOn AI Watch product page (2026-11-21, feature list from the owner) ----
+  "watchPage.badge": { en: "EyeOn AI Watch", bn: "EyeOn AI ঘড়ি" },
+  "watchPage.title": { en: "EyeOn AI Watch", bn: "EyeOn AI ঘড়ি" },
+  "watchPage.desc": {
+    en: "Know where your child is, and be told when they leave or arrive - at home, at school and at coaching.",
+    bn: "আপনার সন্তান কোথায় আছে জানুন, বাসা, স্কুল আর কোচিং থেকে বের হলে বা পৌঁছালে সাথে সাথে জানুন।",
+  },
+  "watchPage.illustration": { en: "Illustration - product photos will follow", bn: "প্রতীকী ছবি - আসল ছবি পরে যোগ হবে" },
+  "watchPage.featuresTitle": { en: "What the watch does", bn: "ঘড়িটি যা যা করে" },
+  "watchPage.f1": { en: "Your child's live location.", bn: "আপনার সন্তানের লাইভ লোকেশন।" },
+  "watchPage.f2": {
+    en: "A notification when they leave home, and another when they are back home.",
+    bn: "বাসা থেকে বের হলে নোটিফিকেশন, আবার বাসায় পৌঁছালে নোটিফিকেশন।",
+  },
+  "watchPage.f3": {
+    en: "A notification when they reach school / coaching on time - and one if they have not arrived on time.",
+    bn: "সময় মতো স্কুলে/কোচিংয়ে পৌঁছালে নোটিফিকেশন, আবার সময় মতো না পৌঁছালেও নোটিফিকেশন।",
+  },
+  "watchPage.f4": {
+    en: "After school / coaching ends: a notification if they have not left the premises, and one when they leave on time.",
+    bn: "স্কুল/কোচিং ছুটির পর প্রাঙ্গণ থেকে বের না হলে নোটিফিকেশন, আবার সময় মতো বের হলেও নোটিফিকেশন।",
+  },
+  "watchPage.f5": {
+    en: "Mark the areas you are happy with - a notification if they go outside.",
+    bn: "পছন্দ মতো এলাকা ঠিক করে দিন - এর বাইরে গেলে নোটিফিকেশন।",
+  },
+  "watchPage.f6": {
+    en: "Draw the way to school / coaching - a notification if they leave that way.",
+    bn: "স্কুল/কোচিংয়ে যাওয়ার পথ ঠিক করে দিন - পথের বাইরে গেলে নোটিফিকেশন।",
+  },
+  "watchPage.f7": {
+    en: "See in detail where they were during the day, and for how long.",
+    bn: "সারাদিন কোথায় কতক্ষণ ছিল, বিস্তারিত দেখুন।",
+  },
+  "watchPage.f8": {
+    en: "In an emergency the watch calls your emergency numbers.",
+    bn: "বিপদের মুহূর্তে ইমার্জেন্সি নাম্বারে কল।",
+  },
+  "watchPage.f9": {
+    en: "Talk with your child whenever you need to, just like a mobile phone.",
+    bn: "প্রয়োজন মতো সন্তানের সাথে মোবাইলের মতো কথা বলা যায়।",
+  },
+  "watchPage.f10": { en: "Lifetime warranty on the watch.", bn: "ঘড়িটিতে রয়েছে লাইফটাইম ওয়ারেন্টি।" },
+  "watchPage.priceLabel": { en: "Price", bn: "দাম" },
+  "watchPage.callForPrice": { en: "Call for price", bn: "দাম জানতে কল করুন" },
+  "watchPage.priceHint": {
+    en: "Call or message us - we will tell you the price and how to order.",
+    bn: "কল করুন বা মেসেজ দিন - দাম আর অর্ডার করার নিয়ম জানিয়ে দেব।",
+  },
+  "watchPage.whatsappMessage": {
+    en: "Hello! I would like to know the price of the EyeOn AI Watch.",
+    bn: "হ্যালো! EyeOn AI ঘড়ির দাম জানতে চাই।",
+  },
+  "watchPage.appTitle": { en: "Works with the EyeOn app", bn: "EyeOn অ্যাপের সাথে চলে" },
+  "watchPage.appDesc": {
+    en: "Everything above is in the EyeOn app on your phone, in Bengali and English. Scan the QR code on the watch to get the app.",
+    bn: "উপরের সবকিছু আপনার ফোনের EyeOn অ্যাপে, বাংলা ও ইংরেজিতে। অ্যাপ পেতে ঘড়ির QR কোড স্ক্যান করুন।",
+  },
+  "watchPage.getApp": { en: "Get the app", bn: "অ্যাপ নিন" },
   "productsPage.badge": { en: "The tracker", bn: "ট্র্যাকার" },
   "productsPage.title": { en: "One small tracker", bn: "ছোট্ট একটি ট্র্যাকার" },
   "productsPage.desc": {
