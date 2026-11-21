@@ -557,6 +557,8 @@ const translations: Record<string, { en: string; bn: string }> = {
   "footer.quickLinks": { en: "Pages", bn: "পেজ" },
   "footer.contactUs": { en: "Pre-order & enquiries", bn: "প্রি-অর্ডার ও জিজ্ঞাসা" },
   "footer.support": { en: "Support in Bengali", bn: "বাংলায় সাপোর্ট" },
+  "footer.getApp": { en: "Get the app", bn: "অ্যাপ ডাউনলোড করুন" },
+  "footer.webApp": { en: "Or open EyeOn in the browser", bn: "অথবা ব্রাউজারে EyeOn খুলুন" },
   "footer.rights": { en: "All rights reserved.", bn: "সর্বস্বত্ব সংরক্ষিত।" },
 };
 
