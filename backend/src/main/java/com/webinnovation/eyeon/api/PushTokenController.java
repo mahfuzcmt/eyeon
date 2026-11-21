@@ -32,7 +32,8 @@ public class PushTokenController {
     private final com.webinnovation.eyeon.service.PushService pushService;
 
     /** {@code locale}: the app's current language, {@code bn} or {@code en}; optional. */
-    public record RegisterPushTokenRequest(String token, String platform, String locale) {}
+    /** {@code channels}: {@code v2} from app 0.3.29 on (its Android channels); absent from older apps. */
+    public record RegisterPushTokenRequest(String token, String platform, String locale, String channels) {}
 
     @PostMapping
     public ResponseEntity<Void> register(@RequestBody RegisterPushTokenRequest req) {
@@ -54,7 +55,8 @@ public class PushTokenController {
         if (locale != null && locale.length() > 10) {
             throw new DomainException("INVALID_PUSH_LOCALE", "locale must be a short tag such as bn or en");
         }
-        repo.upsert(orgId, userId, req.token().trim(), platform, locale);
+        String channels = "v2".equals(req.channels()) ? "v2" : null;
+        repo.upsert(orgId, userId, req.token().trim(), platform, locale, channels);
         return ResponseEntity.noContent().build();
     }
 
@@ -72,9 +74,9 @@ public class PushTokenController {
             throw new DomainException("INVALID_PUSH_TOKEN", "token is required");
         }
         String token = req.token().trim();
-        String locale = repo.localeOfUserToken(userId, token)
+        PushTokenRepository.Target target = repo.findUserToken(userId, token)
                 .orElseThrow(() -> new com.webinnovation.eyeon.exception.NotFoundException("Push token", "this phone"));
-        String error = pushService.sendTest(token, locale.isBlank() ? null : locale);
+        String error = pushService.sendTest(token, target.locale(), target.channels());
         return new TestResult(error == null, error);
     }
 
