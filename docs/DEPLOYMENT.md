@@ -203,7 +203,7 @@ Never use `down -v` (it deletes the database volume `eyeon_postgres_data`).
 TCP **8899** public (`ufw allow 8899/tcp`). The SQLite database is `/var/lib/eyeon-watch/watch.db`, deliberately
 outside `/opt/eyeon`, because the deploy rsync runs with `--delete` and would wipe a `watch.db` in the code folder.
 No allowlist (`WATCH_ALLOWED_IDS` unset), so every watch that connects is accepted and logged.
-A moving watch is kept locating all the time (`CR` every 100 s, about one position a minute); a still one is asked every 3 minutes (10 until 2026-11-17), change
+A moving watch is kept locating all the time (`CR` every 100 s, about one position a minute); a still one is asked as often (100 s since 2026-11-21; 3 minutes before, 10 until 2026-11-17), change
 with `Environment=WATCH_STILL_EVERY=<seconds>` in the unit (0 = never ask any watch). Log lines:
 `asked <id> to locate (moving|still)`, `<id> is moving`, `<id> is still`. Sync `motion.py` with `server.py`.
 

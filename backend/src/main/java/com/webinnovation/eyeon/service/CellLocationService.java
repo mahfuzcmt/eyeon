@@ -100,6 +100,7 @@ public class CellLocationService {
      * request (NetworkLocationService reuses the previous answer while the tracker stays put).
      */
     public Optional<CellLocation> locate(com.webinnovation.eyeon.protocol.NetworkScan scan) {
+        scan = scan.withUsableWifi();  // one placeholder address makes Google refuse the whole scan
         if (scan.cells().isEmpty() && scan.wifi().isEmpty()) return Optional.empty();
         if (notBlank(googleGeolocationApiKey)) {
             Optional<CellLocation> r = locateGoogle(scan);

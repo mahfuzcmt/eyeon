@@ -96,4 +96,16 @@ public class WatchReportTest {
         assertThatThrownBy(() -> parse("UD,121126,0433,A,x,N,90.3,E,0,0,0,5,83,50,0,0,00000000"))
                 .isInstanceOf(IllegalArgumentException.class);
     }
+
+    @org.junit.jupiter.api.Test
+    void placeholderAccessPointsAreLeftOutBecauseGoogleRefusesTheWholeScanForThem() {
+        // production 2026-11-20 19:44:23 / 19:46:03: Google answered 400 "Invalid macAddress field"
+        String[] args = ("141126,134423,V,23.750341,N,90.3918660,E,0.00,0.0,0.0,0,58,36,0,0,00000000,1,0,470,3,1164,2761475,186,5,"
+                + ",F2:B9:31:21:71:7E,-68,,FF:FF:FF:FF:FF:FF,-69,,CC:BA:BD:66:AE:82,-70,,00:00:00:00:00:00,-70,,9B:BF:44:73:B2:AA,-72,0.0")
+                .split(",", -1);
+        WatchReport r = WatchReport.parse("UD_LTE", args);
+        org.assertj.core.api.Assertions.assertThat(r.scan(java.time.Instant.EPOCH).wifi())
+                .extracting(NetworkScan.Wifi::mac)
+                .containsExactly("f2:b9:31:21:71:7e", "cc:ba:bd:66:ae:82");
+    }
 }

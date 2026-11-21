@@ -50,6 +50,7 @@ class WatchIngestTest {
     private LocationService locationService;
     private AlarmService alarmService;
     private NetworkLocationService networkLocationService;
+    private com.webinnovation.eyeon.service.WatchTimeService watchTime;
     private WatchIngest.Connection watch;
 
     @BeforeEach
@@ -58,11 +59,12 @@ class WatchIngestTest {
         locationService = mock(LocationService.class);
         alarmService = mock(AlarmService.class);
         networkLocationService = mock(NetworkLocationService.class);
+        watchTime = mock(com.webinnovation.eyeon.service.WatchTimeService.class);
         when(networkLocationService.onScan(anyString(), any(), anyInt(), any(), any(), anyBoolean()))
                 .thenReturn(Optional.empty());
         // frames are handled on the calling thread, so every assertion below sees a finished frame
         WatchIngest ingest = new WatchIngest(deviceService, locationService, alarmService, networkLocationService,
-                new TaskExecutorAdapter(Runnable::run), new WatchCommands());
+                new TaskExecutorAdapter(Runnable::run), new WatchCommands(), watchTime);
         watch = ingest.open("/37.111.212.151:40112");
     }
 
@@ -258,5 +260,22 @@ class WatchIngestTest {
         watch.onBytes("[3G*1378748302*0009*LK,0,0,57]".getBytes(java.nio.charset.StandardCharsets.ISO_8859_1));
 
         org.mockito.Mockito.verify(deviceService).markWatch(device);
+    }
+
+    @Test
+    void aConnectingWatchGetsItsTimeZoneAndARestartedOneGetsItAgain() {
+        Device device = mock(Device.class);
+        java.util.UUID orgId = java.util.UUID.randomUUID();
+        when(device.imei()).thenReturn("1378748302");
+        when(device.orgId()).thenReturn(orgId);
+        when(deviceService.findByWatchId("1378748302")).thenReturn(Optional.of(device));
+
+        watch.onBytes("[3G*1378748302*0009*LK,0,0,57]".getBytes(java.nio.charset.StandardCharsets.ISO_8859_1));
+        verify(watchTime).onWatchConnected(orgId, "1378748302");
+        verify(watchTime, never()).onWatchPowerOn(orgId, "1378748302");
+
+        // the power-on burst, as captured on production
+        watch.onBytes("[3G*1378748302*0016*RYIMEI,355913787483028]".getBytes(java.nio.charset.StandardCharsets.ISO_8859_1));
+        verify(watchTime).onWatchPowerOn(orgId, "1378748302");
     }
 }

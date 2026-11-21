@@ -37,6 +37,9 @@ public class WatchTimeService {
     static final int MIN_ZONE = -12;
     static final int MAX_ZONE = 14;
     static final Duration REPLY_WAIT = Duration.ofSeconds(8);
+    /** What a watch is set to when nobody chose otherwise: English, Bangladesh time (UTC+6). */
+    public static final int DEFAULT_LANGUAGE = 0;
+    public static final int DEFAULT_ZONE = 6;
 
     private final DeviceRepository devices;
     private final WatchSettingsRepository repo;
@@ -61,6 +64,39 @@ public class WatchTimeService {
         repo.saveWanted(orgId, imei, language, zoneHours);
         deliver(imei, language, zoneHours);
         return view(imei);
+    }
+
+    /**
+     * A watch identified on a connection (2026-11-21, owner: "when a watch connects its date, time
+     * and time zone should follow the server, Bangladesh +6"). A watch never set from the app gets
+     * the defaults; the sweep below delivers them within 30 s. The watch takes the date and the
+     * time itself from the mobile network; the time zone is what decides what its face shows.
+     */
+    public void onWatchConnected(UUID orgId, String imei) {
+        try {
+            if (repo.find(imei).isEmpty()) {
+                repo.saveWanted(orgId, imei, DEFAULT_LANGUAGE, DEFAULT_ZONE);
+                log.info("Watch imei={} has no time zone set yet: UTC+{} will be sent", imei, DEFAULT_ZONE);
+            }
+        } catch (Exception e) {
+            log.warn("Watch imei={} time zone not prepared: {}", imei, e.getMessage());
+        }
+    }
+
+    /**
+     * The watch's power-on burst (CONFIG, RYIMEI): it has restarted - after a flat battery, or a
+     * factory reset - and may have lost what it was set to, so the stored values go out again.
+     */
+    public void onWatchPowerOn(UUID orgId, String imei) {
+        try {
+            if (repo.find(imei).isPresent()) {
+                repo.markPending(imei);
+            } else {
+                repo.saveWanted(orgId, imei, DEFAULT_LANGUAGE, DEFAULT_ZONE);
+            }
+        } catch (Exception e) {
+            log.warn("Watch imei={} time zone not re-sent after power-on: {}", imei, e.getMessage());
+        }
     }
 
     @Scheduled(fixedDelay = 30_000, initialDelay = 30_000)
