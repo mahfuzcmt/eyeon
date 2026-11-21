@@ -16,7 +16,7 @@ export const CONTACT = {
   whatsappNumber: "8801629563645",
 };
 
-const WEBSITE = "https://eyeon.motolinkgps.com/contact";
+const WEBSITE = "https://eyeoniot.com/contact";
 
 function open(url: string) {
   void Linking.openURL(url).catch(() => {});
@@ -51,7 +51,7 @@ export default function SupportScreen() {
       <ContactCard
         icon="globe-outline"
         label={t("support.webLabel")}
-        value="eyeon.motolinkgps.com"
+        value="eyeoniot.com"
         note={t("support.webNote")}
         onPress={() => open(WEBSITE)}
       />

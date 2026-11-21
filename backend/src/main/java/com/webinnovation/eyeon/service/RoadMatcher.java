@@ -37,7 +37,7 @@ public class RoadMatcher {
 
     @Value("${eyeon.roads.match-url:https://routing.openstreetmap.de/routed-{profile}/match/v1/driving/}")
     private String matchUrl;
-    @Value("${eyeon.roads.user-agent:EyeOn/1.0 (family safety tracker; https://eyeon.motolinkgps.com)}")
+    @Value("${eyeon.roads.user-agent:EyeOn/1.0 (family safety tracker; https://eyeoniot.com)}")
     private String userAgent;
     @Value("${eyeon.roads.min-interval-ms:1100}")
     private long minIntervalMs;

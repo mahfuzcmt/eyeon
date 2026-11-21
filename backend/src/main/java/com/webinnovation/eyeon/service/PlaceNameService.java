@@ -42,7 +42,7 @@ public class PlaceNameService {
 
     @Value("${eyeon.geocoding.reverse-url:https://nominatim.openstreetmap.org/reverse}")
     private String reverseUrl;
-    @Value("${eyeon.geocoding.user-agent:EyeOn/1.0 (family safety tracker; https://eyeon.motolinkgps.com)}")
+    @Value("${eyeon.geocoding.user-agent:EyeOn/1.0 (family safety tracker; https://eyeoniot.com)}")
     private String userAgent;
     @Value("${eyeon.geocoding.min-interval-ms:1200}")
     private long minIntervalMs;
