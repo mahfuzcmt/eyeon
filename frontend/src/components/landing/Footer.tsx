@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { EyeOnLogo } from "@/components/brand/EyeOnLogo";
+import { StoreBadgeArt } from "@/components/brand/StoreBadges";
 import { useLanguage } from "./LanguageContext";
 import { CONTACT, Icon, ICONS, WhatsAppIcon, whatsappLink } from "./shared";
 
@@ -31,6 +32,21 @@ export function Footer() {
           <div className="lg:col-span-2">
             <EyeOnLogo height={44} tone="dark" />
             <p className="mt-6 max-w-md text-[15px] leading-relaxed text-brand-100">{t("footer.desc")}</p>
+
+            {/* The apps: both badges lead to /app, which opens the right store for the phone. */}
+            <h4 className="mb-4 mt-8 text-sm font-semibold uppercase tracking-wider text-sun-300">{t("footer.getApp")}</h4>
+            <div className="flex flex-wrap gap-3">
+              <Link href="/app" aria-label={`${t("footer.getApp")}: Google Play`} className="rounded-[10px] focus:outline-none focus-visible:ring-[3px] focus-visible:ring-sun-300">
+                <StoreBadgeArt store="play" small />
+              </Link>
+              <Link href="/app" aria-label={`${t("footer.getApp")}: App Store`} className="rounded-[10px] focus:outline-none focus-visible:ring-[3px] focus-visible:ring-sun-300">
+                <StoreBadgeArt store="apple" small />
+              </Link>
+            </div>
+            <Link href="/dashboard" className={`${linkClass} mt-3 gap-2 text-[15px]`}>
+              <Icon path={ICONS.monitor} className="h-4 w-4 text-sun-300" />
+              {t("footer.webApp")}
+            </Link>
           </div>
 
           <div>
