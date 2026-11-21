@@ -120,18 +120,23 @@ public class PushService {
             data.put("type", alarm.type());
             data.put("severity", alarm.severity());
 
-            // Each install gets the alarm in the language its app is set to.
-            Map<NotificationComposer.Lang, List<String>> byLang = new EnumMap<>(NotificationComposer.Lang.class);
+            // Each install gets the alarm in the language its app is set to, on a channel it has.
+            Map<NotificationComposer.Lang, Map<String, List<String>>> groups = new EnumMap<>(NotificationComposer.Lang.class);
             for (PushTokenRepository.Target t : targets) {
-                byLang.computeIfAbsent(NotificationComposer.Lang.of(t.locale()), k -> new ArrayList<>())
+                groups.computeIfAbsent(NotificationComposer.Lang.of(t.locale()), k -> new LinkedHashMap<>())
+                        .computeIfAbsent(t.channels() == null ? "" : t.channels(), k -> new ArrayList<>())
                         .add(t.token());
             }
-            for (var entry : byLang.entrySet()) {
-                NotificationComposer.Message msg = composer.compose(alarm, personName, entry.getKey());
-                List<String> tokens = entry.getValue();
-                for (int i = 0; i < tokens.size(); i += CHUNK_SIZE) {
-                    List<String> chunk = tokens.subList(i, Math.min(i + CHUNK_SIZE, tokens.size()));
-                    sendChunk(chunk, msg, data);
+            for (var byLang : groups.entrySet()) {
+                NotificationComposer.Message composed = composer.compose(alarm, personName, byLang.getKey());
+                for (var byChannels : byLang.getValue().entrySet()) {
+                    NotificationComposer.Message msg = new NotificationComposer.Message(composed.title(), composed.body(),
+                            NotificationComposer.forInstall(composed.channelId(), byChannels.getKey()));
+                    List<String> tokens = byChannels.getValue();
+                    for (int i = 0; i < tokens.size(); i += CHUNK_SIZE) {
+                        List<String> chunk = tokens.subList(i, Math.min(i + CHUNK_SIZE, tokens.size()));
+                        sendChunk(chunk, msg, data);
+                    }
                 }
             }
         } catch (Exception e) {
@@ -145,7 +150,7 @@ public class PushService {
      *
      * @return null when Expo accepted it, otherwise why not
      */
-    public String sendTest(String token, String locale) {
+    public String sendTest(String token, String locale, String installChannels) {
         boolean bn = locale == null || locale.startsWith("bn");
         Map<String, Object> m = new LinkedHashMap<>();
         m.put("to", token);
@@ -154,7 +159,7 @@ public class PushService {
         m.put("data", Map.of("type", "TEST"));
         m.put("sound", "default");
         m.put("priority", "high");
-        m.put("channelId", NotificationComposer.CHANNEL_ALARMS);
+        m.put("channelId", NotificationComposer.forInstall(NotificationComposer.CHANNEL_ALARMS, installChannels));
         try {
             ExpoPushResponse response = restClient.post().body(List.of(m)).retrieve().body(ExpoPushResponse.class);
             ExpoPushTicket ticket = response == null || response.data() == null || response.data().isEmpty()

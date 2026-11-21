@@ -59,8 +59,8 @@ class PushServiceTest {
         UUID orgId = UUID.randomUUID();
         when(tokenRepo.listTokensForOrgAndType(eq(orgId), any(), any(), any()))
                 .thenReturn(List.of(
-                        new PushTokenRepository.Target("ExponentPushToken[aaa]", "en"),
-                        new PushTokenRepository.Target("ExponentPushToken[bbb]", "en")));
+                        new PushTokenRepository.Target("ExponentPushToken[aaa]", "en", "v2"),
+                        new PushTokenRepository.Target("ExponentPushToken[bbb]", "en", "v2")));
         when(deviceRepo.findByImei("864290061234567")).thenReturn(Optional.empty());
 
         server.expect(requestTo(EXPO_URL))
@@ -97,12 +97,12 @@ class PushServiceTest {
         server.expect(requestTo(EXPO_URL))
                 .andExpect(jsonPath("$[0].to").value("ExponentPushToken[bangla]"))
                 .andExpect(jsonPath("$[0].title").value("📍 864290061234567 এখন School-এ"))
-                .andExpect(jsonPath("$[0].channelId").value("arrivals_v2"))
+                .andExpect(jsonPath("$[0].channelId").value("arrivals"))
                 .andRespond(withSuccess(ok, MediaType.APPLICATION_JSON));
         server.expect(requestTo(EXPO_URL))
                 .andExpect(jsonPath("$[0].to").value("ExponentPushToken[english]"))
                 .andExpect(jsonPath("$[0].title").value("📍 864290061234567 reached School"))
-                .andExpect(jsonPath("$[0].channelId").value("arrivals_v2"))
+                .andExpect(jsonPath("$[0].channelId").value("arrivals"))
                 .andRespond(withSuccess(ok, MediaType.APPLICATION_JSON));
 
         pushService.sendAlarmPush(new Alarm(UUID.randomUUID(), orgId, "864290061234567",
@@ -186,7 +186,7 @@ class PushServiceTest {
                 .andExpect(jsonPath("$[0].priority").value("high"))
                 .andRespond(withSuccess("{\"data\":[{\"status\":\"ok\",\"id\":\"t1\"}]}", MediaType.APPLICATION_JSON));
 
-        org.assertj.core.api.Assertions.assertThat(pushService.sendTest("ExponentPushToken[mine]", "en")).isNull();
+        org.assertj.core.api.Assertions.assertThat(pushService.sendTest("ExponentPushToken[mine]", "en", "v2")).isNull();
         server.verify();
     }
 
@@ -196,8 +196,30 @@ class PushServiceTest {
                 .andRespond(withSuccess("{\"data\":[{\"status\":\"error\",\"message\":\"not registered\","
                         + "\"details\":{\"error\":\"DeviceNotRegistered\"}}]}", MediaType.APPLICATION_JSON));
 
-        org.assertj.core.api.Assertions.assertThat(pushService.sendTest("ExponentPushToken[gone]", "bn"))
+        org.assertj.core.api.Assertions.assertThat(pushService.sendTest("ExponentPushToken[gone]", "bn", "v2"))
                 .isEqualTo("DeviceNotRegistered");
         org.mockito.Mockito.verify(tokenRepo).deleteAll(List.of("ExponentPushToken[gone]"));
+    }
+
+    @Test
+    void an_older_app_gets_the_channel_it_has_and_a_newer_one_the_v2_channel() {
+        UUID orgId = UUID.randomUUID();
+        when(tokenRepo.listTokensForOrgAndType(eq(orgId), any(), any(), any()))
+                .thenReturn(List.of(
+                        new PushTokenRepository.Target("ExponentPushToken[old]", "bn", null),
+                        new PushTokenRepository.Target("ExponentPushToken[new]", "bn", "v2")));
+        when(deviceRepo.findByImei("864290061234567")).thenReturn(Optional.empty());
+
+        server.expect(requestTo(EXPO_URL))
+                .andExpect(jsonPath("$[0].to").value("ExponentPushToken[old]"))
+                .andExpect(jsonPath("$[0].channelId").value("alarms"))
+                .andRespond(withSuccess("{\"data\":[{\"status\":\"ok\",\"id\":\"a\"}]}", MediaType.APPLICATION_JSON));
+        server.expect(requestTo(EXPO_URL))
+                .andExpect(jsonPath("$[0].to").value("ExponentPushToken[new]"))
+                .andExpect(jsonPath("$[0].channelId").value("alarms_v2"))
+                .andRespond(withSuccess("{\"data\":[{\"status\":\"ok\",\"id\":\"b\"}]}", MediaType.APPLICATION_JSON));
+
+        pushService.sendAlarmPush(alarm(orgId));
+        server.verify();
     }
 }

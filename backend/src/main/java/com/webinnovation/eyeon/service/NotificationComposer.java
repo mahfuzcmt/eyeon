@@ -34,6 +34,18 @@ public class NotificationComposer {
     /** Everything that needs attention. */
     public static final String CHANNEL_ALARMS = "alarms_v2";
 
+    /**
+     * The channel an install that is older than app 0.3.29 has instead (it registers without
+     * {@code channels}). Sending such a phone a v2 id made its alerts land in a default channel,
+     * silent on some phones (2026-11-17 to 2026-11-21).
+     */
+    public static String forInstall(String channelId, String installChannels) {
+        if ("v2".equals(installChannels)) return channelId;
+        if (CHANNEL_ALARMS.equals(channelId)) return "alarms";
+        if (CHANNEL_ARRIVALS.equals(channelId)) return "arrivals";
+        return channelId;
+    }
+
     public enum Lang {
         BN, EN;
 

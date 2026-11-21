@@ -19,34 +19,44 @@ public class PushTokenRepository {
 
     private final NamedParameterJdbcTemplate jdbc;
 
-    /** @param locale the app language on that install ({@code bn} / {@code en}); null = org default */
-    public void upsert(UUID orgId, UUID userId, String token, String platform, String locale) {
+    /**
+     * @param locale   the app language on that install ({@code bn} / {@code en}); null = org default
+     * @param channels the notification channels the install has: {@code v2}, or null for an app
+     *                 older than 0.3.29 (see V36)
+     */
+    public void upsert(UUID orgId, UUID userId, String token, String platform, String locale, String channels) {
         jdbc.update("""
-                INSERT INTO push_tokens (org_id, user_id, token, platform, locale)
-                VALUES (:orgId, :userId, :token, :platform, :locale)
+                INSERT INTO push_tokens (org_id, user_id, token, platform, locale, channels)
+                VALUES (:orgId, :userId, :token, :platform, :locale, :channels)
                 ON CONFLICT (token) DO UPDATE
                 SET org_id = EXCLUDED.org_id,
                     user_id = EXCLUDED.user_id,
                     platform = EXCLUDED.platform,
                     locale = EXCLUDED.locale,
+                    channels = EXCLUDED.channels,
                     last_seen_at = now()
                 """, new MapSqlParameterSource()
                         .addValue("orgId", orgId)
                         .addValue("userId", userId)
                         .addValue("token", token)
                         .addValue("platform", platform)
-                        .addValue("locale", locale));
+                        .addValue("locale", locale)
+                        .addValue("channels", channels));
     }
 
-    /** A push destination and the language its notifications should be written in. */
-    public record Target(String token, String locale) {}
+    /** A push destination, the language its notifications are written in, and its channel generation. */
+    public record Target(String token, String locale, String channels) {
+        public Target(String token, String locale) {
+            this(token, locale, null);
+        }
+    }
 
-    /** The language registered with this user's token, or empty when the token is not theirs. */
-    public java.util.Optional<String> localeOfUserToken(UUID userId, String token) {
+    /** This user's registration of the token, or empty when the token is not theirs. */
+    public java.util.Optional<Target> findUserToken(UUID userId, String token) {
         return jdbc.query(
-                "SELECT COALESCE(locale, '') FROM push_tokens WHERE user_id = :userId AND token = :token",
+                "SELECT token, locale, channels FROM push_tokens WHERE user_id = :userId AND token = :token",
                 new MapSqlParameterSource("userId", userId).addValue("token", token),
-                (rs, i) -> rs.getString(1)).stream().findFirst();
+                (rs, i) -> new Target(rs.getString(1), rs.getString(2), rs.getString(3))).stream().findFirst();
     }
 
     /** Delete a token owned by this user (sign-out). Returns true if a row was removed. */
@@ -81,7 +91,7 @@ public class PushTokenRepository {
     // A type added after the user last saved their settings (not in known_types, V33) is on.
     public List<Target> listTokensForOrgAndType(UUID orgId, String alarmType, String deviceImei, UUID onlyUserId) {
         return jdbc.query("""
-                SELECT pt.token, COALESCE(pt.locale, o.locale) AS locale
+                SELECT pt.token, COALESCE(pt.locale, o.locale) AS locale, pt.channels
                   FROM push_tokens pt
                   JOIN users u ON u.id = pt.user_id
                   JOIN organizations o ON o.id = pt.org_id
@@ -99,7 +109,7 @@ public class PushTokenRepository {
                         .addValue("type", alarmType)
                         .addValue("imei", deviceImei)
                         .addValue("onlyUser", onlyUserId),
-                (rs, rn) -> new Target(rs.getString("token"), rs.getString("locale")));
+                (rs, rn) -> new Target(rs.getString("token"), rs.getString("locale"), rs.getString("channels")));
     }
 
     /** Purge tokens Expo reported as DeviceNotRegistered (app uninstalled). */

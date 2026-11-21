@@ -269,7 +269,9 @@ export async function registerPushToken(
   locale: "bn" | "en",
 ): Promise<void> {
   // locale decides the language the backend writes this install's notifications in.
-  await api.post("/users/me/push-tokens", { token, platform, locale });
+  // channels: this build creates the second-generation Android channels (alarms_v2 /
+  // arrivals_v2); without it the server sends the old ids, which apps before 0.3.29 have.
+  await api.post("/users/me/push-tokens", { token, platform, locale, channels: "v2" });
 }
 
 /** Token goes in the query string — Expo tokens contain reserved chars like [ ]. */
