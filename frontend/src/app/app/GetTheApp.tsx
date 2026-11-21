@@ -88,28 +88,14 @@ export function GetTheApp({
   };
 
   // The visitor's own platform first.
-  const android = (
-    <StoreButton
-      key="android"
-      href={playStoreUrl ?? androidApkUrl}
-      label={playStoreUrl ? t("playStore") : androidApkUrl ? t("apk") : t("playStore")}
-      soon={!playStoreUrl && !androidApkUrl}
-      soonText={t("soon")}
-      icon={<PlayIcon />}
-      primary={platform === "android"}
-    />
+  const android = playStoreUrl ? (
+    <StoreBadge key="android" store="play" href={playStoreUrl} />
+  ) : androidApkUrl ? (
+    <ApkButton key="android" href={androidApkUrl} label={t("apk")} />
+  ) : (
+    <StoreBadge key="android" store="play" href={null} soonText={t("soon")} />
   );
-  const ios = (
-    <StoreButton
-      key="ios"
-      href={appStoreUrl}
-      label={t("appStore")}
-      soon={!appStoreUrl}
-      soonText={t("soon")}
-      icon={<AppleIcon />}
-      primary={platform === "ios"}
-    />
-  );
+  const ios = <StoreBadge key="ios" store="apple" href={appStoreUrl} soonText={t("soon")} />;
   const stores = platform === "ios" ? [ios, android] : [android, ios];
 
   return (
@@ -148,7 +134,7 @@ export function GetTheApp({
             </div>
           ) : null}
 
-          <div className="mt-6 flex flex-col gap-3">{stores}</div>
+          <div className="mt-6 flex flex-col items-center gap-4 sm:flex-row sm:flex-wrap sm:justify-center">{stores}</div>
         </section>
 
         <section className="rounded-2xl bg-white p-6 shadow-sm">
@@ -172,28 +158,35 @@ export function GetTheApp({
   );
 }
 
-function StoreButton({
-  href,
-  label,
-  soon,
-  soonText,
-  icon,
-  primary,
-}: {
-  href: string | null;
-  label: string;
-  soon: boolean;
-  soonText: string;
-  icon: React.ReactNode;
-  primary: boolean;
-}) {
-  const base = "flex min-h-[56px] items-center gap-3 rounded-xl px-4 text-lg font-bold";
-  if (soon || !href) {
+/**
+ * The stores' own badges, drawn the way their guidelines show them: black, a thin grey edge,
+ * the store's mark, and the wording in English (both Google and Apple keep the badge text in a
+ * fixed form). Without a link the badge is shown dimmed with "Coming soon" under it.
+ */
+function StoreBadge({ store, href, soonText }: { store: "play" | "apple"; href: string | null; soonText?: string }) {
+  const play = store === "play";
+  const badge = (
+    <span
+      className={`inline-flex h-[60px] w-[200px] items-center gap-3 rounded-[10px] border border-[#A6A6A6] bg-black px-4 text-white ${
+        href ? "" : "opacity-45"
+      }`}
+    >
+      {play ? <GooglePlayMark /> : <AppleMark />}
+      <span className="flex flex-col items-start leading-none">
+        <span className={play ? "text-[11px] font-medium uppercase tracking-wide" : "text-[12px] font-medium"}>
+          {play ? "Get it on" : "Download on the"}
+        </span>
+        <span className="mt-1 text-[22px] font-semibold tracking-tight" style={{ fontFamily: play ? "'Product Sans', Roboto, Arial, sans-serif" : "-apple-system, 'SF Pro Display', 'Helvetica Neue', Arial, sans-serif" }}>
+          {play ? "Google Play" : "App Store"}
+        </span>
+      </span>
+    </span>
+  );
+  if (!href) {
     return (
-      <div className={`${base} cursor-default border border-surface-300 bg-surface-100 text-ink-500`} aria-disabled="true">
-        {icon}
-        <span className="flex-1">{label}</span>
-        <span className="rounded-full bg-sun-100 px-2 py-0.5 text-sm font-semibold text-ink-900">{soonText}</span>
+      <div className="flex flex-col items-center gap-1.5" aria-disabled="true">
+        {badge}
+        <span className="rounded-full bg-sun-100 px-3 py-0.5 text-[13px] font-semibold text-ink-900">{soonText}</span>
       </div>
     );
   }
@@ -201,31 +194,44 @@ function StoreButton({
     <a
       href={href}
       rel="noopener"
-      className={`${base} focus:outline-none focus-visible:ring-[3px] focus-visible:ring-brand-500 ${
-        primary ? "bg-brand-500 text-white hover:bg-brand-600" : "border-2 border-brand-500 text-brand-500 hover:bg-brand-50"
-      }`}
+      aria-label={play ? "Get it on Google Play" : "Download on the App Store"}
+      className="rounded-[10px] transition-transform hover:scale-[1.02] focus:outline-none focus-visible:ring-[3px] focus-visible:ring-brand-500"
     >
-      {icon}
-      <span className="flex-1">{label}</span>
+      {badge}
     </a>
   );
 }
 
-function PlayIcon() {
+/** A direct download of the Android app, offered only while there is no Google Play link. */
+function ApkButton({ href, label }: { href: string; label: string }) {
   return (
-    <svg width="24" height="24" viewBox="0 0 24 24" aria-hidden="true">
-      <path d="M4 3.5v17a1 1 0 0 0 1.5.86l14.5-8.5a1 1 0 0 0 0-1.72L5.5 2.64A1 1 0 0 0 4 3.5Z" fill="currentColor" />
+    <a
+      href={href}
+      className="inline-flex min-h-[60px] w-[200px] items-center justify-center gap-2 rounded-[10px] bg-brand-500 px-4 text-center text-[16px] font-bold text-white hover:bg-brand-600 focus:outline-none focus-visible:ring-[3px] focus-visible:ring-brand-500"
+    >
+      <GooglePlayMark />
+      {label}
+    </a>
+  );
+}
+
+/** The four-colour Google Play triangle. */
+function GooglePlayMark() {
+  return (
+    <svg width="30" height="33" viewBox="0 0 30 33" aria-hidden="true" className="shrink-0">
+      <path d="M1.3 1.1C.9 1.5.7 2.2.7 3v27c0 .8.2 1.5.6 1.9l.1.1L16.5 16.9v-.4L1.4 1l-.1.1Z" fill="#4285F4" />
+      <path d="m21.5 22-5-5v-.4l5-5 .1.1 6 3.4c1.7 1 1.7 2.6 0 3.6l-6 3.4-.1-.1Z" fill="#FBBC04" />
+      <path d="m21.6 21.9-5.1-5.2L1.3 31.9c.6.6 1.5.7 2.6.1l17.7-10.1" fill="#EA4335" />
+      <path d="M21.6 11.5 3.9 1.4C2.8.8 1.9.9 1.3 1.5l15.2 15.2 5.1-5.2Z" fill="#34A853" />
     </svg>
   );
 }
 
-function AppleIcon() {
+/** The Apple logo. */
+function AppleMark() {
   return (
-    <svg width="24" height="24" viewBox="0 0 24 24" aria-hidden="true">
-      <path
-        fill="currentColor"
-        d="M16.4 12.6c0-2.3 1.9-3.4 2-3.5-1.1-1.6-2.8-1.8-3.4-1.8-1.4-.1-2.8.9-3.5.9-.7 0-1.9-.8-3.1-.8-1.6 0-3.1 1-3.9 2.4-1.7 2.9-.4 7.2 1.2 9.6.8 1.2 1.8 2.5 3 2.4 1.2 0 1.7-.8 3.1-.8 1.5 0 1.9.8 3.1.8 1.3 0 2.1-1.2 2.9-2.4.9-1.3 1.3-2.6 1.3-2.7 0 0-2.6-1-2.7-4.1ZM14.1 5.6c.6-.8 1.1-1.9 1-3-.9 0-2.1.6-2.7 1.4-.6.7-1.1 1.8-1 2.9 1 .1 2.1-.5 2.7-1.3Z"
-      />
+    <svg width="28" height="33" viewBox="0 0 384 470" aria-hidden="true" className="shrink-0" fill="#fff">
+      <path d="M318.7 268.7c-.2-36.7 16.4-64.4 50-84.8-18.8-26.9-47.2-41.7-84.7-44.6-35.5-2.8-74.3 20.7-88.5 20.7-15 0-49.4-19.7-76.4-19.7C63.3 141.2 4 184.8 4 273.5q0 39.3 14.4 81.2c12.8 36.7 59 126.7 107.2 125.2 25.2-.6 43-17.9 75.8-17.9 31.8 0 48.3 17.9 76.4 17.9 48.6-.7 90.4-82.5 102.6-119.3-65.2-30.7-61.7-90-61.7-91.9Zm-56.6-164.2c27.3-32.4 24.8-61.9 24-72.5-24.1 1.4-52 16.4-67.9 34.9-17.5 19.8-27.8 44.3-25.6 71.9 26.1 2 49.9-11.4 69.5-34.3Z" />
     </svg>
   );
 }
