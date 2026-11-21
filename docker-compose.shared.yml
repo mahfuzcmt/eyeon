@@ -115,6 +115,10 @@ services:
       BACKEND_BASE: http://eyeon-backend:8081
       SESSION_COOKIE_NAME: ${SESSION_COOKIE_NAME:-eyeon_session}
       SESSION_COOKIE_MAX_AGE: ${SESSION_COOKIE_MAX_AGE:-86400}
+      # Store links on eyeoniot.com/app (the watch's QR code); read per request, a restart applies them.
+      EYEON_PLAY_STORE_URL: ${EYEON_PLAY_STORE_URL:-}
+      EYEON_APP_STORE_URL: ${EYEON_APP_STORE_URL:-}
+      EYEON_ANDROID_APK_URL: ${EYEON_ANDROID_APK_URL:-}
       COOKIE_SECURE: "true"
 
 volumes:
