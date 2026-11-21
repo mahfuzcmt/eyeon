@@ -19,6 +19,7 @@ import { useI18n, type StringKey } from "@/i18n";
 import { colors, radius, space, touch } from "@/theme";
 import { MINUTE_RULES, ruleTypeLabel, ruleUnit, severityLabel } from "@/alarmCenter";
 import type { AlarmRuleView } from "@/types";
+import { clockText } from "@/format";
 
 /** Alarm rules (web: /dashboard/rules): list, switch on/off, edit, delete. Rules are per user. */
 export default function AlarmRulesScreen() {
@@ -123,9 +124,9 @@ export default function AlarmRulesScreen() {
   );
 }
 
-function describe(r: AlarmRuleView, t: (k: StringKey) => string): string {
+function describe(r: AlarmRuleView, t: (k: StringKey) => string, bn: boolean): string {
   if (r.ruleType === "ACC_ON_DURING_WINDOW") {
-    return `${r.windowStart?.slice(0, 5) ?? "—"} – ${r.windowEnd?.slice(0, 5) ?? "—"}`;
+    return `${r.windowStart ? clockText(r.windowStart, bn) : "—"} – ${r.windowEnd ? clockText(r.windowEnd, bn) : "—"}`;
   }
   const n = r.threshold ?? 0;
   const sign = r.ruleType === "VOLTAGE_UNDER" ? "<" : ">";
@@ -145,7 +146,7 @@ function RuleCard({
   onEdit: () => void;
   onDelete: () => void;
 }) {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const who = rule.appliesToAll
     ? t("arule.everyone")
     : `${rule.assignedImeis.length} ${t("arule.peopleCount")}`;
@@ -173,7 +174,7 @@ function RuleCard({
         />
       </View>
       <View style={styles.facts}>
-        <Fact icon="speedometer-outline" text={describe(rule, t)} />
+        <Fact icon="speedometer-outline" text={describe(rule, t, locale === "bn")} />
         <Fact icon="people-outline" text={who} />
         {rule.severity ? <Fact icon="alert-circle-outline" text={severityLabel(rule.severity, t)} /> : null}
         <Fact icon="timer-outline" text={`${t("arule.cooldownShort")} ${cooldownText}`} />

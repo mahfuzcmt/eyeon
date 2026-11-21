@@ -34,6 +34,8 @@ import {
   formatDateTime,
   formatNumber,
   formatRelative,
+  formatTimeOfDay,
+  formatClockTime,
   positionTs,
   NO_FIX_NOTICE_MS,
 } from "@/lib/format";
@@ -109,7 +111,7 @@ function routeColor(frac: number): string {
 }
 
 function hhmm(iso: string): string {
-  return new Date(iso).toLocaleTimeString("en-US", { timeZone: "Asia/Dhaka", hour: "numeric", minute: "2-digit" });
+  return formatTimeOfDay(iso, "en");
 }
 
 function stayLength(seconds: number): string {
@@ -205,12 +207,12 @@ function loadCurrentStay(imei: string): Promise<CurrentStay | null> {
   return request;
 }
 
-/** "14:40" for today, "01/10 22:29" for an earlier day (Asia/Dhaka, 24 h like the rest of the card), in the locale's digits. */
+/** "2:40 PM" for today, "01/10 10:29 PM" for an earlier day (Asia/Dhaka, 12-hour), in the locale's digits. */
 function staySince(iso: string, locale: Locale): string {
   const tag = locale === "bn" ? "bn-BD" : "en-GB";
   const date = new Date(iso);
   const day = (d: Date) => d.toLocaleDateString(tag, { timeZone: "Asia/Dhaka", day: "2-digit", month: "2-digit" });
-  const time = date.toLocaleTimeString(tag, { timeZone: "Asia/Dhaka", hour: "2-digit", minute: "2-digit", hour12: false });
+  const time = formatTimeOfDay(date, locale);
   return day(date) === day(new Date()) ? time : `${day(date)} ${time}`;
 }
 
@@ -894,7 +896,7 @@ export function FleetMap({ devices, locations, selectedImei, onSelect, onRefresh
     let statusLine: string;
     if (speed > 0) statusLine = `${formatNumber(speed, locale)} ${t("rules.unit.kph")} (${compassLabel(location?.course, locale)}, ${stateLabel})`;
     else if ((state === "stopped" || state === "idle") && device?.parkedSince) statusLine = `${stateLabel} · ${formatCompactDuration(device.parkedSince, locale)}`;
-    else if (state === "offline" && restingUntil(restByImei?.get(imei))) statusLine = `${t("veh.resting")} ${restingUntil(restByImei?.get(imei))}`;
+    else if (state === "offline" && restingUntil(restByImei?.get(imei))) statusLine = `${t("veh.resting")} ${formatClockTime(restingUntil(restByImei?.get(imei)) ?? "", locale)}`;
     else if (state === "offline" && device?.lastSeenAt) statusLine = `${stateLabel} · ${formatCompactDuration(device.lastSeenAt, locale)}`;
     else statusLine = stateLabel;
 

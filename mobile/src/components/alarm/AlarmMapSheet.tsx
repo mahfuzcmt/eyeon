@@ -21,7 +21,7 @@ export function AlarmMapSheet({
   who: string;
   onClose: () => void;
 }) {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const { height } = useWindowDimensions();
   const mapHeight = Math.max(240, Math.min(height * 0.5, 520));
   const hasPos = alarm?.latitude != null && alarm?.longitude != null;
@@ -50,7 +50,7 @@ export function AlarmMapSheet({
     <Sheet
       visible={alarm != null}
       title={alarm ? alarmTitle(alarm, t) : ""}
-      subtitle={alarm ? `${who} · ${fmtDateTime(alarm.ts)}` : undefined}
+      subtitle={alarm ? `${who} · ${fmtDateTime(alarm.ts, locale === "bn")}` : undefined}
       onClose={onClose}
       scroll={false}
     >

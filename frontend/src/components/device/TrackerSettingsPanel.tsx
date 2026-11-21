@@ -6,6 +6,7 @@ import { api, extractError } from "@/lib/api";
 import { useLocale, type StringKey } from "@/lib/i18n";
 import { formatDateTime } from "@/lib/format";
 import { useEscapeKey } from "@/hooks/useEscapeKey";
+import { ClockTimePicker } from "@/components/time/ClockTimePicker";
 import type {
   DeviceView,
   TrackerSettingItem,
@@ -286,19 +287,19 @@ export function TrackerSettingsPanel({ device, onClose }: Props) {
   const timeRange = (key: TrackerSettingKey, fallbackFrom: string, fallbackTo: string) => (
     <div className="flex flex-wrap items-end gap-3">
       <Field label={t("ts.from")}>
-        <input
-          type="time"
-          className="input w-auto text-[15px]"
+        <ClockTimePicker
           value={str(value(key).from, fallbackFrom)}
-          onChange={(e) => e.target.value && edit(key, { from: e.target.value })}
+          onChange={(v) => edit(key, { from: v })}
+          locale={locale === "bn" ? "bn" : "en"}
+          label={t("ts.from")}
         />
       </Field>
       <Field label={t("ts.to")}>
-        <input
-          type="time"
-          className="input w-auto text-[15px]"
+        <ClockTimePicker
           value={str(value(key).to, fallbackTo)}
-          onChange={(e) => e.target.value && edit(key, { to: e.target.value })}
+          onChange={(v) => edit(key, { to: v })}
+          locale={locale === "bn" ? "bn" : "en"}
+          label={t("ts.to")}
         />
       </Field>
     </div>

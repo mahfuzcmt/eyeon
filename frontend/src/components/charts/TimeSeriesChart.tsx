@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { clock12 } from "@/lib/format";
 
 export interface TimePoint {
   /** Epoch millis. */
@@ -30,12 +31,11 @@ export const chartColors = {
 const MARGIN = { top: 8, right: 12, bottom: 20, left: 42 };
 const MAX_DRAWN_POINTS = 1200;
 
-const timeFmt = new Intl.DateTimeFormat("en-GB", {
-  timeZone: "Asia/Dhaka",
-  hour: "2-digit",
-  minute: "2-digit",
-  hour12: false,
-});
+/** Epoch millis → "2:05 PM" in Asia/Dhaka (UTC+6, no daylight saving). */
+function timeLabel(t: number): string {
+  const dhaka = new Date(t + 6 * 3600_000);
+  return clock12(dhaka.getUTCHours(), dhaka.getUTCMinutes(), false);
+}
 
 /** Keep min+max per bucket so spikes and dips survive downsampling. */
 function downsample(points: TimePoint[]): TimePoint[] {
@@ -157,7 +157,7 @@ export function TimeSeriesChart({
         <span className="text-[12px] text-ink-400">{unit}</span>
         {hover && (
           <span className="ml-auto text-[13px] font-medium text-ink-700">
-            {timeFmt.format(new Date(hover.t))} · <span style={{ color }}>{formatValue(hover.v)} {unit}</span>
+            {timeLabel(hover.t)} · <span style={{ color }}>{formatValue(hover.v)} {unit}</span>
           </span>
         )}
       </div>
@@ -203,7 +203,7 @@ export function TimeSeriesChart({
               fontSize={9}
               fill="#64748B"
             >
-              {timeFmt.format(new Date(t))}
+              {timeLabel(t)}
             </text>
           ))}
           <path d={plot.path} fill="none" stroke={color} strokeWidth={2} strokeLinejoin="round" strokeLinecap="round" />

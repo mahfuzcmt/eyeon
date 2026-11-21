@@ -1,4 +1,5 @@
 import type { Locale } from "@/i18n";
+import { fmtTime } from "@/format";
 
 /** Dates shown in the app language, always in Asia/Dhaka. */
 
@@ -15,19 +16,12 @@ export function fmtDay(iso: string | null | undefined, locale: Locale): string {
   });
 }
 
-/** "12 Oct 2026, 14:05" in the app language. */
+/** "12 Oct 2026, 2:05 PM" (or "... দুপুর ২:০৫") in the app language, always 12-hour. */
 export function fmtStamp(iso: string | null | undefined, locale: Locale): string {
   if (!iso) return "—";
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return "—";
-  return d.toLocaleString(locale === "bn" ? "bn-BD" : "en-GB", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-    timeZone: "Asia/Dhaka",
-  });
+  return `${fmtDay(iso, locale)}, ${fmtTime(iso, locale === "bn")}`;
 }
 
 /** yyyy-MM-dd of an instant in Asia/Dhaka. */

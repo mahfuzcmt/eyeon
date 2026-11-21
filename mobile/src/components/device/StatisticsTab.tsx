@@ -5,11 +5,12 @@ import { useCurrentStay } from "@/hooks/useCurrentStay";
 import { useDeviceTodayStats } from "@/hooks/useDeviceTodayStats";
 import { Loading, Metric, Section } from "@/ui";
 import { fmtAgo, fmtDistance, fmtDuration, fmtSince, fmtTime, fmtVoltage, speedOf } from "@/format";
+import { fmtStamp } from "@/localDate";
 import { useI18n, type StringKey } from "@/i18n";
 import { colors, space } from "@/theme";
 
 export default function StatisticsTab({ imei, orgId }: { imei: string; orgId: string | null }) {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const { device, loc, loading } = useDeviceLive(imei, orgId);
   const { stats, loading: statsLoading, reload } = useDeviceTodayStats(imei);
   const router = useRouter();
@@ -17,11 +18,7 @@ export default function StatisticsTab({ imei, orgId }: { imei: string; orgId: st
 
   if (loading && !device) return <Loading label={t("stats.loading")} />;
 
-  const serverTime = new Date().toLocaleString("en-GB", {
-    timeZone: "Asia/Dhaka",
-    dateStyle: "medium",
-    timeStyle: "short",
-  });
+  const serverTime = fmtStamp(new Date().toISOString(), locale);
 
   return (
     <ScrollView
@@ -33,7 +30,7 @@ export default function StatisticsTab({ imei, orgId }: { imei: string; orgId: st
         {stay && (
           <Metric
             label={t("popup.hereFor")}
-            value={`${fmtSince(stay.from)}${stay.openStart ? "+" : ""} · ${t("popup.since")} ${fmtTime(stay.from)}`}
+            value={`${fmtSince(stay.from)}${stay.openStart ? "+" : ""} · ${t("popup.since")} ${fmtTime(stay.from, locale === "bn")}`}
             width="100%"
           />
         )}

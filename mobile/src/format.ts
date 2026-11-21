@@ -120,35 +120,26 @@ export function fmtDistance(meters: number | null | undefined): string {
   return `${Math.round(meters)} m`;
 }
 
-/** ISO → local "07 Jul, 06:43" in Asia/Dhaka (display layer, per CLAUDE.md §12.4). */
-export function fmtDateTime(iso: string | null | undefined): string {
+/** ISO → local "07 Jul, 6:43 AM" in Asia/Dhaka (display layer, per CLAUDE.md §12.4), always 12-hour. */
+export function fmtDateTime(iso: string | null | undefined, bn = false): string {
   if (!iso) return "—";
   try {
-    return new Date(iso).toLocaleString("en-GB", {
-      timeZone: "Asia/Dhaka",
-      day: "2-digit",
-      month: "short",
-      hour: "2-digit",
-      minute: "2-digit",
-      hour12: true,
-    });
+    const d = new Date(iso);
+    if (Number.isNaN(d.getTime())) return iso;
+    const day = d.toLocaleDateString(bn ? "bn-BD" : "en-GB", { timeZone: "Asia/Dhaka", day: "2-digit", month: "short" });
+    return `${day}, ${fmtTime(iso, bn)}`;
   } catch {
     return iso;
   }
 }
 
-export function fmtTime(iso: string | null | undefined): string {
+/** ISO → "6:43 AM" (or "সকাল ৬:৪৩") in Asia/Dhaka, UTC+6 with no daylight saving. */
+export function fmtTime(iso: string | null | undefined, bn = false): string {
   if (!iso) return "—";
-  try {
-    return new Date(iso).toLocaleTimeString("en-GB", {
-      timeZone: "Asia/Dhaka",
-      hour: "2-digit",
-      minute: "2-digit",
-      hour12: true,
-    });
-  } catch {
-    return iso;
-  }
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return iso;
+  const dhaka = new Date(d.getTime() + 6 * 3600_000);
+  return clock12(dhaka.getUTCHours(), dhaka.getUTCMinutes(), bn);
 }
 
 /** Millivolts → "12.3 V". */
@@ -230,4 +221,36 @@ export function batteryColor(percent: number): string {
   if (percent <= 15) return "#D92D20";
   if (percent <= 30) return "#B45309";
   return "#15803D";
+}
+
+// ---- 12-hour clock, the same wording as the server's notifications (NotificationComposer) ----
+// The owner's rule (2026-11-21): every time of day is shown in 12-hour form, never 24-hour.
+// "8:05 AM" in English; "সকাল ৮:০৫" in Bengali, with the part of the day instead of AM/PM.
+
+const BN_CLOCK_DIGITS = ["০", "১", "২", "৩", "৪", "৫", "৬", "৭", "৮", "৯"];
+
+/** "রাত" / "ভোর" / "সকাল" / "দুপুর" / "বিকাল" / "সন্ধ্যা" for an hour 0-23. */
+export function bnDayPart(h24: number): string {
+  if (h24 < 4) return "রাত";
+  if (h24 < 6) return "ভোর";
+  if (h24 < 12) return "সকাল";
+  if (h24 < 15) return "দুপুর";
+  if (h24 < 18) return "বিকাল";
+  if (h24 < 20) return "সন্ধ্যা";
+  return "রাত";
+}
+
+/** An hour 0-23 and minute as "8:05 AM" / "সকাল ৮:০৫". */
+export function clock12(h24: number, minute: number, bn: boolean): string {
+  const h12 = h24 % 12 === 0 ? 12 : h24 % 12;
+  const text = `${h12}:${String(minute).padStart(2, "0")}`;
+  if (!bn) return `${text} ${h24 < 12 ? "AM" : "PM"}`;
+  return `${bnDayPart(h24)} ${text.replace(/\d/g, (d) => BN_CLOCK_DIGITS[Number(d)])}`;
+}
+
+/** A stored wall-clock time "HH:mm" (or "HH:mm:ss") as clock12; anything else is returned as it is. */
+export function clockText(hhmm: string | null | undefined, bn: boolean): string {
+  const m = /^(\d{1,2}):(\d{2})/.exec(hhmm ?? "");
+  if (!m) return hhmm ?? "";
+  return clock12(Number(m[1]) % 24, Number(m[2]), bn);
 }

@@ -184,26 +184,66 @@ export function formatNumber(n: number, locale: Locale, opts?: Intl.NumberFormat
 export function formatDateTime(iso: string | Date, locale: Locale, opts?: { seconds?: boolean }): string {
   const tag = locale === "bn" ? "bn-BD" : "en-US";
   const d = typeof iso === "string" ? new Date(iso) : iso;
-  return new Intl.DateTimeFormat(tag, {
-    timeZone: TIMEZONE,
-    year: "numeric",
-    month: "short",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-    ...(opts?.seconds ? { second: "2-digit" as const } : {}),
-  }).format(d);
+  if (opts?.seconds) {
+    return new Intl.DateTimeFormat(tag, {
+      timeZone: TIMEZONE,
+      year: "numeric",
+      month: "short",
+      day: "2-digit",
+      hour: "numeric",
+      minute: "2-digit",
+      second: "2-digit",
+      hour12: true,
+    }).format(d);
+  }
+  const date = new Intl.DateTimeFormat(tag, { timeZone: TIMEZONE, year: "numeric", month: "short", day: "2-digit" }).format(d);
+  return `${date}, ${formatTimeOfDay(d, locale)}`;
 }
 
-/** A wall-clock time "HH:mm" (Asia/Dhaka, as schedules are stored) in the locale's digits. */
-export function formatClockTime(hhmm: string, locale: Locale): string {
-  const m = /^(\d{2}):(\d{2})/.exec(hhmm);
-  if (!m) return hhmm;
-  const tag = locale === "bn" ? "bn-BD" : "en-US";
-  return new Intl.DateTimeFormat(tag, { timeZone: TIMEZONE, hour: "2-digit", minute: "2-digit" }).format(
-    new Date(`2000-01-01T${m[1]}:${m[2]}:00+06:00`),
-  );
+/** The time of day of an instant in Asia/Dhaka (UTC+6, no daylight saving), 12-hour: "2:05 PM" / "দুপুর ২:০৫". */
+export function formatTimeOfDay(iso: string | Date, locale: Locale): string {
+  const d = typeof iso === "string" ? new Date(iso) : iso;
+  if (Number.isNaN(d.getTime())) return "—";
+  const dhaka = new Date(d.getTime() + 6 * 3600_000);
+  return clock12(dhaka.getUTCHours(), dhaka.getUTCMinutes(), locale === "bn");
 }
+
+/** A wall-clock time "HH:mm" (Asia/Dhaka, as schedules are stored), always 12-hour: "8:05 AM" / "সকাল ৮:০৫". */
+export function formatClockTime(hhmm: string, locale: Locale): string {
+  return clockText(hhmm, locale === "bn");
+}
+// ---- 12-hour clock, the same wording as the server's notifications (NotificationComposer) ----
+// The owner's rule (2026-11-21): every time of day is shown in 12-hour form, never 24-hour.
+// "8:05 AM" in English; "সকাল ৮:০৫" in Bengali, with the part of the day instead of AM/PM.
+
+const BN_CLOCK_DIGITS = ["০", "১", "২", "৩", "৪", "৫", "৬", "৭", "৮", "৯"];
+
+/** "রাত" / "ভোর" / "সকাল" / "দুপুর" / "বিকাল" / "সন্ধ্যা" for an hour 0-23. */
+export function bnDayPart(h24: number): string {
+  if (h24 < 4) return "রাত";
+  if (h24 < 6) return "ভোর";
+  if (h24 < 12) return "সকাল";
+  if (h24 < 15) return "দুপুর";
+  if (h24 < 18) return "বিকাল";
+  if (h24 < 20) return "সন্ধ্যা";
+  return "রাত";
+}
+
+/** An hour 0-23 and minute as "8:05 AM" / "সকাল ৮:০৫". */
+export function clock12(h24: number, minute: number, bn: boolean): string {
+  const h12 = h24 % 12 === 0 ? 12 : h24 % 12;
+  const text = `${h12}:${String(minute).padStart(2, "0")}`;
+  if (!bn) return `${text} ${h24 < 12 ? "AM" : "PM"}`;
+  return `${bnDayPart(h24)} ${text.replace(/\d/g, (d) => BN_CLOCK_DIGITS[Number(d)])}`;
+}
+
+/** A stored wall-clock time "HH:mm" (or "HH:mm:ss") as clock12; anything else is returned as it is. */
+export function clockText(hhmm: string | null | undefined, bn: boolean): string {
+  const m = /^(\d{1,2}):(\d{2})/.exec(hhmm ?? "");
+  if (!m) return hhmm ?? "";
+  return clock12(Number(m[1]) % 24, Number(m[2]), bn);
+}
+
 
 export function formatRelative(iso: string | null, locale: Locale): string {
   if (!iso) return locale === "bn" ? "—" : "—";

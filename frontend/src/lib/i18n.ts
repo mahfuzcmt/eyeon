@@ -947,8 +947,8 @@ const STRINGS = {
   },
   "ts.unreadSet": { en: "Set it anyway", bn: "তবুও সেট করুন" },
   "ts.NIGHT_REST.factory": {
-    en: "New trackers come with night rest on, 00:00-07:00.",
-    bn: "নতুন ট্র্যাকারে রাতের বিশ্রাম চালু থাকে, ০০:০০–০৭:০০।",
+    en: "New trackers come with night rest on, 12:00 AM-7:00 AM.",
+    bn: "নতুন ট্র্যাকারে রাতের বিশ্রাম চালু থাকে, রাত ১২:০০–সকাল ৭:০০।",
   },
   "dur.s": { en: "s", bn: "সে." },
   "dur.min": { en: "min", bn: "মিনিট" },

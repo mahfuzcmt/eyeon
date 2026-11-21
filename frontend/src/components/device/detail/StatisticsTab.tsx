@@ -7,6 +7,7 @@ import { useLocale } from "@/lib/i18n";
 import {
   dhakaTodayStartIso,
   formatDate,
+  formatDateTime,
   formatDurationS,
   formatEngineHours,
   formatNumber,
@@ -23,7 +24,7 @@ export default function StatisticsTab({ device, orgId }: { device: DeviceView; o
   const range = useMemo(() => ({ from: dhakaTodayStartIso(), to: new Date().toISOString() }), []);
   const { activity } = useActivity({ imei: device.imei, fromIso: range.from, toIso: range.to });
 
-  const serverTime = new Date().toLocaleString("en-GB", { timeZone: "Asia/Dhaka", dateStyle: "medium", timeStyle: "short" });
+  const serverTime = formatDateTime(new Date(), locale);
 
   return (
     <div className="h-full overflow-y-auto bg-surface-50 p-3">

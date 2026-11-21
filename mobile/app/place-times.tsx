@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Alert, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { ClockIcon, ClockTimePicker } from "@/components/ClockTimePicker";
+import { clockText } from "@/format";
 import { Stack, useLocalSearchParams } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { createPlaceSchedule, deletePlaceSchedule, listPlaceSchedules } from "@/api/endpoints";
@@ -103,7 +105,7 @@ export default function PlaceTimesScreen() {
   };
 
   const remove = (s: PlaceSchedule) =>
-    Alert.alert(t("common.delete"), `${t(`place.times.${s.kind}` as StringKey)} ${s.time}`, [
+    Alert.alert(t("common.delete"), `${t(`place.times.${s.kind}` as StringKey)} ${clockText(s.time, bn)}`, [
       { text: t("common.cancel"), style: "cancel" },
       {
         text: t("common.delete"),
@@ -136,9 +138,10 @@ export default function PlaceTimesScreen() {
           <View style={styles.card}>
             {schedules.map((s) => (
               <View key={s.id} style={styles.row}>
+                <ClockIcon h={Number(s.time.slice(0, 2))} m={Number(s.time.slice(3, 5))} size={34} />
                 <View style={{ flex: 1 }}>
                   <Text style={styles.rowTitle}>
-                    {t(`place.times.${s.kind}` as StringKey)} <Text style={styles.mono}>{s.time}</Text>
+                    {t(`place.times.${s.kind}` as StringKey)} {clockText(s.time, bn)}
                     {s.graceMinutes > 0 ? (
                       <Text style={styles.grace}> {t("place.timesGraceShort").replace("{n}", digits(s.graceMinutes, bn))}</Text>
                     ) : null}
@@ -171,16 +174,7 @@ export default function PlaceTimesScreen() {
                 <Ionicons name={on ? "checkbox" : "square-outline"} size={26} color={on ? colors.brand : colors.textFaint} />
                 <Text style={styles.timeLabel}>{label}</Text>
               </Pressable>
-              <TextInput
-                style={[styles.input, !on && styles.inputOff]}
-                value={value}
-                editable={on}
-                onChangeText={setValue}
-                placeholder="HH:MM"
-                placeholderTextColor={colors.textFaint}
-                keyboardType="numbers-and-punctuation"
-                maxLength={5}
-              />
+              <ClockTimePicker value={value} onChange={setValue} bn={bn} label={label} disabled={!on} />
             </View>
           ))}
           <Text style={styles.label}>{t("place.timesGrace")}</Text>

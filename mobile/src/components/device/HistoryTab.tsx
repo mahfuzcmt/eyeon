@@ -43,7 +43,7 @@ function dropJitter(points: LocationView[]): LocationView[] {
 }
 
 export default function HistoryTab({ imei }: { imei: string }) {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const [range, setRange] = useState<DateRange>(() => presetRange("today"));
   const [pickerOpen, setPickerOpen] = useState(false);
 
@@ -168,7 +168,7 @@ export default function HistoryTab({ imei }: { imei: string }) {
           {points.length > 0 ? (
             <View style={styles.player}>
               <View style={styles.playerTop}>
-                <Text style={styles.playTime}>{fmtTime(cur?.ts)}</Text>
+                <Text style={styles.playTime}>{fmtTime(cur?.ts, locale === "bn")}</Text>
                 <Text style={styles.playSpeed}>{cur ? `${cur.speed} ${t("veh.kmh")}` : ""}</Text>
               </View>
               <View
@@ -194,8 +194,8 @@ export default function HistoryTab({ imei }: { imei: string }) {
                 />
               </View>
               <View style={styles.playerTop}>
-                <Text style={styles.edgeTime}>{fmtTime(points[0]?.ts)}</Text>
-                <Text style={styles.edgeTime}>{fmtTime(points[points.length - 1]?.ts)}</Text>
+                <Text style={styles.edgeTime}>{fmtTime(points[0]?.ts, locale === "bn")}</Text>
+                <Text style={styles.edgeTime}>{fmtTime(points[points.length - 1]?.ts, locale === "bn")}</Text>
               </View>
               <View style={styles.playbar}>
                 <CtlBtn icon="play-skip-back" label="Start" onPress={() => { setPlaying(false); setIdx(0); }} />
@@ -252,7 +252,7 @@ export default function HistoryTab({ imei }: { imei: string }) {
             style={[styles.tripRow, selectedId === item.id && styles.tripRowActive]}
             accessibilityRole="button"
           >
-            <Text style={styles.eventTime}>{fmtTime(item.ts)}</Text>
+            <Text style={styles.eventTime}>{fmtTime(item.ts, locale === "bn")}</Text>
             <View style={[styles.eventDot, { backgroundColor: urgent ? colors.danger : colors.brand }]} />
             <View style={{ flex: 1 }}>
               <Text style={[styles.tripTime, urgent && { color: colors.danger }]}>

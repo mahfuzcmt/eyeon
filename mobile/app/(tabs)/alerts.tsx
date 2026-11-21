@@ -284,7 +284,7 @@ function AlarmCard({
   onMap: () => void;
   onProcess: () => void;
 }) {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const color = alarmColor(alarm);
   const hasPos = alarm.latitude != null && alarm.longitude != null;
   const urgent = !alarm.acknowledged && alarm.severity === "CRITICAL";
@@ -301,7 +301,7 @@ function AlarmCard({
           </View>
         </View>
         <Text style={styles.who}>{who}</Text>
-        <Text style={styles.time}>{fmtDateTime(alarm.ts)}</Text>
+        <Text style={styles.time}>{fmtDateTime(alarm.ts, locale === "bn")}</Text>
         {alarm.processResult ? (
           <Text style={styles.result} numberOfLines={3}>
             {t("alc.result")}: {resultLabel(alarm.processResult, t)}

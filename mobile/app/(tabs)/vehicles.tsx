@@ -8,7 +8,7 @@ import { useGroups } from "@/hooks/useGroups";
 import { useLiveLocations } from "@/hooks/useLiveLocations";
 import { useTicker } from "@/hooks/useTicker";
 import { Chip, EmptyState, Loading, Pill } from "@/ui";
-import { batteryColor, fmtAgo, fmtSince, motionColor, motionOf, speedOf, subscriptionDaysLeft, subscriptionExpired } from "@/format";
+import { batteryColor, clockText, fmtAgo, fmtSince, motionColor, motionOf, speedOf, subscriptionDaysLeft, subscriptionExpired } from "@/format";
 import { fmtDay } from "@/localDate";
 import { useDevicePhotos } from "@/photos";
 import { useSpeedLimits } from "@/hooks/useSpeedLimits";
@@ -256,7 +256,7 @@ function VehicleCard({
       </View>
       <Text style={styles.seen}>
         {wakesAt
-          ? `${t("veh.resting")} ${wakesAt}`
+          ? `${t("veh.resting")} ${clockText(wakesAt, locale === "bn")}`
           : parked
             ? `${t("veh.parkedFor")} ${fmtSince(device.parkedSince)}`
             : `${t("veh.lastSeen")} ${fmtAgo(device.lastSeenAt)}`}

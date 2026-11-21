@@ -6,6 +6,7 @@ import { api, extractError } from "@/lib/api";
 import { useLocale, type StringKey } from "@/lib/i18n";
 import { formatClockTime, formatNumber } from "@/lib/format";
 import { useEscapeKey } from "@/hooks/useEscapeKey";
+import { ClockIcon, ClockTimePicker } from "@/components/time/ClockTimePicker";
 import type { GeofenceView, PlaceSchedule, PlaceScheduleKind } from "@/types/domain";
 
 /** Shown Sunday first: the school week in Bangladesh runs Sunday to Thursday. ISO numbers, 7 = Sunday. */
@@ -142,6 +143,9 @@ export function ExpectedTimesDialog({ place, onClose }: Props) {
               <li key={s.id} className="flex items-center gap-3 px-3 py-2">
                 <div className="min-w-0 flex-1">
                   <div className="text-[15px] font-semibold text-ink-900">
+                    <span className="mr-1.5 inline-block align-middle">
+                      <ClockIcon h={Number(s.time.slice(0, 2))} m={Number(s.time.slice(3, 5))} size={22} />
+                    </span>
                     {t(`place.times.${s.kind}` as StringKey)} <span>{formatClockTime(s.time, locale)}</span>
                     {s.graceMinutes > 0 && (
                       <span className="ml-1.5 text-[14px] font-normal text-ink-500">{graceLabel(s.graceMinutes)}</span>
@@ -164,23 +168,18 @@ export function ExpectedTimesDialog({ place, onClose }: Props) {
               ["leave", t("place.timesLeave"), leaveOn, setLeaveOn, leave, setLeave],
             ] as const
           ).map(([id, label, on, setOn, value, setValue]) => (
-            <label key={id} className="mb-2 flex items-center gap-3">
-              <input
-                type="checkbox"
-                className="h-5 w-5 accent-brand-500"
-                checked={on}
-                onChange={(e) => setOn(e.target.checked)}
-              />
-              <span className="flex-1 text-[15px] font-semibold text-ink-900">{label}</span>
-              <input
-                type="time"
-                className="input w-32 text-[15px]"
-                value={value}
-                disabled={!on}
-                aria-label={label}
-                onChange={(e) => setValue(e.target.value)}
-              />
-            </label>
+            <div key={id} className="mb-2 flex items-center gap-3">
+              <label className="flex flex-1 items-center gap-3">
+                <input
+                  type="checkbox"
+                  className="h-5 w-5 accent-brand-500"
+                  checked={on}
+                  onChange={(e) => setOn(e.target.checked)}
+                />
+                <span className="flex-1 text-[15px] font-semibold text-ink-900">{label}</span>
+              </label>
+              <ClockTimePicker value={value} onChange={setValue} locale={locale === "bn" ? "bn" : "en"} label={label} disabled={!on} />
+            </div>
           ))}
           <label className="flex items-center gap-3">
             <span className="flex-1 text-[15px] font-semibold text-ink-900">{t("place.timesGrace")}</span>

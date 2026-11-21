@@ -5,6 +5,7 @@ import { createPortal } from "react-dom";
 import { useLocale, type Locale, type StringKey } from "@/lib/i18n";
 import {
   filterSpeed,
+  formatClockTime,
   formatCompactDuration,
   formatNumber,
   vehicleState,
@@ -130,7 +131,7 @@ function rowStatus(row: Row, t: (k: StringKey) => string, locale: Locale, rest?:
     case "offline": {
       // Switched off on purpose for the night: say when it wakes instead of "Offline 6 h".
       const wakes = restingUntil(rest);
-      if (wakes) return { text: `${t("veh.resting")} ${wakes}`, color: VEHICLE_STATE_COLOR.offline, hint: t("ts.NIGHT_REST.warning") };
+      if (wakes) return { text: `${t("veh.resting")} ${formatClockTime(wakes, locale)}`, color: VEHICLE_STATE_COLOR.offline, hint: t("ts.NIGHT_REST.warning") };
       const d = formatCompactDuration(device.lastSeenAt, locale);
       return { text: d ? `${t("veh.offline")} ${d}` : t("veh.offline"), color: VEHICLE_STATE_COLOR.offline };
     }

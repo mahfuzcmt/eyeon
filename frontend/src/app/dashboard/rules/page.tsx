@@ -4,8 +4,9 @@ import { useState } from "react";
 import { useLocale, type StringKey } from "@/lib/i18n";
 import { useAlarmRules } from "@/hooks/useAlarmRules";
 import { useDevices } from "@/hooks/useDevices";
-import { formatNumber } from "@/lib/format";
+import { formatClockTime, formatNumber } from "@/lib/format";
 import { extractError } from "@/lib/api";
+import { ClockTimePicker } from "@/components/time/ClockTimePicker";
 import type {
   AlarmRuleRequest,
   AlarmRuleType,
@@ -31,7 +32,7 @@ function describeRule(r: AlarmRuleView, locale: "en" | "bn", t: (k: StringKey) =
     case "VOLTAGE_UNDER":
       return `< ${formatNumber(r.threshold ?? 0, locale)} ${t("rules.unit.mv")}`;
     case "ACC_ON_DURING_WINDOW":
-      return `${r.windowStart?.slice(0, 5) ?? "—"} → ${r.windowEnd?.slice(0, 5) ?? "—"}`;
+      return `${r.windowStart ? formatClockTime(r.windowStart, locale) : "—"} → ${r.windowEnd ? formatClockTime(r.windowEnd, locale) : "—"}`;
     case "PARKING_TIMEOUT":
     case "OFFLINE_TIMEOUT":
     case "IDLE_TIMEOUT":
@@ -207,7 +208,7 @@ interface FormProps {
 }
 
 function RuleForm({ existing, onClose, onSubmit }: FormProps) {
-  const { t } = useLocale();
+  const { t, locale } = useLocale();
   const { devices } = useDevices();
   const [name, setName] = useState(existing?.name ?? "");
   const [ruleType, setRuleType] = useState<AlarmRuleType>(existing?.ruleType ?? "SPEED_OVER");
@@ -285,16 +286,14 @@ function RuleForm({ existing, onClose, onSubmit }: FormProps) {
 
         {ruleType === "ACC_ON_DURING_WINDOW" ? (
           <div className="grid grid-cols-2 gap-2">
-            <label className="block">
+            <div className="block">
               <span className="mb-0.5 block text-[14px] text-ink-500">{t("common.from")}</span>
-              <input type="time" className="input w-full py-1.5" value={windowStart}
-                     onChange={(e) => setWindowStart(e.target.value)} required />
-            </label>
-            <label className="block">
+              <ClockTimePicker value={windowStart} onChange={setWindowStart} locale={locale === "bn" ? "bn" : "en"} label={t("common.from")} />
+            </div>
+            <div className="block">
               <span className="mb-0.5 block text-[14px] text-ink-500">{t("common.to")}</span>
-              <input type="time" className="input w-full py-1.5" value={windowEnd}
-                     onChange={(e) => setWindowEnd(e.target.value)} required />
-            </label>
+              <ClockTimePicker value={windowEnd} onChange={setWindowEnd} locale={locale === "bn" ? "bn" : "en"} label={t("common.to")} />
+            </div>
           </div>
         ) : (
           <label className="block">
