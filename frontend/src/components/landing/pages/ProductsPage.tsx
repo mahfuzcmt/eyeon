@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { motion } from "framer-motion";
 import { EyeOnMark } from "@/components/brand/EyeOnLogo";
 import { useLanguage } from "../LanguageContext";
@@ -47,6 +48,31 @@ export function ProductsPage() {
   return (
     <>
       <PageHero badgeKey="productsPage.badge" titleKey="productsPage.title" descKey="productsPage.desc" />
+
+      {/* The watch has its own page */}
+      <section className="bg-white pt-16">
+        <div className="mx-auto max-w-6xl px-4 sm:px-6">
+          <Link
+            href="/products/eyeon-ai-watch"
+            className="group flex flex-col gap-4 rounded-3xl border-2 border-sun-400 bg-sun-50 p-6 transition-colors hover:bg-sun-100 sm:flex-row sm:items-center sm:p-8"
+          >
+            <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-white text-ink-900">
+              <Icon path={ICONS.watch} className="h-8 w-8" />
+            </div>
+            <div className="flex-1">
+              <span className="inline-flex rounded-full bg-brand-500 px-3 py-0.5 text-xs font-bold uppercase tracking-widest text-white">
+                {t("productsPage.watchBadge")}
+              </span>
+              <h2 className="mt-2 font-display text-2xl font-bold text-ink-900">{t("productsPage.watchName")}</h2>
+              <p className="mt-1 text-[15px] leading-relaxed text-ink-700">{t("productsPage.watchDesc")}</p>
+            </div>
+            <span className="inline-flex min-h-[48px] items-center gap-2 self-start rounded-2xl bg-brand-500 px-6 font-bold text-white group-hover:bg-brand-600 sm:self-center">
+              {t("productsPage.watchMore")}
+              <Icon path={ICONS.arrow} className="h-4 w-4" />
+            </span>
+          </Link>
+        </div>
+      </section>
 
       {/* The product */}
       <section className="bg-white py-20">
