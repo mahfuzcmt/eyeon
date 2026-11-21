@@ -111,24 +111,39 @@ public class WatchTimeService {
     }
 
     /** True when the watch answered. */
+    /**
+     * {@code LZ,<language>,<zone>} sets language and zone (the 2018 protocol document);
+     * {@code ZONE,<zone>} is the time-zone command of the maker's integration guide of 2026-03-17
+     * (section 2.3.3), which the production watch answered on 2026-11-21. Both are sent; the
+     * setting counts as delivered once the watch has answered both. Neither document has a
+     * command for the date or the time of day: the watch takes them from the mobile network, and
+     * the zone decides what it shows.
+     */
     boolean deliver(String imei, int language, int zoneHours) {
         if (!commands.connected(imei)) {
             return false;
         }
         try {
-            String reply = commands.send(imei, "LZ," + language + "," + zoneHours)
-                    .get(REPLY_WAIT.toMillis(), TimeUnit.MILLISECONDS);
-            if (reply != null && reply.startsWith("LZ")) {
-                repo.markSynced(imei, language, zoneHours);
-                log.info("Watch imei={} took language={} zone=UTC{}{}", imei, language, zoneHours < 0 ? "" : "+", zoneHours);
-                return true;
+            if (!answered(commands.send(imei, "LZ," + language + "," + zoneHours), "LZ")) {
+                return false;
             }
+            if (!answered(commands.send(imei, "ZONE," + zoneHours), "ZONE")) {
+                return false;
+            }
+            repo.markSynced(imei, language, zoneHours);
+            log.info("Watch imei={} took language={} zone=UTC{}{}", imei, language, zoneHours < 0 ? "" : "+", zoneHours);
+            return true;
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
         } catch (Exception e) {
             // no answer in time, or the connection went away: stays PENDING
         }
         return false;
+    }
+
+    private static boolean answered(java.util.concurrent.CompletableFuture<String> reply, String command) throws Exception {
+        String r = reply.get(REPLY_WAIT.toMillis(), TimeUnit.MILLISECONDS);
+        return r != null && r.startsWith(command);
     }
 
     private View view(String imei) {

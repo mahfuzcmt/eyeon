@@ -51,10 +51,12 @@ class WatchTimeServiceTest {
     void connectedWatchGetsLzAndItsAnswerMarksTheSettingSynced() {
         when(commands.connected(IMEI)).thenReturn(true);
         when(commands.send(IMEI, "LZ,0,6")).thenReturn(CompletableFuture.completedFuture("LZ"));
+        when(commands.send(IMEI, "ZONE,6")).thenReturn(CompletableFuture.completedFuture("ZONE"));
 
         service.save(ORG, IMEI, 0, 6);
 
         verify(repo).saveWanted(ORG, IMEI, 0, 6);
+        verify(commands).send(IMEI, "ZONE,6");
         verify(repo).markSynced(IMEI, 0, 6);
     }
 
@@ -81,6 +83,7 @@ class WatchTimeServiceTest {
 
         when(repo.listPending()).thenReturn(List.of(new WatchSettingsRepository.Row(IMEI, 0, 6, "PENDING", null)));
         when(commands.send(IMEI, "LZ,0,6")).thenReturn(CompletableFuture.completedFuture("LZ"));
+        when(commands.send(IMEI, "ZONE,6")).thenReturn(CompletableFuture.completedFuture("ZONE"));
         service.deliverPending();
         verify(repo).markSynced(IMEI, 0, 6);
     }
@@ -89,6 +92,7 @@ class WatchTimeServiceTest {
     void zonesWestOfUtcAreSentWithTheirSign() {
         when(commands.connected(IMEI)).thenReturn(true);
         when(commands.send(IMEI, "LZ,4,-5")).thenReturn(CompletableFuture.completedFuture("LZ"));
+        when(commands.send(IMEI, "ZONE,-5")).thenReturn(CompletableFuture.completedFuture("ZONE"));
         service.save(ORG, IMEI, 4, -5);
         verify(repo).markSynced(IMEI, 4, -5);
     }
@@ -126,5 +130,16 @@ class WatchTimeServiceTest {
         when(repo.find(IMEI)).thenReturn(Optional.of(new WatchSettingsRepository.Row(IMEI, 0, 6, "SYNCED", null)));
         service.onWatchPowerOn(ORG, IMEI);
         verify(repo).markPending(IMEI);
+    }
+
+    @Test
+    void aWatchThatAnswersOnlyTheLanguageCommandStaysPendingAndIsAskedAgain() {
+        when(commands.connected(IMEI)).thenReturn(true);
+        when(commands.send(IMEI, "LZ,0,6")).thenReturn(CompletableFuture.completedFuture("LZ"));
+        when(commands.send(IMEI, "ZONE,6")).thenReturn(CompletableFuture.failedFuture(new IllegalStateException("no answer")));
+
+        service.save(ORG, IMEI, 0, 6);
+
+        verify(repo, never()).markSynced(anyString(), anyInt(), anyInt());
     }
 }
