@@ -123,7 +123,7 @@ public class NetworkLocationService {
 
         // Both times are the tracker's clock, so a replayed backlog is judged consistently.
         boolean travelling = travelling(imei, scan.ts());
-        Optional<CellLocation> where = resolve(imei, scan, now, travelling);
+        Optional<CellLocation> where = resolve(imei, scan, now, travelling, protocolNumber);
         if (where.isEmpty()) {
             deviceService.markOnline(imei);
             return Optional.empty();
@@ -153,7 +153,8 @@ public class NetworkLocationService {
         return Optional.of(loc);
     }
 
-    private Optional<CellLocation> resolve(String imei, NetworkScan scan, Instant now, boolean travelling) {
+    private Optional<CellLocation> resolve(String imei, NetworkScan scan, Instant now, boolean travelling,
+                                           int protocolNumber) {
         Resolved prev = lastResolved.get(imei);
         if (prev != null && !travelling && sameSurroundings(prev, scan)) {
             return Optional.of(prev.where());
@@ -162,7 +163,7 @@ public class NetworkLocationService {
             return geolocation.locate(scan);  // empty; logs the missing configuration once
         }
         Instant asked = lastRequestAt.get(imei);
-        if (asked != null && asked.isAfter(now.minusSeconds(minIntervalSeconds))) {
+        if (asked != null && asked.isAfter(now.minusSeconds(minIntervalSeconds(protocolNumber)))) {
             return Optional.empty();
         }
         lastRequestAt.put(imei, now);
@@ -182,6 +183,19 @@ public class NetworkLocationService {
      * change without the tracker moving, so neither is compared exactly. Without Wi-Fi: the same
      * serving cell, which is as fine as a cell-only position gets.
      */
+    /**
+     * A smart watch reports about every 50 s while it is being located; with the 60 s minimum
+     * every other one of its reports was dropped while it moved, so the map moved in steps of
+     * about 100 s. Its own interval is a little under its pace.
+     */
+    static final int WATCH_MIN_INTERVAL_SECONDS = 40;
+
+    int minIntervalSeconds(int protocolNumber) {
+        return protocolNumber == com.webinnovation.eyeon.protocol.PacketType.WATCH_3G
+                ? Math.min(minIntervalSeconds, WATCH_MIN_INTERVAL_SECONDS)
+                : minIntervalSeconds;
+    }
+
     static boolean sameSurroundings(Resolved prev, NetworkScan scan) {
         if (!scan.hasWifi()) {
             return prev.macs().isEmpty() && prev.servingCell() == servingCell(scan);

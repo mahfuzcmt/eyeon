@@ -3,7 +3,8 @@
 Env:
   WATCH_HOST (0.0.0.0)  WATCH_PORT (8899)  WATCH_DB (watch.db)
   WATCH_ALLOWED_IDS  comma-separated device IDs; empty = accept all (new IDs are logged)
-  WATCH_STILL_EVERY  seconds between position requests to a watch that is not moving (180);
+  WATCH_STILL_EVERY  seconds between position requests to a watch that is not moving (100, the
+                     same as a moving one);
                      a moving watch is asked every 100 s. Under 300 the request does not wait for
                      the watch's 5-minute heartbeat. 0 = watches are never asked.
 Commands to devices are queued in the `commands` table (see send_command.py).
@@ -48,7 +49,10 @@ ACK_WITH_SUCCESS = frozenset({"CONFIG", "ICCID", "RYIMEI", "APPANDFNREPORT", "DE
 #                        request, so a departure shows within about a minute and a half. The
 #                        battery cost of asking all day was small where measured: about 6.5-7 %
 #                        an hour at rest with 10-minute checks against 7.5-8 % kept locating
-#                        (2026-11-16/17, one watch).
+#                        (2026-11-16/17, one watch). 2026-11-21, owner: a stop of a minute or two
+#                        must not delay the updates once it moves again - so a still watch is
+#                        asked as often as a moving one (100 s). "Still" is now only a label in
+#                        the log; set WATCH_STILL_EVERY higher to save battery again.
 LOCATE_MIN_BATTERY = 15  # below this the watch is left alone: locating runs its GPS
 LOCATE_SLACK = 30  # heartbeats come every 300 s give or take; do not miss one by a second
 MOVING_ASK_EVERY = 100  # seconds between CRs to a moving watch
@@ -336,7 +340,7 @@ class Server:
 async def main():
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
     allowed = {x.strip() for x in os.environ.get("WATCH_ALLOWED_IDS", "").split(",") if x.strip()}
-    still_every = float(os.environ.get("WATCH_STILL_EVERY", "180"))
+    still_every = float(os.environ.get("WATCH_STILL_EVERY", "100"))
     srv = Server(Store(os.environ.get("WATCH_DB", "watch.db")), allowed, still_every)
     host, port = os.environ.get("WATCH_HOST", "0.0.0.0"), int(os.environ.get("WATCH_PORT", "8899"))
     s = await asyncio.start_server(srv.handle, host, port)

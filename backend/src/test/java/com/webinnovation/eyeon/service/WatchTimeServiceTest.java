@@ -108,4 +108,23 @@ class WatchTimeServiceTest {
         assertThatThrownBy(() -> service.save(ORG, "868322070079370", 0, 6)).isInstanceOf(IllegalArgumentException.class);
         assertThatThrownBy(() -> service.get(ORG, "000")).isInstanceOf(NotFoundException.class);
     }
+
+    @Test
+    void aWatchNeverSetGetsBangladeshTimeAndOneAlreadySetIsLeftAsChosen() {
+        when(repo.find(IMEI)).thenReturn(Optional.empty());
+        service.onWatchConnected(ORG, IMEI);
+        verify(repo).saveWanted(ORG, IMEI, WatchTimeService.DEFAULT_LANGUAGE, 6);
+
+        org.mockito.Mockito.reset(repo);
+        when(repo.find(IMEI)).thenReturn(Optional.of(new WatchSettingsRepository.Row(IMEI, 4, 3, "SYNCED", null)));
+        service.onWatchConnected(ORG, IMEI);
+        verify(repo, never()).saveWanted(org.mockito.ArgumentMatchers.any(), anyString(), anyInt(), anyInt());
+    }
+
+    @Test
+    void aRestartedWatchIsSentWhatItWasSetToAgain() {
+        when(repo.find(IMEI)).thenReturn(Optional.of(new WatchSettingsRepository.Row(IMEI, 0, 6, "SYNCED", null)));
+        service.onWatchPowerOn(ORG, IMEI);
+        verify(repo).markPending(IMEI);
+    }
 }

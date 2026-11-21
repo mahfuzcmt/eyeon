@@ -85,7 +85,7 @@ public record WatchReport(Instant ts, boolean valid, double latitude, double lon
                 for (int n = 0; n < nWifi; n++, i += 3) {
                     String mac = a[i + 1].trim().toLowerCase(Locale.ROOT);
                     int rssi = Integer.parseInt(a[i + 2].trim());
-                    if (MAC.matcher(mac).matches()) {
+                    if (MAC.matcher(mac).matches() && NetworkScan.usableMac(mac)) {
                         wifi.add(new NetworkScan.Wifi(mac, rssi));
                     }
                 }

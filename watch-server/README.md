@@ -12,7 +12,7 @@ this database.
     python -m unittest discover -s tests                # tests
 
 Env: `WATCH_HOST`, `WATCH_PORT` (8899), `WATCH_DB`, `WATCH_ALLOWED_IDS` (comma list; empty = accept all, new IDs logged),
-`WATCH_STILL_EVERY` (180; seconds, 0 = watches are never asked for a position).
+`WATCH_STILL_EVERY` (100, the same as moving; seconds, 0 = watches are never asked for a position).
 
 Positions: the watch reports by itself only at power-on, on an alarm and "in vibration state" (vendor document); the
 HongMi sample sent 2-4 reports a day. `CR` makes it locate and report for 3 minutes - every 10 s per the vendor

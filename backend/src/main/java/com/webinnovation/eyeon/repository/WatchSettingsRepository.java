@@ -49,6 +49,12 @@ public class WatchSettingsRepository {
                 .addValue("language", language).addValue("zone", zoneHours));
     }
 
+    /** Send the stored values again (the watch restarted and may have lost them). */
+    public void markPending(String imei) {
+        jdbc.update("UPDATE watch_settings SET status = 'PENDING', updated_at = now() WHERE device_imei = :imei",
+                new MapSqlParameterSource("imei", imei));
+    }
+
     /** The watch answered a command with these values; ignored when the carer changed them meanwhile. */
     public void markSynced(String imei, int language, int zoneHours) {
         jdbc.update("""

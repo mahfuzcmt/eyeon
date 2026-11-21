@@ -60,14 +60,17 @@ public class WatchIngest {
     private final NetworkLocationService networkLocationService;
     private final AsyncTaskExecutor ingestExecutor;
     private final WatchCommands commands;
+    private final com.webinnovation.eyeon.service.WatchTimeService watchTime;
 
     public WatchIngest(DeviceService deviceService,
                        LocationService locationService,
                        AlarmService alarmService,
                        NetworkLocationService networkLocationService,
                        @Qualifier("ingestExecutor") AsyncTaskExecutor ingestExecutor,
-                       WatchCommands commands) {
+                       WatchCommands commands,
+                       com.webinnovation.eyeon.service.WatchTimeService watchTime) {
         this.commands = commands;
+        this.watchTime = watchTime;
         this.deviceService = deviceService;
         this.locationService = locationService;
         this.alarmService = alarmService;
@@ -168,6 +171,9 @@ public class WatchIngest {
             } else if (command.equals("AL") || command.startsWith("AL_")) {
                 report(frame, true);
             } else {
+                if (command.equals("CONFIG") || command.equals("RYIMEI")) {
+                    watchTime.onWatchPowerOn(session.orgId(), imei);  // restarted: set its time zone again
+                }
                 commands.onFrame(imei, frame);  // the answer to a command, if one is waited for
                 deviceService.markOnline(imei);
             }
@@ -192,6 +198,7 @@ public class WatchIngest {
                 watchId = id;
                 session = new LoginGate.Session(device.imei(), device.orgId());
                 deviceService.markWatch(device);
+                watchTime.onWatchConnected(device.orgId(), device.imei());
                 if (channel != null) {
                     commands.attach(device.imei(), id, vendor, channel);
                 }
