@@ -204,6 +204,16 @@ export default function ControlsTab({ imei, orgId }: { imei: string; orgId: stri
               fullWidth
             />
           ) : null}
+          {isWatch ? (
+            <CommandBtn
+              label={t("ws.title")}
+              tone="neutral"
+              icon="🆘"
+              disabled={busy !== null}
+              onPress={() => router.push({ pathname: "/watch-sos", params: { imei, name: device?.name ?? "" } })}
+              fullWidth
+            />
+          ) : null}
           <CommandBtn
             label={t("pe.editButton")}
             tone="neutral"

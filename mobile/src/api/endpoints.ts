@@ -455,6 +455,25 @@ export async function saveWatchTime(imei: string, language: number, zoneHours: n
   return r.data;
 }
 
+/** SOS numbers of a smart watch (0-3, in calling order); status is null until set from the app. */
+export interface WatchSosView {
+  online: boolean;
+  numbers: string[];
+  status: "PENDING" | "SYNCED" | null;
+  syncedAt: string | null;
+}
+
+export async function getWatchSos(imei: string): Promise<WatchSosView> {
+  const r = await api.get<WatchSosView>(`/devices/${imei}/watch-sos`);
+  return r.data;
+}
+
+/** Waits up to ~8 s for the watch to answer; PENDING means it gets the numbers when it next connects. */
+export async function saveWatchSos(imei: string, numbers: string[]): Promise<WatchSosView> {
+  const r = await api.put<WatchSosView>(`/devices/${imei}/watch-sos`, { numbers }, { timeout: 30_000 });
+  return r.data;
+}
+
 /** Trackers the user can see whose night rest is on. */
 export async function listNightRest(): Promise<NightRestView[]> {
   const r = await api.get<NightRestView[]>("/devices/rest");
