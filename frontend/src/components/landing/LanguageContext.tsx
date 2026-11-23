@@ -388,7 +388,10 @@ const translations: Record<string, { en: string; bn: string }> = {
     en: "Know where your child is, and be told when they leave or arrive - at home, at school and at coaching.",
     bn: "আপনার সন্তান কোথায় আছে জানুন, বাসা, স্কুল আর কোচিং থেকে বের হলে বা পৌঁছালে সাথে সাথে জানুন।",
   },
-  "watchPage.illustration": { en: "Illustration - product photos will follow", bn: "প্রতীকী ছবি - আসল ছবি পরে যোগ হবে" },
+  "watchPage.posterAlt": {
+    en: "EyeOn AI Watch: a schoolboy wearing the watch, the watch in pink, blue and black, and its features - live location, safe zone area, stay time, SOS emergency button, two-way communication.",
+    bn: "EyeOn AI ঘড়ি: হাতে ঘড়ি পরা এক স্কুলছাত্র, গোলাপি, নীল ও কালো রঙের ঘড়ি, আর এর ফিচার - লাইভ লোকেশন, সেফ জোন, কোথায় কতক্ষণ ছিল, SOS জরুরি বাটন, দুই দিকে কথা বলা।",
+  },
   "watchPage.featuresTitle": { en: "What the watch does", bn: "ঘড়িটি যা যা করে" },
   "watchPage.f1": { en: "Your child's live location.", bn: "আপনার সন্তানের লাইভ লোকেশন।" },
   "watchPage.f2": {

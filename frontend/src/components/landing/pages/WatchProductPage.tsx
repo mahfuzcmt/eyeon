@@ -2,13 +2,12 @@
 
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { EyeOnMark } from "@/components/brand/EyeOnLogo";
 import { useLanguage } from "../LanguageContext";
 import { AnimatedSection, CallToAction, CONTACT, Icon, ICONS, PageHero, WhatsAppIcon, fadeInUp, whatsappLink } from "../shared";
 
 /*
- * EyeOn AI Watch (2026-11-21). The feature list is the owner's. There is no product photograph
- * yet, so the watch is drawn and labelled as an illustration, and there is no published price:
+ * EyeOn AI Watch (2026-11-21). The feature list and the product poster are the owner's. There
+ * is no published price:
  * "Call for price" with the sales number and WhatsApp. Add a photo or a price only when the
  * owner supplies them.
  */
@@ -25,30 +24,20 @@ const FEATURES: { key: string; icon: string }[] = [
   { key: "f10", icon: ICONS.heart },
 ];
 
-function WatchIllustration() {
+/** The product poster (owner, 2026-11-23): the watch in three colours and its main features. */
+function WatchPicture() {
   const { t } = useLanguage();
   return (
-    <div>
-      <div className="relative flex aspect-square items-center justify-center overflow-hidden rounded-[2.5rem] bg-gradient-to-br from-brand-700 via-brand-600 to-brand-800">
-        <div aria-hidden="true" className="absolute -right-16 -top-16 h-56 w-56 rounded-full bg-sun-400/15" />
-        <div aria-hidden="true" className="absolute -bottom-20 -left-12 h-64 w-64 rounded-full bg-brand-400/15" />
-        {/* strap */}
-        <div aria-hidden="true" className="absolute left-1/2 top-0 h-full w-[26%] -translate-x-1/2 bg-sun-400/90" />
-        {/* watch body */}
-        <motion.div
-          aria-hidden="true"
-          animate={{ y: [0, -6, 0] }}
-          transition={{ duration: 3, repeat: Infinity }}
-          className="relative flex h-[46%] w-[40%] flex-col items-center justify-center gap-3 rounded-[2rem] border-[6px] border-ink-900 bg-white shadow-2xl"
-        >
-          <EyeOnMark size={44} color="#0F6B5C" />
-          <div className="flex items-center gap-1.5 rounded-full bg-brand-50 px-3 py-1 text-xs font-bold text-brand-600">
-            <Icon path={ICONS.pin} className="h-3.5 w-3.5" />
-            LIVE
-          </div>
-        </motion.div>
-      </div>
-      <p className="mt-3 text-center text-xs text-ink-500">{t("watchPage.illustration")}</p>
+    <div className="overflow-hidden rounded-[2rem] shadow-xl ring-1 ring-surface-300">
+      {/* eslint-disable-next-line @next/next/no-img-element -- a fixed, already-compressed product poster */}
+      <img
+        src="/images/eyeon-ai-watch-poster.jpg"
+        width={1254}
+        height={1254}
+        alt={t("watchPage.posterAlt")}
+        className="block h-auto w-full"
+        loading="eager"
+      />
     </div>
   );
 }
@@ -97,7 +86,7 @@ export function WatchProductPage() {
         <div className="mx-auto max-w-6xl px-4 sm:px-6">
           <AnimatedSection className="grid items-center gap-12 lg:grid-cols-2">
             <motion.div variants={fadeInUp} className="mx-auto w-full max-w-md">
-              <WatchIllustration />
+              <WatchPicture />
             </motion.div>
             <motion.div variants={fadeInUp}>
               <h2 className="font-display text-3xl font-bold text-ink-900 sm:text-4xl">{t("watchPage.title")}</h2>
