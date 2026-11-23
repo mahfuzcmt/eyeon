@@ -9,6 +9,7 @@ import { FAQSection } from "../FAQSection";
 import {
   AnimatedSection,
   CallToAction,
+  CONTACT,
   ContactButtons,
   FEATURES,
   Icon,
@@ -82,7 +83,14 @@ function Hero() {
               <ContactButtons onDark />
             </motion.div>
 
-            <motion.div variants={fadeInUp} className="mt-6">
+            <motion.div variants={fadeInUp} className="mt-6 flex flex-wrap items-center gap-x-8 gap-y-2">
+              <Link
+                href="/products/eyeon-ai-watch"
+                className="inline-flex min-h-[44px] items-center gap-2 rounded-full bg-white/10 px-4 text-[15px] font-semibold text-white ring-1 ring-white/30 hover:bg-white/20"
+              >
+                <Icon path={ICONS.watch} className="h-4 w-4 text-sun-300" />
+                {t("home.watch.see")}
+              </Link>
               <a href="#how" className="inline-flex min-h-[44px] items-center gap-2 text-[15px] font-semibold text-sun-300 underline-offset-4 hover:underline">
                 {t("hero.howItWorks")}
                 <Icon path={ICONS.arrow} className="h-4 w-4" />
@@ -120,6 +128,90 @@ function FactsBand() {
             </li>
           ))}
         </ul>
+      </div>
+    </section>
+  );
+}
+
+/* ── The product: EyeOn AI Watch (owner, 2026-11-23: highlight the product page) ── */
+const WATCH_COLOURS = [
+  { src: "/images/eyeon-ai-watch-pink.jpg", key: "watchPage.pic.pinkAlt", dot: "#F4A79A" },
+  { src: "/images/eyeon-ai-watch-black.jpg", key: "watchPage.pic.blackAlt", dot: "#3A3D40" },
+  { src: "/images/eyeon-ai-watch-blue.jpg", key: "watchPage.pic.blueAlt", dot: "#8EC5EC" },
+];
+
+function WatchSpotlight() {
+  const { t } = useLanguage();
+  const points = ["watchPage.f1", "watchPage.f3", "watchPage.f8", "watchPage.f9"];
+
+  return (
+    <section id="watch" className="relative overflow-hidden bg-white py-20">
+      <div aria-hidden="true" className="absolute -left-40 top-10 h-[26rem] w-[26rem] rounded-full bg-sun-100/70" />
+      <div className="relative mx-auto max-w-7xl px-4 sm:px-6">
+        <AnimatedSection className="grid items-center gap-12 lg:grid-cols-2 lg:gap-16">
+          {/* The three colours */}
+          <motion.div variants={fadeInUp}>
+            <Link
+              href="/products/eyeon-ai-watch"
+              aria-label={t("home.watch.see")}
+              className="group block rounded-[2.5rem] bg-gradient-to-br from-brand-50 via-white to-sun-100 p-6 ring-1 ring-surface-300 transition-shadow hover:shadow-xl sm:p-8"
+            >
+              <div className="grid grid-cols-3 items-center gap-2 py-4 sm:gap-4 sm:py-8">
+                {WATCH_COLOURS.map((c, i) => (
+                  // eslint-disable-next-line @next/next/no-img-element -- fixed, already-compressed product photos
+                  <img
+                    key={c.src}
+                    src={c.src}
+                    width={1000}
+                    height={1000}
+                    alt={t(c.key)}
+                    loading="lazy"
+                    className={`block h-auto w-full mix-blend-multiply transition-transform duration-300 group-hover:-translate-y-1 ${i === 1 ? "z-10 scale-[1.45]" : "scale-[1.2]"}`}
+                  />
+                ))}
+              </div>
+              <div className="mt-4 flex items-center justify-center gap-2">
+                {WATCH_COLOURS.map((c) => (
+                  <span key={c.dot} aria-hidden="true" className="h-4 w-4 rounded-full ring-2 ring-white shadow" style={{ backgroundColor: c.dot }} />
+                ))}
+                <span className="ml-1 text-sm font-semibold text-ink-700">{t("home.watch.colours")}</span>
+              </div>
+            </Link>
+          </motion.div>
+
+          {/* What it is, and how to get it */}
+          <motion.div variants={fadeInUp}>
+            <SectionBadge>{t("home.watch.badge")}</SectionBadge>
+            <h2 className="font-display text-3xl font-bold tracking-tight text-ink-900 sm:text-5xl">{t("watchPage.title")}</h2>
+            <p className="mt-4 text-lg leading-relaxed text-ink-700">{t("watchPage.desc")}</p>
+            <ul className="mt-6 space-y-3">
+              {points.map((k) => (
+                <li key={k} className="flex items-start gap-3 text-[16px] leading-relaxed text-ink-900">
+                  <span className="mt-1 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-brand-500 text-white">
+                    <Icon path={ICONS.check} className="h-4 w-4" />
+                  </span>
+                  {t(k)}
+                </li>
+              ))}
+            </ul>
+            <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+              <Link
+                href="/products/eyeon-ai-watch"
+                className="inline-flex min-h-[56px] items-center justify-center gap-2 rounded-2xl bg-brand-500 px-7 text-[16px] font-bold text-white shadow-lg shadow-brand-500/20 transition-all hover:bg-brand-600"
+              >
+                {t("home.watch.see")}
+                <Icon path={ICONS.arrow} className="h-5 w-5" />
+              </Link>
+              <a
+                href={`tel:${CONTACT.phoneTel}`}
+                className="inline-flex min-h-[56px] items-center justify-center gap-2 rounded-2xl bg-sun-400 px-7 text-[16px] font-bold text-ink-900 transition-all hover:bg-sun-300"
+              >
+                <Icon path={ICONS.phone} className="h-5 w-5" />
+                {t("watchPage.callForPrice")}
+              </a>
+            </div>
+          </motion.div>
+        </AnimatedSection>
       </div>
     </section>
   );
@@ -371,6 +463,7 @@ export function HomePage() {
     <>
       <Hero />
       <FactsBand />
+      <WatchSpotlight />
       <FeaturesSection />
       <HowItWorksSection />
       <AudienceSection />
