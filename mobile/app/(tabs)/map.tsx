@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Alert, Image, Pressable, StyleSheet, Text, View } from "react-native";
+import { Alert, Image, Linking, Pressable, StyleSheet, Text, View } from "react-native";
 import { useRouter } from "expo-router";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
@@ -270,6 +270,8 @@ export default function MapScreen() {
         const motion = motionOf(d, l);
         const overspeed = speedLimits.isOverspeed(selected, l?.speed ?? 0);
         const photo = photos[selected] ?? null;
+        const navLat = l?.latitude ?? d.lastLatitude;
+        const navLng = l?.longitude ?? d.lastLongitude;
         return (
           <View style={styles.card}>
             <View style={styles.cardTop}>
@@ -282,15 +284,30 @@ export default function MapScreen() {
                 <Ionicons name="close" size={24} color={colors.textDim} />
               </Pressable>
             </View>
-            <PersonDetails device={d} loc={l} overspeed={overspeed} />
+            <PersonDetails device={d} loc={l} overspeed={overspeed} showNavigate={false} />
+            {/* Navigate, Playback and Add as place in one row (owner, 2026-11-23) */}
             <View style={styles.cardActions}>
+              {navLat != null && navLng != null && (navLat !== 0 || navLng !== 0) ? (
+                <Pressable
+                  onPress={() => void Linking.openURL(`https://www.google.com/maps/dir/?api=1&destination=${navLat},${navLng}`)}
+                  style={({ pressed }) => [styles.cardButtonAlt, pressed && { opacity: 0.8 }]}
+                  accessibilityRole="button"
+                >
+                  <Ionicons name="navigate-outline" size={22} color={colors.brand} />
+                  <Text style={styles.cardButtonAltText} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75}>
+                    {t("person.navigate")}
+                  </Text>
+                </Pressable>
+              ) : null}
               <Pressable
                 onPress={() => router.push({ pathname: "/device/[imei]", params: { imei: selected, tab: "history" } })}
                 style={({ pressed }) => [styles.cardButtonAlt, pressed && { opacity: 0.8 }]}
                 accessibilityRole="button"
               >
                 <Ionicons name="play-circle-outline" size={22} color={colors.brand} />
-                <Text style={styles.cardButtonAltText} numberOfLines={1}>{t("person.playback")}</Text>
+                <Text style={styles.cardButtonAltText} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75}>
+                  {t("person.playback")}
+                </Text>
               </Pressable>
               {l && (l.latitude !== 0 || l.longitude !== 0) ? (
                 <Pressable
@@ -307,7 +324,9 @@ export default function MapScreen() {
                   accessibilityLabel={t("map.addHere")}
                 >
                   <Ionicons name="add-circle-outline" size={22} color={colors.brand} />
-                  <Text style={styles.cardButtonAltText} numberOfLines={1}>{t("act.geofence")}</Text>
+                  <Text style={styles.cardButtonAltText} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75}>
+                    {t("act.geofence")}
+                  </Text>
                 </Pressable>
               ) : null}
             </View>
@@ -491,5 +510,5 @@ const styles = StyleSheet.create({
     borderColor: colors.brand,
     backgroundColor: colors.surface,
   },
-  cardButtonAltText: { color: colors.brand, fontSize: 14, fontWeight: "700" },
+  cardButtonAltText: { color: colors.brand, fontSize: 13, fontWeight: "700" },
 });

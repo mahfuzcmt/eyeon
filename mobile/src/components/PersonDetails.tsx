@@ -49,10 +49,13 @@ export default function PersonDetails({
   device,
   loc,
   overspeed = false,
+  showNavigate = true,
 }: {
   device: DeviceView;
   loc: LocationView | null;
   overspeed?: boolean;
+  /** False where the caller shows its own Navigate button (the map card's button row). */
+  showNavigate?: boolean;
 }) {
   const { t, locale } = useI18n();
   const motion = motionOf(device, loc);
@@ -113,7 +116,7 @@ export default function PersonDetails({
         </Text>
       </Row>
 
-      {hasPos ? (
+      {hasPos && showNavigate ? (
         <Pressable
           onPress={() => void Linking.openURL(`https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`)}
           style={({ pressed }) => [styles.navigate, pressed && { opacity: 0.7 }]}
