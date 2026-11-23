@@ -29,52 +29,25 @@ import {
 export const PARTNER_SCHOOLS: { name: string; city?: string }[] = [];
 
 /* ── Hero ──────────────────────────────────────────────────────── */
+/**
+ * Real notifications from a parent's phone (owner's screenshot, 18 Nov 2026), in a phone frame.
+ * Cropped above an older wording of the "left" message so the site shows what the app sends now.
+ */
 function PhoneMock() {
   const { t } = useLanguage();
-  const notifications = ["mock.n1", "mock.n2", "mock.n3"];
-
   return (
     <div className="mx-auto w-full max-w-[320px]">
       <div className="rounded-[2.5rem] border-4 border-white/20 bg-brand-900/60 p-3 shadow-2xl backdrop-blur">
-        <div className="overflow-hidden rounded-[2rem] bg-surface-100">
-          {/* Stylised map with a safe zone - an illustration, not a screenshot */}
-          <div className="relative h-44 bg-brand-50">
-            <div aria-hidden="true" className="absolute left-0 right-0 top-16 h-3 -rotate-6 bg-white" />
-            <div aria-hidden="true" className="absolute bottom-0 left-24 top-0 w-3 rotate-12 bg-white" />
-            <div aria-hidden="true" className="absolute left-1/2 top-1/2 h-28 w-28 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-dashed border-brand-400 bg-brand-200/40" />
-            <motion.div
-              aria-hidden="true"
-              animate={{ y: [0, -4, 0] }}
-              transition={{ duration: 2, repeat: Infinity }}
-              className="absolute left-1/2 top-1/2 flex h-10 w-10 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-sun-400 text-ink-900 shadow-lg"
-            >
-              <Icon path={ICONS.pin} className="h-5 w-5" />
-            </motion.div>
-            <div className="absolute left-3 top-3 flex items-center gap-1.5 rounded-full bg-white px-2.5 py-1 text-[12px] font-semibold text-brand-600 shadow-sm">
-              <span className="h-1.5 w-1.5 rounded-full bg-brand-500" />
-              {t("mock.live")}
-            </div>
-            <div className="absolute bottom-3 left-3 rounded-full bg-brand-500 px-2.5 py-1 text-[12px] font-semibold text-white">{t("mock.safeZone")}</div>
-          </div>
-
-          {/* Notifications */}
-          <div className="space-y-2 p-3">
-            {notifications.map((key, i) => (
-              <motion.div
-                key={key}
-                initial={{ opacity: 0, y: 12 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.6 + i * 0.25 }}
-                className="rounded-2xl bg-white p-3 shadow-sm"
-              >
-                <div className="flex items-center justify-between text-[12px] font-semibold text-ink-500">
-                  <span>EyeOn</span>
-                  {i === 0 && <span>{t("mock.now")}</span>}
-                </div>
-                <div className="mt-1 text-[13px] font-medium leading-snug text-ink-900">{t(key)}</div>
-              </motion.div>
-            ))}
-          </div>
+        <div className="overflow-hidden rounded-[2rem] bg-ink-900">
+          {/* eslint-disable-next-line @next/next/no-img-element -- a fixed, already-compressed screenshot */}
+          <img
+            src="/images/eyeon-notifications-real.jpg"
+            width={730}
+            height={1172}
+            alt={t("mock.alt")}
+            className="block h-auto w-full"
+            loading="eager"
+          />
         </div>
       </div>
       <p className="mt-3 text-center text-xs text-brand-100">{t("mock.caption")}</p>

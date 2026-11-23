@@ -1,8 +1,8 @@
 // Product data consumed by the product detail route, src/app/(marketing)/products/[id]/page.tsx
 // (a file outside this directory, so the exported names and the Product shape must stay).
 //
-// EyeOn sells ONE product, the EyeOn tracker, and it is described on the /products
-// page itself (pages/ProductsPage.tsx). This list is intentionally empty: the detail
+// EyeOn sells ONE product, the EyeOn AI Watch, and it is described on its own
+// page (/products/eyeon-ai-watch, pages/WatchProductPage.tsx). This list is intentionally empty: the detail
 // route renders a price, a warranty length and a product photo for every entry, and
 // EyeOn has no published price, no confirmed warranty terms and no product photo yet.
 // With an empty list every /products/<id> URL shows the "page not found" message.
