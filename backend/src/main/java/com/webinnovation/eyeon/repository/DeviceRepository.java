@@ -460,7 +460,7 @@ public class DeviceRepository {
             "locations", "alarms", "trips", "geofence_devices", "geofence_states",
             "user_devices", "device_group_members", "alarm_rule_devices", "alarm_rule_state",
             "driver_assignments", "share_location_links", "scheduled_commands", "device_photos",
-            "daily_checks", "route_matches", "tracker_settings", "watch_settings");
+            "daily_checks", "route_matches", "tracker_settings", "watch_settings", "watch_sos_numbers");
 
     /**
      * Permanently delete a device and everything recorded for it (Super Admin only).

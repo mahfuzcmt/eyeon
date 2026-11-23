@@ -35,6 +35,7 @@ const PRIVACY: Record<"en" | "bn", Block[]> = {
         "The person you look after: the name you give them, and optionally a class or ID and a photo you choose. Photos are re-encoded on our server, which removes their hidden data such as the place they were taken.",
         "From the watch or tracker: its location (GPS, or a position estimated from nearby Wi-Fi networks and mobile cell towers), battery level, alarms such as SOS and low battery, and the time of each report.",
         "What you set up: places (home, school), areas, usual routes, expected arrival and leaving times, and the alerts produced from them.",
+        "Watch settings: the time zone, language and up to three SOS phone numbers you enter for the watch. We store the numbers and send them to the watch, which calls and texts them from its own SIM when its SOS button is held. Only enter numbers of people who agree to receive those calls.",
         "Your phone: a notification token so we can send alerts, and the language the app is set to. When you tap \"Locate me\", the app uses your phone's location only to centre the map; it is not sent to us.",
       ],
     },
@@ -110,6 +111,7 @@ const PRIVACY: Record<"en" | "bn", Block[]> = {
         "যাঁর দেখাশোনা করছেন: আপনার দেওয়া নাম, ইচ্ছা করলে ক্লাস/আইডি আর একটি ছবি। ছবি আমাদের সার্ভারে নতুন করে তৈরি হয়, ফলে ছবির ভেতরের লুকানো তথ্য (যেমন কোথায় তোলা) মুছে যায়।",
         "ঘড়ি বা ট্র্যাকার থেকে: লোকেশন (GPS, অথবা আশপাশের Wi-Fi ও মোবাইল টাওয়ার থেকে আনুমানিক অবস্থান), ব্যাটারি, SOS ও লো ব্যাটারির মতো অ্যালার্ট, আর প্রতিটি তথ্যের সময়।",
         "আপনি যা ঠিক করে দেন: জায়গা (বাসা, স্কুল), এলাকা, যাওয়ার পথ, পৌঁছানো ও বের হওয়ার সময়, আর সেগুলো থেকে তৈরি অ্যালার্ট।",
+        "ঘড়ির সেটিং: টাইম জোন, ভাষা আর ঘড়ির জন্য আপনার দেওয়া সর্বোচ্চ তিনটি SOS ফোন নম্বর। নম্বরগুলো আমরা সংরক্ষণ করি আর ঘড়িতে পাঠাই; SOS বাটন চাপলে ঘড়ি নিজের সিম থেকে সেই নম্বরে কল ও SMS করে। শুধু তাঁদের নম্বর দিন যাঁরা এই কল পেতে রাজি।",
         "আপনার ফোন: অ্যালার্ট পাঠানোর জন্য একটি নোটিফিকেশন টোকেন, আর অ্যাপের ভাষা। \"Locate me\" চাপলে আপনার ফোনের লোকেশন শুধু ম্যাপ সাজাতে ব্যবহার হয়; আমাদের কাছে পাঠানো হয় না।",
       ],
     },
@@ -180,7 +182,7 @@ const DELETION: Record<"en" | "bn", Block[]> = {
       h: "What is deleted",
       list: [
         "Your account: name, email, phone number, password, notification tokens and settings.",
-        "For each person on the account that nobody else looks after: their name, photo, location history, alerts, places, routes and expected times.",
+        "For each person on the account that nobody else looks after: their name, photo, location history, alerts, places, routes, expected times and the watch's settings, including its SOS numbers.",
         "Share links you created stop working.",
       ],
     },
@@ -206,7 +208,7 @@ const DELETION: Record<"en" | "bn", Block[]> = {
       h: "যা মুছে যায়",
       list: [
         "আপনার অ্যাকাউন্ট: নাম, ইমেইল, ফোন নম্বর, পাসওয়ার্ড, নোটিফিকেশন টোকেন আর সেটিংস।",
-        "অ্যাকাউন্টের যে ব্যক্তিকে আর কেউ দেখাশোনা করেন না: তার নাম, ছবি, লোকেশনের ইতিহাস, অ্যালার্ট, জায়গা, পথ আর নির্ধারিত সময়।",
+        "অ্যাকাউন্টের যে ব্যক্তিকে আর কেউ দেখাশোনা করেন না: তার নাম, ছবি, লোকেশনের ইতিহাস, অ্যালার্ট, জায়গা, পথ, নির্ধারিত সময় আর ঘড়ির সেটিং (SOS নম্বরসহ)।",
         "আপনার তৈরি শেয়ার লিংকগুলো আর কাজ করবে না।",
       ],
     },

@@ -64,7 +64,8 @@ class WatchIngestTest {
                 .thenReturn(Optional.empty());
         // frames are handled on the calling thread, so every assertion below sees a finished frame
         WatchIngest ingest = new WatchIngest(deviceService, locationService, alarmService, networkLocationService,
-                new TaskExecutorAdapter(Runnable::run), new WatchCommands(), watchTime);
+                new TaskExecutorAdapter(Runnable::run), new WatchCommands(), watchTime,
+                mock(com.webinnovation.eyeon.service.WatchSosService.class));
         watch = ingest.open("/37.111.212.151:40112");
     }
 

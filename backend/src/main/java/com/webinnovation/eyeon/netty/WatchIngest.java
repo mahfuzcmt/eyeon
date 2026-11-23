@@ -61,6 +61,7 @@ public class WatchIngest {
     private final AsyncTaskExecutor ingestExecutor;
     private final WatchCommands commands;
     private final com.webinnovation.eyeon.service.WatchTimeService watchTime;
+    private final com.webinnovation.eyeon.service.WatchSosService watchSos;
 
     public WatchIngest(DeviceService deviceService,
                        LocationService locationService,
@@ -68,9 +69,11 @@ public class WatchIngest {
                        NetworkLocationService networkLocationService,
                        @Qualifier("ingestExecutor") AsyncTaskExecutor ingestExecutor,
                        WatchCommands commands,
-                       com.webinnovation.eyeon.service.WatchTimeService watchTime) {
+                       com.webinnovation.eyeon.service.WatchTimeService watchTime,
+                       com.webinnovation.eyeon.service.WatchSosService watchSos) {
         this.commands = commands;
         this.watchTime = watchTime;
+        this.watchSos = watchSos;
         this.deviceService = deviceService;
         this.locationService = locationService;
         this.alarmService = alarmService;
@@ -173,6 +176,7 @@ public class WatchIngest {
             } else {
                 if (command.equals("CONFIG") || command.equals("RYIMEI")) {
                     watchTime.onWatchPowerOn(session.orgId(), imei);  // restarted: set its time zone again
+                    watchSos.onWatchPowerOn(imei);  // and its SOS numbers
                 }
                 commands.onFrame(imei, frame);  // the answer to a command, if one is waited for
                 deviceService.markOnline(imei);
