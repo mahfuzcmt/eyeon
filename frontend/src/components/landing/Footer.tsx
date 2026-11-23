@@ -90,8 +90,18 @@ export function Footer() {
           </div>
         </div>
 
-        <div className="mt-12 border-t border-white/10 pt-8 text-center text-sm text-brand-100 sm:text-left">
-          © {new Date().getFullYear()} EyeOn. {t("footer.rights")}
+        <div className="mt-12 flex flex-col items-center gap-3 border-t border-white/10 pt-8 text-sm text-brand-100 sm:flex-row sm:justify-between">
+          <span>
+            © {new Date().getFullYear()} EyeOn. {t("footer.rights")}
+          </span>
+          <span className="flex gap-6">
+            <Link href="/privacy" className="hover:text-sun-300">
+              {t("legal.privacy.title")}
+            </Link>
+            <Link href="/delete-account" className="hover:text-sun-300">
+              {t("legal.delete.title")}
+            </Link>
+          </span>
         </div>
       </div>
     </footer>

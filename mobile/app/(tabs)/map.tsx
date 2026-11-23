@@ -310,14 +310,6 @@ export default function MapScreen() {
                   <Text style={styles.cardButtonAltText} numberOfLines={1}>{t("act.geofence")}</Text>
                 </Pressable>
               ) : null}
-              <Pressable
-                onPress={() => router.push({ pathname: "/device/[imei]", params: { imei: selected } })}
-                style={({ pressed }) => [styles.cardButton, pressed && { opacity: 0.8 }]}
-                accessibilityRole="button"
-              >
-                <Ionicons name="document-text-outline" size={22} color={colors.onBrand} />
-                <Text style={styles.cardButtonText} numberOfLines={1}>{t("person.details")}</Text>
-              </Pressable>
             </View>
           </View>
         );
@@ -487,7 +479,6 @@ const styles = StyleSheet.create({
   cardName: { color: colors.text, fontSize: 18, fontWeight: "800" },
   cardSeen: { color: colors.textFaint, fontSize: 13, marginTop: 2 },
   cardActions: { flexDirection: "row", gap: space.sm },
-  cardButton: { flex: 1, backgroundColor: colors.brand, borderRadius: 12, minHeight: 56, alignItems: "center", justifyContent: "center", paddingHorizontal: 4, gap: 2 },
   cardButtonAlt: {
     flex: 1,
     borderRadius: 12,
@@ -501,5 +492,4 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
   },
   cardButtonAltText: { color: colors.brand, fontSize: 14, fontWeight: "700" },
-  cardButtonText: { color: colors.onBrand, fontSize: 14, fontWeight: "700" },
 });

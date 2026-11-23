@@ -626,6 +626,21 @@ const translations: Record<string, { en: string; bn: string }> = {
   "footer.quickLinks": { en: "Pages", bn: "পেজ" },
   "footer.contactUs": { en: "Pre-order & enquiries", bn: "প্রি-অর্ডার ও জিজ্ঞাসা" },
   "footer.support": { en: "Support in Bengali", bn: "বাংলায় সাপোর্ট" },
+  "legal.badge": { en: "EyeOn", bn: "EyeOn" },
+  "legal.privacy.title": { en: "Privacy policy", bn: "গোপনীয়তা নীতি" },
+  "legal.privacy.desc": {
+    en: "What the EyeOn app and the EyeOn AI Watch collect, why, and who can see it.",
+    bn: "EyeOn অ্যাপ আর EyeOn AI ঘড়ি কী তথ্য রাখে, কেন রাখে, আর কারা দেখতে পান।",
+  },
+  "legal.delete.title": { en: "Delete your account", bn: "অ্যাকাউন্ট মুছুন" },
+  "legal.delete.desc": {
+    en: "Ask us to delete your EyeOn account, or one person's data.",
+    bn: "আপনার EyeOn অ্যাকাউন্ট, বা একজন ব্যক্তির তথ্য মুছে ফেলার অনুরোধ করুন।",
+  },
+  "legal.delete.whatsapp": {
+    en: "Hello! I would like to delete my EyeOn account. My account email / phone: ",
+    bn: "হ্যালো! আমি আমার EyeOn অ্যাকাউন্ট মুছে ফেলতে চাই। আমার অ্যাকাউন্টের ইমেইল / ফোন: ",
+  },
   "footer.getApp": { en: "Get the app", bn: "অ্যাপ ডাউনলোড করুন" },
   "footer.webApp": { en: "Or open EyeOn in the browser", bn: "অথবা ব্রাউজারে EyeOn খুলুন" },
   "footer.rights": { en: "All rights reserved.", bn: "সর্বস্বত্ব সংরক্ষিত।" },
