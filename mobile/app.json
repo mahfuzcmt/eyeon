@@ -3,7 +3,7 @@
     "name": "EyeOn",
     "slug": "eyeon",
     "scheme": "eyeon",
-    "version": "0.3.31",
+    "version": "1.0.0",
     "orientation": "portrait",
     "userInterfaceStyle": "light",
     "splash": {
@@ -27,12 +27,20 @@
         "android.permission.ACCESS_FINE_LOCATION",
         "android.permission.ACCESS_COARSE_LOCATION"
       ],
-      "versionCode": 36,
+      "versionCode": 37,
       "googleServicesFile": "./google-services.json",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#0F6B5C"
-      }
+      },
+      "blockedPermissions": [
+        "android.permission.SYSTEM_ALERT_WINDOW",
+        "android.permission.WRITE_EXTERNAL_STORAGE",
+        "android.permission.USE_BIOMETRIC",
+        "android.permission.USE_FINGERPRINT",
+        "com.google.android.gms.permission.ACTIVITY_RECOGNITION",
+        "android.permission.ACTIVITY_RECOGNITION"
+      ]
     },
     "plugins": [
       "expo-router",
@@ -57,7 +65,18 @@
           "icon": "./assets/notification-icon.png",
           "color": "#0F6B5C"
         }
-      ]
+      ],
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "compileSdkVersion": 36,
+            "targetSdkVersion": 36,
+            "buildToolsVersion": "36.1.0"
+          }
+        }
+      ],
+      "./plugins/withReleaseSigning"
     ],
     "experiments": {
       "typedRoutes": true

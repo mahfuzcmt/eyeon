@@ -8,12 +8,14 @@
     "android": "expo run:android",
     "ios": "expo run:ios",
     "typecheck": "tsc --noEmit",
-    "lint": "expo lint"
+    "lint": "expo lint",
+    "postinstall": "patch-package"
   },
   "dependencies": {
     "@stomp/stompjs": "^7.0.0",
     "axios": "^1.7.7",
     "expo": "~51.0.28",
+    "expo-build-properties": "^0.12.5",
     "expo-constants": "~16.0.2",
     "expo-device": "~6.0.2",
     "expo-file-system": "~17.0.1",
@@ -36,6 +38,7 @@
     "@types/react": "~18.2.79",
     "eslint": "^8.57.0",
     "eslint-config-expo": "~7.1.2",
+    "patch-package": "^8.0.0",
     "typescript": "~5.3.3"
   }
 }
