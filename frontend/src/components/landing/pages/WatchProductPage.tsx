@@ -1,12 +1,13 @@
 "use client";
 
 import Link from "next/link";
+import { useState } from "react";
 import { motion } from "framer-motion";
 import { useLanguage } from "../LanguageContext";
 import { AnimatedSection, CallToAction, CONTACT, Icon, ICONS, PageHero, WhatsAppIcon, fadeInUp, whatsappLink } from "../shared";
 
 /*
- * EyeOn AI Watch (2026-11-21). The feature list and the product poster are the owner's. There
+ * EyeOn AI Watch (2026-11-21). The feature list, the product poster and the colour photos are the owner's. There
  * is no published price:
  * "Call for price" with the sales number and WhatsApp. Add a photo or a price only when the
  * owner supplies them.
@@ -24,20 +25,50 @@ const FEATURES: { key: string; icon: string }[] = [
   { key: "f10", icon: ICONS.heart },
 ];
 
-/** The product poster (owner, 2026-11-23): the watch in three colours and its main features. */
+/** The owner's pictures (2026-11-23): the poster, then the watch in black, pink and blue. */
+const PICTURES: { src: string; size: number; altKey: string; thumbKey: string }[] = [
+  { src: "/images/eyeon-ai-watch-poster.jpg", size: 1254, altKey: "watchPage.posterAlt", thumbKey: "watchPage.pic.poster" },
+  { src: "/images/eyeon-ai-watch-black.jpg", size: 1000, altKey: "watchPage.pic.blackAlt", thumbKey: "watchPage.pic.black" },
+  { src: "/images/eyeon-ai-watch-pink.jpg", size: 1000, altKey: "watchPage.pic.pinkAlt", thumbKey: "watchPage.pic.pink" },
+  { src: "/images/eyeon-ai-watch-blue.jpg", size: 1000, altKey: "watchPage.pic.blueAlt", thumbKey: "watchPage.pic.blue" },
+];
+
+/** A large picture with a row of thumbnails under it to switch between them. */
 function WatchPicture() {
   const { t } = useLanguage();
+  const [shown, setShown] = useState(0);
+  const pic = PICTURES[shown];
   return (
-    <div className="overflow-hidden rounded-[2rem] shadow-xl ring-1 ring-surface-300">
-      {/* eslint-disable-next-line @next/next/no-img-element -- a fixed, already-compressed product poster */}
-      <img
-        src="/images/eyeon-ai-watch-poster.jpg"
-        width={1254}
-        height={1254}
-        alt={t("watchPage.posterAlt")}
-        className="block h-auto w-full"
-        loading="eager"
-      />
+    <div>
+      <div className="overflow-hidden rounded-[2rem] bg-white shadow-xl ring-1 ring-surface-300">
+        {/* eslint-disable-next-line @next/next/no-img-element -- fixed, already-compressed product pictures */}
+        <img
+          key={pic.src}
+          src={pic.src}
+          width={pic.size}
+          height={pic.size}
+          alt={t(pic.altKey)}
+          className="block aspect-square h-auto w-full object-contain"
+          loading="eager"
+        />
+      </div>
+      <div className="mt-4 grid grid-cols-4 gap-3" role="group" aria-label={t("watchPage.pic.choose")}>
+        {PICTURES.map((p, i) => (
+          <button
+            key={p.src}
+            type="button"
+            onClick={() => setShown(i)}
+            aria-pressed={i === shown}
+            aria-label={t(p.thumbKey)}
+            className={`overflow-hidden rounded-2xl bg-white ring-2 transition-all ${
+              i === shown ? "ring-brand-500" : "ring-surface-300 hover:ring-brand-400"
+            }`}
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element -- thumbnails of the pictures above */}
+            <img src={p.src} width={p.size} height={p.size} alt="" className="block aspect-square h-auto w-full object-contain" loading="lazy" />
+          </button>
+        ))}
+      </div>
     </div>
   );
 }
