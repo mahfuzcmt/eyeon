@@ -58,7 +58,7 @@ export function FeaturesPage() {
               ))}
             </div>
             <motion.div variants={fadeInUp} className="mt-10 text-center">
-              <Link href="/products" className="inline-flex min-h-[52px] items-center gap-2 rounded-2xl bg-brand-500 px-8 text-[16px] font-semibold text-white shadow-lg shadow-brand-500/20 transition-all hover:bg-brand-600">
+              <Link href="/products/eyeon-ai-watch" className="inline-flex min-h-[52px] items-center gap-2 rounded-2xl bg-brand-500 px-8 text-[16px] font-semibold text-white shadow-lg shadow-brand-500/20 transition-all hover:bg-brand-600">
                 {t("featuresPage.viewTracker")}
                 <Icon path={ICONS.arrow} className="h-5 w-5" />
               </Link>

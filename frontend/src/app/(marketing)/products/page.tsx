@@ -1,10 +1,9 @@
-import { ProductsPage } from "@/components/landing/pages/ProductsPage";
+import { redirect } from "next/navigation";
 
-export const metadata = {
-  title: "The EyeOn tracker",
-  description: "A small, light tracker with an SOS button, carried in the bag, on a lanyard or on the wrist, and paired with the EyeOn app.",
-};
-
+/**
+ * EyeOn sells one product, the EyeOn AI Watch (owner, 2026-11-23: "use EyeOn AI Watch instead
+ * of tracker device" across the site). /products, linked from the menu, opens its page.
+ */
 export default function Products() {
-  return <ProductsPage />;
+  redirect("/products/eyeon-ai-watch");
 }

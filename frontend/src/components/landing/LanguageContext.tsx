@@ -35,28 +35,41 @@ const translations: Record<string, { en: string; bn: string }> = {
   "nav.closeMenu": { en: "Close menu", bn: "মেনু বন্ধ করুন" },
 
   // Top contact bar
-  "topBar.tagline": { en: "Child-safety tracker · Pre-orders open", bn: "শিশু নিরাপত্তা ট্র্যাকার · প্রি-অর্ডার চলছে" },
+  "topBar.tagline": {
+    en: "EyeOn AI Watch for children · Pre-orders open",
+    bn: "শিশুদের জন্য EyeOn AI ঘড়ি · প্রি-অর্ডার চলছে",
+  },
   "topBar.short": { en: "Pre-orders open", bn: "প্রি-অর্ডার চলছে" },
   "topBar.callNow": { en: "Call", bn: "কল করুন" },
 
   // WhatsApp floating button
   "whatsapp.tooltip": { en: "Questions? Message us on WhatsApp.", bn: "কোনো প্রশ্ন? WhatsApp-এ লিখুন।" },
-  "whatsapp.message": { en: "Hello! I would like to know about the EyeOn tracker.", bn: "হ্যালো! EyeOn ট্র্যাকার সম্পর্কে জানতে চাই।" },
+  "whatsapp.message": {
+    en: "Hello! I would like to know about the EyeOn AI Watch.",
+    bn: "হ্যালো! EyeOn AI ঘড়ি সম্পর্কে জানতে চাই।",
+  },
   "whatsapp.aria": { en: "Chat with us on WhatsApp", bn: "WhatsApp-এ আমাদের সঙ্গে কথা বলুন" },
   "whatsapp.dismiss": { en: "Dismiss", bn: "বন্ধ করুন" },
 
   // Hero
-  "hero.badge": { en: "Child-safety tracker · Pre-orders open", bn: "শিশু নিরাপত্তা ট্র্যাকার · প্রি-অর্ডার চলছে" },
+  "hero.badge": {
+    en: "EyeOn AI Watch for children · Pre-orders open",
+    bn: "শিশুদের জন্য EyeOn AI ঘড়ি · প্রি-অর্ডার চলছে",
+  },
   "hero.title1": { en: "Keep an eye on them,", bn: "চোখে চোখে রাখুন," },
   "hero.title2": { en: "wherever they are.", bn: "ও যেখানেই থাকুক।" },
   "hero.desc": {
-    en: "A small tracker in the school bag, around the neck or on the wrist - and everything else on your phone. See where your child is, and get told the moment they reach school and the moment they leave.",
-    bn: "স্কুলব্যাগে, গলায় বা হাতে ছোট্ট একটি ট্র্যাকার - আর বাকি সব আপনার ফোনে। সন্তান কোথায় আছে দেখুন, স্কুলে পৌঁছানো আর বের হওয়ার খবর পান সঙ্গে সঙ্গে।",
+    en: "The EyeOn AI Watch on your child's wrist - and everything else on your phone. See where your child is, and get told the moment they reach school and the moment they leave.",
+    bn: "সন্তানের হাতে EyeOn AI ঘড়ি - আর বাকি সব আপনার ফোনে। সন্তান কোথায় আছে দেখুন, স্কুলে পৌঁছানো আর বের হওয়ার খবর পান সঙ্গে সঙ্গে।",
   },
   "hero.howItWorks": { en: "See how it works", bn: "কীভাবে কাজ করে দেখুন" },
 
   // Hero phone illustration (clearly labelled as an example)
-  "mock.caption": { en: "Example of the alerts you get", bn: "যেমন অ্যালার্ট আপনি পাবেন - উদাহরণ" },
+  "mock.caption": { en: "Real alerts from a parent's phone", bn: "একজন অভিভাবকের ফোনে আসা আসল নোটিফিকেশন" },
+  "mock.alt": {
+    en: "A phone's notifications from EyeOn: Mahim reached Home, left school late, is still at school, reached school.",
+    bn: "ফোনে EyeOn-এর নোটিফিকেশন: Mahim বাসায় পৌঁছেছে, দেরিতে স্কুল থেকে বের হয়েছে, এখনো স্কুলে, স্কুলে পৌঁছেছে।",
+  },
   "mock.live": { en: "Live", bn: "লাইভ" },
   "mock.safeZone": { en: "Safe zone: School", bn: "সেফ জোন: স্কুল" },
   "mock.now": { en: "now", bn: "এইমাত্র" },
@@ -72,15 +85,18 @@ const translations: Record<string, { en: string; bn: string }> = {
 
   // Features section (home) - the eight features from the product poster
   "features.badge": { en: "What it does", bn: "যা যা পাবেন" },
-  "features.title": { en: "One small tracker, eight useful things", bn: "ছোট্ট একটি ট্র্যাকার, কাজের আটটি ফিচার" },
+  "features.title": {
+    en: "One watch, eight useful things",
+    bn: "একটি ঘড়ি, কাজের আটটি ফিচার",
+  },
   "features.desc": { en: "Everything is in the app, in plain Bengali.", bn: "সবকিছু অ্যাপেই, সহজ বাংলায়।" },
   "features.viewAll": { en: "See the features in detail", bn: "ফিচারগুলো বিস্তারিত দেখুন" },
 
   "feature.live.title": { en: "Live location", bn: "লাইভ লোকেশন" },
   "feature.live.desc": { en: "See where they are right now, on the map.", bn: "ম্যাপে দেখুন এখন কোথায় আছে।" },
   "feature.live.detail": {
-    en: "Open the app and the map shows the tracker's current position. While they are on the move, the position keeps updating on its own.",
-    bn: "অ্যাপ খুললেই ম্যাপে ট্র্যাকারের বর্তমান অবস্থান দেখা যায়। চলার পথে অবস্থান নিজে থেকেই আপডেট হতে থাকে।",
+    en: "Open the app and the map shows where the watch is right now. While they are on the move, the position keeps updating on its own.",
+    bn: "অ্যাপ খুললেই ম্যাপে ঘড়িটির বর্তমান অবস্থান দেখা যায়। চলার পথে অবস্থান নিজে থেকেই আপডেট হতে থাকে।",
   },
   "feature.safezone.title": { en: "Safe zone alerts", bn: "সেফ জোন অ্যালার্ট" },
   "feature.safezone.desc": { en: "A notification the moment they arrive at school, and the moment they leave.", bn: "স্কুলে পৌঁছানো মাত্র আর বের হওয়া মাত্র নোটিফিকেশন।" },
@@ -91,14 +107,14 @@ const translations: Record<string, { en: string; bn: string }> = {
   "feature.geofence.title": { en: "Geofence", bn: "জিওফেন্স" },
   "feature.geofence.desc": { en: "Draw your own boundary; get an alert if they go outside it.", bn: "নিজের মতো সীমানা আঁকুন, বাইরে গেলেই অ্যালার্ট।" },
   "feature.geofence.detail": {
-    en: "Draw a boundary on the map around the neighbourhood, the playground or the way to school. If the tracker crosses it, you get an alert.",
-    bn: "ম্যাপে পাড়া, খেলার মাঠ বা স্কুলের পথ ঘিরে সীমানা এঁকে দিন। ট্র্যাকার সেই সীমানার বাইরে গেলেই অ্যালার্ট পাবেন।",
+    en: "Draw a boundary on the map around the neighbourhood, the playground or the way to school. If the watch goes outside it, you get an alert.",
+    bn: "ম্যাপে পাড়া, খেলার মাঠ বা স্কুলের পথ ঘিরে সীমানা এঁকে দিন। ঘড়িটি সেই সীমানার বাইরে গেলেই অ্যালার্ট পাবেন।",
   },
   "feature.sos.title": { en: "SOS button", bn: "SOS বাটন" },
   "feature.sos.desc": { en: "One press sends an urgent alert with the location.", bn: "এক চাপেই লোকেশনসহ জরুরি অ্যালার্ট।" },
   "feature.sos.detail": {
-    en: "The tracker has an SOS button. One press sends an urgent alert to your phone, together with the location at that moment. Teach your child when to press it.",
-    bn: "ট্র্যাকারে একটি SOS বাটন আছে। একবার চাপলেই সেই মুহূর্তের লোকেশনসহ জরুরি অ্যালার্ট আপনার ফোনে চলে আসে। কখন বাটনটি চাপতে হবে, সন্তানকে শিখিয়ে দিন।",
+    en: "The watch has an SOS button. One press sends an urgent alert to your phone, together with the location at that moment, and calls your emergency numbers. Teach your child when to press it.",
+    bn: "ঘড়িতে একটি SOS বাটন আছে। একবার চাপলেই সেই মুহূর্তের লোকেশনসহ জরুরি অ্যালার্ট আপনার ফোনে চলে আসে, আর ইমার্জেন্সি নাম্বারে কল যায়। কখন বাটনটি চাপতে হবে, সন্তানকে শিখিয়ে দিন।",
   },
   "feature.history.title": { en: "Route history", bn: "যাত্রাপথ হিস্ট্রি" },
   "feature.history.desc": { en: "Where they were through the day, at a glance.", bn: "সারাদিন কোথায় কোথায় ছিল, এক নজরে।" },
@@ -109,8 +125,8 @@ const translations: Record<string, { en: string; bn: string }> = {
   "feature.battery.title": { en: "Long battery", bn: "লম্বা ব্যাটারি" },
   "feature.battery.desc": { en: "A day on one charge.", bn: "এক চার্জে সারাদিন।" },
   "feature.battery.detail": {
-    en: "With normal use the tracker lasts about a day. Charge it at night, like a phone.",
-    bn: "স্বাভাবিক ব্যবহারে এক চার্জে প্রায় সারাদিন চলে। ফোনের মতো রাতে চার্জে দিয়ে রাখলেই হবে।",
+    en: "With normal use the watch lasts through the day. Charge it every night, like a phone.",
+    bn: "স্বাভাবিক ব্যবহারে এক চার্জে সারাদিন চলে। ফোনের মতো প্রতি রাতে চার্জে দিয়ে রাখলেই হবে।",
   },
   "feature.small.title": { en: "Small and light", bn: "ছোট ও হালকা" },
   "feature.small.desc": { en: "They hardly notice it.", bn: "ও টেরই পাবে না।" },
@@ -128,7 +144,10 @@ const translations: Record<string, { en: string; bn: string }> = {
   // How it works
   "how.badge": { en: "How it works", bn: "কীভাবে কাজ করে" },
   "how.title": { en: "Three steps, and you are set", bn: "তিন ধাপেই শুরু" },
-  "how.step1.title": { en: "Give them the tracker", bn: "ট্র্যাকারটি সঙ্গে দিন" },
+  "how.step1.title": {
+    en: "Put the watch on their wrist",
+    bn: "সন্তানের হাতে ঘড়িটি পরিয়ে দিন",
+  },
   "how.step1.desc": { en: "Put it in the school bag, on a lanyard or on the wrist.", bn: "স্কুলব্যাগে রাখুন, গলায় ঝুলিয়ে দিন বা হাতে পরিয়ে দিন।" },
   "how.step2.title": { en: "Add Home and School", bn: "বাসা ও স্কুল যোগ করুন" },
   "how.step2.desc": { en: "Save them in the app as trusted places.", bn: "অ্যাপে বিশ্বস্ত জায়গা হিসেবে সেভ করে রাখুন।" },
@@ -146,8 +165,8 @@ const translations: Record<string, { en: string; bn: string }> = {
   "audience.parents.desc": { en: "Know your child reached school and came home, without phoning anyone.", bn: "কাউকে ফোন না করেই জানুন সন্তান স্কুলে পৌঁছেছে, বাসায় ফিরেছে।" },
   "audience.schools.title": { en: "Schools", bn: "স্কুল" },
   "audience.schools.desc": {
-    en: "Give trackers to students. The school sees everyone on one dashboard; each parent follows only their own child.",
-    bn: "শিক্ষার্থীদের ট্র্যাকার দিন। স্কুল সবাইকে দেখবে এক ড্যাশবোর্ডে; প্রত্যেক অভিভাবক দেখবেন শুধু নিজের সন্তানকে।",
+    en: "Give the watch to students. The school sees everyone on one dashboard; each parent follows only their own child.",
+    bn: "শিক্ষার্থীদের হাতে ঘড়ি দিন। স্কুল সবাইকে দেখবে এক ড্যাশবোর্ডে; প্রত্যেক অভিভাবক দেখবেন শুধু নিজের সন্তানকে।",
   },
   "audience.coaching.title": { en: "Coaching centres", bn: "কোচিং সেন্টার" },
   "audience.coaching.desc": {
@@ -174,11 +193,14 @@ const translations: Record<string, { en: string; bn: string }> = {
   "school.badge": { en: "For schools", bn: "স্কুলের জন্য" },
   "school.title": { en: "What a school gets", bn: "একটি স্কুল যা যা পায়" },
   "school.desc": {
-    en: "Give trackers to your students. The school sees everyone; each parent sees only their own child.",
-    bn: "শিক্ষার্থীদের হাতে ট্র্যাকার দিন। স্কুল দেখবে সবাইকে, আর প্রত্যেক অভিভাবক দেখবেন শুধু নিজের সন্তানকে।",
+    en: "Give the watch to your students. The school sees everyone; each parent sees only their own child.",
+    bn: "শিক্ষার্থীদের হাতে ঘড়ি দিন। স্কুল দেখবে সবাইকে, আর প্রত্যেক অভিভাবক দেখবেন শুধু নিজের সন্তানকে।",
   },
   "school.s1.title": { en: "One dashboard for all students", bn: "সব শিক্ষার্থী এক ড্যাশবোর্ডে" },
-  "school.s1.desc": { en: "The principal or administrator sees every tracker on one web dashboard.", bn: "প্রধান শিক্ষক বা প্রশাসক একটি ওয়েব ড্যাশবোর্ডেই সব ট্র্যাকার দেখতে পান।" },
+  "school.s1.desc": {
+    en: "The principal or administrator sees every watch on one web dashboard.",
+    bn: "প্রধান শিক্ষক বা প্রশাসক একটি ওয়েব ড্যাশবোর্ডেই সব ঘড়ি দেখতে পান।",
+  },
   "school.s2.title": { en: "Each parent sees only their child", bn: "অভিভাবক দেখেন শুধু নিজের সন্তানকে" },
   "school.s2.desc": { en: "A parent's login shows their own child and nobody else's.", bn: "অভিভাবকের লগ ইনে শুধু নিজের সন্তানকেই দেখা যায়, অন্য কাউকে নয়।" },
   "school.s3.title": { en: "Arrive / leave alerts", bn: "পৌঁছানো ও বের হওয়ার অ্যালার্ট" },
@@ -222,10 +244,13 @@ const translations: Record<string, { en: string; bn: string }> = {
   "faq.desc": { en: "Straight answers. If your question is not here, call us.", bn: "সোজাসাপ্টা উত্তর। আপনার প্রশ্ন এখানে না থাকলে কল করুন।" },
   "faq.moreQuestions": { en: "Have another question?", bn: "আরও প্রশ্ন আছে?" },
   "faq.callUs": { en: "Call", bn: "কল করুন" },
-  "faq.q1": { en: "Does the tracker need a SIM?", bn: "ট্র্যাকারে কি সিম লাগে?" },
+  "faq.q1": {
+    en: "Does the watch need a SIM?",
+    bn: "ঘড়িতে কি সিম লাগে?",
+  },
   "faq.a1": {
-    en: "Yes. The tracker sends its location over the mobile network, so it needs a SIM with a data pack. When you pre-order we will tell you which SIM works and help you set it up.",
-    bn: "হ্যাঁ। ট্র্যাকার মোবাইল নেটওয়ার্ক দিয়ে লোকেশন পাঠায়, তাই এতে ডেটা প্যাকসহ একটি সিম লাগে। প্রি-অর্ডারের সময় আমরা জানিয়ে দেব কোন সিম চলবে, আর সেটআপেও সাহায্য করব।",
+    en: "Yes. The watch sends its location over the mobile network, and makes calls, so it needs a SIM with a data pack. When you order we will tell you which SIM works and help you set it up.",
+    bn: "হ্যাঁ। ঘড়িটি মোবাইল নেটওয়ার্ক দিয়ে লোকেশন পাঠায় আর কল করে, তাই এতে ডেটা প্যাকসহ একটি সিম লাগে। অর্ডারের সময় আমরা জানিয়ে দেব কোন সিম চলবে, আর সেটআপেও সাহায্য করব।",
   },
   "faq.q2": { en: "How long does the battery last?", bn: "ব্যাটারি কতক্ষণ চলে?" },
   "faq.a2": {
@@ -234,8 +259,8 @@ const translations: Record<string, { en: string; bn: string }> = {
   },
   "faq.q3": { en: "Is my child's location private?", bn: "আমার সন্তানের লোকেশন কি গোপন থাকে?" },
   "faq.a3": {
-    en: "Only people signed in to your account can see the location. If the tracker comes through a school, the school's administrator sees its own students, and each parent sees only their own child.",
-    bn: "লোকেশন দেখতে পান শুধু তাঁরাই, যাঁরা আপনার অ্যাকাউন্টে লগ ইন করা। ট্র্যাকার স্কুলের মাধ্যমে নিলে স্কুলের প্রশাসক শুধু নিজের শিক্ষার্থীদের দেখেন, আর প্রত্যেক অভিভাবক দেখেন শুধু নিজের সন্তানকে।",
+    en: "Only people signed in to your account can see the location. If the watch comes through a school, the school's administrator sees its own students, and each parent sees only their own child.",
+    bn: "লোকেশন দেখতে পান শুধু তাঁরাই, যাঁরা আপনার অ্যাকাউন্টে লগ ইন করা। ঘড়িটি স্কুলের মাধ্যমে নিলে স্কুলের প্রশাসক শুধু নিজের শিক্ষার্থীদের দেখেন, আর প্রত্যেক অভিভাবক দেখেন শুধু নিজের সন্তানকে।",
   },
   "faq.q4": { en: "Can both parents see the location?", bn: "মা-বাবা দুজনই কি দেখতে পারবেন?" },
   "faq.a4": {
@@ -259,8 +284,8 @@ const translations: Record<string, { en: string; bn: string }> = {
   },
   "faq.q8": { en: "We are a school. How do we start?", bn: "আমরা একটি স্কুল। শুরু করব কীভাবে?" },
   "faq.a8": {
-    en: "Call us or use the contact form. We will show you the school dashboard and talk through how many trackers you need and how parents get their logins.",
-    bn: "কল করুন বা যোগাযোগ ফর্মে লিখুন। আমরা স্কুল ড্যাশবোর্ড দেখাব, আর কতগুলো ট্র্যাকার লাগবে ও অভিভাবকেরা কীভাবে লগ ইন পাবেন - তা নিয়ে কথা বলব।",
+    en: "Call us or use the contact form. We will show you the school dashboard and talk through how many watches you need and how parents get their logins.",
+    bn: "কল করুন বা যোগাযোগ ফর্মে লিখুন। আমরা স্কুল ড্যাশবোর্ড দেখাব, আর কতগুলো ঘড়ি লাগবে ও অভিভাবকেরা কীভাবে লগ ইন পাবেন - তা নিয়ে কথা বলব।",
   },
 
   // Closing call-to-action
@@ -274,8 +299,8 @@ const translations: Record<string, { en: string; bn: string }> = {
   "featuresPage.badge": { en: "Features", bn: "ফিচার" },
   "featuresPage.title": { en: "Eight features, explained simply", bn: "আটটি ফিচার, সহজ করে বলা" },
   "featuresPage.desc": {
-    en: "What the EyeOn tracker and app do for you, one by one.",
-    bn: "EyeOn ট্র্যাকার আর অ্যাপ আপনার জন্য কী কী করে - একটি একটি করে।",
+    en: "What the EyeOn AI Watch and app do for you, one by one.",
+    bn: "EyeOn AI ঘড়ি আর অ্যাপ আপনার জন্য কী কী করে - একটি একটি করে।",
   },
   "featuresPage.whereTitle": { en: "Where you see it all", bn: "সবকিছু দেখবেন কোথায়" },
   "featuresPage.app.title": { en: "On your phone", bn: "আপনার ফোনে" },
@@ -288,14 +313,17 @@ const translations: Record<string, { en: string; bn: string }> = {
     en: "The same information on a computer. Schools use it to see all their students in one place.",
     bn: "একই তথ্য কম্পিউটারে। স্কুল এখানে সব শিক্ষার্থীকে এক জায়গায় দেখতে পায়।",
   },
-  "featuresPage.viewTracker": { en: "See the tracker", bn: "ট্র্যাকারটি দেখুন" },
+  "featuresPage.viewTracker": {
+    en: "See the watch",
+    bn: "ঘড়িটি দেখুন",
+  },
 
   // Solutions page
   "solutions.badge": { en: "Who it's for", bn: "কাদের জন্য" },
   "solutions.title": { en: "For families, and for institutions", bn: "পরিবারের জন্য, প্রতিষ্ঠানের জন্য" },
   "solutions.desc": {
-    en: "The same small tracker, set up for the way you will use it.",
-    bn: "একই ছোট্ট ট্র্যাকার - আপনি যেভাবে ব্যবহার করবেন, সেভাবেই সাজানো।",
+    en: "The same EyeOn AI Watch, set up for the way you will use it.",
+    bn: "একই EyeOn AI ঘড়ি - আপনি যেভাবে ব্যবহার করবেন, সেভাবেই সাজানো।",
   },
   "solutions.talk": { en: "Talk to us", bn: "কথা বলুন" },
   "solutions.cta.title": { en: "Not sure which one fits you?", bn: "কোনটা আপনার জন্য, বুঝতে পারছেন না?" },
@@ -315,8 +343,8 @@ const translations: Record<string, { en: string; bn: string }> = {
   "solutions.school.title": { en: "Schools", bn: "স্কুল" },
   "solutions.school.subtitle": { en: "For principals and school administrators", bn: "প্রধান শিক্ষক ও স্কুল প্রশাসকদের জন্য" },
   "solutions.school.desc": {
-    en: "Give trackers to your students. You see the whole school on one dashboard, and every parent follows only their own child on their phone.",
-    bn: "শিক্ষার্থীদের ট্র্যাকার দিন। আপনি এক ড্যাশবোর্ডে পুরো স্কুল দেখবেন, আর প্রত্যেক অভিভাবক নিজের ফোনে দেখবেন শুধু নিজের সন্তানকে।",
+    en: "Give the watch to your students. You see the whole school on one dashboard, and every parent follows only their own child on their phone.",
+    bn: "শিক্ষার্থীদের হাতে ঘড়ি দিন। আপনি এক ড্যাশবোর্ডে পুরো স্কুল দেখবেন, আর প্রত্যেক অভিভাবক নিজের ফোনে দেখবেন শুধু নিজের সন্তানকে।",
   },
   "solutions.school.f1": { en: "One dashboard for all students", bn: "সব শিক্ষার্থী এক ড্যাশবোর্ডে" },
   "solutions.school.f2": { en: "Each parent sees only their own child", bn: "প্রত্যেক অভিভাবক দেখেন শুধু নিজের সন্তানকে" },
@@ -412,13 +440,22 @@ const translations: Record<string, { en: string; bn: string }> = {
     bn: "উপরের সবকিছু আপনার ফোনের EyeOn অ্যাপে, বাংলা ও ইংরেজিতে। অ্যাপ পেতে ঘড়ির QR কোড স্ক্যান করুন।",
   },
   "watchPage.getApp": { en: "Get the app", bn: "অ্যাপ নিন" },
-  "productsPage.badge": { en: "The tracker", bn: "ট্র্যাকার" },
-  "productsPage.title": { en: "One small tracker", bn: "ছোট্ট একটি ট্র্যাকার" },
-  "productsPage.desc": {
-    en: "EyeOn is a single device: small, light, with an SOS button. It works with the EyeOn app.",
-    bn: "EyeOn একটিই ডিভাইস - ছোট, হালকা, সঙ্গে SOS বাটন। চলে EyeOn অ্যাপের সঙ্গে।",
+  "productsPage.badge": {
+    en: "EyeOn AI Watch",
+    bn: "EyeOn AI ঘড়ি",
   },
-  "productsPage.name": { en: "EyeOn tracker", bn: "EyeOn ট্র্যাকার" },
+  "productsPage.title": {
+    en: "EyeOn AI Watch",
+    bn: "EyeOn AI ঘড়ি",
+  },
+  "productsPage.desc": {
+    en: "A watch for your child, with an SOS button and calls. It works with the EyeOn app.",
+    bn: "সন্তানের জন্য ঘড়ি - সঙ্গে SOS বাটন আর কল করার সুবিধা। চলে EyeOn অ্যাপের সঙ্গে।",
+  },
+  "productsPage.name": {
+    en: "EyeOn AI Watch",
+    bn: "EyeOn AI ঘড়ি",
+  },
   "productsPage.tagline": { en: "Keep an eye on them, wherever they are.", bn: "চোখে চোখে রাখুন, ও যেখানেই থাকুক।" },
   "productsPage.illustration": { en: "Illustration - product photos will follow", bn: "প্রতীকী ছবি - আসল ছবি পরে যোগ হবে" },
   "productsPage.p1": { en: "Small and light - they hardly notice it", bn: "ছোট ও হালকা - ও টেরই পাবে না" },
@@ -434,8 +471,8 @@ const translations: Record<string, { en: string; bn: string }> = {
   "productsPage.wear.wrist.desc": { en: "For children who would rather wear it.", bn: "যে শিশুরা পরে থাকতেই পছন্দ করে।" },
   "productsPage.app.title": { en: "The app is part of the product", bn: "অ্যাপটিও পণ্যেরই অংশ" },
   "productsPage.app.desc": {
-    en: "The tracker does its work quietly. You see everything in the EyeOn app: the map, safe zone alerts, SOS and the day's route.",
-    bn: "ট্র্যাকার নীরবে নিজের কাজ করে। আপনি সব দেখবেন EyeOn অ্যাপে - ম্যাপ, সেফ জোন অ্যালার্ট, SOS আর সারাদিনের যাত্রাপথ।",
+    en: "The watch does its work quietly. You see everything in the EyeOn app: the map, safe zone alerts, SOS and the day's route.",
+    bn: "ঘড়িটি নীরবে নিজের কাজ করে। আপনি সব দেখবেন EyeOn অ্যাপে - ম্যাপ, সেফ জোন অ্যালার্ট, SOS আর সারাদিনের যাত্রাপথ।",
   },
   "productsPage.specs.title": { en: "Detailed specifications", bn: "বিস্তারিত স্পেসিফিকেশন" },
   "productsPage.specs.desc": {
@@ -446,8 +483,14 @@ const translations: Record<string, { en: string; bn: string }> = {
   // Product detail route (/products/[id], a file outside components/landing).
   // data/products.ts exports an empty list, so that route shows this message only.
   "productDetail.notFound": { en: "Page not found", bn: "পেজটি পাওয়া যায়নি" },
-  "productDetail.notFoundDesc": { en: "EyeOn has one tracker. You can read about it on the tracker page.", bn: "EyeOn-এর ট্র্যাকার একটিই। ট্র্যাকার পেজে সব তথ্য পাবেন।" },
-  "productDetail.backToProducts": { en: "Go to the tracker page", bn: "ট্র্যাকার পেজে যান" },
+  "productDetail.notFoundDesc": {
+    en: "EyeOn has one product, the EyeOn AI Watch. You can read about it on its page.",
+    bn: "EyeOn-এর পণ্য একটিই - EyeOn AI ঘড়ি। ঘড়ির পেজে সব তথ্য পাবেন।",
+  },
+  "productDetail.backToProducts": {
+    en: "Go to the watch page",
+    bn: "ঘড়ির পেজে যান",
+  },
 
   // Pricing page - pre-order only, no amounts
   "pricing.badge": { en: "Price & pre-order", bn: "দাম ও প্রি-অর্ডার" },
@@ -457,7 +500,10 @@ const translations: Record<string, { en: string; bn: string }> = {
     bn: "দাম এখনো ওয়েবসাইটে দেওয়া হয়নি। 01629-563645 নম্বরে কল করলেই দাম আর ডেলিভারির সময় জানিয়ে দেব।",
   },
   "pricing.get.title": { en: "What you get", bn: "যা যা পাবেন" },
-  "pricing.get1.title": { en: "The EyeOn tracker", bn: "EyeOn ট্র্যাকার" },
+  "pricing.get1.title": {
+    en: "The EyeOn AI Watch",
+    bn: "EyeOn AI ঘড়ি",
+  },
   "pricing.get1.desc": { en: "Small, light, with an SOS button.", bn: "ছোট, হালকা, সঙ্গে SOS বাটন।" },
   "pricing.get2.title": { en: "The EyeOn app", bn: "EyeOn অ্যাপ" },
   "pricing.get2.desc": { en: "In Bengali and English, on your phone.", bn: "বাংলা ও ইংরেজিতে, আপনার ফোনে।" },
@@ -466,7 +512,10 @@ const translations: Record<string, { en: string; bn: string }> = {
   "pricing.get4.title": { en: "Support in Bengali", bn: "বাংলায় সাপোর্ট" },
   "pricing.get4.desc": { en: "Help with setup by phone or WhatsApp.", bn: "সেটআপে সাহায্য - ফোনে বা WhatsApp-এ।" },
   "pricing.family.title": { en: "For a family", bn: "পরিবারের জন্য" },
-  "pricing.family.tagline": { en: "One tracker or several, for your children or your parents", bn: "একটি বা একাধিক ট্র্যাকার - সন্তান বা মা-বাবার জন্য" },
+  "pricing.family.tagline": {
+    en: "One watch or several, for each of your children",
+    bn: "একটি বা একাধিক ঘড়ি - প্রতিটি সন্তানের জন্য",
+  },
   "pricing.family.f1": { en: "Live location and route history", bn: "লাইভ লোকেশন ও যাত্রাপথ হিস্ট্রি" },
   "pricing.family.f2": { en: "Home and School as trusted places", bn: "বাসা ও স্কুল বিশ্বস্ত জায়গা হিসেবে" },
   "pricing.family.f3": { en: "SOS alerts on your phone", bn: "আপনার ফোনে SOS অ্যালার্ট" },
@@ -486,7 +535,10 @@ const translations: Record<string, { en: string; bn: string }> = {
 
   // About page
   "about.badge": { en: "About us", bn: "আমাদের কথা" },
-  "about.title": { en: "A Bangladeshi team, building a child-safety tracker", bn: "বাংলাদেশের একটি টিম, বানাচ্ছি শিশু নিরাপত্তা ট্র্যাকার" },
+  "about.title": {
+    en: "A Bangladeshi team, building the EyeOn AI Watch for children",
+    bn: "বাংলাদেশের একটি টিম, বানাচ্ছি শিশুদের জন্য EyeOn AI ঘড়ি",
+  },
   "about.subtitle": { en: "EyeOn is new. Here is what we are doing, and why.", bn: "EyeOn নতুন। আমরা কী করছি আর কেন - সেটাই বলছি।" },
   "about.story.badge": { en: "Why we are building this", bn: "কেন বানাচ্ছি" },
   "about.story.title": { en: "A simple answer to \"where are they now?\"", bn: "\"ও এখন কোথায়?\" - এই প্রশ্নের সহজ উত্তর" },
@@ -495,8 +547,8 @@ const translations: Record<string, { en: string; bn: string }> = {
     bn: "সব মা-বাবাই অনুভূতিটা চেনেন: স্কুল ছুটি হয়েছে বেশ আগে, অথচ সন্তান এখনো বাসায় ফেরেনি। এই দুশ্চিন্তার একটা সহজ উত্তর আমরা চেয়েছি - যা এ দেশে চলবে, বাংলায়, সাধারণ একটি ফোনেই।",
   },
   "about.story.p2": {
-    en: "So EyeOn is a small tracker and a simple app. It shows where your child is, tells you when they arrive and when they leave, and gives them an SOS button. Schools can offer the same to all their students.",
-    bn: "তাই EyeOn হলো ছোট্ট একটি ট্র্যাকার আর সহজ একটি অ্যাপ। সন্তান কোথায় আছে দেখায়, পৌঁছানো আর বের হওয়ার খবর দেয়, আর সন্তানের হাতে দেয় একটি SOS বাটন। স্কুলও তার সব শিক্ষার্থীর জন্য একই সুবিধা দিতে পারে।",
+    en: "So EyeOn is a watch and a simple app. It shows where your child is, tells you when they arrive and when they leave, and gives them an SOS button and a way to call you. Schools can offer the same to all their students.",
+    bn: "তাই EyeOn হলো একটি ঘড়ি আর সহজ একটি অ্যাপ। সন্তান কোথায় আছে দেখায়, পৌঁছানো আর বের হওয়ার খবর দেয়, আর সন্তানের হাতে দেয় একটি SOS বাটন ও আপনাকে কল করার সুবিধা। স্কুলও তার সব শিক্ষার্থীর জন্য একই সুবিধা দিতে পারে।",
   },
   "about.today.title": { en: "Where we are today", bn: "আমরা এখন কোথায়" },
   "about.today.desc": {
@@ -511,7 +563,10 @@ const translations: Record<string, { en: string; bn: string }> = {
   "about.values.bangla.title": { en: "In Bengali", bn: "বাংলায়" },
   "about.values.bangla.desc": { en: "The app, the alerts and the support.", bn: "অ্যাপ, অ্যালার্ট আর সাপোর্ট - সবই।" },
   "about.values.honest.title": { en: "Honest", bn: "সৎ" },
-  "about.values.honest.desc": { en: "We say what the tracker does, and what it does not.", bn: "ট্র্যাকার কী পারে আর কী পারে না - দুটোই বলি।" },
+  "about.values.honest.desc": {
+    en: "We say what the watch does, and what it does not.",
+    bn: "ঘড়িটি কী পারে আর কী পারে না - দুটোই বলি।",
+  },
   "about.cta.title": { en: "Talk to the people building it", bn: "যাঁরা বানাচ্ছেন, তাঁদের সঙ্গেই কথা বলুন" },
   "about.cta.desc": { en: "Call or message us with any question.", bn: "যেকোনো প্রশ্নে কল বা মেসেজ করুন।" },
 
@@ -519,8 +574,8 @@ const translations: Record<string, { en: string; bn: string }> = {
   "contact.badge": { en: "Contact", bn: "যোগাযোগ" },
   "contact.title": { en: "Talk to us", bn: "কথা বলুন আমাদের সঙ্গে" },
   "contact.desc": {
-    en: "Pre-order for your family, or ask about trackers for your school.",
-    bn: "পরিবারের জন্য প্রি-অর্ডার করুন, অথবা স্কুলের জন্য ট্র্যাকারের বিষয়ে জানুন।",
+    en: "Pre-order for your family, or ask about watches for your school.",
+    bn: "পরিবারের জন্য প্রি-অর্ডার করুন, অথবা স্কুলের জন্য ঘড়ির বিষয়ে জানুন।",
   },
   "contact.letsTalk": { en: "Call or message", bn: "কল বা মেসেজ করুন" },
   "contact.letsTalkDesc": { en: "The phone is the quickest way. We answer in Bengali.", bn: "সবচেয়ে দ্রুত উপায় ফোন। কথা হবে বাংলায়।" },
@@ -551,8 +606,8 @@ const translations: Record<string, { en: string; bn: string }> = {
 
   // Footer
   "footer.desc": {
-    en: "A small child-safety tracker and a simple Bengali app. Keep an eye on them, wherever they are.",
-    bn: "ছোট্ট একটি শিশু নিরাপত্তা ট্র্যাকার আর সহজ বাংলা অ্যাপ। চোখে চোখে রাখুন, ও যেখানেই থাকুক।",
+    en: "The EyeOn AI Watch for children and a simple Bengali app. Keep an eye on them, wherever they are.",
+    bn: "শিশুদের জন্য EyeOn AI ঘড়ি আর সহজ বাংলা অ্যাপ। চোখে চোখে রাখুন, ও যেখানেই থাকুক।",
   },
   "footer.quickLinks": { en: "Pages", bn: "পেজ" },
   "footer.contactUs": { en: "Pre-order & enquiries", bn: "প্রি-অর্ডার ও জিজ্ঞাসা" },
