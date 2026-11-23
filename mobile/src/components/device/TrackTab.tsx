@@ -109,7 +109,7 @@ export default function TrackTab({ imei, orgId }: { imei: string; orgId: string 
 
       {device ? (
         <View style={styles.details}>
-          <PersonDetails device={device} loc={loc} overspeed={overspeeding} full />
+          <PersonDetails device={device} loc={loc} overspeed={overspeeding} />
         </View>
       ) : null}
       {loc && hasFix && (
