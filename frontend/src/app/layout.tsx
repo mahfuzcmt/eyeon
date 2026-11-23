@@ -20,6 +20,8 @@ import "@fontsource/hind-siliguri/bengali-700.css";
 import { LocaleProvider } from "@/lib/i18n";
 
 export const metadata: Metadata = {
+  // Link previews (og:image) need an absolute address; without this Next falls back to localhost.
+  metadataBase: new URL("https://eyeoniot.com"),
   title: "EyeOn — Keep an eye on the ones you love",
   description: "Live location, safe-zone alerts and SOS for children and elderly family members.",
   icons: { icon: "/favicon.svg" },
