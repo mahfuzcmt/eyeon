@@ -521,6 +521,21 @@ const STRINGS = {
   "stays.unit.h": { en: "h", bn: "ঘণ্টা" },
   "stays.unit.d": { en: "d", bn: "দিন" },
 
+  // ── Smart watch: SOS numbers (same wording as the mobile app) ──
+  "wt.online": { en: "Watch connected - changes are sent right away", bn: "ঘড়ি সংযুক্ত — পরিবর্তন সাথে সাথে পাঠানো হবে" },
+  "wt.offline": { en: "Watch not connected - changes are sent when it next connects", bn: "ঘড়ি সংযুক্ত নয় — আবার সংযুক্ত হলে পরিবর্তন পাঠানো হবে" },
+  "wt.status.NONE": { en: "Not set from EyeOn yet", bn: "EyeOn থেকে এখনও সেট করা হয়নি" },
+  "wt.status.SYNCED": { en: "On the watch", bn: "ঘড়িতে সেট হয়েছে" },
+  "wt.status.PENDING": { en: "Waiting for the watch", bn: "ঘড়ির অপেক্ষায়" },
+  "ws.title": { en: "SOS numbers", bn: "SOS নম্বর" },
+  "ws.hint": { en: "When the SOS button on the watch is held, the watch calls these numbers in order until someone answers (twice round at most) and sends each of them a text message. Calls and texts go from the watch's own SIM, so it needs credit. The alert in EyeOn is sent either way.", bn: "ঘড়ির SOS বাটন চেপে ধরলে ঘড়ি এই নম্বরগুলোতে একে একে কল করে, যতক্ষণ না কেউ ধরে (সর্বোচ্চ দুইবার ঘুরে), আর প্রত্যেককে একটি SMS পাঠায়। কল আর SMS যায় ঘড়ির নিজের সিম থেকে, তাই সিমে ব্যালেন্স থাকতে হবে। EyeOn-এ অ্যালার্ট সব সময়ই আসবে।" },
+  "ws.number": { en: "Number {n}", bn: "নম্বর {n}" },
+  "ws.first": { en: "called first", bn: "প্রথমে কল যাবে" },
+  "ws.clear": { en: "Remove", bn: "মুছুন" },
+  "ws.none": { en: "With no numbers the watch calls nobody; the alert still reaches EyeOn.", bn: "কোনো নম্বর না থাকলে ঘড়ি কাউকে কল করবে না; অ্যালার্ট তবুও EyeOn-এ আসবে।" },
+  "ws.bad": { en: "Enter phone numbers only (digits, may start with +).", bn: "শুধু ফোন নম্বর লিখুন (সংখ্যা, শুরুতে + থাকতে পারে)।" },
+  "ws.twice": { en: "The same number is entered twice.", bn: "একই নম্বর দুইবার লেখা হয়েছে।" },
+  "ws.settingsTitle": { en: "Watch settings", bn: "ঘড়ির সেটিংস" },
   // ── Tracker settings panel ─────────────────────────────────────────
   "ts.title": { en: "Tracker settings", bn: "ট্র্যাকার সেটিংস" },
   "ts.online": { en: "Connected - changes are sent right away", bn: "সংযুক্ত — পরিবর্তন সাথে সাথে পাঠানো হবে" },

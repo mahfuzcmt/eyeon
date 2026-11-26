@@ -15,6 +15,7 @@ import { useIsDesktop, useIsWide } from "@/hooks/useMediaQuery";
 import { DeviceList, type VehicleAction } from "@/components/device/DeviceList";
 import { CommandSheet } from "@/components/device/CommandSheet";
 import { TrackerSettingsPanel } from "@/components/device/TrackerSettingsPanel";
+import { WatchSettingsPanel } from "@/components/device/WatchSettingsPanel";
 import { useNightRest } from "@/hooks/useNightRest";
 import { DeviceEditModal } from "@/components/device/DeviceEditModal";
 import { DeviceGroupModal } from "@/components/device/DeviceGroupModal";
@@ -305,10 +306,14 @@ export default function DashboardPage() {
           onClose={() => setPanel(null)}
         />
       )}
-      {selectedDevice && panel === "command" && (
+      {/* A smart watch does not take a tracker's commands or settings: both actions open its own panel. */}
+      {selectedDevice && selectedDevice.protocol === "WATCH" && (panel === "command" || panel === "settings") && (
+        <WatchSettingsPanel device={selectedDevice} onClose={() => setPanel(null)} />
+      )}
+      {selectedDevice && selectedDevice.protocol !== "WATCH" && panel === "command" && (
         <CommandSheet device={selectedDevice} onClose={() => setPanel(null)} onOpenSettings={() => setPanel("settings")} />
       )}
-      {selectedDevice && panel === "settings" && (
+      {selectedDevice && selectedDevice.protocol !== "WATCH" && panel === "settings" && (
         <TrackerSettingsPanel device={selectedDevice} onClose={() => setPanel(null)} />
       )}
       {selectedDevice && panel === "addZone" && (() => {
