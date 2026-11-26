@@ -364,14 +364,32 @@ class EndToEnd(unittest.IsolatedAsyncioTestCase):
         self.assertTrue(self.srv.motion[dev].moving)
         w.close()
 
-    async def test_watch_low_on_battery_is_not_asked_to_locate(self):
+    async def test_watch_nearly_flat_is_not_asked_to_locate(self):
         self.srv.still_every = 600
         lk = b"[3G*8800000015*0002*LK]"
         r, w = await asyncio.open_connection("127.0.0.1", self.port)
-        w.write(build_frame("8800000015", "LK,0,0,14"))
-        w.write(build_frame("8800000015", "LK,0,0,14"))
+        w.write(build_frame("8800000015", "LK,0,0,4"))
+        w.write(build_frame("8800000015", "LK,0,0,4"))
         self.assertEqual(await asyncio.wait_for(r.readexactly(2 * len(lk)), 2), lk + lk)
         self.assertEqual(self.srv.asked, {})
+        w.close()
+
+    async def test_watch_low_on_battery_is_asked_every_five_minutes(self):
+        dev = "8800000015"
+        self.srv.still_every = 100
+        lk = b"[3G*8800000015*0002*LK]"
+        cr = b"[3G*8800000015*0002*CR]"
+        r, w = await asyncio.open_connection("127.0.0.1", self.port)
+        w.write(build_frame(dev, "LK,0,0,13"))
+        self.assertEqual(await asyncio.wait_for(r.readexactly(len(lk + cr)), 2), lk + cr)
+        self.srv.asked[dev] -= 200  # a healthy moving watch would be asked again by now
+        w.write(build_frame(dev, "LK,0,0,13"))
+        self.assertEqual(await asyncio.wait_for(r.readexactly(len(lk)), 2), lk)
+        with self.assertRaises(asyncio.TimeoutError):
+            await asyncio.wait_for(r.readexactly(1), 0.3)
+        self.srv.asked[dev] -= 110  # 310 s since the last request
+        w.write(build_frame(dev, "LK,0,0,13"))
+        self.assertEqual(await asyncio.wait_for(r.readexactly(len(lk + cr)), 2), lk + cr)
         w.close()
 
     async def test_allowlist_rejects(self):
