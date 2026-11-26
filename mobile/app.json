@@ -3,7 +3,7 @@
     "name": "EyeOn",
     "slug": "eyeon",
     "scheme": "eyeon",
-    "version": "1.0.1",
+    "version": "1.0.2",
     "orientation": "portrait",
     "userInterfaceStyle": "light",
     "splash": {
@@ -27,7 +27,7 @@
         "android.permission.ACCESS_FINE_LOCATION",
         "android.permission.ACCESS_COARSE_LOCATION"
       ],
-      "versionCode": 38,
+      "versionCode": 39,
       "googleServicesFile": "./google-services.json",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
@@ -70,6 +70,7 @@
         "expo-build-properties",
         {
           "android": {
+            "minSdkVersion": 24,
             "compileSdkVersion": 36,
             "targetSdkVersion": 36,
             "buildToolsVersion": "36.1.0"

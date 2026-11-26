@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
-import { AppState, Linking, StyleSheet, Text, View } from "react-native";
+import { AppState, StyleSheet, Text, View } from "react-native";
 import { getNotificationSettings, saveNotificationSettings, sendTestPush } from "@/api/endpoints";
-import { pushHealth, registerForAlarmPush, registeredPushToken, type PushHealth } from "@/push";
+import { openNotificationSettings, pushHealth, registerForAlarmPush, registeredPushToken, type PushHealth } from "@/push";
 import { extractError } from "@/api/client";
 import { alarmTypeLabel } from "@/alarmCenter";
 import { CheckBox, ErrorText, FormScreen, Heading, Hint, OkText, Panel, SecondaryButton } from "@/components/settings/kit";
@@ -144,7 +144,7 @@ export default function NotificationsScreen() {
           <Text style={styles.blockedText} accessibilityRole="alert">
             {t("nt.blocked")}
           </Text>
-          <SecondaryButton label={t("nt.openSettings")} icon="settings-outline" onPress={() => void Linking.openSettings()} />
+          <SecondaryButton label={t("nt.openSettings")} icon="settings-outline" onPress={() => void openNotificationSettings()} />
         </Panel>
       ) : null}
       <Panel style={styles.phone}>
@@ -169,7 +169,7 @@ export default function NotificationsScreen() {
         {testResult ? (testResult.ok ? <OkText>{testResult.text}</OkText> : <ErrorText>{testResult.text}</ErrorText>) : null}
         <Hint>{t("nt.battery")}</Hint>
         {health && (!health.allowed || health.quiet) && !pushBlocked ? (
-          <SecondaryButton label={t("nt.openSettings")} icon="settings-outline" onPress={() => void Linking.openSettings()} />
+          <SecondaryButton label={t("nt.openSettings")} icon="settings-outline" onPress={() => void openNotificationSettings()} />
         ) : null}
       </Panel>
       <View style={{ gap: space.xs }}>

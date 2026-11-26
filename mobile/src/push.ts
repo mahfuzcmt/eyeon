@@ -1,7 +1,7 @@
 import * as Device from "expo-device";
 import * as Notifications from "expo-notifications";
 import Constants from "expo-constants";
-import { Platform } from "react-native";
+import { Linking, Platform } from "react-native";
 import { registerPushToken, unregisterPushToken } from "@/api/endpoints";
 
 /**
@@ -65,6 +65,25 @@ export async function pushHealth(): Promise<PushHealth> {
     // Keep what could be read.
   }
   return { allowed, registered: currentToken !== null, quiet };
+}
+
+/**
+ * Opens the phone's own notification page for EyeOn (allow, sound, banner per type). Android has
+ * a direct screen for it; elsewhere, and when a phone refuses that screen, the app's settings page.
+ */
+export async function openNotificationSettings(): Promise<void> {
+  try {
+    if (Platform.OS === "android") {
+      const pkg = Constants.expoConfig?.android?.package ?? "com.webinnovation.eyeon";
+      await Linking.sendIntent("android.settings.APP_NOTIFICATION_SETTINGS", [
+        { key: "android.provider.extra.APP_PACKAGE", value: pkg },
+      ]);
+      return;
+    }
+  } catch {
+    // Fall through to the general settings page.
+  }
+  await Linking.openSettings().catch(() => undefined);
 }
 
 /**

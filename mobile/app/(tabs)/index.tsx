@@ -15,6 +15,7 @@ import { listGeofences, listPlaceSchedules } from "@/api/endpoints";
 import { extractError } from "@/api/client";
 import { Loading } from "@/ui";
 import { LanguageToggle } from "@/components/LanguageToggle";
+import { PushWarning } from "@/components/home/PushWarning";
 import { SponsorSlider } from "@/components/home/SponsorSlider";
 import { SubscriptionSummary } from "@/components/home/SubscriptionSummary";
 import { useI18n } from "@/i18n";
@@ -124,6 +125,7 @@ export default function HomeScreen() {
         />
       }
     >
+      <PushWarning />
       <View style={styles.hero}>
         <View style={styles.heroIcon}>
           <Ionicons name="shield-checkmark" size={26} color={colors.onAccent} />
