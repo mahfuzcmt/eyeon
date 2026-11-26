@@ -21,7 +21,8 @@ let showInForeground = true;
 // watching the map still wants the SOS banner + sound.
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
-    shouldShowAlert: showInForeground,
+    shouldShowBanner: showInForeground,
+    shouldShowList: showInForeground,
     shouldPlaySound: showInForeground,
     shouldSetBadge: false,
   }),
