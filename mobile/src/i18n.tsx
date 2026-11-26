@@ -694,6 +694,15 @@ const STRINGS = {
     en: "If alerts still come late or not at all: in the phone settings allow EyeOn to run in the background (Battery: no restriction / Auto-launch: on) and do not swipe the app away from recent apps. Some phones (Oppo, Realme, Vivo, Xiaomi) stop apps otherwise.",
     bn: "তবুও সতর্কবার্তা দেরিতে এলে বা না এলে: ফোনের সেটিংসে EyeOn-কে ব্যাকগ্রাউন্ডে চলতে দিন (ব্যাটারি: কোনো সীমা নয় / অটো-লঞ্চ: চালু) এবং সাম্প্রতিক অ্যাপ থেকে অ্যাপটি সরিয়ে দেবেন না। কিছু ফোন (Oppo, Realme, Vivo, Xiaomi) নইলে অ্যাপ বন্ধ করে দেয়।",
   },
+  "nt.warn.off": {
+    en: "Notifications are off on this phone. You will not get any alert here.",
+    bn: "এই ফোনে নোটিফিকেশন বন্ধ আছে। এখানে কোনো সতর্কবার্তা আসবে না।",
+  },
+  "nt.warn.quiet": {
+    en: "Alerts are set to silent on this phone. They arrive without sound. Turn the sound on for both EyeOn alert types.",
+    bn: "এই ফোনে সতর্কবার্তা সাইলেন্ট করা আছে, তাই শব্দ ছাড়া আসে। EyeOn-এর দুই ধরনের সতর্কবার্তার শব্দ চালু করুন।",
+  },
+  "nt.warn.fix": { en: "Turn on in phone settings", bn: "ফোনের সেটিংসে চালু করুন" },
   "nt.openSettings": { en: "Open phone settings", bn: "ফোনের সেটিংস খুলুন" },
   "nt.intro": { en: "Choose which alarms are sent to this phone. Popup and sound apply to the web dashboard. These settings are yours only; other users have their own.", bn: "কোন অ্যালার্ম এই ফোনে পাঠানো হবে তা বেছে নিন। পপআপ ও শব্দ ওয়েব ড্যাশবোর্ডের জন্য। এই সেটিংস শুধু আপনার; অন্য ব্যবহারকারীদের নিজস্ব সেটিংস আছে।" },
   "nt.defaults": { en: "You are on the default settings. Save to keep your own.", bn: "আপনি ডিফল্ট সেটিংসে আছেন। নিজের সেটিংস রাখতে সংরক্ষণ করুন।" },
