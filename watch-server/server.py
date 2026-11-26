@@ -53,7 +53,13 @@ ACK_WITH_SUCCESS = frozenset({"CONFIG", "ICCID", "RYIMEI", "APPANDFNREPORT", "DE
 #                        must not delay the updates once it moves again - so a still watch is
 #                        asked as often as a moving one (100 s). "Still" is now only a label in
 #                        the log; set WATCH_STILL_EVERY higher to save battery again.
-LOCATE_MIN_BATTERY = 15  # below this the watch is left alone: locating runs its GPS
+# Low battery (owner, 2026-11-26: a child on the way home at 13 % showed one position in half an
+# hour, because a watch under 15 % was not asked at all). Under LOW_BATTERY the watch is still
+# asked, every LOW_BATTERY_ASK_EVERY instead of every 100 s; only under LOCATE_MIN_BATTERY is it
+# left alone, so what is left stays for the SOS button and its call.
+LOW_BATTERY = 15
+LOW_BATTERY_ASK_EVERY = 300
+LOCATE_MIN_BATTERY = 5
 LOCATE_SLACK = 30  # heartbeats come every 300 s give or take; do not miss one by a second
 MOVING_ASK_EVERY = 100  # seconds between CRs to a moving watch
 HEARTBEAT_EVERY = 300  # the watch's LK; a still interval of at least this waits for one
@@ -302,7 +308,9 @@ class Server:
         now = time.time()
         asked = self.asked.get(dev, 0)
         m = self.motion.get(dev)
-        if m is None or m.moving:
+        if battery is not None and battery < LOW_BATTERY:
+            due = now - asked >= LOW_BATTERY_ASK_EVERY
+        elif m is None or m.moving:
             unanswered = now - max(self.store.last_report(dev), asked) >= CR_LOST_AFTER
             due = now - asked >= MOVING_ASK_EVERY or (heartbeat and unanswered)
         elif self.still_every < HEARTBEAT_EVERY:
