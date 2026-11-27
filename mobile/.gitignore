@@ -13,3 +13,11 @@ android/local.properties
 
 # Firebase config for push (kept out of git; copy it here before building)
 google-services.json
+
+# iOS build output
+ios/Pods/
+ios/build/
+ios/.xcode.env.local
+ios/DerivedData/
+*.ipa
+*.xcarchive

@@ -15,10 +15,17 @@
       "**/*"
     ],
     "ios": {
-      "supportsTablet": true,
+      "supportsTablet": false,
       "bundleIdentifier": "com.webinnovation.eyeon",
+      "buildNumber": "1",
+      "config": {
+        "usesNonExemptEncryption": false
+      },
       "infoPlist": {
-        "NSLocationWhenInUseUsageDescription": "EyeOn uses your location to center the map on where you are."
+        "NSLocationWhenInUseUsageDescription": "EyeOn uses your location to center the map on where you are.",
+        "NSPhotoLibraryUsageDescription": "EyeOn needs your photos to use one as the person's marker on the map.",
+        "CFBundleDevelopmentRegion": "en",
+        "CFBundleAllowMixedLocalizations": true
       }
     },
     "android": {
@@ -44,11 +51,18 @@
     },
     "plugins": [
       "expo-router",
-      "expo-secure-store",
+      [
+        "expo-secure-store",
+        {
+          "faceIDPermission": false
+        }
+      ],
       [
         "expo-location",
         {
-          "locationWhenInUsePermission": "EyeOn uses your location to center the map on where you are."
+          "locationWhenInUsePermission": "EyeOn uses your location to center the map on where you are.",
+          "locationAlwaysAndWhenInUsePermission": false,
+          "locationAlwaysPermission": false
         }
       ],
       [
@@ -71,10 +85,14 @@
         {
           "android": {
             "minSdkVersion": 24
+          },
+          "ios": {
+            "deploymentTarget": "15.1"
           }
         }
       ],
-      "./plugins/withReleaseSigning"
+      "./plugins/withReleaseSigning",
+      "./plugins/withFmtCxx17"
     ],
     "experiments": {
       "typedRoutes": true
