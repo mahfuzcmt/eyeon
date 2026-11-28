@@ -290,11 +290,11 @@ export default function MapScreen() {
               {navLat != null && navLng != null && (navLat !== 0 || navLng !== 0) ? (
                 <Pressable
                   onPress={() => void Linking.openURL(`https://www.google.com/maps/dir/?api=1&destination=${navLat},${navLng}`)}
-                  style={({ pressed }) => [styles.cardButtonAlt, pressed && { opacity: 0.8 }]}
+                  style={({ pressed }) => [styles.cardButtonAlt, styles.cardButtonMain, pressed && { opacity: 0.85 }]}
                   accessibilityRole="button"
                 >
-                  <Ionicons name="navigate-outline" size={22} color={colors.brand} />
-                  <Text style={styles.cardButtonAltText} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75}>
+                  <Ionicons name="navigate" size={22} color="#FFFFFF" />
+                  <Text style={[styles.cardButtonAltText, styles.cardButtonMainText]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75}>
                     {t("person.navigate")}
                   </Text>
                 </Pressable>
@@ -304,7 +304,7 @@ export default function MapScreen() {
                 style={({ pressed }) => [styles.cardButtonAlt, pressed && { opacity: 0.8 }]}
                 accessibilityRole="button"
               >
-                <Ionicons name="play-circle-outline" size={22} color={colors.brand} />
+                <Ionicons name="play-circle" size={22} color={colors.brand} />
                 <Text style={styles.cardButtonAltText} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75}>
                   {t("person.playback")}
                 </Text>
@@ -323,7 +323,7 @@ export default function MapScreen() {
                   accessibilityRole="button"
                   accessibilityLabel={t("map.addHere")}
                 >
-                  <Ionicons name="add-circle-outline" size={22} color={colors.brand} />
+                  <Ionicons name="add-circle" size={22} color={colors.brand} />
                   <Text style={styles.cardButtonAltText} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75}>
                     {t("act.geofence")}
                   </Text>
@@ -498,17 +498,19 @@ const styles = StyleSheet.create({
   cardName: { color: colors.text, fontSize: 18, fontWeight: "800" },
   cardSeen: { color: colors.textFaint, fontSize: 13, marginTop: 2 },
   cardActions: { flexDirection: "row", gap: space.sm },
+  // The card's actions: the main one filled in the brand colour, the others on a teal tint.
+  // They were white with a teal outline, which read as empty boxes on the white card (owner, 2026-11-28).
   cardButtonAlt: {
     flex: 1,
-    borderRadius: 12,
-    minHeight: 56,
+    borderRadius: 14,
+    minHeight: 60,
     alignItems: "center",
     justifyContent: "center",
     paddingHorizontal: 4,
-    gap: 2,
-    borderWidth: 1.5,
-    borderColor: colors.brand,
-    backgroundColor: colors.surface,
+    gap: 3,
+    backgroundColor: colors.brandSoft,
   },
-  cardButtonAltText: { color: colors.brand, fontSize: 13, fontWeight: "700" },
+  cardButtonAltText: { color: colors.brandDim, fontSize: 13, fontWeight: "700" },
+  cardButtonMain: { backgroundColor: colors.brand },
+  cardButtonMainText: { color: "#FFFFFF" },
 });
