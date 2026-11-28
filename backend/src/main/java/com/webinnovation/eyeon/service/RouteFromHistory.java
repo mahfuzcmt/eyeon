@@ -40,7 +40,13 @@ public final class RouteFromHistory {
      */
     public static List<Candidate> candidates(List<Point> points, Direction dir, double placeLat, double placeLng,
                                              double radiusM) {
-        List<Stay> stays = StayDetector.detect(points);
+        List<Stay> stays = new ArrayList<>(StayDetector.detect(points));
+        // Positions that begin on the move (a tracker switched on at the door): where they begin
+        // is where that first trip set off from.
+        if (!points.isEmpty() && (stays.isEmpty() || stays.get(0).from().isAfter(points.get(0).ts().plusSeconds(60)))) {
+            Point first = points.get(0);
+            stays.add(0, new Stay(first.ts(), first.ts(), first.lat(), first.lng(), 1));
+        }
         List<Candidate> out = new ArrayList<>();
         for (int i = 1; i < stays.size(); i++) {
             Stay a = stays.get(i - 1), b = stays.get(i);

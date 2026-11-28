@@ -208,7 +208,20 @@ public class PlaceRouteService {
         // to the day: look a few hours either side.
         Instant from = date.atStartOfDay(zone).minusHours(3).toInstant();
         Instant to = date.plusDays(1).atStartOfDay(zone).plusHours(3).toInstant();
-        return RouteFromHistory.candidates(stays.points(orgId, imei, from, to), dir, place.center().lat(),
+        List<StayDetector.Point> pts = new ArrayList<>(stays.points(orgId, imei, from, to));
+        // A tracker lying still goes quiet, so the day often begins and ends inside a silence:
+        // where the person already was, and where they stayed after the last position, count.
+        stays.lastBefore(orgId, imei, from).ifPresent(p -> pts.add(0, new StayDetector.Point(from, p.lat(), p.lng())));
+        if (!pts.isEmpty()) {
+            StayDetector.Point last = pts.get(pts.size() - 1);
+            Instant end = to.isBefore(Instant.now()) ? to : Instant.now();
+            StayDetector.Point after = stays.firstFrom(orgId, imei, to).orElse(null);
+            // nothing heard since: still there; heard again later: there until then
+            if (after == null || java.time.Duration.between(last.ts(), after.ts()).compareTo(StayDetector.MAX_GAP) <= 0) {
+                if (end.isAfter(last.ts())) pts.add(new StayDetector.Point(end, last.lat(), last.lng()));
+            }
+        }
+        return RouteFromHistory.candidates(pts, dir, place.center().lat(),
                 place.center().lng(), place.radiusM() == null ? 100 : place.radiusM());
     }
 

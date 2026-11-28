@@ -54,4 +54,15 @@ class RouteFromHistoryTest {
         for (int m = 0; m <= 600; m += 5) pts.add(new Point(T0.plusSeconds(m * 60L), HOME_LAT, HOME_LNG));
         assertThat(RouteFromHistory.candidates(pts, Direction.TO, SCHOOL_LAT, SCHOOL_LNG, 100)).isEmpty();
     }
+
+    @Test
+    void positionsThatBeginAtTheDoorStillGiveTheTrip() {
+        // 90 seconds at home, six minutes on the way, then at school (the demo child's recorded day)
+        List<Point> pts = new ArrayList<>();
+        for (int sec = 0; sec <= 90; sec += 10) pts.add(new Point(T0.plusSeconds(sec), HOME_LAT, HOME_LNG));
+        for (int i = 1; i <= 10; i++) pts.add(new Point(T0.plusSeconds(90 + i * 36L), HOME_LAT, HOME_LNG + i * 0.001));
+        for (int m = 0; m <= 30; m += 5) pts.add(new Point(T0.plusSeconds(480 + m * 60L), SCHOOL_LAT, SCHOOL_LNG));
+        assertThat(RouteFromHistory.candidates(pts, Direction.TO, SCHOOL_LAT, SCHOOL_LNG, 100)).hasSize(1);
+        assertThat(RouteFromHistory.candidates(pts, Direction.FROM, HOME_LAT, HOME_LNG, 100)).hasSize(1);
+    }
 }
