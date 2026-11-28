@@ -5,28 +5,64 @@ import { Ionicons } from "@expo/vector-icons";
 import {
   deletePlaceRoute,
   getGeofence,
+  listDevices,
+  listGeofenceImeis,
+  listGeofences,
   listPlaceRoutes,
   listPlaceSchedules,
+  routesFromHistory,
   savePlaceRoute,
   snapRoute,
 } from "@/api/endpoints";
 import { extractError } from "@/api/client";
 import WebMap from "@/components/WebMap";
-import { Chip, EmptyState, PrimaryButton } from "@/ui";
+import { ClockTimePicker } from "@/components/ClockTimePicker";
+import { Chip, EmptyState, Field, PrimaryButton } from "@/ui";
+import { clockText, fmtTime } from "@/format";
 import { useI18n, type StringKey } from "@/i18n";
 import { colors, radius, space, touch } from "@/theme";
-import type { GeofenceView, LatLng, PlaceRoute, PlaceSchedule, RouteDirection, RouteMode, RouteSnap } from "@/types";
+import type {
+  GeofenceView,
+  LatLng,
+  PlaceRoute,
+  PlaceSchedule,
+  RouteCandidate,
+  RouteDirection,
+  RouteLevel,
+  RouteMode,
+  RouteSnap,
+} from "@/types";
 
 /**
- * The usual way to and from one trusted place (same as the web "Usual route" dialog). The carer
- * taps the other end and a few turns; the place is always the end of "to" and the start of "from".
- * The server snaps the line to the roads and, around the place's expected times, tells the owner
- * when the person takes another way for two minutes.
+ * The usual routes to and from one trusted place (same as the web "Usual route" dialog): several
+ * each way, each with a name, its own days and hours and an alert level. The carer taps the other
+ * end and a few turns, or picks a trip the person really made; the place is always the end of
+ * "to" and the start of "from". During a route's hours the server tells the owner when the person
+ * takes another way for two minutes, or sets off and never gets onto it.
  */
 
 const DIRECTIONS: RouteDirection[] = ["TO", "FROM"];
 const WIDTHS = [50, 100, 150, 200, 300];
 const MAX_TAPS = 23;
+const MAX_ROUTES = 10;
+/** Shown Sunday first: the school week in Bangladesh runs Sunday to Thursday. ISO numbers, 7 = Sunday. */
+const WEEK = [7, 1, 2, 3, 4, 5, 6];
+const SCHOOL_DAYS = [7, 1, 2, 3, 4];
+const LEVELS: RouteLevel[] = ["INFO", "WARNING", "CRITICAL"];
+const LEVEL_COLOR: Record<RouteLevel, string> = { INFO: colors.brand, WARNING: colors.warn, CRITICAL: colors.danger };
+/** How many days back "Use a past trip" offers. */
+const HISTORY_DAYS = 7;
+
+function shift(hhmm: string, minutes: number): string {
+  const [h, m] = hhmm.split(":").map(Number);
+  const total = Math.min(23 * 60 + 55, Math.max(0, h * 60 + m + minutes));
+  return `${String(Math.floor(total / 60)).padStart(2, "0")}:${String(total % 60).padStart(2, "0")}`;
+}
+
+/** The date `back` days ago in Dhaka, as YYYY-MM-DD. */
+function dhakaDay(back: number): string {
+  return new Date(Date.now() + 6 * 3600_000 - back * 86_400_000).toISOString().slice(0, 10);
+}
 const BN_DIGITS = "০১২৩৪৫৬৭৮৯";
 const digits = (v: number | string, bn: boolean) => (bn ? String(v).replace(/\d/g, (d) => BN_DIGITS[Number(d)]) : String(v));
 const toLngLat = (pts: LatLng[]): [number, number][] => pts.map((p) => [p.lng, p.lat]);
@@ -39,7 +75,17 @@ export default function PlaceRouteScreen() {
   const [place, setPlace] = useState<GeofenceView | null>(null);
   const [saved, setSaved] = useState<PlaceRoute[]>([]);
   const [schedules, setSchedules] = useState<PlaceSchedule[]>([]);
+  const [places, setPlaces] = useState<GeofenceView[]>([]);
+  const [people, setPeople] = useState<{ imei: string; name: string }[]>([]);
   const [direction, setDirection] = useState<RouteDirection>("TO");
+  /** The route being edited, or "new". */
+  const [selectedId, setSelectedId] = useState<string>("new");
+  const [routeName, setRouteName] = useState("");
+  const [otherId, setOtherId] = useState("");
+  const [days, setDays] = useState<number[]>(SCHOOL_DAYS);
+  const [timeFrom, setTimeFrom] = useState("07:00");
+  const [timeTo, setTimeTo] = useState("09:00");
+  const [level, setLevel] = useState<RouteLevel>("WARNING");
   const [taps, setTaps] = useState<LatLng[]>([]);
   const [mode, setMode] = useState<RouteMode>("VEHICLE");
   const [width, setWidth] = useState(100);
@@ -50,14 +96,23 @@ export default function PlaceRouteScreen() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [center, setCenter] = useState<{ lat: number; lng: number; zoom: number; nonce: number } | null>(null);
+  const [histImei, setHistImei] = useState("");
+  const [histBack, setHistBack] = useState(0);
+  const [trips, setTrips] = useState<RouteCandidate[] | null>(null);
+  const [finding, setFinding] = useState(false);
   const snapSeq = useRef(0);
-  /** Set when the line was copied from the other direction: keep it exactly, do not ask the road service. */
+  /** Set when the line was copied (other direction, past trip): keep it exactly, do not ask the road service. */
   const skipSnap = useRef(false);
 
   const anchor = place?.center ?? null;
   const placeName = place?.name ?? name ?? "";
-  const current = saved.find((r) => r.direction === direction) ?? null;
-  const other = saved.find((r) => r.direction !== direction) ?? null;
+  const inDirection = useMemo(() => saved.filter((r) => r.direction === direction), [saved, direction]);
+  const current = saved.find((r) => r.id === selectedId) ?? null;
+  /** The route the other way that this one would mirror: between the same two places when there is one. */
+  const other = useMemo(() => {
+    const opposite = saved.filter((r) => r.direction !== direction);
+    return opposite.find((r) => (r.otherGeofenceId ?? "") === otherId) ?? opposite[0] ?? null;
+  }, [saved, direction, otherId]);
 
   const waypoints = useMemo<LatLng[]>(() => {
     if (!anchor) return taps;
@@ -68,12 +123,22 @@ export default function PlaceRouteScreen() {
     if (!id) return;
     setLoading(true);
     try {
-      const [g, r, s] = await Promise.all([getGeofence(id), listPlaceRoutes(id), listPlaceSchedules(id)]);
+      const [g, r, s, all, imeis, devices] = await Promise.all([
+        getGeofence(id),
+        listPlaceRoutes(id),
+        listPlaceSchedules(id),
+        listGeofences("TRUSTED_PLACE"),
+        listGeofenceImeis(id),
+        listDevices(),
+      ]);
       setPlace(g);
       setSaved(r);
       setSchedules(s);
+      setPlaces(all.filter((x) => x.id !== id));
+      setPeople(imeis.map((imei) => ({ imei, name: devices.find((d) => d.imei === imei)?.name || imei })));
+      setHistImei((prev) => prev || imeis[0] || "");
       setError(null);
-      if (g.center) setCenter({ lat: g.center.lat, lng: g.center.lng, zoom: 16, nonce: Date.now() });
+      if (g.center) setCenter((c) => c ?? { lat: g.center!.lat, lng: g.center!.lng, zoom: 16, nonce: Date.now() });
     } catch (e) {
       setError(extractError(e).message);
     } finally {
@@ -85,20 +150,56 @@ export default function PlaceRouteScreen() {
     void load();
   }, [load]);
 
-  // Switching direction (or reloading) starts from what is saved for it.
+  // A direction shows its first route, or an empty form when it has none.
   useEffect(() => {
-    const r = saved.find((x) => x.direction === direction);
+    if (selectedId !== "new" && inDirection.some((r) => r.id === selectedId)) return;
+    if (selectedId === "new" && (inDirection.length === 0 || dirty)) return;
+    setSelectedId(inDirection[0]?.id ?? "new");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [inDirection]);
+
+  /** Hours for a route that has none yet: around the place's expected time when it has one. */
+  const defaultHours = useCallback((): { days: number[]; from: string; to: string } => {
+    const kind = direction === "TO" ? "ARRIVE_BY" : "LEAVE_BY";
+    const s = schedules.find((x) => x.kind === kind && x.active);
+    if (s) {
+      return direction === "TO"
+        ? { days: s.weekdays, from: shift(s.time, -60), to: shift(s.time, 30) }
+        : { days: s.weekdays, from: shift(s.time, -30), to: shift(s.time, 120) };
+    }
+    return direction === "TO"
+      ? { days: SCHOOL_DAYS, from: "07:00", to: "09:00" }
+      : { days: SCHOOL_DAYS, from: "12:00", to: "15:00" };
+  }, [direction, schedules]);
+
+  // Choosing a route (or reloading) starts the form from what is saved for it.
+  useEffect(() => {
+    const r = saved.find((x) => x.id === selectedId);
+    const hours = defaultHours();
     if (r) {
-      setTaps(direction === "TO" ? r.waypoints.slice(0, -1) : r.waypoints.slice(1));
+      setTaps(r.direction === "TO" ? r.waypoints.slice(0, -1) : r.waypoints.slice(1));
       setMode(r.mode);
       setWidth(r.widthM);
       setSnap({ path: r.path, lengthM: r.lengthM, roads: true });
+      setRouteName(r.name ?? "");
+      setOtherId(r.otherGeofenceId ?? "");
+      setLevel(r.severity ?? "WARNING");
+      setDays(r.weekdays ?? hours.days);
+      setTimeFrom(r.timeFrom ?? hours.from);
+      setTimeTo(r.timeTo ?? hours.to);
     } else {
       setTaps([]);
       setSnap(null);
+      setRouteName("");
+      setOtherId("");
+      setLevel("WARNING");
+      setDays(hours.days);
+      setTimeFrom(hours.from);
+      setTimeTo(hours.to);
     }
+    setTrips(null);
     setDirty(false);
-  }, [saved, direction]);
+  }, [saved, selectedId, defaultHours]);
 
   // Snap the edited points to the roads; a newer edit wins over a slower answer.
   useEffect(() => {
@@ -160,15 +261,72 @@ export default function PlaceRouteScreen() {
     setDirty(true);
   };
 
+  /** A trip the person really made, as the line. */
+  const applyTrip = (c: RouteCandidate) => {
+    const pts = direction === "TO" ? c.waypoints.slice(0, -1) : c.waypoints.slice(1);
+    snapSeq.current++;
+    skipSnap.current = true;
+    setSnapping(false);
+    setTaps(pts.slice(0, MAX_TAPS));
+    setSnap({ path: c.path, lengthM: c.lengthM, roads: true });
+    setDirty(true);
+    const mid = c.path[Math.floor(c.path.length / 2)];
+    if (mid) setCenter({ lat: mid.lat, lng: mid.lng, zoom: 14, nonce: Date.now() });
+  };
+
+  const findTrips = async () => {
+    if (!histImei) return;
+    setFinding(true);
+    setError(null);
+    try {
+      setTrips(await routesFromHistory(id, histImei, dhakaDay(histBack), direction));
+    } catch (e) {
+      setError(extractError(e).message);
+    } finally {
+      setFinding(false);
+    }
+  };
+
+  const otherPlace = places.find((p) => p.id === otherId) ?? null;
+  const title = (d: RouteDirection) => t(`route.${d}` as StringKey).replace("{place}", placeName);
+  /** What a route is called when the carer gave it no name. */
+  const autoName = otherPlace
+    ? direction === "TO"
+      ? `${otherPlace.name} → ${placeName}`
+      : `${placeName} → ${otherPlace.name}`
+    : title(direction);
+
   const save = async () => {
     if (!snap || taps.length === 0) {
       setError(t("route.tapMore"));
       return;
     }
+    if (days.length === 0) {
+      setError(t("route.needDays"));
+      return;
+    }
+    if (timeFrom >= timeTo) {
+      setError(t("route.timeOrder"));
+      return;
+    }
     setBusy(true);
     setError(null);
     try {
-      await savePlaceRoute(id, direction, { mode, waypoints, path: snap.path, widthM: width });
+      const r = await savePlaceRoute(id, current?.id ?? null, {
+        direction,
+        name: routeName.trim() || autoName,
+        mode,
+        waypoints,
+        path: snap.path,
+        widthM: width,
+        otherGeofenceId: otherId || null,
+        weekdays: days,
+        timeFrom,
+        timeTo,
+        severity: level,
+      });
+      setDirty(false);
+      setSelectedId(r.id);
       await load();
     } catch (e) {
       setError(extractError(e).message);
@@ -177,8 +335,9 @@ export default function PlaceRouteScreen() {
     }
   };
 
-  const remove = () =>
-    Alert.alert(t("common.delete"), t(`route.${direction}` as StringKey).replace("{place}", placeName), [
+  const remove = () => {
+    if (!current) return;
+    Alert.alert(t("common.delete"), current.name || title(direction), [
       { text: t("common.cancel"), style: "cancel" },
       {
         text: t("common.delete"),
@@ -187,7 +346,8 @@ export default function PlaceRouteScreen() {
           void (async () => {
             setBusy(true);
             try {
-              await deletePlaceRoute(id, direction);
+              await deletePlaceRoute(id, current.id);
+              setSelectedId("new");
               await load();
             } catch (e) {
               setError(extractError(e).message);
@@ -198,11 +358,14 @@ export default function PlaceRouteScreen() {
         },
       },
     ]);
+  };
 
-  const neededKind = direction === "TO" ? "ARRIVE_BY" : "LEAVE_BY";
-  const hasTime = schedules.some((s) => s.kind === neededKind && s.active);
   const km = snap ? digits(Math.round(snap.lengthM / 100) / 10, bn) : "0";
-  const canSave = !busy && !snapping && !!snap && taps.length > 0 && (dirty || width !== current?.widthM);
+  const canSave = !busy && !snapping && !!snap && taps.length > 0;
+  const dayNames = (list: number[]) => WEEK.filter((d) => list.includes(d)).map((d) => t(`day.${d}` as StringKey)).join(" ");
+  const toggleDay = (d: number) => setDays((prev) => (prev.includes(d) ? prev.filter((x) => x !== d) : [...prev, d]));
+  const dayLabel = (back: number) =>
+    back === 0 ? t("route.today") : back === 1 ? t("route.yesterday") : digits(dhakaDay(back).slice(5).split("-").reverse().join("/"), bn);
 
   return (
     <View style={styles.screen}>
@@ -210,7 +373,7 @@ export default function PlaceRouteScreen() {
       <View style={styles.tabs}>
         {DIRECTIONS.map((d) => {
           const on = d === direction;
-          const has = saved.some((r) => r.direction === d);
+          const count = saved.filter((r) => r.direction === d).length;
           return (
             <Pressable
               key={d}
@@ -222,13 +385,49 @@ export default function PlaceRouteScreen() {
               <Text style={[styles.tabTitle, on && styles.tabTitleOn]} numberOfLines={1}>
                 {t(`route.${d}` as StringKey).replace("{place}", placeName)}
               </Text>
-              <Text style={[styles.tabSub, on && styles.tabSubOn]}>{has ? t("route.saved") : t("route.notSet")}</Text>
+              <Text style={[styles.tabSub, on && styles.tabSubOn]}>
+                {count > 0 ? t("route.count").replace("{n}", digits(count, bn)) : t("route.notSet")}
+              </Text>
             </Pressable>
           );
         })}
       </View>
+      {inDirection.length > 0 ? (
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.routes} contentContainerStyle={styles.routesRow}>
+          {inDirection.map((r) => {
+            const on = r.id === selectedId;
+            return (
+              <Pressable
+                key={r.id}
+                onPress={() => setSelectedId(r.id)}
+                style={[styles.routeChip, on && styles.routeChipOn]}
+                accessibilityRole="button"
+                accessibilityState={{ selected: on }}
+              >
+                <Text style={styles.routeChipName} numberOfLines={1}>{r.name || title(r.direction)}</Text>
+                <Text style={styles.routeChipSub} numberOfLines={1}>
+                  {r.weekdays && r.timeFrom && r.timeTo
+                    ? `${dayNames(r.weekdays)} · ${clockText(r.timeFrom, bn)} – ${clockText(r.timeTo, bn)}`
+                    : t("route.followsTime")}
+                </Text>
+              </Pressable>
+            );
+          })}
+          {inDirection.length < MAX_ROUTES ? (
+            <Pressable
+              onPress={() => setSelectedId("new")}
+              style={[styles.routeChip, styles.routeChipAdd, selectedId === "new" && styles.routeChipOn]}
+              accessibilityRole="button"
+              accessibilityState={{ selected: selectedId === "new" }}
+            >
+              <Ionicons name="add" size={20} color={colors.brand} />
+              <Text style={[styles.routeChipName, { color: colors.brand }]}>{t("route.add")}</Text>
+            </Pressable>
+          ) : null}
+        </ScrollView>
+      ) : null}
 
-      <View style={{ height: Math.max(260, height * 0.42) }}>
+      <View style={{ height: Math.max(240, height * 0.36) }}>
         <WebMap
           center={center}
           circle={circle}
@@ -248,12 +447,116 @@ export default function PlaceRouteScreen() {
 
       <ScrollView contentContainerStyle={styles.content}>
         <Text style={styles.hint}>{t("route.hint")}</Text>
-        <Text style={styles.hint}>{t(direction === "TO" ? "route.whenTO" : "route.whenFROM")}</Text>
-        {!loading && !hasTime ? (
-          <Text style={styles.warn}>
-            {t("route.needTime").replace("{kind}", t(direction === "TO" ? "route.kindArrive" : "route.kindLeave"))}
-          </Text>
-        ) : null}
+
+        <Field label={t("route.name")} value={routeName} onChangeText={setRouteName} placeholder={autoName} maxLength={80} />
+
+        <Text style={styles.label}>{t(direction === "TO" ? "route.otherTO" : "route.otherFROM")}</Text>
+        <View style={styles.chips}>
+          <Chip label={t("route.otherNone")} active={otherId === ""} onPress={() => setOtherId("")} />
+          {places.map((p) => (
+            <Chip key={p.id} label={p.name} active={otherId === p.id} onPress={() => setOtherId(p.id)} />
+          ))}
+        </View>
+        {direction === "TO" ? <Text style={styles.hint}>{t("route.otherHint")}</Text> : null}
+
+        <Text style={styles.label}>{t("route.days")}</Text>
+        <View style={styles.chips}>
+          {WEEK.map((d) => (
+            <Chip key={d} label={t(`day.${d}` as StringKey)} active={days.includes(d)} onPress={() => toggleDay(d)} />
+          ))}
+        </View>
+        <View style={styles.times}>
+          <View style={{ flex: 1 }}>
+            <ClockTimePicker value={timeFrom} onChange={setTimeFrom} bn={bn} label={t("route.from")} />
+          </View>
+          <View style={{ flex: 1 }}>
+            <ClockTimePicker value={timeTo} onChange={setTimeTo} bn={bn} label={t("route.until")} />
+          </View>
+        </View>
+        <Text style={styles.hint}>
+          {t(direction === "TO" ? "route.whenOwnTO" : "route.whenOwnFROM").replace("{place}", placeName)}
+        </Text>
+        {current && !current.weekdays ? <Text style={styles.warn}>{t("route.legacy")}</Text> : null}
+
+        <Text style={styles.label}>{t("route.level")}</Text>
+        <View style={styles.chips}>
+          {LEVELS.map((l) => {
+            const on = level === l;
+            return (
+              <Pressable
+                key={l}
+                onPress={() => setLevel(l)}
+                style={[styles.level, on && { backgroundColor: LEVEL_COLOR[l], borderColor: LEVEL_COLOR[l] }]}
+                accessibilityRole="button"
+                accessibilityState={{ selected: on }}
+              >
+                <Text style={[styles.levelText, on && { color: "#FFFFFF" }]}>{t(`alc.sev.${l}` as StringKey)}</Text>
+              </Pressable>
+            );
+          })}
+        </View>
+        <Text style={styles.hint}>{t(`route.level.${level}` as StringKey)}</Text>
+
+        <View style={styles.history}>
+          <Text style={styles.historyTitle}>{t("route.history")}</Text>
+          <Text style={styles.hint}>{t("route.historyHint")}</Text>
+          {people.length === 0 ? (
+            <Text style={styles.summary}>{t("route.historyNobody")}</Text>
+          ) : (
+            <>
+              {people.length > 1 ? (
+                <View style={styles.chips}>
+                  {people.map((p) => (
+                    <Chip
+                      key={p.imei}
+                      label={p.name}
+                      active={histImei === p.imei}
+                      onPress={() => {
+                        setHistImei(p.imei);
+                        setTrips(null);
+                      }}
+                    />
+                  ))}
+                </View>
+              ) : null}
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.routesRow}>
+                {Array.from({ length: HISTORY_DAYS }, (_, back) => (
+                  <Chip
+                    key={back}
+                    label={dayLabel(back)}
+                    active={histBack === back}
+                    onPress={() => {
+                      setHistBack(back);
+                      setTrips(null);
+                    }}
+                  />
+                ))}
+              </ScrollView>
+              <Pressable
+                onPress={() => void findTrips()}
+                disabled={finding || !histImei}
+                style={({ pressed }) => [styles.copy, (pressed || finding) && { opacity: 0.7 }]}
+                accessibilityRole="button"
+              >
+                <Ionicons name="search-outline" size={20} color={colors.brand} />
+                <Text style={styles.copyText}>{finding ? t("common.loading") : t("route.find")}</Text>
+              </Pressable>
+              {trips && trips.length === 0 ? <Text style={styles.summary}>{t("route.noTrips")}</Text> : null}
+              {(trips ?? []).map((c) => (
+                <View key={c.from} style={styles.trip}>
+                  <Text style={styles.tripText}>
+                    {fmtTime(c.from, bn)} – {fmtTime(c.to, bn)} ·{" "}
+                    {t("route.tripKm").replace("{km}", digits(Math.round(c.lengthM / 100) / 10, bn))}
+                  </Text>
+                  <Pressable onPress={() => applyTrip(c)} style={styles.tripUse} accessibilityRole="button">
+                    <Text style={styles.tripUseText}>{t("route.useTrip")}</Text>
+                  </Pressable>
+                </View>
+              ))}
+            </>
+          )}
+        </View>
+
         {snap && !snap.roads && !snapping ? <Text style={styles.amber}>{t("route.straight")}</Text> : null}
 
         <View style={styles.chips}>
@@ -379,4 +682,44 @@ const styles = StyleSheet.create({
   },
   copyText: { color: colors.brand, fontSize: 15, fontWeight: "700", flexShrink: 1 },
   error: { color: colors.danger, fontSize: 14 },
+  routes: { flexGrow: 0 },
+  routesRow: { gap: space.sm, paddingHorizontal: space.md, paddingBottom: space.sm },
+  routeChip: {
+    maxWidth: 240,
+    minHeight: touch.min,
+    justifyContent: "center",
+    paddingHorizontal: space.md,
+    paddingVertical: 6,
+    borderRadius: radius.sm,
+    backgroundColor: colors.surface,
+    borderWidth: 1.5,
+    borderColor: colors.border,
+  },
+  routeChipOn: { borderColor: colors.brand, backgroundColor: colors.brandSoft },
+  routeChipAdd: { flexDirection: "row", alignItems: "center", gap: 4 },
+  routeChipName: { color: colors.text, fontSize: 14, fontWeight: "700" },
+  routeChipSub: { color: colors.textFaint, fontSize: 13 },
+  times: { flexDirection: "row", gap: space.md },
+  level: {
+    minHeight: touch.min,
+    justifyContent: "center",
+    paddingHorizontal: space.lg,
+    borderRadius: 999,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  levelText: { color: colors.text, fontSize: 15, fontWeight: "700" },
+  history: { gap: space.sm, padding: space.md, borderRadius: radius.sm, backgroundColor: colors.surface },
+  historyTitle: { color: colors.text, fontSize: 15, fontWeight: "700" },
+  trip: { flexDirection: "row", alignItems: "center", gap: space.md, minHeight: touch.min },
+  tripText: { flex: 1, color: colors.text, fontSize: 15 },
+  tripUse: {
+    minHeight: 40,
+    justifyContent: "center",
+    paddingHorizontal: space.lg,
+    borderRadius: 999,
+    backgroundColor: colors.brand,
+  },
+  tripUseText: { color: colors.onBrand, fontSize: 14, fontWeight: "700" },
 });

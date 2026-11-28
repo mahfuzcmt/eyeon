@@ -26,6 +26,23 @@ class NotificationComposerTest {
     }
 
     @Test
+    void a_named_route_is_called_by_its_name_and_an_info_alert_arrives_quietly() {
+        Message en = composer.compose(alarm("ROUTE_NOT_TAKEN", "CRITICAL", MORNING,
+                Map.of("geofenceName", "School", "direction", "TO", "routeName", "Home to School")), "Rafi", Lang.EN);
+        assertEquals("🧭 Rafi did not take the usual route", en.title());
+        assertEquals("Home to School · 8:02 AM · Tap to see where they are", en.body());
+        assertEquals(NotificationComposer.CHANNEL_ALARMS, en.channelId());
+
+        Message bn = composer.compose(alarm("ROUTE_NOT_TAKEN", "WARNING", MORNING,
+                Map.of("geofenceName", "স্কুল", "direction", "TO")), "রাফি", Lang.BN);
+        assertEquals("🧭 রাফি চেনা পথে নেই", bn.title());
+
+        Message quiet = composer.compose(alarm("ROUTE_DEVIATION", "INFO", MORNING,
+                Map.of("geofenceName", "School", "direction", "TO")), "Rafi", Lang.EN);
+        assertEquals(NotificationComposer.CHANNEL_ARRIVALS, quiet.channelId());
+    }
+
+    @Test
     void off_route_names_the_way_and_uses_the_alarm_channel() {
         Message bn = composer.compose(alarm("ROUTE_DEVIATION", "WARNING", MORNING,
                 Map.of("geofenceName", "স্কুল", "direction", "TO")), "রাফি", Lang.BN);

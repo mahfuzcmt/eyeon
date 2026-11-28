@@ -126,7 +126,12 @@ public class NotificationComposer {
                     bn ? "🧭 " + personName + " অন্য পথে যাচ্ছে"
                        : "🧭 " + personName + " is off the usual route",
                     joinDot(routeName(alarm, place, bn), time, bn ? "কোথায় আছে দেখতে ট্যাপ করুন" : "Tap to see where they are"),
-                    CHANNEL_ALARMS);
+                    routeChannel(alarm));
+            case "ROUTE_NOT_TAKEN" -> new Message(
+                    bn ? "🧭 " + personName + " চেনা পথে নেই"
+                       : "🧭 " + personName + " did not take the usual route",
+                    joinDot(routeName(alarm, place, bn), time, bn ? "কোথায় আছে দেখতে ট্যাপ করুন" : "Tap to see where they are"),
+                    routeChannel(alarm));
             case "BACK_ON_ROUTE" -> new Message(
                     bn ? "✅ " + personName + " আবার চেনা পথে"
                        : "✅ " + personName + " is back on the usual route",
@@ -215,9 +220,16 @@ public class NotificationComposer {
     /** "School-এ" — the hyphenated locative attaches cleanly to any name the user typed. */
     /** {@code School-এ যাওয়ার পথ} / {@code Way to School}; the direction is in the metadata. */
     private static String routeName(Alarm alarm, String place, boolean bn) {
+        String named = metaString(alarm.metadata(), "routeName");
+        if (named != null && !named.isBlank()) return named;
         boolean from = "FROM".equals(metaString(alarm.metadata(), "direction"));
         if (bn) return from ? orPlace(place, true) + " থেকে ফেরার পথ" : orPlace(place, true) + "-এ যাওয়ার পথ";
         return (from ? "Way back from " : "Way to ") + orPlace(place, false);
+    }
+
+    /** A route alert the parent set to "info" arrives like an arrival, not like an alarm. */
+    private static String routeChannel(Alarm alarm) {
+        return "INFO".equals(alarm.severity()) ? CHANNEL_ARRIVALS : CHANNEL_ALARMS;
     }
 
     private static String at(String place, boolean bn) {

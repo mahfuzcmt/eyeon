@@ -184,25 +184,83 @@ public class GeofenceController {
                 .map(com.webinnovation.eyeon.dto.GeofenceDtos.RouteView::of).toList();
     }
 
-    @PutMapping("/{id}/routes/{direction}")
+    @PostMapping("/{id}/routes")
+    public ResponseEntity<com.webinnovation.eyeon.dto.GeofenceDtos.RouteView> createRoute(
+            @PathVariable UUID id, @RequestBody com.webinnovation.eyeon.dto.GeofenceDtos.RouteSave req) {
+        UUID orgId = TenantContext.requireOrgId();
+        var saved = routes.create(orgId, TenantContext.requireUserId(), id, routeInput(req, req.direction()));
+        auditRoute("PLACE_ROUTE_SAVE", id, saved);
+        return ResponseEntity.status(201).body(com.webinnovation.eyeon.dto.GeofenceDtos.RouteView.of(saved));
+    }
+
+    /**
+     * {@code key} is a route's id. Apps from before named routes send TO / FROM instead and only a
+     * line: that replaces the line of the first route in that direction (or makes it).
+     */
+    @PutMapping("/{id}/routes/{key}")
     public com.webinnovation.eyeon.dto.GeofenceDtos.RouteView saveRoute(
-            @PathVariable UUID id, @PathVariable String direction,
+            @PathVariable UUID id, @PathVariable String key,
             @RequestBody com.webinnovation.eyeon.dto.GeofenceDtos.RouteSave req) {
         UUID orgId = TenantContext.requireOrgId();
-        var saved = routes.save(orgId, TenantContext.requireUserId(), id, direction, req.mode(),
-                com.webinnovation.eyeon.dto.GeofenceDtos.pts(req.waypoints()),
-                com.webinnovation.eyeon.dto.GeofenceDtos.pts(req.path()), req.widthM());
-        audit.record("PLACE_ROUTE_SAVE", "geofence", id.toString(),
-                java.util.Map.of("direction", saved.direction(), "widthM", saved.widthM()));
+        UUID routeId = routeId(key);
+        var saved = routeId == null
+                ? routes.saveByDirection(orgId, TenantContext.requireUserId(), id, key, req.mode(),
+                        com.webinnovation.eyeon.dto.GeofenceDtos.pts(req.waypoints()),
+                        com.webinnovation.eyeon.dto.GeofenceDtos.pts(req.path()), req.widthM())
+                : routes.update(orgId, TenantContext.requireUserId(), id, routeId, routeInput(req, req.direction()));
+        auditRoute("PLACE_ROUTE_SAVE", id, saved);
         return com.webinnovation.eyeon.dto.GeofenceDtos.RouteView.of(saved);
     }
 
-    @DeleteMapping("/{id}/routes/{direction}")
-    public ResponseEntity<Void> deleteRoute(@PathVariable UUID id, @PathVariable String direction) {
+    @DeleteMapping("/{id}/routes/{key}")
+    public ResponseEntity<Void> deleteRoute(@PathVariable UUID id, @PathVariable String key) {
         UUID orgId = TenantContext.requireOrgId();
-        routes.delete(orgId, TenantContext.requireUserId(), id, direction);
-        audit.record("PLACE_ROUTE_DELETE", "geofence", id.toString(), java.util.Map.of("direction", direction));
+        UUID routeId = routeId(key);
+        if (routeId == null) routes.deleteByDirection(orgId, TenantContext.requireUserId(), id, key);
+        else routes.delete(orgId, TenantContext.requireUserId(), id, routeId);
+        audit.record("PLACE_ROUTE_DELETE", "geofence", id.toString(), java.util.Map.of("route", key));
         return ResponseEntity.noContent().build();
+    }
+
+    /** Past trips of one person to / from the place on one day, to save one as the route. */
+    @PostMapping("/{id}/routes/from-history")
+    public List<com.webinnovation.eyeon.dto.GeofenceDtos.RouteCandidate> routesFromHistory(
+            @PathVariable UUID id, @RequestBody com.webinnovation.eyeon.dto.GeofenceDtos.RouteFromHistoryRequest req) {
+        UUID orgId = TenantContext.requireOrgId();
+        if (req.imei() == null || req.imei().isBlank()) throw new IllegalArgumentException("imei is required");
+        access.requireVisible(req.imei());
+        java.time.LocalDate date;
+        try {
+            date = java.time.LocalDate.parse(String.valueOf(req.date()));
+        } catch (RuntimeException e) {
+            throw new IllegalArgumentException("date must be YYYY-MM-DD");
+        }
+        return routes.fromHistory(orgId, TenantContext.requireUserId(), id, req.imei(), date, req.direction()).stream()
+                .map(c -> new com.webinnovation.eyeon.dto.GeofenceDtos.RouteCandidate(c.from(), c.to(),
+                        Math.round(c.lengthM()), com.webinnovation.eyeon.dto.GeofenceDtos.latLngs(c.waypoints()),
+                        com.webinnovation.eyeon.dto.GeofenceDtos.latLngs(c.path())))
+                .toList();
+    }
+
+    private static UUID routeId(String key) {
+        try {
+            return UUID.fromString(key);
+        } catch (IllegalArgumentException e) {
+            return null;
+        }
+    }
+
+    private static com.webinnovation.eyeon.service.PlaceRouteService.Input routeInput(
+            com.webinnovation.eyeon.dto.GeofenceDtos.RouteSave req, String direction) {
+        return new com.webinnovation.eyeon.service.PlaceRouteService.Input(direction, req.name(), req.mode(),
+                com.webinnovation.eyeon.dto.GeofenceDtos.pts(req.waypoints()),
+                com.webinnovation.eyeon.dto.GeofenceDtos.pts(req.path()), req.widthM(), req.otherGeofenceId(),
+                req.weekdays(), req.timeFrom(), req.timeTo(), req.severity());
+    }
+
+    private void auditRoute(String action, UUID geofenceId, com.webinnovation.eyeon.repository.PlaceRouteRepository.Route r) {
+        audit.record(action, "geofence", geofenceId.toString(), java.util.Map.of("route", r.id().toString(),
+                "direction", r.direction(), "widthM", r.widthM(), "severity", r.severity()));
     }
 
     /** Road line through tapped points, for the route editor. Calls a public routing service: a few seconds. */

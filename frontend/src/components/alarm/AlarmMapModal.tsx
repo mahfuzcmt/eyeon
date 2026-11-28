@@ -3,15 +3,19 @@
 import { useEffect, useRef } from "react";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
+import { api } from "@/lib/api";
 import { createBaseLayer } from "@/lib/leaflet";
 import { useLocale } from "@/lib/i18n";
 import { alarmTypeLabel } from "@/lib/alarmTypes";
 import { formatDateTime } from "@/lib/format";
-import type { AlarmView } from "@/types/domain";
+import type { AlarmView, PlaceRoute } from "@/types/domain";
 
 const SEV_COLOR: Record<string, string> = { CRITICAL: "#D92D20", WARNING: "#D97706", INFO: "#0F6B5C" };
 
-/** Where an alarm happened: a small map centred on the alarm with a pulsing marker. */
+/**
+ * Where an alarm happened: a small map centred on the alarm with a pulsing marker. For an alert of
+ * a usual route, the route is drawn too, so it shows where the person left it.
+ */
 export function AlarmMapModal({ alarm, deviceName, onClose }: { alarm: AlarmView; deviceName: string; onClose: () => void }) {
   const { t, locale } = useLocale();
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -33,6 +37,22 @@ export function AlarmMapModal({ alarm, deviceName, onClose }: { alarm: AlarmView
       iconAnchor: [9, 9],
     });
     L.marker(center, { icon }).addTo(map);
+    const routeId = typeof alarm.metadata?.routeId === "string" ? alarm.metadata.routeId : null;
+    const placeId = typeof alarm.metadata?.geofenceId === "string" ? alarm.metadata.geofenceId : null;
+    if (routeId && placeId) {
+      // Only the route's owner can read it, and only the owner is sent these alerts.
+      api
+        .get<PlaceRoute[]>(`/geofences/${placeId}/routes`)
+        .then((r) => {
+          const route = r.data.find((x) => x.id === routeId);
+          if (disposed || !route || route.path.length < 2) return;
+          const line = route.path.map((p) => [p.lat, p.lng] as [number, number]);
+          L.polyline(line, { color: "#ffffff", weight: 9, opacity: 0.9 }).addTo(map);
+          L.polyline(line, { color: "#0F6B5C", weight: 5 }).addTo(map);
+          map.fitBounds(L.latLngBounds([...line, center]), { padding: [30, 30], maxZoom: 17 });
+        })
+        .catch(() => undefined);
+    }
     setTimeout(() => map.invalidateSize(), 50);
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();

@@ -214,6 +214,7 @@ export type AlarmType =
   | "LEFT_LATE"
   | "ROUTE_DEVIATION"
   | "BACK_ON_ROUTE"
+  | "ROUTE_NOT_TAKEN"
   | "CHARGE_REMINDER"
   | "COLLISION"
   | "ACC_ON"
@@ -374,6 +375,27 @@ export interface PlaceRoute {
   widthM: number;
   lengthM: number;
   active: boolean;
+  /** "Home to School"; null for a route nobody named. An app older than named routes never sees these. */
+  name?: string | null;
+  /** The trusted place where a TO route starts or a FROM route ends, when it is one. */
+  otherGeofenceId?: string | null;
+  /** When it is watched: ISO weekdays between timeFrom and timeTo ("HH:mm"); all null = follows the place's expected time. */
+  weekdays?: number[] | null;
+  timeFrom?: string | null;
+  timeTo?: string | null;
+  /** Level of this route's "off the route" and "did not take the route" alerts. */
+  severity?: RouteLevel;
+}
+
+export type RouteLevel = "INFO" | "WARNING" | "CRITICAL";
+
+/** A trip the person made on a past day, offered as a route. */
+export interface RouteCandidate {
+  from: string;
+  to: string;
+  lengthM: number;
+  waypoints: LatLng[];
+  path: LatLng[];
 }
 
 export interface RouteSnap {

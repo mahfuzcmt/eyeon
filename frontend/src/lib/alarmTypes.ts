@@ -19,6 +19,7 @@ export const ALARM_TYPES: AlarmType[] = [
   "LEFT_LATE",
   "ROUTE_DEVIATION",
   "BACK_ON_ROUTE",
+  "ROUTE_NOT_TAKEN",
   "CHARGE_REMINDER",
   "COLLISION",
   "ACC_ON",
