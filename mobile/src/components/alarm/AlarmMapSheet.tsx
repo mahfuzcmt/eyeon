@@ -1,7 +1,8 @@
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Linking, Pressable, StyleSheet, Text, View, useWindowDimensions } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import WebMap, { type MapVehicle } from "@/components/WebMap";
+import { listPlaceRoutes } from "@/api/endpoints";
 import { fmtDateTime } from "@/format";
 import { useI18n } from "@/i18n";
 import { colors, radius, space, touch } from "@/theme";
@@ -9,7 +10,10 @@ import { alarmColor, alarmTitle, resultLabel } from "@/alarmCenter";
 import type { AlarmView, DeviceView } from "@/types";
 import { Sheet } from "./Sheet";
 
-/** Where an alarm happened: the person's marker at the alarm position, with a directions link. */
+/**
+ * Where an alarm happened: the person's marker at the alarm position, with a directions link. For
+ * an alert of a usual route, the route is drawn too, so it shows where the person left it.
+ */
 export function AlarmMapSheet({
   alarm,
   device,
@@ -41,9 +45,28 @@ export function AlarmMapSheet({
     ];
   }, [alarm, device?.vehicleType, who]);
 
+  const routeId = typeof alarm?.metadata?.routeId === "string" ? alarm.metadata.routeId : null;
+  const placeId = typeof alarm?.metadata?.geofenceId === "string" ? alarm.metadata.geofenceId : null;
+  const [route, setRoute] = useState<[number, number][]>([]);
+  useEffect(() => {
+    setRoute([]);
+    if (!routeId || !placeId) return;
+    let live = true;
+    // Only the route's owner can read it, and only the owner is sent these alerts.
+    listPlaceRoutes(placeId)
+      .then((list) => {
+        const r = list.find((x) => x.id === routeId);
+        if (live && r) setRoute(r.path.map((p) => [p.lng, p.lat]));
+      })
+      .catch(() => undefined);
+    return () => {
+      live = false;
+    };
+  }, [routeId, placeId]);
+
   const center = useMemo(
-    () => (alarm && alarm.latitude != null && alarm.longitude != null ? { lat: alarm.latitude, lng: alarm.longitude, zoom: 18, nonce: Date.now() } : null),
-    [alarm],
+    () => (alarm && alarm.latitude != null && alarm.longitude != null ? { lat: alarm.latitude, lng: alarm.longitude, zoom: routeId ? 16 : 18, nonce: Date.now() } : null),
+    [alarm, routeId],
   );
 
   return (
@@ -57,7 +80,7 @@ export function AlarmMapSheet({
       {alarm && hasPos ? (
         <>
           <View style={[styles.map, { height: mapHeight }]}>
-            <WebMap vehicles={vehicles} center={center} />
+            <WebMap vehicles={vehicles} center={center} route={route} />
           </View>
           <View style={styles.row}>
             <Text style={styles.coords} selectable>

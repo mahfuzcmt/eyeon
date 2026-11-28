@@ -122,4 +122,61 @@ class RouteWatchTest {
         // Beyond the end: distance to the last point.
         assertThat(RouteWatch.distanceToPath(23.7480, 90.3771, path)).isCloseTo(111, within(3.0));
     }
+
+    private static final Instant NINE = Instant.parse("2026-10-21T03:00:00Z");
+
+    @Test
+    void aRouteWithItsOwnHoursIsWatchedInsideThemUntilThePersonArrives() {
+        Instant from = NINE, to = NINE.plusSeconds(7200);
+        assertThat(RouteWatch.watchWindow(Direction.TO, from, to, false, null, null, null, NINE.minusSeconds(60))).isNull();
+        var w = RouteWatch.watchWindow(Direction.TO, from, to, false, null, null, null, NINE.plusSeconds(60));
+        assertThat(w.until()).isEqualTo(to);
+        assertThat(w.startedAt()).isNull();   // nothing says when they set off
+        assertThat(RouteWatch.watchWindow(Direction.TO, from, to, true, null, null, null, NINE.plusSeconds(60))).isNull();
+        assertThat(RouteWatch.watchWindow(Direction.TO, from, to, false, null, null, null, to)).isNull();
+    }
+
+    @Test
+    void leavingTheStartPlaceIsWhenTheTripBegan() {
+        Instant from = NINE, to = NINE.plusSeconds(7200), left = NINE.minusSeconds(600);
+        var w = RouteWatch.watchWindow(Direction.TO, from, to, false, null, false, left, NINE.plusSeconds(60));
+        assertThat(w.startedAt()).isEqualTo(left);   // set off a little before the window opened
+        // still at the start place, or left hours ago: not known
+        assertThat(RouteWatch.watchWindow(Direction.TO, from, to, false, null, true, left, NINE.plusSeconds(60)).startedAt()).isNull();
+        assertThat(RouteWatch.watchWindow(Direction.TO, from, to, false, null, false, NINE.minusSeconds(7200),
+                NINE.plusSeconds(60)).startedAt()).isNull();
+    }
+
+    @Test
+    void theWayBackIsWatchedForNinetyMinutesAfterLeavingInsideTheHours() {
+        Instant from = NINE, to = NINE.plusSeconds(7200), left = NINE.plusSeconds(600);
+        var w = RouteWatch.watchWindow(Direction.FROM, from, to, false, left, null, null, left.plusSeconds(60));
+        assertThat(w.until()).isEqualTo(left.plus(RouteWatch.TRIP_LENGTH));
+        assertThat(w.startedAt()).isEqualTo(left);
+        assertThat(RouteWatch.watchWindow(Direction.FROM, from, to, true, left, null, null, left.plusSeconds(60))).isNull();
+        assertThat(RouteWatch.watchWindow(Direction.FROM, from, to, false, NINE.minusSeconds(60), null, null, NINE)).isNull();
+    }
+
+    @Test
+    void neverOnTheLineAfterSettingOffIsNotTakenOnTheSecondFix() {
+        RouteWatch.Trip t = new RouteWatch.Trip();
+        Instant start = NINE;
+        // two minutes in: too early to say
+        assertThat(RouteWatch.onFix(t, 400, 2000, 500, 100, start.plusSeconds(120), start)).isEqualTo(RouteWatch.Event.NONE);
+        // still by the gate (within 300 m of the start) does not count
+        assertThat(RouteWatch.onFix(t, 250, 2000, 250, 100, start.plusSeconds(200), start)).isEqualTo(RouteWatch.Event.NONE);
+        assertThat(RouteWatch.onFix(t, 600, 2200, 700, 100, start.plusSeconds(240), start)).isEqualTo(RouteWatch.Event.NONE);
+        assertThat(RouteWatch.onFix(t, 900, 2500, 1000, 100, start.plusSeconds(300), start)).isEqualTo(RouteWatch.Event.NOT_TAKEN);
+        assertThat(RouteWatch.onFix(t, 1200, 2800, 1300, 100, start.plusSeconds(360), start)).isEqualTo(RouteWatch.Event.NONE);
+        // coming onto the line afterwards is good news
+        assertThat(RouteWatch.onFix(t, 40, 1500, 900, 100, start.plusSeconds(600), start)).isEqualTo(RouteWatch.Event.BACK_ON_ROUTE);
+    }
+
+    @Test
+    void withoutAKnownStartSomeoneElsewhereIsNeverJudged() {
+        RouteWatch.Trip t = new RouteWatch.Trip();
+        for (int i = 0; i < 10; i++) {
+            assertThat(RouteWatch.onFix(t, 900, 2500, 1000, 100, NINE.plusSeconds(i * 120L), null)).isEqualTo(RouteWatch.Event.NONE);
+        }
+    }
 }

@@ -88,16 +88,37 @@ public final class GeofenceDtos {
 
     /** @param kind ARRIVE_BY | LEAVE_BY; @param time HH:mm in the organization's timezone; @param weekdays ISO 1 (Mon) - 7 (Sun) */
     /** {@code graceMinutes} 0-120, null = 10. */
-    /** A drawn route to (TO) or from (FROM) a trusted place. */
+    /**
+     * A drawn route to (TO) or from (FROM) a trusted place. {@code weekdays} (ISO 1-7), {@code timeFrom}
+     * and {@code timeTo} ("HH:mm", the organization's timezone) say when it is watched; all null for
+     * a route from before named routes, which follows the place's expected arrival / leaving time.
+     */
     public record RouteView(java.util.UUID id, String direction, String mode, java.util.List<LatLng> waypoints,
-                            java.util.List<LatLng> path, int widthM, double lengthM, boolean active) {
+                            java.util.List<LatLng> path, int widthM, double lengthM, boolean active,
+                            String name, java.util.UUID otherGeofenceId, java.util.List<Integer> weekdays,
+                            String timeFrom, String timeTo, String severity) {
         public static RouteView of(com.webinnovation.eyeon.repository.PlaceRouteRepository.Route r) {
             return new RouteView(r.id(), r.direction(), r.mode(), latLngs(r.waypoints()), latLngs(r.path()), r.widthM(),
-                    Math.round(com.webinnovation.eyeon.service.RouteWatch.length(r.path())), r.active());
+                    Math.round(com.webinnovation.eyeon.service.RouteWatch.length(r.path())), r.active(),
+                    r.name(), r.otherGeofenceId(), r.weekdays(), hhmm(r.timeFrom()), hhmm(r.timeTo()), r.severity());
         }
     }
 
-    public record RouteSave(String mode, java.util.List<LatLng> waypoints, java.util.List<LatLng> path, Integer widthM) {}
+    private static String hhmm(java.time.LocalTime t) {
+        return t == null ? null : t.format(java.time.format.DateTimeFormatter.ofPattern("HH:mm"));
+    }
+
+    /** {@code direction} is only read when a route is created or updated by id; the old call has it in the path. */
+    public record RouteSave(String mode, java.util.List<LatLng> waypoints, java.util.List<LatLng> path, Integer widthM,
+                            String direction, String name, java.util.UUID otherGeofenceId,
+                            java.util.List<Integer> weekdays, String timeFrom, String timeTo, String severity) {}
+
+    /** {@code date} "YYYY-MM-DD" in the organization's timezone. */
+    public record RouteFromHistoryRequest(String imei, String date, String direction) {}
+
+    /** A past trip offered as a route. */
+    public record RouteCandidate(java.time.Instant from, java.time.Instant to, double lengthM,
+                                 java.util.List<LatLng> waypoints, java.util.List<LatLng> path) {}
 
     public record SnapRequest(java.util.List<LatLng> points, String mode) {}
 

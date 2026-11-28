@@ -35,7 +35,7 @@ public final class NotificationDefaults {
             AlarmType.PLACE_ARRIVED, AlarmType.PLACE_LEFT, AlarmType.LOW_BATTERY,
             AlarmType.NOT_ARRIVED, AlarmType.NOT_LEFT, AlarmType.CHARGE_REMINDER,
             AlarmType.ARRIVED_ON_TIME, AlarmType.LEFT_ON_TIME, AlarmType.ARRIVED_LATE, AlarmType.LEFT_LATE,
-            AlarmType.ROUTE_DEVIATION, AlarmType.BACK_ON_ROUTE));
+            AlarmType.ROUTE_DEVIATION, AlarmType.BACK_ON_ROUTE, AlarmType.ROUTE_NOT_TAKEN));
 
     public static final Set<String> PUSH = ALL_TYPES;
 

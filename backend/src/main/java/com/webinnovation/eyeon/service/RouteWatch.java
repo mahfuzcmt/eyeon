@@ -15,6 +15,14 @@ import java.util.List;
  * from where it starts); someone who is somewhere else at that hour is not "off route". After that,
  * more than the route's width away for {@link #OFF_FOR} raises one alert; coming back within the
  * width says so; reaching the far end finishes the watch.
+ *
+ * <p><b>Never on the line.</b> When it is known when the trip began (the person left the place the
+ * route starts at), someone who is still not on the line {@link #NOT_TAKEN_AFTER} later, and well
+ * away from where it starts, "did not take the route": one alert, on the second such fix. This is
+ * the case the first rule cannot see - picked up at the gate and driven another way.
+ *
+ * <p>A route with its own days and hours (V38) is watched inside that window, see
+ * {@link #watchWindow}; an older one around its place's expected time, see {@link #watchUntil}.
  */
 public final class RouteWatch {
 
@@ -22,7 +30,7 @@ public final class RouteWatch {
 
     public enum Direction { TO, FROM }
 
-    public enum Event { NONE, OFF_ROUTE, BACK_ON_ROUTE }
+    public enum Event { NONE, OFF_ROUTE, BACK_ON_ROUTE, NOT_TAKEN }
 
     /** Off the line this long before an alert: a short detour or a GPS jump is not a different route. */
     static final Duration OFF_FOR = Duration.ofMinutes(2);
@@ -34,6 +42,12 @@ public final class RouteWatch {
     static final Duration TRIP_LENGTH = Duration.ofMinutes(90);
     /** Within this of the line's far end the trip is over. */
     static final double END_RADIUS_M = 150;
+    /** This long after setting off without ever being on the line: they did not take the route. */
+    static final Duration NOT_TAKEN_AFTER = Duration.ofMinutes(3);
+    /** ... and at least this far from where the line starts (still at the gate is not "another way"). */
+    static final double START_RADIUS_M = 300;
+    /** Leaving the start place this long before the window opens still counts as setting off. */
+    static final Duration EARLY_START = Duration.ofMinutes(30);
     /** At most this many alerts per trip, however often the person leaves and rejoins the line. */
     static final int MAX_ALERTS = 3;
 
@@ -60,6 +74,35 @@ public final class RouteWatch {
         return now.isBefore(end) && !now.isBefore(changedAt) ? end : null;
     }
 
+    /** @param startedAt when the person set off, when that is known (it enables the "never on the line" rule) */
+    public record Window(Instant until, Instant startedAt) {}
+
+    /**
+     * When a route with its own hours is watched today.
+     *
+     * <p>TO: inside the window, while the person is not at the place yet. FROM: for
+     * {@link #TRIP_LENGTH} after they left the place, when they left inside the window.
+     *
+     * @param from / to       today's window
+     * @param inside          whether the person is at the route's place now (null = never seen there)
+     * @param changedAt       when that last changed
+     * @param otherInside     the same for the place at the other end of the route, null when there is none
+     * @return null when this is not a time to watch
+     */
+    public static Window watchWindow(Direction dir, Instant from, Instant to, Boolean inside, Instant changedAt,
+                                     Boolean otherInside, Instant otherChangedAt, Instant now) {
+        if (dir == Direction.TO) {
+            if (now.isBefore(from) || !now.isBefore(to) || Boolean.TRUE.equals(inside)) return null;
+            boolean setOff = Boolean.FALSE.equals(otherInside) && otherChangedAt != null
+                    && !otherChangedAt.isBefore(from.minus(EARLY_START)) && !otherChangedAt.isAfter(now);
+            return new Window(to, setOff ? otherChangedAt : null);
+        }
+        if (!Boolean.FALSE.equals(inside) || changedAt == null) return null;
+        if (changedAt.isBefore(from) || changedAt.isAfter(to)) return null;
+        Instant end = changedAt.plus(TRIP_LENGTH);
+        return now.isBefore(end) && !now.isBefore(changedAt) ? new Window(end, changedAt) : null;
+    }
+
     /** State of one person on one route for one trip. */
     public static final class Trip {
         boolean joined;
@@ -73,11 +116,18 @@ public final class RouteWatch {
         }
     }
 
+    public static Event onFix(Trip t, double distanceM, double toEndM, int widthM, Instant ts) {
+        return onFix(t, distanceM, toEndM, 0, widthM, ts, null);
+    }
+
     /**
      * @param distanceM      distance from the fix to the line
      * @param toEndM         distance from the fix to the line's far end
+     * @param toStartM       distance from the fix to where the line starts
+     * @param startedAt      when the person set off, null when that is not known
      */
-    public static Event onFix(Trip t, double distanceM, double toEndM, int widthM, Instant ts) {
+    public static Event onFix(Trip t, double distanceM, double toEndM, double toStartM, int widthM, Instant ts,
+                              Instant startedAt) {
         if (t.done) return Event.NONE;
         if (toEndM <= Math.max(END_RADIUS_M, widthM)) {
             t.done = true;
@@ -92,7 +142,21 @@ public final class RouteWatch {
             }
             return Event.NONE;
         }
-        if (!t.joined || t.offRoute) return Event.NONE;
+        if (t.offRoute) return Event.NONE;
+        if (!t.joined) {
+            if (startedAt == null || t.alerts >= MAX_ALERTS || ts.isBefore(startedAt.plus(NOT_TAKEN_AFTER))
+                    || toStartM <= Math.max(START_RADIUS_M, widthM)) {
+                return Event.NONE;
+            }
+            if (t.outsideSince == null) {   // one position is not enough to say so
+                t.outsideSince = ts;
+                return Event.NONE;
+            }
+            t.joined = true;
+            t.offRoute = true;
+            t.alerts++;
+            return Event.NOT_TAKEN;
+        }
         if (t.outsideSince == null) {
             t.outsideSince = ts;
             return Event.NONE;

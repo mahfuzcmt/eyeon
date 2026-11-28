@@ -51,6 +51,8 @@ import type {
   RouteDirection,
   RouteMode,
   RouteSnap,
+  RouteCandidate,
+  RouteLevel,
   PlaceType,
   RouteData,
   StaysResult,
@@ -395,17 +397,41 @@ export async function listPlaceRoutes(geofenceId: string): Promise<PlaceRoute[]>
   return r.data;
 }
 
-export async function savePlaceRoute(
-  geofenceId: string,
-  direction: RouteDirection,
-  req: { mode: RouteMode; waypoints: LatLng[]; path: LatLng[]; widthM: number },
-): Promise<PlaceRoute> {
-  const r = await api.put<PlaceRoute>(`/geofences/${geofenceId}/routes/${direction}`, req);
+export interface PlaceRouteSave {
+  direction: RouteDirection;
+  name: string;
+  mode: RouteMode;
+  waypoints: LatLng[];
+  path: LatLng[];
+  widthM: number;
+  otherGeofenceId: string | null;
+  weekdays: number[];
+  timeFrom: string;
+  timeTo: string;
+  severity: RouteLevel;
+}
+
+/** Creates the route, or replaces the one with this id. */
+export async function savePlaceRoute(geofenceId: string, routeId: string | null, req: PlaceRouteSave): Promise<PlaceRoute> {
+  const r = routeId
+    ? await api.put<PlaceRoute>(`/geofences/${geofenceId}/routes/${routeId}`, req)
+    : await api.post<PlaceRoute>(`/geofences/${geofenceId}/routes`, req);
   return r.data;
 }
 
-export async function deletePlaceRoute(geofenceId: string, direction: RouteDirection): Promise<void> {
-  await api.delete(`/geofences/${geofenceId}/routes/${direction}`);
+export async function deletePlaceRoute(geofenceId: string, routeId: string): Promise<void> {
+  await api.delete(`/geofences/${geofenceId}/routes/${routeId}`);
+}
+
+/** The trips one person made to / from the place on one day ("YYYY-MM-DD"), to use one as the route. */
+export async function routesFromHistory(
+  geofenceId: string,
+  imei: string,
+  date: string,
+  direction: RouteDirection,
+): Promise<RouteCandidate[]> {
+  const r = await api.post<RouteCandidate[]>(`/geofences/${geofenceId}/routes/from-history`, { imei, date, direction });
+  return r.data;
 }
 
 /** Road line through tapped points (a public routing service: a few seconds). */

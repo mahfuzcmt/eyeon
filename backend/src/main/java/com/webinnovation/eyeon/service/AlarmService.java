@@ -51,7 +51,14 @@ public class AlarmService {
                 || type == AlarmType.CHARGE_REMINDER
                 || type == AlarmType.ARRIVED_ON_TIME || type == AlarmType.LEFT_ON_TIME
                 || type == AlarmType.ARRIVED_LATE || type == AlarmType.LEFT_LATE
-                || type == AlarmType.BACK_ON_ROUTE;
+                || type == AlarmType.BACK_ON_ROUTE
+                // a parent may set a route's alerts to INFO; they still asked to be told
+                || isRouteAlert(type);
+    }
+
+    /** Alerts of a drawn route: their severity is the parent's choice of how loud, not a call for a text. */
+    private static boolean isRouteAlert(AlarmType type) {
+        return type == AlarmType.ROUTE_DEVIATION || type == AlarmType.ROUTE_NOT_TAKEN;
     }
 
     public static final Set<String> PROCESS_RESULTS = Set.of("HANDLED", "FALSE_ALARM", "NO_ACTION");
@@ -62,7 +69,7 @@ public class AlarmService {
         Alarm a = repo.findByOrgAndId(orgId, id)
                 .orElseThrow(() -> new IllegalStateException("Alarm vanished after insert: " + id));
         publish(a);
-        if (severity == AlarmSeverity.CRITICAL) {
+        if (severity == AlarmSeverity.CRITICAL && !isRouteAlert(type)) {
             // SOS and the like also go out by SMS: a push needs mobile data, a text does not.
             alarmSmsService.sendCriticalAlarmSms(a);
         }
